@@ -111,7 +111,7 @@ public final class BionicXActivity extends Activity {
             command.add(profile.expand(this, profile.workingDirectory));
             if (!profile.argv0.isEmpty()) {
                 command.add("--argv0");
-                command.add(profile.argv0);
+                command.add(profile.expand(this, profile.argv0));
             }
 
             for (Map.Entry<String, String> variable : profile.environment.entrySet()) {
@@ -151,18 +151,33 @@ public final class BionicXActivity extends Activity {
 
             Log.i(TAG, "launching " + profile.name + ": " + command);
             ProcessBuilder builder = new ProcessBuilder(command);
-            builder.redirectErrorStream(true);
+            builder.redirectErrorStream(false);
             child = builder.start();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(child.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) Log.i(TAG, line);
-            }
-            Log.i(TAG, profile.id + " exited with " + child.waitFor());
+            Thread stdout = pumpLog(child.getInputStream(), "stdout");
+            Thread stderr = pumpLog(child.getErrorStream(), "stderr");
+            int status = child.waitFor();
+            stdout.join();
+            stderr.join();
+            Log.i(TAG, profile.id + " exited with " + status);
         }
         catch (Exception error) {
             fail("launch failed", error);
         }
+    }
+
+    private Thread pumpLog(InputStream stream, String name) {
+        Thread thread = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(stream))) {
+                String line;
+                while ((line = reader.readLine()) != null) Log.i(TAG, line);
+            }
+            catch (IOException error) {
+                Log.w(TAG, name + " log stream failed", error);
+            }
+        }, "bionicx-" + name);
+        thread.start();
+        return thread;
     }
 
     private File extractAsset(String asset, File destination) throws IOException {
