@@ -42,7 +42,8 @@ trap 'rm -rf "$temporary"' EXIT
 tar --use-compress-program=unzstd -xf "$rootfs_tzst" -C "$temporary" ./usr/lib
 for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6 libX11.so.6 libxcb.so.1 \
         libXau.so.6 libXdmcp.so.6 libXext.so.6 libXrender.so.1 \
-        libXfixes.so.3 libXrandr.so.2 libXi.so.6; do
+        libXfixes.so.3 libXrandr.so.2 libXi.so.6 \
+        libdl.so.2 libpthread.so.0 libresolv.so.2 librt.so.1 libutil.so.1; do
     cp -L "$temporary/usr/lib/$library" "$output_dir/rootfs/usr/lib/"
 done
 # WPS Spreadsheets loads libXtst through libetmain. Winlator's compact rootfs

@@ -1,0 +1,15 @@
+Chrome stable ARM64: 151.0.7922.108-1
+Chrome package SHA-256: 23f5d27be6ad6f5d69c1c11b602d4ed25a8499cfdfa11c3ca479ad0b58285499
+Locked packages: 155
+Resolved ELF objects: 89
+Missing dependencies: 0
+Chrome application tree: 426 MiB
+Flat dependency closure: 38 MiB
+glibc/X11 runtime: 7.6 MiB
+Closure report SHA-256: d5762927d80f18845c960ba580e9547ecad47bfb50a3494ff303382ef2cc0b79
+Relative-path build manifest SHA-256: 487214baa11d317152430e158064b2669dfc79dc4a7cfcd341ed7392aa5e0fb1
+Device screenshot SHA-256: 4583997eb96663f01196b22d44b547dc725eeb972e9424708f8877545f1420bb
+Device log SHA-256: 991aeb85e092dbfe3087f805c4a41f278ddce536e7b45d5d24455137aebb3a10
+Device: x300 01408BH601027129
+Runtime: ordinary io.taowen.bx app UID; no root, proot, Termux, ptrace, Frida, or debugger
+Result: full-screen Example Domain rendered; fatal/NSS/FD ownership/network restart/XFixes errors all zero

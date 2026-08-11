@@ -110,6 +110,13 @@ files to BionicX and relocates the equal-width Android package prefix.
 The repository contains screenshots, hashes, and the device report under
 `evidence/`; it deliberately contains no proprietary WPS binaries.
 
+## Chrome example
+
+[`examples/chrome/README.md`](examples/chrome/README.md) documents the pinned,
+hash-locked Chrome stable ARM64 bundle. Its resolver roots include NSS modules
+loaded at runtime, while `--exclude-copy-root` prevents the large application
+ELFs from being duplicated into the flat library closure.
+
 ## Scope and safety
 
 BionicX is currently an ARM64 research runtime, not a general Linux container.

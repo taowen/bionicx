@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+output_dir="${1:-$repo_dir/build/chrome-bundle}"
+output_dir="$(realpath -m "$output_dir")"
+case "$output_dir/" in
+    "$repo_dir/build/"*) ;;
+    *) echo "output must be below $repo_dir/build: $output_dir" >&2; exit 2 ;;
+esac
+
+version=151.0.7922.108-1
+deb_name="google-chrome-stable_${version}_arm64.deb"
+chrome_sha256=23f5d27be6ad6f5d69c1c11b602d4ed25a8499cfdfa11c3ca479ad0b58285499
+chrome_url="https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/$deb_name"
+cache_dir="$repo_dir/build/cache/chrome-$version"
+deb_dir="$cache_dir/debs"
+lock_file="$repo_dir/examples/chrome/dependencies.lock"
+mkdir -p "$deb_dir" "$repo_dir/build/tmp"
+
+chrome_deb="$deb_dir/$deb_name"
+if [[ ! -f "$chrome_deb" ]]; then
+    temporary="$chrome_deb.download"
+    curl -fL "$chrome_url" -o "$temporary"
+    echo "$chrome_sha256  $temporary" | sha256sum -c -
+    mv "$temporary" "$chrome_deb"
+fi
+echo "$chrome_sha256  $chrome_deb" | sha256sum -c -
+
+lock_matches() {
+    (cd "$deb_dir" && sha256sum -c "$lock_file" >/dev/null) || return 1
+    diff -u \
+        <(awk '{print $2}' "$lock_file" | sort) \
+        <(find "$deb_dir" -maxdepth 1 -type f -name '*.deb' -printf '%f\n' | sort) \
+        >/dev/null
+}
+
+if ! lock_matches; then
+    find "$deb_dir" -maxdepth 1 -type f -name '*.deb' ! -name "$deb_name" -delete
+    # Resolve from a native ARM64 userspace. An amd64 apt host may consider its
+    # own installed libraries sufficient and silently omit the ARM64 closure.
+    podman run --rm --arch arm64 --network host \
+        --env CHROME_VERSION="$version" --env CHROME_DEB_NAME="$deb_name" \
+        --volume "$repo_dir:/work:Z" --workdir /work \
+        docker.io/library/debian:trixie-slim sh -eu -c '
+            deb_dir="/work/build/cache/chrome-$CHROME_VERSION/debs"
+            apt-get update >/dev/null
+            apt-get install -y --no-install-recommends --download-only \
+                "$deb_dir/$CHROME_DEB_NAME" >/dev/null
+            cp /var/cache/apt/archives/*.deb "$deb_dir/"
+            cd "$deb_dir"
+            # These libraries are already installed in debian:trixie-slim, so
+            # apt would otherwise omit them from a portable extracted closure.
+            apt-get download \
+                libblkid1 libbz2-1.0 libcap2 libgcc-s1 libgmp10 \
+                libhogweed6t64 libmount1 \
+                libnettle8t64 libpcre2-8-0 libselinux1 libsqlite3-0 \
+                libsystemd0 libudev1 zlib1g >/dev/null
+        '
+    if ! lock_matches; then
+        echo "Chrome dependency set drifted from examples/chrome/dependencies.lock" >&2
+        echo "refresh and review the lock deliberately before accepting new packages" >&2
+        exit 1
+    fi
+fi
+
+find "$output_dir" -mindepth 1 -delete 2>/dev/null || true
+mkdir -p "$output_dir"
+TMPDIR="$repo_dir/build/tmp" "$repo_dir/examples/hello/build-bundle.sh" "$output_dir"
+rm -f "$output_dir/app/bin/hello-x11"
+
+temporary="$(mktemp -d "$repo_dir/build/chrome-stage.XXXXXXXX")"
+cleanup() {
+    case "$temporary" in
+        "$repo_dir/build/chrome-stage."*) rm -rf -- "$temporary" ;;
+        *) echo "refusing to clean unexpected path: $temporary" >&2 ;;
+    esac
+}
+trap cleanup EXIT
+mkdir -p "$temporary/extracted"
+
+builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
+podman run --rm --userns=keep-id \
+    --env CHROME_VERSION="$version" \
+    --env STAGE_REL="${temporary#"$repo_dir/"}" \
+    --volume "$repo_dir:/work:Z" --workdir /work "$builder_image" sh -eu -c '
+        for package in build/cache/chrome-$CHROME_VERSION/debs/*.deb; do
+            dpkg-deb -x "$package" "$STAGE_REL/extracted"
+        done
+    '
+
+mkdir -p "$output_dir/app/opt/google" "$output_dir/app/etc/fonts" \
+    "$output_dir/app/lib"
+cp -a "$temporary/extracted/opt/google/chrome" "$output_dir/app/opt/google/"
+cp "$repo_dir/examples/chrome/fonts.conf" "$output_dir/app/etc/fonts/fonts.conf"
+
+interpreter=/data/data/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
+while IFS= read -r executable; do
+    if patchelf --print-interpreter "$executable" >/dev/null 2>&1; then
+        patchelf --set-interpreter "$interpreter" "$executable"
+    fi
+done < <(find "$output_dir/app/opt/google/chrome" -type f -perm /111 -print)
+
+library_root="$temporary/extracted/usr/lib/aarch64-linux-gnu"
+runtime_modules=(
+    libsoftokn3.so
+    libfreebl3.so
+    libfreeblpriv3.so
+    libnssckbi.so
+    libnssdbm3.so
+)
+entries=(
+    --entry "$output_dir/app/opt/google/chrome/chrome"
+    --entry "$output_dir/app/opt/google/chrome/chrome_crashpad_handler"
+    --entry "$output_dir/app/opt/google/chrome/chrome-management-service"
+)
+for module in "${runtime_modules[@]}"; do
+    [[ -f "$library_root/$module" ]] || {
+        echo "missing declared Chrome runtime module: $module" >&2
+        exit 1
+    }
+    entries+=(--entry "$library_root/$module")
+done
+
+"$repo_dir/tools/resolve-elf-deps.py" \
+    "${entries[@]}" \
+    --search-root "$output_dir/rootfs/usr/lib" \
+    --search-root "$output_dir/app/opt/google/chrome" \
+    --search-root "$library_root" \
+    --exclude-copy-root "$output_dir/app" \
+    --copy-to "$output_dir/app/lib" \
+    --json "$output_dir/chrome-dependency-closure.json"
+for checksum in "$library_root"/*.chk; do
+    cp "$checksum" "$output_dir/app/lib/"
+done
+
+{
+    printf 'chrome_version=%s\nchrome_sha256=%s\n' "$version" "$chrome_sha256"
+    printf 'dependency_lock_sha256='
+    sha256sum "$lock_file" | cut -d' ' -f1
+    printf 'runtime_modules=%s\n' "${runtime_modules[*]}"
+    (cd "$output_dir" && find app/opt/google/chrome app/lib \
+        -type f -exec sha256sum {} + | sort -k2)
+} > "$output_dir/BUILD-INFO"
+echo "$output_dir"

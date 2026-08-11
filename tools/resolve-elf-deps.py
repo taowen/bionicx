@@ -51,17 +51,28 @@ parser.add_argument("--entry", type=Path, action="append", required=True)
 parser.add_argument("--search-root", type=Path, action="append", required=True)
 parser.add_argument("--readelf", default=os.environ.get("READELF", "readelf"))
 parser.add_argument("--copy-to", type=Path)
+parser.add_argument(
+    "--exclude-copy-root",
+    type=Path,
+    action="append",
+    default=[],
+    help="resolve objects below this root but do not duplicate them in --copy-to",
+)
 parser.add_argument("--json", type=Path)
 args = parser.parse_args()
 
 entries = [path.resolve() for path in args.entry]
 roots = [path.resolve() for path in args.search_root]
+excluded_copy_roots = [path.resolve() for path in args.exclude_copy_root]
 for path in entries:
     if not path.is_file():
         parser.error(f"entry does not exist: {path}")
 for path in roots:
     if not path.is_dir():
         parser.error(f"search root does not exist: {path}")
+for path in excluded_copy_roots:
+    if not path.is_dir():
+        parser.error(f"excluded copy root does not exist: {path}")
 
 index: dict[str, list[Path]] = {}
 for root in roots:
@@ -101,6 +112,7 @@ while queue:
 
 report = {
     "entries": [str(path) for path in entries],
+    "excludedCopyRoots": [str(path) for path in excluded_copy_roots],
     "objects": {str(path): metadata for path, metadata in sorted(seen.items())},
     "missing": missing,
     "copyNames": {
@@ -112,6 +124,8 @@ if args.copy_to:
     args.copy_to.mkdir(parents=True, exist_ok=True)
     copied: dict[str, Path] = {}
     for path in seen:
+        if any(path.is_relative_to(root) for root in excluded_copy_roots):
+            continue
         for name in sorted(copy_names.get(path, {path.name})):
             existing = copied.get(name)
             if existing and existing.read_bytes() != path.read_bytes():
