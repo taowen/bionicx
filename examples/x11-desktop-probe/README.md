@@ -13,9 +13,10 @@ It also links the real AArch64 glibc `libxkbcommon-x11`, compiles that server
 map with the same API used by Qt, creates an XKB state, and resolves a key
 through the compiled state. Deterministic Android input is then observed from
 the XCB event queue to verify live XKB StateNotify set/clear transitions. An
-XFixes selection subscription additionally validates an owner-change event,
-while a ShapeInput region proves copy lifetime and pointer hit-test clipping
-with one tap outside and one inside the region. This stricter path catches
+XFixes selection subscription additionally validates the complete mask 7
+owner-change, owner-window-destroy and owner-client-close lifecycle, while a
+ShapeInput region proves copy lifetime and pointer hit-test clipping with one
+tap outside and one inside the region. This stricter path catches
 semantic protocol gaps which libX11's structure-only helpers accept.
 MIT-SHM
 is reported as an optional capability because BionicX deliberately withholds

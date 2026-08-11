@@ -46,6 +46,29 @@ static bool sync_without_error(Display *display, int before) {
     return x_errors == before;
 }
 
+static bool wait_xfixes_selection(Display *display, int event_type, Atom selection,
+                                  int subtype, Window owner) {
+    struct timespec deadline;
+    clock_gettime(CLOCK_MONOTONIC, &deadline);
+    deadline.tv_sec += 2;
+    while (true) {
+        XEvent event = {0};
+        while (XCheckTypedEvent(display, event_type, &event)) {
+            XFixesSelectionNotifyEvent *notify =
+                (XFixesSelectionNotifyEvent *)&event;
+            if (notify->selection == selection && notify->subtype == subtype &&
+                    notify->owner == owner) return true;
+        }
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        if (now.tv_sec > deadline.tv_sec ||
+                (now.tv_sec == deadline.tv_sec && now.tv_nsec >= deadline.tv_nsec))
+            return false;
+        struct timespec pause = {.tv_nsec = 10 * 1000 * 1000};
+        nanosleep(&pause, NULL);
+    }
+}
+
 static void probe_render(Display *display, Window window) {
     int event_base = 0, error_base = 0, major = 0, minor = 0;
     if (!XRenderQueryExtension(display, &event_base, &error_base)) {
@@ -88,8 +111,38 @@ static void probe_xfixes(Display *display, Window window) {
     bool ok = XFixesQueryVersion(display, &major, &minor) != 0;
     Atom clipboard = XInternAtom(display, "CLIPBOARD", False);
     XFixesSelectSelectionInput(display, window, clipboard,
-                              XFixesSetSelectionOwnerNotifyMask);
-    XSetSelectionOwner(display, clipboard, window, CurrentTime);
+                              XFixesSetSelectionOwnerNotifyMask |
+                              XFixesSelectionWindowDestroyNotifyMask |
+                              XFixesSelectionClientCloseNotifyMask);
+    Window first_owner = XCreateSimpleWindow(
+        display, DefaultRootWindow(display), 0, 0, 1, 1, 0, 0, 0);
+    XSetSelectionOwner(display, clipboard, first_owner, CurrentTime);
+    XSync(display, False);
+    bool set_notify = wait_xfixes_selection(
+        display, event_base + XFixesSelectionNotify, clipboard,
+        XFixesSetSelectionOwnerNotify, first_owner);
+    XDestroyWindow(display, first_owner);
+    XSync(display, False);
+    bool destroy_notify = wait_xfixes_selection(
+        display, event_base + XFixesSelectionNotify, clipboard,
+        XFixesSelectionWindowDestroyNotify, first_owner);
+
+    Display *owner_display = XOpenDisplay(NULL);
+    Window second_owner = owner_display
+        ? XCreateSimpleWindow(owner_display, DefaultRootWindow(owner_display),
+                              0, 0, 1, 1, 0, 0, 0)
+        : None;
+    if (owner_display) {
+        XSetSelectionOwner(owner_display, clipboard, second_owner, CurrentTime);
+        XSync(owner_display, False);
+    }
+    bool second_set_notify = owner_display && wait_xfixes_selection(
+        display, event_base + XFixesSelectionNotify, clipboard,
+        XFixesSetSelectionOwnerNotify, second_owner);
+    if (owner_display) XCloseDisplay(owner_display);
+    bool close_notify = owner_display && wait_xfixes_selection(
+        display, event_base + XFixesSelectionNotify, clipboard,
+        XFixesSelectionClientCloseNotify, second_owner);
     XRectangle source = {.x = 7, .y = 9, .width = 31, .height = 37};
     XserverRegion region = XFixesCreateRegion(display, &source, 1);
     int count = 0;
@@ -105,19 +158,12 @@ static void probe_xfixes(Display *display, Window window) {
     if (region) XFixesDestroyRegion(display, region);
     if (input_region) XFixesDestroyRegion(display, input_region);
     ok = ok && input_region && sync_without_error(display, before);
-    XEvent selection_event = {0};
-    bool selection_notify = XCheckTypedEvent(
-        display, event_base + XFixesSelectionNotify, &selection_event);
-    XFixesSelectionNotifyEvent *notify =
-        selection_notify ? (XFixesSelectionNotifyEvent *)&selection_event : NULL;
-    selection_notify = selection_notify && notify->subtype == XFixesSetSelectionOwnerNotify
-        && notify->window == window && notify->owner == window
-        && notify->selection == clipboard;
-    ok = ok && selection_notify;
-    char detail[128];
+    ok = ok && set_notify && destroy_notify && second_set_notify && close_notify;
+    char detail[176];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d rectangles=%d selection-notify=%d",
-             major, minor, count, selection_notify);
+             "version=%d.%d rectangles=%d mask=7 set=%d destroy=%d close=%d",
+             major, minor, count, set_notify && second_set_notify,
+             destroy_notify, close_notify);
     result("xfixes", ok, detail);
 }
 

@@ -85,7 +85,7 @@ public class XFixesExtension extends Extension {
 
     public XFixesExtension(XServer xServer, byte majorOpcode) {
         super(xServer, majorOpcode);
-        xServer.selectionManager.addOnSelectionModificationListener(this::onSetSelectionOwner);
+        xServer.selectionManager.addOnSelectionModificationListener(this::onSelectionModified);
     }
 
     @Override
@@ -178,10 +178,7 @@ public class XFixesExtension extends Extension {
         Window window = xServer.windowManager.getWindow(windowId);
         if (window == null) throw new BadWindow(windowId);
         if (!Atom.isValid(selection)) throw new BadAtom(selection);
-        // SetSelectionOwner notifications have a complete producer below.
-        // Reject the destroy/close masks until their distinct lifecycle
-        // reasons can be preserved by SelectionManager.
-        if ((eventMask & ~0x1) != 0) throw new BadValue(eventMask);
+        if ((eventMask & ~0x7) != 0) throw new BadValue(eventMask);
 
         synchronized (selectionInputs) {
             SelectionInput existing = null;
@@ -205,15 +202,19 @@ public class XFixesExtension extends Extension {
         }
     }
 
-    private void onSetSelectionOwner(int selection, Window owner, int selectionTimestamp) {
+    private void onSelectionModified(int selection, Window owner, int selectionTimestamp,
+                                     int reason, XClient ownerClient) {
         ArrayList<SelectionInput> snapshot;
         synchronized (selectionInputs) {
             snapshot = new ArrayList<>(selectionInputs);
         }
         for (SelectionInput input : snapshot) {
-            if (input.selection == selection && (input.eventMask & 1) != 0) {
+            int reasonMask = 1 << reason;
+            if (input.selection == selection && (input.eventMask & reasonMask) != 0
+                    && !(reason == SelectionManager.REASON_CLIENT_CLOSE
+                         && input.client == ownerClient)) {
                 input.client.sendEvent(new XFixesSelectionNotify(
-                        Byte.toUnsignedInt(FIRST_EVENT), 0, input.window.id,
+                        Byte.toUnsignedInt(FIRST_EVENT), reason, input.window.id,
                         owner != null ? owner.id : 0, selection, selectionTimestamp));
             }
         }

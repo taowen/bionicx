@@ -22,7 +22,9 @@ public class XClientConnectionHandler implements ConnectionHandler {
 
     @Override
     public void handleConnectionShutdown(ConnectedClient client) {
-        ((XClient)client).freeResources();
-        xServer.removeClient((XClient)client);
+        XClient xClient = (XClient)client;
+        xServer.selectionManager.releaseClientSelections(xClient);
+        xClient.freeResources();
+        xServer.removeClient(xClient);
     }
 }
