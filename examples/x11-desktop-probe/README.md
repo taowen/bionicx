@@ -2,7 +2,9 @@
 
 This genuine AArch64 glibc client links the desktop X11 libraries used by
 Chromium and Qt applications. It performs both version negotiation and one
-stateful request sequence for Render, XFixes, RandR, XInput2 and XKB. The XKB
+stateful request sequence for Render, XFixes, RandR, XInput2 and XKB. Its XI2
+sequence selects master input events on a window and reads the masks back.
+The XKB
 sequence includes selecting core-keyboard state notifications, reading its
 device metadata, and then reading a coherent keymap and keyboard-name set.
 MIT-SHM

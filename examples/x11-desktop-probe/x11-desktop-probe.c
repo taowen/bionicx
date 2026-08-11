@@ -129,7 +129,7 @@ static void probe_randr(Display *display, Window root) {
     result("randr", ok, detail);
 }
 
-static void probe_xinput2(Display *display) {
+static void probe_xinput2(Display *display, Window window) {
     int opcode = 0, event_base = 0, error_base = 0;
     if (!XQueryExtension(display, "XInputExtension", &opcode,
                          &event_base, &error_base)) {
@@ -148,12 +148,41 @@ static void probe_xinput2(Display *display) {
         master_keyboard |= devices[i].use == XIMasterKeyboard
                            && devices[i].attachment != devices[i].deviceid;
     }
+    unsigned char selected_mask[XIMaskLen(XI_LASTEVENT)] = {0};
+    XISetMask(selected_mask, XI_KeyPress);
+    XISetMask(selected_mask, XI_KeyRelease);
+    XISetMask(selected_mask, XI_ButtonPress);
+    XISetMask(selected_mask, XI_ButtonRelease);
+    XISetMask(selected_mask, XI_Motion);
+    XIEventMask selection = {
+        .deviceid = XIAllMasterDevices,
+        .mask_len = sizeof(selected_mask),
+        .mask = selected_mask,
+    };
+    int select_status = XISelectEvents(display, window, &selection, 1);
+    int selected_count = 0;
+    XIEventMask *selected = XIGetSelectedEvents(display, window, &selected_count);
+    bool selected_ok = false;
+    for (int i = 0; selected && i < selected_count; i++) {
+        if (selected[i].deviceid == XIAllMasterDevices
+            && XIMaskIsSet(selected[i].mask, XI_KeyPress)
+            && XIMaskIsSet(selected[i].mask, XI_KeyRelease)
+            && XIMaskIsSet(selected[i].mask, XI_ButtonPress)
+            && XIMaskIsSet(selected[i].mask, XI_ButtonRelease)
+            && XIMaskIsSet(selected[i].mask, XI_Motion)) {
+            selected_ok = true;
+        }
+    }
     ok = ok && devices && count >= 2 && master_pointer && master_keyboard
+         && select_status == Success && selected_ok
          && sync_without_error(display, before);
     if (devices) XIFreeDeviceInfo(devices);
-    char detail[96];
-    snprintf(detail, sizeof(detail), "version=%d.%d devices=%d masters=%d/%d",
-             major, minor, count, master_pointer, master_keyboard);
+    if (selected) XFree(selected);
+    char detail[128];
+    snprintf(detail, sizeof(detail),
+             "version=%d.%d devices=%d masters=%d/%d selected=%d masks=%d",
+             major, minor, count, master_pointer, master_keyboard,
+             selected_ok, selected_count);
     result("xinput2", ok, detail);
 }
 
@@ -247,7 +276,7 @@ int main(int argc, char **argv) {
     probe_render(display, window);
     probe_xfixes(display);
     probe_randr(display, root);
-    probe_xinput2(display);
+    probe_xinput2(display, window);
     probe_xkb(display);
     probe_optional_shm(display);
 

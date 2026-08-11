@@ -7,11 +7,15 @@ import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
+import com.winlator.xserver.Window;
 import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.errors.BadValue;
+import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
+
+import androidx.collection.ArrayMap;
 
 /** Minimal XI 2.0 master-device model backed by BionicX pointer and keyboard. */
 public class XInputExtension extends Extension {
@@ -29,8 +33,10 @@ public class XInputExtension extends Extension {
 
     private static abstract class ClientOpcodes {
         private static final byte GET_EXTENSION_VERSION = 1;
+        private static final byte XI_SELECT_EVENTS = 46;
         private static final byte XI_QUERY_VERSION = 47;
         private static final byte XI_QUERY_DEVICE = 48;
+        private static final byte XI_GET_SELECTED_EVENTS = 60;
     }
 
     public XInputExtension(XServer xServer, byte majorOpcode) {
@@ -137,6 +143,58 @@ public class XInputExtension extends Extension {
         }
     }
 
+    private static boolean validDeviceSelector(int deviceId) {
+        return deviceId == ALL_DEVICES || deviceId == ALL_MASTER_DEVICES
+                || deviceId == MASTER_POINTER_ID || deviceId == MASTER_KEYBOARD_ID;
+    }
+
+    private void selectEvents(XClient client, XInputStream inputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        int count = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        for (int i = 0; i < count; i++) {
+            int deviceId = inputStream.readUnsignedShort();
+            int maskWords = inputStream.readUnsignedShort();
+            if (!validDeviceSelector(deviceId) || maskWords > 8
+                    || maskWords * 4 > client.getRemainingRequestLength()) {
+                throw new BadValue(deviceId);
+            }
+            byte[] mask = new byte[maskWords * 4];
+            inputStream.read(mask);
+            client.setXiEventMask(window, deviceId, mask);
+        }
+    }
+
+    private void getSelectedEvents(XClient client, XInputStream inputStream,
+                                   XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        ArrayMap<Integer, byte[]> masks = client.getXiEventMasks(window);
+        int payloadBytes = 0;
+        for (int i = 0; i < masks.size(); i++) {
+            payloadBytes += 4 + masks.valueAt(i).length;
+        }
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.XI_GET_SELECTED_EVENTS);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(payloadBytes / 4);
+            outputStream.writeShort((short)masks.size());
+            outputStream.writePad(22);
+            for (int i = 0; i < masks.size(); i++) {
+                byte[] mask = masks.valueAt(i);
+                outputStream.writeShort((short)(int)masks.keyAt(i));
+                outputStream.writeShort((short)(mask.length / 4));
+                outputStream.write(mask);
+            }
+        }
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -145,11 +203,17 @@ public class XInputExtension extends Extension {
             case ClientOpcodes.GET_EXTENSION_VERSION:
                 getExtensionVersion(client, inputStream, outputStream);
                 break;
+            case ClientOpcodes.XI_SELECT_EVENTS:
+                selectEvents(client, inputStream);
+                break;
             case ClientOpcodes.XI_QUERY_VERSION:
                 queryVersion(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.XI_QUERY_DEVICE:
                 queryDevice(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.XI_GET_SELECTED_EVENTS:
+                getSelectedEvents(client, inputStream, outputStream);
                 break;
             default:
                 throw new BadImplementation();
