@@ -20,9 +20,10 @@ read-only RandR 1.3 topology:
 - both `GetScreenResources` 1.2 and `GetScreenResourcesCurrent` 1.3 use the same
   internally consistent snapshot.
 
-The extension does not yet claim output-info, CRTC-info, reconfiguration,
-monitor, or event-delivery support. Those operations require
-stronger controlled clients before they are enabled.
+Output-info, CRTC-info, output-property and event-selection support are added
+and verified in the follow-up `2026-08-12-randr-output-crtc-properties.md`.
+Reconfiguration, monitors and actual topology-change event delivery remain
+outside this fixed-display checkpoint.
 
 ## Device proof
 

@@ -25,6 +25,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
     private final ArrayMap<Window, EventListener> eventListeners = new ArrayMap<>();
     private final ArrayMap<Window, ArrayMap<Integer, byte[]>> xiEventMasks =
             new ArrayMap<>();
+    private final ArrayMap<Window, Integer> randrEventMasks = new ArrayMap<>();
     private final ArrayList<XResource> resources = new ArrayList<>();
     private final ArrayList<Callback<XClient>> onDestroyListeners = new ArrayList<>();
 
@@ -99,6 +100,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
                 eventListeners.keyAt(i).removeEventListener(eventListeners.removeAt(i));
             }
             xiEventMasks.clear();
+            randrEventMasks.clear();
 
             xServer.windowManager.removeOnResourceLifecycleListener(this);
             xServer.pixmapManager.removeOnResourceLifecycleListener(this);
@@ -173,6 +175,16 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
         return result;
     }
 
+    public void setRandrEventMask(Window window, int eventMask) {
+        if (eventMask == 0) randrEventMasks.remove(window);
+        else randrEventMasks.put(window, eventMask);
+    }
+
+    public int getRandrEventMask(Window window) {
+        Integer eventMask = randrEventMasks.get(window);
+        return eventMask != null ? eventMask : 0;
+    }
+
     public int getRemainingRequestLength() {
         int actualLength = initialLength - inputStream.available();
         return requestLength - actualLength;
@@ -200,6 +212,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
         if (resource instanceof Window) {
             eventListeners.remove(resource);
             xiEventMasks.remove(resource);
+            randrEventMasks.remove(resource);
         }
         resources.remove(resource);
     }

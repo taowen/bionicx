@@ -125,8 +125,26 @@ static void probe_randr(Display *display, Window root) {
     }
     int before = x_errors;
     bool ok = XRRQueryVersion(display, &major, &minor) != 0;
+    XRRSelectInput(display, root, RRScreenChangeNotifyMask |
+                   RRCrtcChangeNotifyMask | RROutputChangeNotifyMask |
+                   RROutputPropertyNotifyMask);
     XRRScreenResources *resources = XRRGetScreenResourcesCurrent(display, root);
     RROutput primary = XRRGetOutputPrimary(display, root);
+    XRROutputInfo *output_info = resources && resources->noutput > 0
+        ? XRRGetOutputInfo(display, resources, resources->outputs[0]) : NULL;
+    XRRCrtcInfo *crtc_info = resources && resources->ncrtc > 0
+        ? XRRGetCrtcInfo(display, resources, resources->crtcs[0]) : NULL;
+    Atom missing_property = XInternAtom(display, "BIONICX_MISSING_OUTPUT_PROPERTY", False);
+    Atom actual_type = None;
+    int actual_format = -1;
+    unsigned long property_items = 1, bytes_after = 1;
+    unsigned char *property_data = NULL;
+    int property_status = resources && resources->noutput > 0
+        ? XRRGetOutputProperty(display, resources->outputs[0], missing_property,
+                               0, 16, False, False, AnyPropertyType,
+                               &actual_type, &actual_format, &property_items,
+                               &bytes_after, &property_data)
+        : BadValue;
     bool primary_found = false;
     for (int i = 0; resources && i < resources->noutput; i++) {
         if (resources->outputs[i] == primary) primary_found = true;
@@ -139,17 +157,37 @@ static void probe_randr(Display *display, Window root) {
          && resources->modes[0].height
                 == (unsigned int)DisplayHeight(display, DefaultScreen(display))
          && resources->modes[0].nameLength > 0
+         && output_info && output_info->connection == RR_Connected
+         && output_info->crtc == resources->crtcs[0]
+         && output_info->mm_width > 0 && output_info->mm_height > 0
+         && output_info->nmode == 1 && output_info->npreferred == 1
+         && output_info->modes[0] == resources->modes[0].id
+         && crtc_info && crtc_info->x == 0 && crtc_info->y == 0
+         && crtc_info->width == resources->modes[0].width
+         && crtc_info->height == resources->modes[0].height
+         && crtc_info->mode == resources->modes[0].id
+         && crtc_info->rotation == RR_Rotate_0
+         && crtc_info->noutput == 1
+         && crtc_info->outputs[0] == resources->outputs[0]
+         && property_status == Success && actual_type == None
+         && actual_format == 0 && property_items == 0 && bytes_after == 0
+         && property_data == NULL
          && sync_without_error(display, before);
-    char detail[160];
+    char detail[240];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d crtcs=%d outputs=%d primary=0x%lx mode=%dx%d name=%.*s",
+             "version=%d.%d crtcs=%d outputs=%d primary=0x%lx mode=%dx%d name=%.*s output=%d crtc=%d empty-property=%d",
              major, minor, resources ? resources->ncrtc : 0,
              resources ? resources->noutput : 0,
              (unsigned long)primary,
              resources ? resources->modes[0].width : 0,
              resources ? resources->modes[0].height : 0,
              resources ? resources->modes[0].nameLength : 0,
-             resources ? resources->modes[0].name : "");
+             resources ? resources->modes[0].name : "",
+             output_info != NULL, crtc_info != NULL,
+             property_status == Success && actual_type == None);
+    if (property_data) XFree(property_data);
+    if (crtc_info) XRRFreeCrtcInfo(crtc_info);
+    if (output_info) XRRFreeOutputInfo(output_info);
     if (resources) XRRFreeScreenResources(resources);
     result("randr", ok, detail);
 }
