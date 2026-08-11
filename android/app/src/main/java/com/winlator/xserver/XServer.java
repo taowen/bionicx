@@ -215,6 +215,7 @@ public class XServer {
 
     public <T extends Extension> T getExtension(byte opcode) {
         int index = Extension.START_MAJOR_OPCODE - opcode;
+        if (index < 0 || index >= extensions.length) return null;
         return (T)extensions[index];
     }
 

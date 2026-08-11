@@ -438,6 +438,14 @@ public class XClientRequestHandler implements RequestHandler {
             }
         }
         catch (XRequestError e) {
+            if (e instanceof BadImplementation) {
+                Extension extension = client.xServer.getExtension(opcode);
+                String requestName = extension != null ? extension.getName() : "core";
+                Log.w(TAG, "unimplemented request=" + requestName
+                        + " major=" + (opcode & 0xff)
+                        + " minor=" + (requestData & 0xff)
+                        + " error=" + (e.getCode() & 0xff));
+            }
             client.skipRequest();
             e.sendError(client, opcode);
         }
