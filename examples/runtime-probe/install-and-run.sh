@@ -8,7 +8,9 @@ adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
 adb=("$adb_bin")
 [[ -z "$serial" ]] || adb+=( -s "$serial" )
 
-[[ -d "$bundle_dir" ]] || "$repo_dir/examples/runtime-probe/build-bundle.sh" "$bundle_dir"
+# The glibc build itself is content-addressed; always refresh this cheap bundle
+# layer so an existing directory cannot hide a newer runtime.
+"$repo_dir/examples/runtime-probe/build-bundle.sh" "$bundle_dir"
 install=("$repo_dir/tools/install-profile.sh"
     --profile "$repo_dir/profiles/runtime-probe.json"
     --app-root "$bundle_dir/app" --runtime-root "$bundle_dir/rootfs")

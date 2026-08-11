@@ -8,7 +8,8 @@ adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
 adb=("$adb_bin")
 [[ -z "$serial" ]] || adb+=( -s "$serial" )
 
-[[ -d "$bundle_dir" ]] || "$repo_dir/examples/x11-desktop-probe/build-bundle.sh" "$bundle_dir"
+# Refresh the linked desktop-library closure before every device installation.
+"$repo_dir/examples/x11-desktop-probe/build-bundle.sh" "$bundle_dir"
 install=("$repo_dir/tools/install-profile.sh"
     --profile "$repo_dir/profiles/x11-desktop-probe.json"
     --app-root "$bundle_dir/app" --runtime-root "$bundle_dir/rootfs")

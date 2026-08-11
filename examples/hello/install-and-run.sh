@@ -8,7 +8,9 @@ adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
 adb=("$adb_bin")
 [[ -z "$serial" ]] || adb+=( -s "$serial" )
 
-[[ -d "$bundle_dir" ]] || "$repo_dir/examples/hello/build-bundle.sh" "$bundle_dir"
+# Rebuild deterministically before installation. A directory-presence check can
+# silently reuse an older loader or libc after the runtime recipe changes.
+"$repo_dir/examples/hello/build-bundle.sh" "$bundle_dir"
 install=("$repo_dir/tools/install-profile.sh" --profile "$repo_dir/profiles/hello.json"
     --app-root "$bundle_dir/app" --runtime-root "$bundle_dir/rootfs")
 [[ -z "$serial" ]] || install+=(--serial "$serial")
