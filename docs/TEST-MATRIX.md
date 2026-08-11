@@ -26,7 +26,7 @@ counters. App profiles always run with diagnostics disabled for final proof.
 | glibc/Bionic bridge | `wps-compat-probe` | WPS SysV semaphore shim and sanitized Android-shell `popen` | 21/21 passing; Bionic shell output/exit status verified |
 | desktop services | `font-xft-probe`, WPS workflow plus planned probes | app-private Fontconfig discovery, separate regular/bold FreeType faces and real Xft rendering; deterministic Calibri/Cambria/Arial/Times aliases to static Liberation fonts; locale, MIME, D-Bus alternatives, audio | controlled Fontconfig/Xft 4/4 and WPS Latin regular/bold cold reopen pass; remaining services pending |
 | Chromium | real Chrome ARM64 | sandbox, zygote, SHM, network, TLS, GPU/software rendering | pending |
-| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer durable copy/paste and cold reopen pass; Spreadsheets creates/calculates/saves/cold-reopens valid OOXML; Presentation edits, saves, structurally verifies, presents full-screen, exits via Escape, and cold-reopens valid PPTX untraced; WPS PDF's legacy TIFF/WebP dependency closure and untraced home UI pass, with document rendering still pending |
+| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer durable copy/paste and cold reopen pass; Spreadsheets creates/calculates/saves/cold-reopens valid OOXML; Presentation edits, saves, structurally verifies, presents full-screen, exits via Escape, and cold-reopens valid PPTX untraced; WPS PDF opens a structurally checked two-page fixture, renders exact content, navigates, zooms, and cold-reopens untraced; PDF export remains pending |
 
 ## Upstream acceptance baseline
 

@@ -68,6 +68,20 @@ ANDROID_SERIAL=01408BH601027129 examples/wps/install-pdf-libs.sh
 No package manager or root access runs on Android. Downloads are cached below
 `build/downloads/`, and proprietary WPS files are not copied to the host.
 
+Generate and install the deterministic two-page PDF reading fixture, then
+verify the app-private copy's page count and exact extracted text:
+
+```sh
+ANDROID_SERIAL=01408BH601027129 examples/wps/install-pdf-fixture.sh
+ANDROID_SERIAL=01408BH601027129 \
+  examples/wps/verify-pdf.sh BionicX-PDF-Integration.pdf 2 \
+  'BionicX PDF Page 1' 'glibc + X11 on Android' \
+  'BionicX PDF Page 2' 'Navigation verified'
+```
+
+The test intentionally regenerates the tiny fixture instead of committing a
+binary. `pdfinfo` and `pdftotext` are required on the development host.
+
 WPS currently uses `direct` mode to preserve `/proc/self/exe`. Its `PT_INTERP`
 must therefore point at BionicX's app-private loader. When migrating the
 original POC, the old and new Android package prefixes have equal byte length,
