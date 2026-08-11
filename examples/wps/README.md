@@ -99,6 +99,21 @@ ANDROID_SERIAL=01408BH601027129 \
   --bold Bold_WPS_2026 --count BionicX_WPS_2026 2
 ```
 
+## Presentation save/reopen integration check
+
+After saving a title slide from Presentation, verify the actual PPTX and exact
+DrawingML text runs without root:
+
+```sh
+ANDROID_SERIAL=01408BH601027129 \
+  examples/wps/verify-pptx.sh BionicX-Presentation.pptx \
+  'BionicX Presentation' 'glibc and X11 on Android'
+```
+
+The verifier checks ZIP integrity, package roots, `ppt/presentation.xml`, and
+`ppt/slides/slide1.xml` before comparing exact `<a:t>` values. A screenshot or
+a non-empty file alone is not accepted as persistence.
+
 ## Deterministic Microsoft-font substitutes
 
 Android system images do not normally contain Calibri, Cambria, Arial, or
