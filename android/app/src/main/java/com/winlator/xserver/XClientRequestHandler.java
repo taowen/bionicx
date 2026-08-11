@@ -398,6 +398,9 @@ public class XClientRequestHandler implements RequestHandler {
                     case ClientOpcodes.QUERY_EXTENSION:
                         ExtensionRequests.queryExtension(client, inputStream, outputStream);
                         break;
+                    case ClientOpcodes.LIST_EXTENSIONS:
+                        ExtensionRequests.listExtensions(client, outputStream);
+                        break;
                     case ClientOpcodes.GET_KEYBOARD_MAPPING:
                         try (XLock lock = client.xServer.lock(XServer.Lockable.INPUT_DEVICE)) {
                             KeyboardRequests.getKeyboardMapping(client, inputStream, outputStream);

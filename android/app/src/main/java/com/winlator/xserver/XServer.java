@@ -140,6 +140,12 @@ public class XServer {
         return null;
     }
 
+    public String[] getExtensionNames() {
+        String[] names = new String[extensions.length];
+        for (int i = 0; i < extensions.length; i++) names[i] = extensions[i].getName();
+        return names;
+    }
+
     public void injectPointerMove(int x, int y) {
         try (XLock lock = lock(Lockable.WINDOW_MANAGER, Lockable.INPUT_DEVICE)) {
             pointer.setPosition(x, y);

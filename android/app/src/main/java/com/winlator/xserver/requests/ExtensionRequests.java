@@ -12,6 +12,26 @@ import com.winlator.xserver.extensions.Extension;
 import java.io.IOException;
 
 public abstract class ExtensionRequests {
+    public static void listExtensions(XClient client, XOutputStream outputStream) throws IOException {
+        String[] names = client.xServer.getExtensionNames();
+        int payloadLength = 0;
+        for (String name : names) payloadLength += 1 + name.length();
+        int padding = -payloadLength & 3;
+
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)names.length);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt((payloadLength + padding) / 4);
+            outputStream.writePad(24);
+            for (String name : names) {
+                outputStream.writeByte((byte)name.length());
+                outputStream.write(name.getBytes(client.xServer.LATIN1_CHARSET));
+            }
+            if (padding > 0) outputStream.writePad(padding);
+        }
+    }
+
     public static void queryExtension(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
         short length = inputStream.readShort();
         inputStream.skip(2);
