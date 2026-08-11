@@ -51,6 +51,12 @@ podman run --rm --pull=newer --network host \
             native/compat/wps-compat.c \
             -o android/app/src/main/assets/bionicx/lib/libbionicx-wps.so \
             -ldl -pthread
+        aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
+            native/compat/sigsys-report.c \
+            -o android/app/src/main/assets/bionicx/lib/libbionicx-sigsys-report.so
+        aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
+            native/compat/android-seccomp.c \
+            -o android/app/src/main/assets/bionicx/lib/libbionicx-android-seccomp.so
     '
 
 cp "$repo_dir/profiles/hello.json" "$assets_dir/profiles/default.json"
@@ -60,5 +66,8 @@ cp "$android_dir/app/build/outputs/apk/debug/app-debug.apk" \
     "$repo_dir/build/bionicx-debug.apk"
 
 sha256sum "$assets_dir/bin/bionicx-exec" \
-    "$assets_dir/lib/libbionicx-wps.so" "$repo_dir/build/bionicx-relocate" \
+    "$assets_dir/lib/libbionicx-wps.so" \
+    "$assets_dir/lib/libbionicx-sigsys-report.so" \
+    "$assets_dir/lib/libbionicx-android-seccomp.so" \
+    "$repo_dir/build/bionicx-relocate" \
     "$repo_dir/build/bionicx-debug.apk"
