@@ -6,6 +6,8 @@ a native ARM64 Debian userspace, and rejects any package-set drift from
 `dependencies.lock`. Application ELFs receive the app-private glibc
 interpreter. The dependency closure includes explicit NSS runtime modules that
 ordinary `DT_NEEDED` traversal cannot discover.
+GTK's architecture-independent GSettings XML is compiled into the private app
+tree so Chrome does not require a host `/usr/share` or dconf session service.
 
 ```sh
 examples/chrome/build-bundle.sh

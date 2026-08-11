@@ -36,6 +36,8 @@
       "GNOME_DISABLE_CRASH_DIALOG": "SET_BY_GOOGLE_CHROME",
       "FONTCONFIG_PATH": "${APP}/etc/fonts",
       "FONTCONFIG_FILE": "fonts.conf",
+      "GSETTINGS_SCHEMA_DIR": "${APP}/share/glib-2.0/schemas",
+      "GSETTINGS_BACKEND": "memory",
       "LD_LIBRARY_PATH": "${APP}/lib:${APP}/opt/google/chrome:${RUNTIME}/usr/lib",
       "LANG": "C"
     }

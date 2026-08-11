@@ -90,9 +90,12 @@ podman run --rm --userns=keep-id \
     '
 
 mkdir -p "$output_dir/app/opt/google" "$output_dir/app/etc/fonts" \
-    "$output_dir/app/lib"
+    "$output_dir/app/lib" "$output_dir/app/share/glib-2.0"
 cp -a "$temporary/extracted/opt/google/chrome" "$output_dir/app/opt/google/"
 cp "$repo_dir/examples/chrome/fonts.conf" "$output_dir/app/etc/fonts/fonts.conf"
+cp -a "$temporary/extracted/usr/share/glib-2.0/schemas" \
+    "$output_dir/app/share/glib-2.0/"
+glib-compile-schemas "$output_dir/app/share/glib-2.0/schemas"
 
 interpreter=/data/data/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
 while IFS= read -r executable; do
@@ -140,6 +143,7 @@ done
     sha256sum "$lock_file" | cut -d' ' -f1
     printf 'runtime_modules=%s\n' "${runtime_modules[*]}"
     (cd "$output_dir" && find app/opt/google/chrome app/lib \
+        app/share/glib-2.0/schemas \
         -type f -exec sha256sum {} + | sort -k2)
 } > "$output_dir/BUILD-INFO"
 echo "$output_dir"
