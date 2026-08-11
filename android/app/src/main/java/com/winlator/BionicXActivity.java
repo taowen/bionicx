@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import com.winlator.bionicx.AppProfile;
 import com.winlator.core.AppUtils;
+import com.winlator.core.NetworkHelper;
 import com.winlator.widget.TouchpadView;
 import com.winlator.widget.XServerView;
 import com.winlator.xconnector.UnixSocketConfig;
@@ -120,6 +121,13 @@ public final class BionicXActivity extends Activity {
                 command.add("--env");
                 command.add(variable.getKey() + "="
                         + profile.expand(this, variable.getValue()));
+            }
+            if (profile.compatibility.contains("android-dns")
+                    && !profile.environment.containsKey("BIONICX_DNS_SERVERS")) {
+                List<String> servers = new NetworkHelper(this).getIPv4DnsServers();
+                Log.i(TAG, "discovered " + servers.size() + " IPv4 DNS server(s)");
+                command.add("--env");
+                command.add("BIONICX_DNS_SERVERS=" + String.join(",", servers));
             }
             if (!profile.compatibility.isEmpty()) {
                 List<String> preloads = new ArrayList<>();

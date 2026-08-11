@@ -81,6 +81,19 @@ public class NetworkHelper {
         return result;
     }
 
+    public List<String> getIPv4DnsServers() {
+        ArrayList<String> result = new ArrayList<>();
+        Network activeNetwork = connectivityManager.getActiveNetwork();
+        if (activeNetwork == null) return result;
+
+        LinkProperties linkProperties = connectivityManager.getLinkProperties(activeNetwork);
+        if (linkProperties == null) return result;
+        for (InetAddress address : linkProperties.getDnsServers()) {
+            if (address instanceof Inet4Address) result.add(address.getHostAddress());
+        }
+        return result;
+    }
+
     public static String formatIpAddress(int ipAddress) {
         return (ipAddress & 255)+"."+((ipAddress >> 8) & 255)+"."+((ipAddress >> 16) & 255)+"."+((ipAddress >> 24) & 255);
     }

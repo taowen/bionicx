@@ -58,6 +58,10 @@ podman run --rm --pull=newer --network host \
             native/compat/android-seccomp.c \
             -o android/app/src/main/assets/bionicx/lib/libbionicx-android-seccomp.so
         aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
+            native/compat/android-dns.c \
+            -o android/app/src/main/assets/bionicx/lib/libbionicx-android-dns.so \
+            -ldl
+        aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
             native/compat/chrome.c \
             -o android/app/src/main/assets/bionicx/lib/libbionicx-chrome.so \
             -ldl
@@ -73,6 +77,7 @@ sha256sum "$assets_dir/bin/bionicx-exec" \
     "$assets_dir/lib/libbionicx-wps.so" \
     "$assets_dir/lib/libbionicx-sigsys-report.so" \
     "$assets_dir/lib/libbionicx-android-seccomp.so" \
+    "$assets_dir/lib/libbionicx-android-dns.so" \
     "$assets_dir/lib/libbionicx-chrome.so" \
     "$repo_dir/build/bionicx-relocate" \
     "$repo_dir/build/bionicx-debug.apk"

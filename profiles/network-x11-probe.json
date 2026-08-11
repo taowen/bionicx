@@ -1,0 +1,22 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "network-x11-probe",
+  "name": "BionicX glibc DNS/network/X11 probe",
+  "display": {"dpi": 144, "socket": "filesystem"},
+  "compatibility": ["android-dns"],
+  "launch": {
+    "mode": "loader",
+    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
+    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
+    "executable": "${APP}/bin/network-x11-probe",
+    "workingDirectory": "${APP}",
+    "arguments": ["--host", "example.com", "--duration", "3"],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LANG": "C"
+    }
+  }
+}

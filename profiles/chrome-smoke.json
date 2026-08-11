@@ -4,7 +4,7 @@
   "id": "chrome",
   "name": "Google Chrome stable ARM64 smoke test",
   "display": {"dpi": 144, "socket": "filesystem"},
-  "compatibility": ["android-seccomp", "chrome"],
+  "compatibility": ["android-seccomp", "android-dns", "chrome"],
   "launch": {
     "mode": "direct",
     "executable": "${APP}/opt/google/chrome/chrome",
