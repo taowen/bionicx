@@ -38,3 +38,6 @@ The same cold-start/OpenFile path no longer emits XFixes minor 21 and remains
 interactive. `evidence/wps-xfixes-input-shape.log` retains the remaining minor
 2 requests, making the absence of 21 auditable without claiming the other
 selection-notification operation is implemented.
+
+That remaining request is implemented and verified in the follow-up
+`2026-08-12-xfixes-selection-notify.md`.

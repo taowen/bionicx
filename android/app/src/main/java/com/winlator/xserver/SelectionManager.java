@@ -4,8 +4,15 @@ import android.util.SparseArray;
 
 import com.winlator.xserver.events.SelectionClear;
 
+import java.util.ArrayList;
+
 public class SelectionManager implements XResourceManager.OnResourceLifecycleListener {
     private final SparseArray<Selection> selections = new SparseArray<>();
+    private final ArrayList<OnSelectionModificationListener> listeners = new ArrayList<>();
+
+    public interface OnSelectionModificationListener {
+        void onSetSelectionOwner(int atom, Window owner, int timestamp);
+    }
 
     public SelectionManager(WindowManager windowManager) {
         windowManager.addOnResourceLifecycleListener(this);
@@ -23,6 +30,13 @@ public class SelectionManager implements XResourceManager.OnResourceLifecycleLis
         }
         selection.owner = owner;
         selection.client = client;
+        for (int i = listeners.size() - 1; i >= 0; i--) {
+            listeners.get(i).onSetSelectionOwner(atom, owner, timestamp);
+        }
+    }
+
+    public void addOnSelectionModificationListener(OnSelectionModificationListener listener) {
+        if (!listeners.contains(listener)) listeners.add(listener);
     }
 
     public Selection getSelection(int atom) {

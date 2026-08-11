@@ -11,8 +11,13 @@ import com.winlator.xconnector.XStreamLock;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.Window;
+import com.winlator.xserver.Atom;
+import com.winlator.xserver.SelectionManager;
+import com.winlator.xserver.events.XFixesSelectionNotify;
+import com.winlator.xserver.errors.BadAtom;
 import com.winlator.xserver.errors.BadIdChoice;
 import com.winlator.xserver.errors.BadImplementation;
+import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
 
@@ -30,10 +35,12 @@ public class XFixesExtension extends Extension {
     private final SparseArray<Region> regions = new SparseArray<>();
     private final IdentityHashMap<XClient, ArrayList<Integer>> clientRegions =
             new IdentityHashMap<>();
-    private final Callback<XClient> onClientDestroy = this::freeClientRegions;
+    private final ArrayList<SelectionInput> selectionInputs = new ArrayList<>();
+    private final Callback<XClient> onClientDestroy = this::freeClientState;
 
     private static abstract class ClientOpcodes {
         private static final byte QUERY_VERSION = 0;
+        private static final byte SELECT_SELECTION_INPUT = 2;
         private static final byte CREATE_REGION = 5;
         private static final byte DESTROY_REGION = 10;
         private static final byte FETCH_REGION = 19;
@@ -62,8 +69,23 @@ public class XFixesExtension extends Extension {
         }
     }
 
+    private static final class SelectionInput {
+        private final XClient client;
+        private final Window window;
+        private final int selection;
+        private int eventMask;
+
+        private SelectionInput(XClient client, Window window, int selection, int eventMask) {
+            this.client = client;
+            this.window = window;
+            this.selection = selection;
+            this.eventMask = eventMask;
+        }
+    }
+
     public XFixesExtension(XServer xServer, byte majorOpcode) {
         super(xServer, majorOpcode);
+        xServer.selectionManager.addOnSelectionModificationListener(this::onSetSelectionOwner);
     }
 
     @Override
@@ -137,11 +159,63 @@ public class XFixesExtension extends Extension {
         }
     }
 
-    private void freeClientRegions(XClient client) {
+    private void freeClientState(XClient client) {
         synchronized (regions) {
             ArrayList<Integer> owned = clientRegions.remove(client);
             if (owned == null) return;
             for (int id : owned) regions.remove(id);
+        }
+        synchronized (selectionInputs) {
+            selectionInputs.removeIf(input -> input.client == client);
+        }
+    }
+
+    private void selectSelectionInput(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        int selection = inputStream.readInt();
+        int eventMask = inputStream.readInt();
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        if (!Atom.isValid(selection)) throw new BadAtom(selection);
+        // SetSelectionOwner notifications have a complete producer below.
+        // Reject the destroy/close masks until their distinct lifecycle
+        // reasons can be preserved by SelectionManager.
+        if ((eventMask & ~0x1) != 0) throw new BadValue(eventMask);
+
+        synchronized (selectionInputs) {
+            SelectionInput existing = null;
+            for (SelectionInput input : selectionInputs) {
+                if (input.client == client && input.window == window
+                        && input.selection == selection) {
+                    existing = input;
+                    break;
+                }
+            }
+            if (eventMask == 0) {
+                if (existing != null) selectionInputs.remove(existing);
+            }
+            else if (existing != null) {
+                existing.eventMask = eventMask;
+            }
+            else {
+                selectionInputs.add(new SelectionInput(client, window, selection, eventMask));
+                client.addOnDestroyListener(onClientDestroy);
+            }
+        }
+    }
+
+    private void onSetSelectionOwner(int selection, Window owner, int selectionTimestamp) {
+        ArrayList<SelectionInput> snapshot;
+        synchronized (selectionInputs) {
+            snapshot = new ArrayList<>(selectionInputs);
+        }
+        for (SelectionInput input : snapshot) {
+            if (input.selection == selection && (input.eventMask & 1) != 0) {
+                input.client.sendEvent(new XFixesSelectionNotify(
+                        Byte.toUnsignedInt(FIRST_EVENT), 0, input.window.id,
+                        owner != null ? owner.id : 0, selection, selectionTimestamp));
+            }
         }
     }
 
@@ -233,6 +307,9 @@ public class XFixesExtension extends Extension {
         switch (client.getRequestData()) {
             case ClientOpcodes.QUERY_VERSION:
                 queryVersion(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SELECT_SELECTION_INPUT:
+                selectSelectionInput(client, inputStream);
                 break;
             case ClientOpcodes.CREATE_REGION:
                 createRegion(client, inputStream);

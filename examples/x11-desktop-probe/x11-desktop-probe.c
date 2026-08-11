@@ -82,6 +82,10 @@ static void probe_xfixes(Display *display, Window window) {
     }
     int before = x_errors;
     bool ok = XFixesQueryVersion(display, &major, &minor) != 0;
+    Atom clipboard = XInternAtom(display, "CLIPBOARD", False);
+    XFixesSelectSelectionInput(display, window, clipboard,
+                              XFixesSetSelectionOwnerNotifyMask);
+    XSetSelectionOwner(display, clipboard, window, CurrentTime);
     XRectangle source = {.x = 7, .y = 9, .width = 31, .height = 37};
     XserverRegion region = XFixesCreateRegion(display, &source, 1);
     int count = 0;
@@ -97,9 +101,19 @@ static void probe_xfixes(Display *display, Window window) {
     if (region) XFixesDestroyRegion(display, region);
     if (input_region) XFixesDestroyRegion(display, input_region);
     ok = ok && input_region && sync_without_error(display, before);
-    char detail[96];
-    snprintf(detail, sizeof(detail), "version=%d.%d rectangles=%d",
-             major, minor, count);
+    XEvent selection_event = {0};
+    bool selection_notify = XCheckTypedEvent(
+        display, event_base + XFixesSelectionNotify, &selection_event);
+    XFixesSelectionNotifyEvent *notify =
+        selection_notify ? (XFixesSelectionNotifyEvent *)&selection_event : NULL;
+    selection_notify = selection_notify && notify->subtype == XFixesSetSelectionOwnerNotify
+        && notify->window == window && notify->owner == window
+        && notify->selection == clipboard;
+    ok = ok && selection_notify;
+    char detail[128];
+    snprintf(detail, sizeof(detail),
+             "version=%d.%d rectangles=%d selection-notify=%d",
+             major, minor, count, selection_notify);
     result("xfixes", ok, detail);
 }
 
