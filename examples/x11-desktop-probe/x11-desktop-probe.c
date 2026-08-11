@@ -101,8 +101,14 @@ static void probe_randr(Display *display, Window root) {
     int before = x_errors;
     bool ok = XRRQueryVersion(display, &major, &minor) != 0;
     XRRScreenResources *resources = XRRGetScreenResourcesCurrent(display, root);
+    RROutput primary = XRRGetOutputPrimary(display, root);
+    bool primary_found = false;
+    for (int i = 0; resources && i < resources->noutput; i++) {
+        if (resources->outputs[i] == primary) primary_found = true;
+    }
     ok = ok && resources && resources->ncrtc > 0 && resources->noutput > 0
          && resources->nmode > 0
+         && primary != None && primary_found
          && resources->modes[0].width
                 == (unsigned int)DisplayWidth(display, DefaultScreen(display))
          && resources->modes[0].height
@@ -111,9 +117,10 @@ static void probe_randr(Display *display, Window root) {
          && sync_without_error(display, before);
     char detail[160];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d crtcs=%d outputs=%d mode=%dx%d name=%.*s",
+             "version=%d.%d crtcs=%d outputs=%d primary=0x%lx mode=%dx%d name=%.*s",
              major, minor, resources ? resources->ncrtc : 0,
              resources ? resources->noutput : 0,
+             (unsigned long)primary,
              resources ? resources->modes[0].width : 0,
              resources ? resources->modes[0].height : 0,
              resources ? resources->modes[0].nameLength : 0,

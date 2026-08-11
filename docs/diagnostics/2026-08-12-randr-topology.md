@@ -15,12 +15,13 @@ read-only RandR 1.3 topology:
 - one CRTC;
 - one output;
 - one mode named `BionicX-0`;
+- the single output returned as the screen's primary output;
 - mode width and height taken directly from `XServer.screenInfo`;
 - both `GetScreenResources` 1.2 and `GetScreenResourcesCurrent` 1.3 use the same
   internally consistent snapshot.
 
 The extension does not yet claim output-info, CRTC-info, reconfiguration,
-primary-output, monitor, or event-delivery support. Those operations require
+monitor, or event-delivery support. Those operations require
 stronger controlled clients before they are enabled.
 
 ## Device proof
@@ -35,3 +36,16 @@ BXSUMMARY desktop-x11 passed=3 failed=2 xerrors=0
 
 The untraced x300 result is retained in
 `evidence/x11-desktop-probe-randr.log`.
+
+## Primary-output follow-up
+
+Real WPS subsequently emitted `failed to get the primary output of the screen`.
+The probe now calls `XRRGetOutputPrimary` and requires the returned XID to occur
+in the same screen-resource output list. After implementing request 31:
+
+```text
+BXTEST PASS randr version=1.3 crtcs=1 outputs=1 primary=0x7 mode=1920x1080 name=BionicX-0
+```
+
+`evidence/wps-randr-primary-fixed.log` no longer contains the WPS primary-output
+warning; its two remaining messages are XKB requests handled separately.

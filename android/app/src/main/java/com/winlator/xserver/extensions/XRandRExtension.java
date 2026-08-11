@@ -31,6 +31,7 @@ public class XRandRExtension extends Extension {
         private static final byte QUERY_VERSION = 0;
         private static final byte GET_SCREEN_RESOURCES = 8;
         private static final byte GET_SCREEN_RESOURCES_CURRENT = 25;
+        private static final byte GET_OUTPUT_PRIMARY = 31;
     }
 
     public XRandRExtension(XServer xServer, byte majorOpcode) {
@@ -115,6 +116,22 @@ public class XRandRExtension extends Extension {
         }
     }
 
+    private void getOutputPrimary(XClient client, XInputStream inputStream,
+                                  XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        if (xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(outputId);
+            outputStream.writePad(20);
+        }
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -126,6 +143,9 @@ public class XRandRExtension extends Extension {
             case ClientOpcodes.GET_SCREEN_RESOURCES:
             case ClientOpcodes.GET_SCREEN_RESOURCES_CURRENT:
                 getScreenResources(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_OUTPUT_PRIMARY:
+                getOutputPrimary(client, inputStream, outputStream);
                 break;
             default:
                 throw new BadImplementation();
