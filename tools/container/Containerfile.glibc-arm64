@@ -8,6 +8,8 @@ RUN dpkg --add-architecture arm64 \
         gcc-aarch64-linux-gnu \
         gawk \
         libc6-dev-arm64-cross \
+        libfontconfig1-dev:arm64 \
+        libfreetype-dev:arm64 \
         libx11-dev:arm64 \
         libx11-xcb-dev:arm64 \
         libxext-dev:arm64 \
@@ -15,7 +17,9 @@ RUN dpkg --add-architecture arm64 \
         libxi-dev:arm64 \
         libxrandr-dev:arm64 \
         libxrender-dev:arm64 \
+        libxft-dev:arm64 \
         libxkbcommon-x11-dev:arm64 \
+        fonts-liberation \
         make \
         patch \
         python3 \

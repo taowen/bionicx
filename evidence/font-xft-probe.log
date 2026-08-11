@@ -1,0 +1,7 @@
+08-12 03:10:44.531 28792 28792 I BionicX : profile=font-xft-probe display=1920x1080@144 socket=filesystem
+08-12 03:10:44.540 28792 28820 I BionicX : launching BionicX Fontconfig and Xft probe: [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --loader, /data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1, --library-path, /data/user/0/io.taowen.bx/files/apps/font-xft-probe/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib, --cwd, /data/user/0/io.taowen.bx/files/apps/font-xft-probe, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/font-xft-probe, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/font-xft-probe, --env, LANG=en_US.UTF-8, --env, LOCPATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/locale, --, /data/user/0/io.taowen.bx/files/apps/font-xft-probe/bin/font-xft-probe, /data/user/0/io.taowen.bx/files/apps/font-xft-probe/share/fonts, 8]
+08-12 03:10:44.636 28792 28820 I BionicX : BXFONT match file=/data/user/0/io.taowen.bx/files/apps/font-xft-probe/share/fonts/LiberationSans-Regular.ttf style=Regular a8=0x5
+08-12 03:10:44.636 28792 28820 I BionicX : BXFONT regular file=/data/user/0/io.taowen.bx/files/apps/font-xft-probe/share/fonts/LiberationSans-Regular.ttf style=Regular
+08-12 03:10:44.636 28792 28820 I BionicX : BXFONT bold file=/data/user/0/io.taowen.bx/files/apps/font-xft-probe/share/fonts/LiberationSans-Bold.ttf style=Bold
+08-12 03:10:44.636 28792 28820 I BionicX : BXTEST PASS font-xft checks=4/4 display=:0
+08-12 03:10:52.638 28792 28820 I BionicX : font-xft-probe exited with 0

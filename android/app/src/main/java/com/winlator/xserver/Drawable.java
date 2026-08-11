@@ -167,6 +167,40 @@ public class Drawable extends XResource {
         forceUpdate();
     }
 
+    /** Blends an unpacked 8-bit alpha glyph mask over this 32-bit drawable. */
+    public void blendAlphaMask(int x, int y, int width, int height,
+                               byte[] alpha, int sourceColor) {
+        if (data == null || visual == null || visual.depth != 32) return;
+        int stride = getStride();
+        int sourceAlpha = (sourceColor >>> 24) & 0xff;
+        if (sourceAlpha == 0) sourceAlpha = 0xff;
+        synchronized (renderLock) {
+            for (int row = 0; row < height; row++) {
+                int dstY = y + row;
+                if (dstY < 0 || dstY >= this.height) continue;
+                for (int column = 0; column < width; column++) {
+                    int dstX = x + column;
+                    if (dstX < 0 || dstX >= this.width) continue;
+                    int mask = Byte.toUnsignedInt(alpha[row * width + column]);
+                    int a = (mask * sourceAlpha + 127) / 255;
+                    if (a == 0) continue;
+                    int offset = (dstY * stride + dstX) * 4;
+                    int destination = data.getInt(offset);
+                    int inverse = 255 - a;
+                    int red = (((sourceColor >>> 16) & 0xff) * a
+                            + ((destination >>> 16) & 0xff) * inverse + 127) / 255;
+                    int green = (((sourceColor >>> 8) & 0xff) * a
+                            + ((destination >>> 8) & 0xff) * inverse + 127) / 255;
+                    int blue = ((sourceColor & 0xff) * a
+                            + (destination & 0xff) * inverse + 127) / 255;
+                    data.putInt(offset, 0xff000000 | (red << 16) | (green << 8) | blue);
+                }
+            }
+            data.rewind();
+        }
+        forceUpdate();
+    }
+
     public void drawLines(int color, int lineWidth, short... points) {
         for (int i = 2; i < points.length; i += 2) {
             drawLine(points[i-2], points[i-1], points[i+0], points[i+1], color, (short)lineWidth);
