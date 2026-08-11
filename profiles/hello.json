@@ -1,0 +1,20 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "hello-x11",
+  "name": "BionicX Xlib hello",
+  "display": {"dpi": 144, "socket": "filesystem"},
+  "launch": {
+    "mode": "loader",
+    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
+    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
+    "executable": "${APP}/bin/hello-x11",
+    "workingDirectory": "${APP}",
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LANG": "C.UTF-8"
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/taowen/bionicx/schemas/profile.schema.json",
+  "title": "BionicX application profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "launch"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+    "name": {"type": "string", "minLength": 1},
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dpi": {"type": "integer", "minimum": 72, "maximum": 400},
+        "socket": {"enum": ["abstract", "filesystem"]}
+      }
+    },
+    "compatibility": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$"}
+    },
+    "launch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable"],
+      "properties": {
+        "mode": {"enum": ["direct", "loader"]},
+        "loader": {"type": "string"},
+        "libraryPath": {"type": "string"},
+        "executable": {"type": "string", "minLength": 1},
+        "workingDirectory": {"type": "string", "minLength": 1},
+        "argv0": {"type": "string"},
+        "diagnoseSignals": {"type": "boolean"},
+        "debugStop": {"type": "boolean"},
+        "arguments": {"type": "array", "items": {"type": "string"}},
+        "environment": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+          "additionalProperties": {"type": "string"}
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"mode": {"const": "loader"}}},
+          "then": {"required": ["loader", "libraryPath"]}
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    echo "usage: $0 --profile FILE [--app-root DIR] [--runtime-root DIR] [--serial SERIAL]" >&2
+}
+
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
+package="io.taowen.bx"
+profile=""
+app_root=""
+runtime_root=""
+serial="${ANDROID_SERIAL:-}"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --profile) profile="$2"; shift 2 ;;
+        --app-root) app_root="$2"; shift 2 ;;
+        --runtime-root) runtime_root="$2"; shift 2 ;;
+        --serial) serial="$2"; shift 2 ;;
+        *) usage; exit 2 ;;
+    esac
+done
+[[ -f "$profile" ]] || { usage; exit 2; }
+
+python3 "$repo_dir/tools/validate-profile.py" "$profile"
+profile_id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["id"])' "$profile")"
+adb=("$adb_bin")
+[[ -z "$serial" ]] || adb+=( -s "$serial" )
+
+"${adb[@]}" shell run-as "$package" mkdir -p \
+    "files/profiles" "files/apps/$profile_id" "files/rootfs"
+
+if [[ -n "$app_root" ]]; then
+    [[ -d "$app_root" ]] || { echo "missing app root: $app_root" >&2; exit 1; }
+    tar -C "$app_root" -cf - . | \
+        "${adb[@]}" shell run-as "$package" tar -C "files/apps/$profile_id" -xf -
+fi
+if [[ -n "$runtime_root" ]]; then
+    [[ -d "$runtime_root" ]] || { echo "missing runtime root: $runtime_root" >&2; exit 1; }
+    tar -C "$runtime_root" -cf - . | \
+        "${adb[@]}" shell run-as "$package" tar -C files/rootfs -xf -
+fi
+
+temporary="/data/local/tmp/bionicx-profile-$$.json"
+"${adb[@]}" push "$profile" "$temporary" >/dev/null
+"${adb[@]}" shell run-as "$package" cp "$temporary" files/profiles/active.json
+"${adb[@]}" shell rm "$temporary"
+echo "installed profile $profile_id for $package"

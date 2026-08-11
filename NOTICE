@@ -1,0 +1,10 @@
+BionicX includes modified source code from Winlator's Android application and
+in-process X server:
+
+  Project: https://github.com/brunodev85/winlator-app
+  Source snapshot: c2f4ad4534f4637b543a9a3b085e28f50cf6d01c
+  License: GNU Lesser General Public License v2.1
+
+The Winlator-derived files remain under LGPL-2.1. Additional third-party
+notices and licenses are retained in the Android source tree. BionicX does not
+redistribute WPS Office or a glibc root filesystem.
