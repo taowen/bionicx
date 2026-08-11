@@ -17,7 +17,7 @@ command -v patchelf >/dev/null || {
     exit 1
 }
 
-for entrypoint in wps et wpp; do
+for entrypoint in wps et wpp wpspdf; do
     source_file="$work_dir/$entrypoint"
     "${adb[@]}" exec-out run-as "$package" cat "$office/$entrypoint" \
         > "$source_file"

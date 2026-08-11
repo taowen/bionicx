@@ -42,8 +42,9 @@ ANDROID_SERIAL=01408BH601027129 examples/wps/install-entrypoints.sh
 ```
 
 Then select `profiles/wps-office.json` for Writer,
-`profiles/wps-spreadsheets.json` for Spreadsheets, or
-`profiles/wps-presentation.json` for Presentation. All profiles deliberately
+`profiles/wps-spreadsheets.json` for Spreadsheets,
+`profiles/wps-presentation.json` for Presentation, or `profiles/wps-pdf.json`
+for PDF. All profiles deliberately
 share the `wps-office` application ID, app tree, HOME, and compatibility module;
 only the selected entry ELF and `argv[0]` differ. Proprietary WPS files are read
 from and written back to the user's installed Android app-private tree and are
@@ -54,6 +55,18 @@ WPS 11.1.0.11720's Presentation serializer uses that relative directory in its
 PPTX temporary-file template under the profile's `LANG=C`; see the retained
 [diagnosis](../../docs/diagnostics/2026-08-12-wps-file-trace.md). This narrow
 deployment provision avoids changing `mkstemp` behavior for other clients.
+
+WPS PDF additionally needs the legacy TIFF/WebP ABI selected by the Pi-Apps
+installation baseline. Download the pinned Debian ARM64 packages, verify their
+hashes, and install only their runtime libraries into the app-private glibc
+tree:
+
+```sh
+ANDROID_SERIAL=01408BH601027129 examples/wps/install-pdf-libs.sh
+```
+
+No package manager or root access runs on Android. Downloads are cached below
+`build/downloads/`, and proprietary WPS files are not copied to the host.
 
 WPS currently uses `direct` mode to preserve `/proc/self/exe`. Its `PT_INTERP`
 must therefore point at BionicX's app-private loader. When migrating the
