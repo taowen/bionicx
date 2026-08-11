@@ -131,11 +131,15 @@ public class XKeyboardExtension extends Extension {
         return totalKeysyms;
     }
 
-    private int getMapVariableBytes() {
-        int typeBytes = 8 + 16 + 32 + 16;
-        return typeBytes + Keyboard.KEYS_COUNT * 8
-                + getTotalKeysyms() * 4 + Keyboard.KEYS_COUNT
-                + MODIFIER_ACTION_COUNT * 8;
+    private int getMapVariableBytes(int present) {
+        int bytes = 0;
+        if ((present & XKB_KEY_TYPES_MASK) != 0)
+            bytes += 8 + 16 + 32 + 16;
+        if ((present & XKB_KEY_SYMS_MASK) != 0)
+            bytes += Keyboard.KEYS_COUNT * 8 + getTotalKeysyms() * 4;
+        if ((present & XKB_KEY_ACTIONS_MASK) != 0)
+            bytes += Keyboard.KEYS_COUNT + MODIFIER_ACTION_COUNT * 8;
+        return bytes;
     }
 
     private int getModifierActionMask(int keycode) {
@@ -162,11 +166,15 @@ public class XKeyboardExtension extends Extension {
         return keycode == 66 || keycode == 77;
     }
 
-    private void writeMapReply(XClient client, XOutputStream outputStream) {
-        int present = XKB_XKBCOMMON_MAP_MASK;
+    private void writeMapReply(XClient client, XOutputStream outputStream,
+                               int requested) {
+        int present = requested & XKB_XKBCOMMON_MAP_MASK;
         int totalKeysyms = getTotalKeysyms();
-        int variableBytes = getMapVariableBytes();
+        int variableBytes = getMapVariableBytes(present);
         int replyLength = (8 + variableBytes) / 4;
+        boolean hasTypes = (present & XKB_KEY_TYPES_MASK) != 0;
+        boolean hasKeySyms = (present & XKB_KEY_SYMS_MASK) != 0;
+        boolean hasActions = (present & XKB_KEY_ACTIONS_MASK) != 0;
 
         outputStream.writeByte(RESPONSE_CODE_SUCCESS);
         outputStream.writeByte((byte)CORE_KEYBOARD_ID);
@@ -177,14 +185,14 @@ public class XKeyboardExtension extends Extension {
         outputStream.writeByte((byte)Keyboard.MAX_KEYCODE);
         outputStream.writeShort((short)present);
         outputStream.writeByte((byte)0); // first type
-        outputStream.writeByte((byte)REQUIRED_KEY_TYPES); // types in reply
+        outputStream.writeByte((byte)(hasTypes ? REQUIRED_KEY_TYPES : 0));
         outputStream.writeByte((byte)REQUIRED_KEY_TYPES); // total types
         outputStream.writeByte((byte)Keyboard.MIN_KEYCODE);
-        outputStream.writeShort((short)totalKeysyms);
-        outputStream.writeByte((byte)Keyboard.KEYS_COUNT);
+        outputStream.writeShort((short)(hasKeySyms ? totalKeysyms : 0));
+        outputStream.writeByte((byte)(hasKeySyms ? Keyboard.KEYS_COUNT : 0));
         outputStream.writeByte((byte)Keyboard.MIN_KEYCODE); // first action key
-        outputStream.writeShort((short)MODIFIER_ACTION_COUNT);
-        outputStream.writeByte((byte)Keyboard.KEYS_COUNT); // action keys
+        outputStream.writeShort((short)(hasActions ? MODIFIER_ACTION_COUNT : 0));
+        outputStream.writeByte((byte)(hasActions ? Keyboard.KEYS_COUNT : 0));
         outputStream.writeByte((byte)0); // first behavior key
         outputStream.writeByte((byte)0); // behavior keys
         outputStream.writeByte((byte)0); // total behaviors
@@ -202,7 +210,7 @@ public class XKeyboardExtension extends Extension {
 
         // ONE_LEVEL, TWO_LEVEL, ALPHABETIC and KEYPAD. ALPHABETIC maps
         // Shift, Lock and Shift+Lock to the conventional two levels.
-        for (int i = 0; i < REQUIRED_KEY_TYPES; i++) {
+        if (hasTypes) for (int i = 0; i < REQUIRED_KEY_TYPES; i++) {
             boolean twoLevels = i != 0;
             boolean alphabetic = i == 2;
             int modifierMask = alphabetic ? 3 : twoLevels ? 1 : 0;
@@ -238,7 +246,7 @@ public class XKeyboardExtension extends Extension {
             }
         }
 
-        for (int keycode = Keyboard.MIN_KEYCODE;
+        if (hasKeySyms) for (int keycode = Keyboard.MIN_KEYCODE;
              keycode <= Keyboard.MAX_KEYCODE; keycode++) {
             int lower = xServer.keyboard.getKeysym(keycode, 0);
             int upper = xServer.keyboard.getKeysym(keycode, 1);
@@ -254,12 +262,12 @@ public class XKeyboardExtension extends Extension {
             if (symbolCount > 0) outputStream.writeInt(lower);
             if (symbolCount > 1) outputStream.writeInt(upper);
         }
-        for (int keycode = Keyboard.MIN_KEYCODE;
+        if (hasActions) for (int keycode = Keyboard.MIN_KEYCODE;
              keycode <= Keyboard.MAX_KEYCODE; keycode++) {
             outputStream.writeByte((byte)(getModifierActionMask(keycode) != 0
                     ? 1 : 0));
         }
-        for (int keycode = Keyboard.MIN_KEYCODE;
+        if (hasActions) for (int keycode = Keyboard.MIN_KEYCODE;
              keycode <= Keyboard.MAX_KEYCODE; keycode++) {
             int mask = getModifierActionMask(keycode);
             if (mask == 0) continue;
@@ -272,10 +280,17 @@ public class XKeyboardExtension extends Extension {
     }
 
     private void getMap(XClient client, XInputStream inputStream,
-                        XOutputStream outputStream) throws IOException {
+                        XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        int full = inputStream.readUnsignedShort();
+        int partial = inputStream.readUnsignedShort();
         inputStream.skip(client.getRemainingRequestLength());
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
         try (XStreamLock lock = outputStream.lock()) {
-            writeMapReply(client, outputStream);
+            writeMapReply(client, outputStream, full | partial);
         }
     }
 
@@ -524,7 +539,7 @@ public class XKeyboardExtension extends Extension {
             throw new BadValue(deviceSpec);
         }
 
-        int nestedMapBytes = 40 + getMapVariableBytes();
+        int nestedMapBytes = 40 + getMapVariableBytes(XKB_XKBCOMMON_MAP_MASK);
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
             outputStream.writeByte((byte)CORE_KEYBOARD_ID);
@@ -537,7 +552,7 @@ public class XKeyboardExtension extends Extension {
             outputStream.writeShort((short)XKB_GBN_SUPPORTED_MASK);
             outputStream.writeShort((short)XKB_GBN_SUPPORTED_MASK);
             outputStream.writePad(16);
-            writeMapReply(client, outputStream);
+            writeMapReply(client, outputStream, XKB_XKBCOMMON_MAP_MASK);
         }
     }
 

@@ -1,0 +1,12 @@
+device=01408BH601027129 Android=14 API=34 ABI=arm64-v8a
+profile=x11-desktop-probe
+install=incremental app=56KiB shared-runtime=reused
+BXTEST PASS xrender      version=0.1 event=0 error=0 a8=1 alpha-mask=0xff
+BXTEST PASS xfixes       version=2.0 rectangles=1 selection-notify=1
+BXTEST PASS randr        version=1.3 crtcs=1 outputs=1 primary=0x8 mode=1920x1080 name=BionicX-0 output=1 crtc=1 empty-property=1
+BXTEST PASS xinput2      version=2.0 devices=2 masters=1/1 selected=1 masks=1
+BXTEST PASS xkeyboard    version=1.0 opcode=148 selected=1 device=BionicX keyboard map=0 names=0 keys=8-255 types=4 esc-syms=1 offset=1 escape=0xff1b a-syms=2 a=0x61/0x41
+BXTEST PASS xkbcommon    device=3 keymap=1 state=1 keycode=38 syms=1 first=0x61 minus=0x2d/0x5f
+BXTEST PASS xkb-state-notify shift-set=1 shift-clear=1
+BXTEST PASS xfixes-input-shape inside-presses=1 expected=1
+BXSUMMARY desktop-x11 passed=8 failed=0 xerrors=0 exit=0
