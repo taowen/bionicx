@@ -1,0 +1,9 @@
+device=01408BH601027129 Android=14 API=34 ABI=arm64-v8a
+chrome_version=151.0.7922.108-1 package_sha256=23f5d27be6ad6f5d69c1c11b602d4ed25a8499cfdfa11c3ca479ad0b58285499
+mode=ordinary-activity uid-sandbox=preserved proot=no termux=no root-runtime=no frida=no
+before_20s: fd_ownership_violations=702 network_service_crashes=702
+control_run_as_with_preload_10s: fd_ownership_violations=273 network_service_crashes=273
+control_run_as_without_preload_10s: fd_ownership_violations=267 network_service_crashes=267
+after_15s: propagated_child_policies=3 fd_ownership_violations=0 network_service_crashes=0
+chrome_compat_sha256=ef1008106b1285092aff4b50f00caacd852423ce5e52cb24eebc530656281e7e
+result=browser-parent-alive real-X11-window-visible remaining=fonts,desktop-services,navigation
