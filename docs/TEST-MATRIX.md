@@ -26,7 +26,7 @@ counters. App profiles always run with diagnostics disabled for final proof.
 | glibc/Bionic bridge | `wps-compat-probe` | WPS SysV semaphore shim and sanitized Android-shell `popen` | 21/21 passing; Bionic shell output/exit status verified |
 | desktop services | planned probes | fonts, locale, MIME, D-Bus alternatives, audio | pending |
 | Chromium | real Chrome ARM64 | sandbox, zygote, SHM, network, TLS, GPU/software rendering | pending |
-| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer opens/creates a document, Qt compiles XKB keymap/state, and mixed-case/shifted Android input is exact; save/reopen and other workflows remain |
+| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer creates and saves a valid DOCX, survives a cold BionicX restart, reopens it through its native file dialog, and preserves exact mixed-case/shifted text; remaining suites pending |
 
 ## Upstream acceptance baseline
 

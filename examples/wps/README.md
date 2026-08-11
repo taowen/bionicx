@@ -40,3 +40,18 @@ The root-only `migrate-poc-device.sh` is a development convenience for a device
 that already has the POC installed as `com.winlator`. Root is used only to copy
 that existing private installation; the resulting WPS runtime is launched by
 the normal BionicX app UID without root, PRoot, Termux, or Frida.
+
+## Writer save/reopen integration check
+
+After saving a document from Writer to its default `Documents` directory,
+validate the actual app-private OOXML file from the host:
+
+```sh
+ANDROID_SERIAL=01408BH601027129 \
+  examples/wps/verify-docx.sh BionicX.docx BionicX_WPS_2026 abc_A
+```
+
+The check reads through Android's `run-as` boundary, verifies every ZIP member,
+requires the OOXML package roots, parses `word/document.xml`, and matches whole
+paragraphs. It does not need root and does not mistake a rendered screenshot or
+a merely existing file for a successful Writer save.
