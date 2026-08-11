@@ -166,6 +166,9 @@ static void probe_xkb(Display *display) {
         return;
     }
     int before = x_errors;
+    bool selected = XkbSelectEvents(display, XkbUseCoreKbd,
+                                    XkbStateNotifyMask,
+                                    XkbStateNotifyMask);
     XkbDescPtr map = XkbGetMap(display, XkbAllClientInfoMask,
                                XkbUseCoreKbd);
     int map_status = map ? Success : BadImplementation;
@@ -175,15 +178,17 @@ static void probe_xkb(Display *display) {
                      ? map->map->key_sym_map[9].offset : 0;
     KeySym escape = map && map->map && map->map->key_sym_map
                     ? XkbKeySymEntry(map, 9, 0, 0) : NoSymbol;
-    bool ok = map_status == Success && map && map->map && map->map->num_types >= 1
+    bool ok = selected && map_status == Success && map && map->map
+              && map->map->num_types >= 1
               && map->min_key_code <= 9 && map->max_key_code >= 9
               && XkbKeyNumSyms(map, 9) == 1
               && escape == XK_Escape
               && sync_without_error(display, before);
     char detail[160];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d opcode=%d status=%d keys=%u-%u types=%d syms=%d offset=%d escape=0x%lx",
-             major, minor, opcode, map_status, map ? map->min_key_code : 0,
+             "version=%d.%d opcode=%d selected=%d status=%d keys=%u-%u types=%d syms=%d offset=%d escape=0x%lx",
+             major, minor, opcode, selected, map_status,
+             map ? map->min_key_code : 0,
              map ? map->max_key_code : 0,
              map && map->map ? map->map->num_types : 0,
              key_syms, sym_offset, (unsigned long)escape);

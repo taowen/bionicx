@@ -20,6 +20,8 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
     private int requestLength;
     private byte requestData;
     private int initialLength;
+    private int xkbEventMask;
+    private int xkbMapMask;
     private final ArrayMap<Window, EventListener> eventListeners = new ArrayMap<>();
     private final ArrayList<XResource> resources = new ArrayList<>();
     private final ArrayList<Callback<XClient>> onDestroyListeners = new ArrayList<>();
@@ -126,6 +128,21 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
 
     public void setRequestData(byte requestData) {
         this.requestData = requestData;
+    }
+
+    public void updateXkbEventSelection(int affect, int clear, int selectAll,
+                                        int affectMap, int map) {
+        xkbEventMask = (xkbEventMask & ~(affect & clear))
+                | (affect & selectAll);
+        xkbMapMask = (xkbMapMask & ~affectMap) | (map & affectMap);
+    }
+
+    public int getXkbEventMask() {
+        return xkbEventMask;
+    }
+
+    public int getXkbMapMask() {
+        return xkbMapMask;
     }
 
     public int getRemainingRequestLength() {

@@ -9,6 +9,7 @@ import com.winlator.xserver.Keyboard;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.errors.BadImplementation;
+import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
@@ -28,7 +29,23 @@ public class XKeyboardExtension extends Extension {
 
     private static abstract class ClientOpcodes {
         private static final byte USE_EXTENSION = 0;
+        private static final byte SELECT_EVENTS = 1;
         private static final byte GET_MAP = 8;
+    }
+
+    private void selectEvents(XClient client, XInputStream inputStream)
+            throws IOException, XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        int affect = inputStream.readUnsignedShort();
+        int clear = inputStream.readUnsignedShort();
+        int selectAll = inputStream.readUnsignedShort();
+        int affectMap = inputStream.readUnsignedShort();
+        int map = inputStream.readUnsignedShort();
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+        client.updateXkbEventSelection(affect, clear, selectAll, affectMap, map);
+        inputStream.skip(client.getRemainingRequestLength());
     }
 
     public XKeyboardExtension(XServer xServer, byte majorOpcode) {
@@ -131,6 +148,9 @@ public class XKeyboardExtension extends Extension {
         switch (client.getRequestData()) {
             case ClientOpcodes.USE_EXTENSION:
                 useExtension(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SELECT_EVENTS:
+                selectEvents(client, inputStream);
                 break;
             case ClientOpcodes.GET_MAP:
                 getMap(client, inputStream, outputStream);
