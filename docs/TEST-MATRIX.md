@@ -20,7 +20,7 @@ counters. App profiles always run with diagnostics disabled for final proof.
 | Layer | Controlled client | Coverage | State |
 |---|---|---|---|
 | ELF/bootstrap | `hello-x11` | glibc loader, dependency closure, X connection | passing on x300 |
-| X11 core | `x11-probe` | windows, properties, drawing, selection, events | 11 pass; PolyText8 failure and input observation remain |
+| X11 core | `x11-probe` | windows, properties, drawing, selection, events | 12/12 strict checks pass; Android input observation remains |
 | X11 desktop | planned probes | clipboard conversion, RANDR, XKB, XInput2, XFixes, Render, SHM | pending |
 | libc/kernel | planned probes | threads, robust mutex, epoll, signals, process spawning, IPC | pending |
 | desktop services | planned probes | fonts, locale, MIME, D-Bus alternatives, audio | pending |

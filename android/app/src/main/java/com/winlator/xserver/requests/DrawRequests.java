@@ -182,4 +182,44 @@ public abstract class DrawRequests {
             length -= 8;
         }
     }
+
+    public static void polyText8(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
+        int drawableId = inputStream.readInt();
+        int gcId = inputStream.readInt();
+        int x = inputStream.readShort();
+        int y = inputStream.readShort();
+
+        Drawable drawable = client.xServer.drawableManager.getDrawable(drawableId);
+        if (drawable == null) throw new BadDrawable(drawableId);
+        GraphicsContext graphicsContext = client.xServer.graphicsContextManager.getGraphicsContext(gcId);
+        if (graphicsContext == null) throw new BadGraphicsContext(gcId);
+
+        int remaining = client.getRemainingRequestLength();
+        while (remaining > 0) {
+            int length = inputStream.readUnsignedByte();
+            --remaining;
+            if (length == 255) {
+                if (remaining < 4) {
+                    inputStream.skip(remaining);
+                    break;
+                }
+                inputStream.skip(4); // FontShift; core font selection is not yet modeled.
+                remaining -= 4;
+                continue;
+            }
+            if (remaining == 0) break; // Four-byte request padding.
+            int delta = inputStream.readByte();
+            --remaining;
+            if (length > remaining) {
+                inputStream.skip(remaining);
+                break;
+            }
+            byte[] bytes = new byte[length];
+            inputStream.read(bytes);
+            remaining -= length;
+            x += delta;
+            String text = new String(bytes, client.xServer.LATIN1_CHARSET);
+            x += drawable.drawText8(x, y, text, graphicsContext.getForeground());
+        }
+    }
 }

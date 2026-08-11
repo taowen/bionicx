@@ -1,6 +1,9 @@
 package com.winlator.xserver;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Typeface;
 
 import androidx.annotation.Nullable;
 
@@ -181,6 +184,30 @@ public class Drawable extends XResource {
 
         this.data.rewind();
         forceUpdate();
+    }
+
+    public int drawText8(int x, int baseline, String text, int color) {
+        if (data == null || text.isEmpty()) return 0;
+        int stride = getStride();
+        Bitmap bitmap = Bitmap.createBitmap(stride, height, Bitmap.Config.ARGB_8888);
+        data.rewind();
+        bitmap.copyPixelsFromBuffer(data);
+
+        Paint paint = new Paint();
+        paint.setAntiAlias(false);
+        paint.setTypeface(Typeface.MONOSPACE);
+        paint.setTextSize(16.0f);
+        paint.setColor(0xff000000 | (color & 0x00ffffff));
+        Canvas canvas = new Canvas(bitmap);
+        canvas.drawText(text, x, baseline, paint);
+        int advance = Math.round(paint.measureText(text));
+
+        data.rewind();
+        bitmap.copyPixelsToBuffer(data);
+        data.rewind();
+        bitmap.recycle();
+        forceUpdate();
+        return advance;
     }
 
     public void drawAlphaMaskedBitmap(byte foreRed, byte foreGreen, byte foreBlue, byte backRed, byte backGreen, byte backBlue, Drawable srcDrawable, Drawable maskDrawable) {

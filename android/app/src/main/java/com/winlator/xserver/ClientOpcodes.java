@@ -45,6 +45,7 @@ public abstract class ClientOpcodes {
     public static final byte POLY_FILL_RECTANGLE = 70;
     public static final byte PUT_IMAGE = 72;
     public static final byte GET_IMAGE = 73;
+    public static final byte POLY_TEXT8 = 74;
     public static final byte CREATE_COLORMAP = 78;
     public static final byte FREE_COLORMAP = 79;
     public static final byte CREATE_CURSOR = 93;

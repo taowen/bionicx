@@ -173,7 +173,21 @@ int main(int argc, char **argv) {
     before = x_errors;
     XSetForeground(display, gc, WhitePixel(display, screen));
     XDrawString(display, window, gc, 32, 42, "BionicX PolyText8", 17);
-    RECORD(sync_step(display, "poly-text8", before));
+    XImage *text_image = XGetImage(display, window, 28, 20, 220, 30,
+                                   AllPlanes, ZPixmap);
+    XSync(display, False);
+    int text_pixels = 0;
+    if (text_image) {
+        for (int text_y = 0; text_y < text_image->height; ++text_y)
+            for (int text_x = 0; text_x < text_image->width; ++text_x)
+                if ((XGetPixel(text_image, text_x, text_y) & 0x00ffffff) != 0)
+                    ++text_pixels;
+        XDestroyImage(text_image);
+    }
+    bool text_ok = x_errors == before && text_pixels > 0;
+    snprintf(detail, sizeof(detail), "foreground-pixels=%d", text_pixels);
+    result("poly-text8", text_ok, text_ok ? detail : last_x_error);
+    RECORD(text_ok);
 
     before = x_errors;
     Window child = XCreateSimpleWindow(display, window, 220, 160, 160, 100, 1,
