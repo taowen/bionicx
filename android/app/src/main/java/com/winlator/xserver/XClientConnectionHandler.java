@@ -16,10 +16,13 @@ public class XClientConnectionHandler implements ConnectionHandler {
     }
 
     @Override
-    public void handleNewConnection(ConnectedClient client) {}
+    public void handleNewConnection(ConnectedClient client) {
+        xServer.addClient((XClient)client);
+    }
 
     @Override
     public void handleConnectionShutdown(ConnectedClient client) {
         ((XClient)client).freeResources();
+        xServer.removeClient((XClient)client);
     }
 }

@@ -14,6 +14,7 @@ import com.winlator.xserver.events.LeaveNotify;
 import com.winlator.xserver.events.MappingNotify;
 import com.winlator.xserver.events.MotionNotify;
 import com.winlator.xserver.events.PointerWindowEvent;
+import com.winlator.xserver.events.XkbStateNotify;
 
 public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyboard.OnKeyboardListener, WindowManager.OnWindowModificationListener, XResourceManager.OnResourceLifecycleListener {
     private static final byte MOUSE_WHEEL_DELTA = 120;
@@ -307,6 +308,15 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
 
         short[] localPoint = eventWindow.rootPointToLocal(x, y);
         eventWindow.sendEvent(Event.KEY_RELEASE, new KeyRelease(keycode, xServer.windowManager.rootWindow, eventWindow, child, x, y, localPoint[0], localPoint[1], keyButMask));
+    }
+
+    @Override
+    public void onModifiersChanged(byte keycode, boolean pressed) {
+        xServer.sendXkbStateNotify(new XkbStateNotify(
+                xServer.keyboard.getModifiersMask().getBits(),
+                xServer.keyboard.getBaseModifiers(),
+                xServer.keyboard.getLockedModifiers(), keycode,
+                pressed ? 2 : 3));
     }
 
     private Bitmask createPointerEventMask() {

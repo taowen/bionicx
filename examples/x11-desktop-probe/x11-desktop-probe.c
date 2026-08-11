@@ -11,6 +11,7 @@
 #include <X11/extensions/Xrender.h>
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>
+#include <xcb/xkb.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +21,7 @@
 static int checks;
 static int passed;
 static int x_errors;
+static int xkb_event_type = -1;
 
 static int handle_x_error(Display *display, XErrorEvent *event) {
     char text[128];
@@ -197,6 +199,7 @@ static void probe_xkb(Display *display) {
         result("xkeyboard", false, "extension-missing");
         return;
     }
+    xkb_event_type = event_base;
     int before = x_errors;
     bool selected = XkbSelectEvents(display, XkbUseCoreKbd,
                                     XkbStateNotifyMask,
@@ -353,17 +356,34 @@ int main(int argc, char **argv) {
              passed, checks);
     XDrawString(display, window, gc, 24, 68, summary, (int)strlen(summary));
     XFlush(display);
-    printf("BXSUMMARY desktop-x11 passed=%d failed=%d xerrors=%d\n",
-           passed, checks - passed, x_errors);
-    fflush(stdout);
-
     struct timespec deadline;
     clock_gettime(CLOCK_MONOTONIC, &deadline);
     deadline.tv_sec += duration;
+    bool saw_shift_set = false;
+    bool saw_shift_clear = false;
+    xcb_connection_t *event_connection = XGetXCBConnection(display);
+    XFlush(display);
+    XSetEventQueueOwner(display, XCBOwnsEventQueue);
     while (true) {
-        while (XPending(display)) {
-            XEvent event;
-            XNextEvent(display, &event);
+        xcb_generic_event_t *raw_event;
+        while ((raw_event = xcb_poll_for_event(event_connection)) != NULL) {
+            if ((raw_event->response_type & 0x7f) == xkb_event_type) {
+                xcb_xkb_state_notify_event_t *state_event =
+                    (xcb_xkb_state_notify_event_t *)raw_event;
+                if (state_event->xkbType == XCB_XKB_STATE_NOTIFY &&
+                    state_event->keycode == 50) {
+                    if ((state_event->baseMods & ShiftMask) != 0)
+                        saw_shift_set = true;
+                    else
+                        saw_shift_clear = true;
+                    printf("BXINPUT xkb-state keycode=%u event=%d mods=0x%x base=0x%x locked=0x%x changed=0x%x\n",
+                           state_event->keycode, state_event->eventType,
+                           state_event->mods, state_event->baseMods,
+                           state_event->lockedMods, state_event->changed);
+                    fflush(stdout);
+                }
+            }
+            free(raw_event);
         }
         struct timespec now = {0};
         clock_gettime(CLOCK_MONOTONIC, &now);
@@ -372,6 +392,13 @@ int main(int argc, char **argv) {
         struct timespec pause = {.tv_nsec = 20 * 1000 * 1000};
         nanosleep(&pause, NULL);
     }
+    char state_detail[96];
+    snprintf(state_detail, sizeof(state_detail), "shift-set=%d shift-clear=%d",
+             saw_shift_set, saw_shift_clear);
+    result("xkb-state-notify", saw_shift_set && saw_shift_clear, state_detail);
+    printf("BXSUMMARY desktop-x11 passed=%d failed=%d xerrors=%d\n",
+           passed, checks - passed, x_errors);
+    fflush(stdout);
     XFreeGC(display, gc);
     XDestroyWindow(display, window);
     XCloseDisplay(display);

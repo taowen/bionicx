@@ -19,7 +19,7 @@ podman run --rm --network host \
         examples/x11-desktop-probe/x11-desktop-probe.c \
         -o "$container_output/app/bin/x11-desktop-probe" \
         -lXrender -lXfixes -lXrandr -lXi -lXext \
-        -lxkbcommon-x11 -lxkbcommon -lX11-xcb -lX11
+        -lxkbcommon-x11 -lxkbcommon -lxcb-xkb -lX11-xcb -lX11 -lxcb
 
 # These libraries are not part of Winlator's minimal rootfs closure. Keep the
 # probe self-contained by taking the matching AArch64 runtime artifacts from

@@ -19,6 +19,7 @@ import com.winlator.xserver.extensions.XRenderExtension;
 
 import java.nio.charset.Charset;
 import java.util.EnumMap;
+import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class XServer {
@@ -46,6 +47,7 @@ public class XServer {
     private WinHandler winHandler;
     private final EnumMap<Lockable, ReentrantLock> locks = new EnumMap<>(Lockable.class);
     private boolean relativeMouseMovement = false;
+    private final ArrayList<XClient> clients = new ArrayList<>();
 
     public XServer(XServerDisplayActivity activity, ScreenInfo screenInfo) {
         this.activity = activity;
@@ -188,6 +190,26 @@ public class XServer {
     public void injectKeyRelease(XKeycode xKeycode) {
         try (XLock lock = lock(Lockable.WINDOW_MANAGER, Lockable.INPUT_DEVICE)) {
             keyboard.setKeyRelease(xKeycode.id);
+        }
+    }
+
+    public void addClient(XClient client) {
+        synchronized (clients) {
+            clients.add(client);
+        }
+    }
+
+    public void removeClient(XClient client) {
+        synchronized (clients) {
+            clients.remove(client);
+        }
+    }
+
+    public void sendXkbStateNotify(com.winlator.xserver.events.XkbStateNotify event) {
+        synchronized (clients) {
+            for (XClient client : clients) {
+                if ((client.getXkbEventMask() & 4) != 0) client.sendEvent(event);
+            }
         }
     }
 

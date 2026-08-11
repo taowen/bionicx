@@ -332,7 +332,13 @@ public class XKeyboardExtension extends Extension {
             outputStream.writeByte((byte)CORE_KEYBOARD_ID);
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(0);
-            outputStream.writePad(6); // effective/base/latched/locked mods and groups
+            int effectiveMods = xServer.keyboard.getModifiersMask().getBits();
+            outputStream.writeByte((byte)effectiveMods);
+            outputStream.writeByte((byte)xServer.keyboard.getBaseModifiers());
+            outputStream.writeByte((byte)0); // latched modifiers
+            outputStream.writeByte((byte)xServer.keyboard.getLockedModifiers());
+            outputStream.writeByte((byte)0); // effective group
+            outputStream.writeByte((byte)0); // locked group
             outputStream.writeShort((short)0); // base group
             outputStream.writeShort((short)0); // latched group
             outputStream.writePad(6); // compatibility/grab/lookup modifier state

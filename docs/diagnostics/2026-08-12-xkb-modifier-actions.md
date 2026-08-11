@@ -26,9 +26,8 @@ Alt, CapsLock and NumLock, and uses a real Lock-aware `ALPHABETIC` type.
 
 ## Remaining WPS distinction
 
-Both controlled layers are correct, but WPS still renders the injected string
-as `BIONICX-WPS-2026`; see `evidence/wps-xkb-modifier-actions.png`. This rules
-out core state ordering and static xkbcommon actions. The remaining boundary is
-live XKB state synchronization: BionicX tracks selections but does not yet emit
-XKB StateNotify events, while `GetState` currently reports only a zero snapshot.
-That is the next implementation target.
+At this checkpoint both controlled layers were correct, but WPS still rendered
+the injected string as `BIONICX-WPS-2026`; see
+`evidence/wps-xkb-modifier-actions.png`. That ruled out core state ordering and
+static xkbcommon actions. The follow-up live-state implementation and successful
+WPS result are recorded in `2026-08-12-xkb-state-notify.md`.

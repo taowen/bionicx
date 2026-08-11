@@ -26,6 +26,8 @@ public class Keyboard {
         void onKeyPress(byte keycode, int keysym);
 
         void onKeyRelease(byte keycode);
+
+        default void onModifiersChanged(byte keycode, boolean pressed) {}
     }
 
     public Keyboard(XServer xServer) {
@@ -34,6 +36,14 @@ public class Keyboard {
 
     public Bitmask getModifiersMask() {
         return modifiersMask;
+    }
+
+    public int getBaseModifiers() {
+        return modifiersMask.getBits() & ~(2 | 16);
+    }
+
+    public int getLockedModifiers() {
+        return modifiersMask.getBits() & (2 | 16);
     }
 
     public void setKeysyms(byte keycode, int minKeysym, int majKeysym) {
@@ -57,14 +67,16 @@ public class Keyboard {
     public void setKeyPress(byte keycode, int keysym) {
         if (isModifierSticky(keycode)) {
             if (pressedKeys.contains(keycode)) {
+                triggerOnKeyRelease(keycode);
                 pressedKeys.remove(keycode);
                 modifiersMask.unset(getModifierFlag(keycode));
-                triggerOnKeyRelease(keycode);
+                triggerOnModifiersChanged(keycode, false);
             }
             else {
+                triggerOnKeyPress(keycode, keysym);
                 pressedKeys.add(keycode);
                 modifiersMask.set(getModifierFlag(keycode));
-                triggerOnKeyPress(keycode, keysym);
+                triggerOnModifiersChanged(keycode, true);
             }
         }
         else if (!pressedKeys.contains(keycode)) {
@@ -72,7 +84,10 @@ public class Keyboard {
             // Core KeyPress.state describes the state immediately before the
             // event, so publish a modifier press before applying its mask.
             triggerOnKeyPress(keycode, keysym);
-            if (isModifier(keycode)) modifiersMask.set(getModifierFlag(keycode));
+            if (isModifier(keycode)) {
+                modifiersMask.set(getModifierFlag(keycode));
+                triggerOnModifiersChanged(keycode, true);
+            }
         }
     }
 
@@ -82,7 +97,10 @@ public class Keyboard {
             // KeyRelease event and is cleared only after delivery.
             triggerOnKeyRelease(keycode);
             pressedKeys.remove(keycode);
-            if (isModifier(keycode)) modifiersMask.unset(getModifierFlag(keycode));
+            if (isModifier(keycode)) {
+                modifiersMask.unset(getModifierFlag(keycode));
+                triggerOnModifiersChanged(keycode, false);
+            }
         }
     }
 
@@ -103,6 +121,12 @@ public class Keyboard {
     private void triggerOnKeyRelease(byte keycode) {
         for (int i = onKeyboardListeners.size()-1; i >= 0; i--) {
             onKeyboardListeners.get(i).onKeyRelease(keycode);
+        }
+    }
+
+    private void triggerOnModifiersChanged(byte keycode, boolean pressed) {
+        for (int i = onKeyboardListeners.size() - 1; i >= 0; i--) {
+            onKeyboardListeners.get(i).onModifiersChanged(keycode, pressed);
         }
     }
 
