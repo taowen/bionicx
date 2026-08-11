@@ -1,0 +1,4 @@
+W/WinlatorXRequest: unimplemented request=XFIXES major=151 minor=2 error=17
+W/WinlatorXRequest: unimplemented request=XFIXES major=151 minor=2 error=17
+W/WinlatorXRequest: unimplemented request=XFIXES major=151 minor=2 error=17
+# No XFIXES minor=21 request failed during the cold-start/OpenFile path.

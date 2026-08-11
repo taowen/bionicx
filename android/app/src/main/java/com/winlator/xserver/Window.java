@@ -40,6 +40,43 @@ public class Window extends XResource {
     private final List<Window> immutableChildren = Collections.unmodifiableList(children);
     private final ArrayList<EventListener> eventListeners = new ArrayList<>();
     private FullscreenTransformation fullscreenTransformation;
+    private volatile ShapeRegion inputShape;
+
+    public static final class ShapeRectangle {
+        public final int x;
+        public final int y;
+        public final int width;
+        public final int height;
+
+        public ShapeRectangle(int x, int y, int width, int height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+    }
+
+    private static final class ShapeRegion {
+        private final ArrayList<ShapeRectangle> rectangles;
+        private final int xOffset;
+        private final int yOffset;
+
+        private ShapeRegion(List<ShapeRectangle> rectangles, int xOffset, int yOffset) {
+            this.rectangles = new ArrayList<>(rectangles);
+            this.xOffset = xOffset;
+            this.yOffset = yOffset;
+        }
+
+        private boolean contains(int x, int y) {
+            for (ShapeRectangle rectangle : rectangles) {
+                int left = xOffset + rectangle.x;
+                int top = yOffset + rectangle.y;
+                if (x >= left && y >= top && x < left + rectangle.width
+                        && y < top + rectangle.height) return true;
+            }
+            return false;
+        }
+    }
 
     public Window(int id, Drawable content, int x, int y, int width, int height, XClient originClient) {
         super(id);
@@ -364,7 +401,15 @@ public class Window extends XResource {
         short[] localPoint = rootPointToLocal(rootX, rootY, useFullscreenTransformation);
         short width = fullscreenTransformation != null && useFullscreenTransformation ? fullscreenTransformation.width : this.width;
         short height = fullscreenTransformation != null && useFullscreenTransformation ? fullscreenTransformation.height : this.height;
-        return localPoint[0] >= 0 && localPoint[1] >= 0 && localPoint[0] <= width && localPoint[1] <= height;
+        boolean inBounds = localPoint[0] >= 0 && localPoint[1] >= 0
+                && localPoint[0] < width && localPoint[1] < height;
+        return inBounds && (inputShape == null
+                || inputShape.contains(localPoint[0], localPoint[1]));
+    }
+
+    public void setInputShape(List<ShapeRectangle> rectangles, int xOffset, int yOffset) {
+        inputShape = rectangles == null ? null
+                : new ShapeRegion(rectangles, xOffset, yOffset);
     }
 
     public short[] rootPointToLocal(short x, short y) {

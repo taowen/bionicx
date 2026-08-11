@@ -60,7 +60,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
         updatePointWindow();
     }
 
-    private void updatePointWindow() {
+    public void updatePointWindow() {
         Window pointWindow = xServer.windowManager.findPointWindow(xServer.pointer.getClampedX(), xServer.pointer.getClampedY(), true);
         this.pointWindow = pointWindow != null ? pointWindow : xServer.windowManager.rootWindow;
     }

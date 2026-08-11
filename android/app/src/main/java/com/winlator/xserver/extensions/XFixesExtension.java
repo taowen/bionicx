@@ -10,8 +10,10 @@ import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
+import com.winlator.xserver.Window;
 import com.winlator.xserver.errors.BadIdChoice;
 import com.winlator.xserver.errors.BadImplementation;
+import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
@@ -35,6 +37,7 @@ public class XFixesExtension extends Extension {
         private static final byte CREATE_REGION = 5;
         private static final byte DESTROY_REGION = 10;
         private static final byte FETCH_REGION = 19;
+        private static final byte SET_WINDOW_SHAPE_REGION = 21;
     }
 
     private static final class Rectangle {
@@ -187,6 +190,42 @@ public class XFixesExtension extends Extension {
         }
     }
 
+    private void setWindowShapeRegion(XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        int shapeKind = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        short xOffset = inputStream.readShort();
+        short yOffset = inputStream.readShort();
+        int regionId = inputStream.readInt();
+
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        // ShapeInput is the only kind that affects BionicX's current renderer:
+        // it clips pointer hit testing. Do not claim bounding/clip rendering
+        // semantics until the GL compositor can apply those regions too.
+        if (shapeKind != 2) throw new BadImplementation();
+
+        if (regionId == 0) {
+            window.setInputShape(null, 0, 0);
+            xServer.inputDeviceManager.updatePointWindow();
+            return;
+        }
+
+        Region region;
+        synchronized (regions) {
+            region = regions.get(regionId);
+        }
+        if (region == null) throw badRegion(regionId);
+        ArrayList<Window.ShapeRectangle> copied = new ArrayList<>(region.rectangles.size());
+        for (Rectangle rectangle : region.rectangles) {
+            copied.add(new Window.ShapeRectangle(rectangle.x, rectangle.y,
+                    rectangle.width, rectangle.height));
+        }
+        window.setInputShape(copied, xOffset, yOffset);
+        xServer.inputDeviceManager.updatePointWindow();
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -203,6 +242,9 @@ public class XFixesExtension extends Extension {
                 break;
             case ClientOpcodes.FETCH_REGION:
                 fetchRegion(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SET_WINDOW_SHAPE_REGION:
+                setWindowShapeRegion(inputStream);
                 break;
             default:
                 throw new BadImplementation();

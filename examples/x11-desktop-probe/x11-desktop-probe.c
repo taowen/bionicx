@@ -9,6 +9,7 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/Xrender.h>
+#include <X11/extensions/shape.h>
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>
 #include <xcb/xkb.h>
@@ -73,7 +74,7 @@ static void probe_render(Display *display, Window window) {
     result("xrender", ok, detail);
 }
 
-static void probe_xfixes(Display *display) {
+static void probe_xfixes(Display *display, Window window) {
     int event_base = 0, error_base = 0, major = 0, minor = 0;
     if (!XFixesQueryExtension(display, &event_base, &error_base)) {
         result("xfixes", false, "extension-missing");
@@ -88,9 +89,14 @@ static void probe_xfixes(Display *display) {
     ok = ok && region && fetched && count == 1 && fetched[0].x == source.x
          && fetched[0].y == source.y && fetched[0].width == source.width
          && fetched[0].height == source.height;
+    XRectangle input = {.x = 0, .y = 0, .width = 360, .height = 420};
+    XserverRegion input_region = XFixesCreateRegion(display, &input, 1);
+    if (input_region)
+        XFixesSetWindowShapeRegion(display, window, ShapeInput, 0, 0, input_region);
     if (fetched) XFree(fetched);
     if (region) XFixesDestroyRegion(display, region);
-    ok = ok && sync_without_error(display, before);
+    if (input_region) XFixesDestroyRegion(display, input_region);
+    ok = ok && input_region && sync_without_error(display, before);
     char detail[96];
     snprintf(detail, sizeof(detail), "version=%d.%d rectangles=%d",
              major, minor, count);
@@ -334,7 +340,7 @@ int main(int argc, char **argv) {
                                         BlackPixel(display, screen),
                                         BlackPixel(display, screen));
     XStoreName(display, window, "BionicX X11 desktop extension probe");
-    XSelectInput(display, window, ExposureMask | StructureNotifyMask);
+    XSelectInput(display, window, ExposureMask | StructureNotifyMask | ButtonPressMask);
     XMapWindow(display, window);
     XSync(display, False);
 
@@ -344,7 +350,7 @@ int main(int argc, char **argv) {
     XDrawString(display, window, gc, 24, 42, title, (int)strlen(title));
 
     probe_render(display, window);
-    probe_xfixes(display);
+    probe_xfixes(display, window);
     probe_randr(display, root);
     probe_xinput2(display, window);
     probe_xkb(display);
@@ -361,6 +367,7 @@ int main(int argc, char **argv) {
     deadline.tv_sec += duration;
     bool saw_shift_set = false;
     bool saw_shift_clear = false;
+    int shaped_button_presses = 0;
     xcb_connection_t *event_connection = XGetXCBConnection(display);
     XFlush(display);
     XSetEventQueueOwner(display, XCBOwnsEventQueue);
@@ -383,6 +390,16 @@ int main(int argc, char **argv) {
                     fflush(stdout);
                 }
             }
+            else if ((raw_event->response_type & 0x7f) == XCB_BUTTON_PRESS) {
+                xcb_button_press_event_t *button = (xcb_button_press_event_t *)raw_event;
+                if (button->event == window) {
+                    shaped_button_presses++;
+                    printf("BXINPUT xfixes-input-shape event-x=%d event-y=%d root-x=%d root-y=%d\n",
+                           button->event_x, button->event_y,
+                           button->root_x, button->root_y);
+                    fflush(stdout);
+                }
+            }
             free(raw_event);
         }
         struct timespec now = {0};
@@ -396,6 +413,10 @@ int main(int argc, char **argv) {
     snprintf(state_detail, sizeof(state_detail), "shift-set=%d shift-clear=%d",
              saw_shift_set, saw_shift_clear);
     result("xkb-state-notify", saw_shift_set && saw_shift_clear, state_detail);
+    char shape_detail[96];
+    snprintf(shape_detail, sizeof(shape_detail), "inside-presses=%d expected=1",
+             shaped_button_presses);
+    result("xfixes-input-shape", shaped_button_presses == 1, shape_detail);
     printf("BXSUMMARY desktop-x11 passed=%d failed=%d xerrors=%d\n",
            passed, checks - passed, x_errors);
     fflush(stdout);
