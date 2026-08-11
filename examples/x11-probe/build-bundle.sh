@@ -13,18 +13,13 @@ esac
 # hello test. The probe remains a separately compiled, genuine glibc ELF.
 "$repo_dir/examples/hello/build-bundle.sh" "$output_dir"
 container_output="/work/${output_dir#"$repo_dir"/}"
-podman run --rm --pull=newer --network host \
+builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
+podman run --rm --network host \
     --volume "$repo_dir:/work:Z" --workdir /work \
-    docker.io/library/debian:trixie-slim \
-    sh -eu -c "
-        dpkg --add-architecture arm64
-        apt-get update >/dev/null
-        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \\
-            gcc-aarch64-linux-gnu libc6-dev-arm64-cross libx11-dev:arm64 >/dev/null
-        aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \\
-            examples/x11-probe/x11-probe.c \\
-            -o '$container_output/app/bin/x11-probe' -lX11
-    "
+    "$builder_image" \
+    aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
+        examples/x11-probe/x11-probe.c \
+        -o "$container_output/app/bin/x11-probe" -lX11
 
 "$repo_dir/tools/resolve-elf-deps.py" \
     --entry "$output_dir/app/bin/x11-probe" \

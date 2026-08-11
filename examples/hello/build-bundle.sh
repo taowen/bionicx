@@ -11,17 +11,12 @@ esac
 container_output="/work/${output_dir#"$repo_dir"/}"
 mkdir -p "$output_dir/app/bin" "$output_dir/rootfs/usr/lib" "$repo_dir/build/cache"
 
-podman run --rm --pull=newer --network host \
+builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
+podman run --rm --network host \
     --volume "$repo_dir:/work:Z" --workdir /work \
-    docker.io/library/debian:trixie-slim \
-    sh -eu -c "
-        dpkg --add-architecture arm64
-        apt-get update >/dev/null
-        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \\
-            gcc-aarch64-linux-gnu libc6-dev-arm64-cross libx11-dev:arm64 >/dev/null
-        aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \\
-            examples/hello/hello-x11.c -o '$container_output/app/bin/hello-x11' -lX11
-    "
+    "$builder_image" \
+    aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
+        examples/hello/hello-x11.c -o "$container_output/app/bin/hello-x11" -lX11
 
 # Vanilla Debian glibc calls set_robust_list during startup and Android app
 # seccomp kills it with SIGSYS. Use Winlator's pinned Android-compatible glibc

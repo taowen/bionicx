@@ -1,0 +1,17 @@
+FROM docker.io/library/debian:trixie-slim
+
+RUN dpkg --add-architecture arm64 \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates \
+        gcc-aarch64-linux-gnu \
+        libc6-dev-arm64-cross \
+        libx11-dev:arm64 \
+        libxext-dev:arm64 \
+        libxfixes-dev:arm64 \
+        libxi-dev:arm64 \
+        libxrandr-dev:arm64 \
+        libxrender-dev:arm64 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work
