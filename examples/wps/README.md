@@ -41,12 +41,19 @@ audited ARM64 Xtst runtime dependency without root:
 ANDROID_SERIAL=01408BH601027129 examples/wps/install-entrypoints.sh
 ```
 
-Then select `profiles/wps-office.json` for Writer or
-`profiles/wps-spreadsheets.json` for Spreadsheets. Both profiles deliberately
+Then select `profiles/wps-office.json` for Writer,
+`profiles/wps-spreadsheets.json` for Spreadsheets, or
+`profiles/wps-presentation.json` for Presentation. All profiles deliberately
 share the `wps-office` application ID, app tree, HOME, and compatibility module;
 only the selected entry ELF and `argv[0]` differ. Proprietary WPS files are read
 from and written back to the user's installed Android app-private tree and are
 never added to this repository.
+
+The preparation also creates a mode-`0700` literal `office6/??` directory.
+WPS 11.1.0.11720's Presentation serializer uses that relative directory in its
+PPTX temporary-file template under the profile's `LANG=C`; see the retained
+[diagnosis](../../docs/diagnostics/2026-08-12-wps-file-trace.md). This narrow
+deployment provision avoids changing `mkstemp` behavior for other clients.
 
 WPS currently uses `direct` mode to preserve `/proc/self/exe`. Its `PT_INTERP`
 must therefore point at BionicX's app-private loader. When migrating the

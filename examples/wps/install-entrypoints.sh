@@ -45,6 +45,22 @@ for entrypoint in wps et wpp; do
         "$entrypoint" "$before" "$after"
 done
 
+# WPS 11.1.0.11720's Presentation serializer builds a relative
+# "??/PreXXXXXXXX" mkstemp template under LANG=C. Keep this proprietary-client
+# assumption in its private deployment rather than changing mkstemp semantics
+# for every glibc application. Quoting prevents the remote Android shell from
+# expanding the literal question marks as a glob.
+temporary_dir="$office/??"
+"${adb[@]}" shell "run-as '$package' mkdir -p '$temporary_dir'"
+"${adb[@]}" shell "run-as '$package' chmod 700 '$temporary_dir'"
+temporary_mode="$("${adb[@]}" shell \
+    "run-as '$package' stat -c %a '$temporary_dir'" | tr -d '\r')"
+[[ "$temporary_mode" == "700" ]] || {
+    echo "wrong WPS Presentation temporary-directory mode: $temporary_mode" >&2
+    exit 1
+}
+printf 'BXTEMP path=%s mode=%s\n' "$temporary_dir" "$temporary_mode"
+
 builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
 podman run --rm --userns=keep-id \
     --volume "$work_dir:/output:Z" "$builder_image" sh -c \
