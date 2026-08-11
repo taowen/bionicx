@@ -39,7 +39,7 @@ fi
 temporary="$(mktemp -d)"
 trap 'rm -rf "$temporary"' EXIT
 tar --use-compress-program=unzstd -xf "$rootfs_tzst" -C "$temporary" ./usr/lib
-for library in ld-linux-aarch64.so.1 libc.so.6 libX11.so.6 libxcb.so.1 \
+for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6 libX11.so.6 libxcb.so.1 \
         libXau.so.6 libXdmcp.so.6; do
     cp -L "$temporary/usr/lib/$library" "$output_dir/rootfs/usr/lib/"
 done

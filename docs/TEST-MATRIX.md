@@ -22,7 +22,7 @@ counters. App profiles always run with diagnostics disabled for final proof.
 | ELF/bootstrap | `hello-x11` | glibc loader, dependency closure, X connection | passing on x300 |
 | X11 core | `x11-probe` | windows, properties, drawing, selection, events | 13/13 strict checks pass; Android key/tap/swipe observed |
 | X11 desktop | planned probes | clipboard conversion, RANDR, XKB, XInput2, XFixes, Render, SHM | pending |
-| libc/kernel | planned probes | threads, robust mutex, epoll, signals, process spawning, IPC | pending |
+| libc/kernel | `runtime-probe` | threads, robust mutex, epoll, signals, processes, IPC, sockets, mmap | 17 pass; robust mutex, INET permission and locale gaps recorded |
 | desktop services | planned probes | fonts, locale, MIME, D-Bus alternatives, audio | pending |
 | Chromium | real Chrome ARM64 | sandbox, zygote, SHM, network, TLS, GPU/software rendering | pending |
 | office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer baseline passing |
