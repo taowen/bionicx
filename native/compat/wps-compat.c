@@ -112,6 +112,7 @@ FILE *popen(const char *command, const char *mode) {
         close(descriptors[0]);
         close(descriptors[1]);
         unsetenv("LD_PRELOAD");
+        unsetenv("LD_LIBRARY_PATH");
         execl("/system/bin/sh", "sh", "-c", command, (char *)NULL);
         _exit(127);
     }

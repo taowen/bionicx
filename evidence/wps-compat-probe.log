@@ -1,0 +1,32 @@
+--------- beginning of main
+08-12 00:26:08.161 17660 17660 I BionicX : profile=wps-compat-probe display=1920x1080@144 socket=filesystem
+08-12 00:26:08.172 17660 17685 I BionicX : launching BionicX WPS compatibility probe: [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --loader, /data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1, --library-path, /data/user/0/io.taowen.bx/files/apps/wps-compat-probe/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib, --cwd, /data/user/0/io.taowen.bx/files/apps/wps-compat-probe, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/wps-compat-probe, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/wps-compat-probe, --env, LANG=en_US.UTF-8, --env, LOCPATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/locale, --env, LD_LIBRARY_PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib, --env, BIONICX_TEST_ANDROID_SHELL=1, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-wps.so, --, /data/user/0/io.taowen.bx/files/apps/wps-compat-probe/bin/runtime-probe, --duration, 2]
+08-12 00:26:08.177 17660 17685 I BionicX : bionicx-exec: running untraced pid=17689
+08-12 00:26:08.178 17660 17685 I BionicX : BXTEST PASS runtime-identity glibc=2.39 pid=17689 page=4096
+08-12 00:26:08.178 17660 17685 I BionicX : BXTEST PASS pthread-create-join
+08-12 00:26:08.178 17660 17685 I BionicX : BXTEST PASS pthread-robust-mutex isolated-exit=0
+08-12 00:26:08.179 17660 17685 I BionicX : BXTEST PASS fork-wait
+08-12 00:26:08.179 17660 17685 I BionicX : BXTEST PASS eventfd-epoll
+08-12 00:26:08.199 17660 17685 I BionicX : BXTEST PASS timerfd-poll
+08-12 00:26:08.199 17660 17685 I BionicX : BXTEST PASS signalfd
+08-12 00:26:08.199 17660 17685 I BionicX : BXTEST PASS memfd-shared-mmap
+08-12 00:26:08.199 17660 17685 I BionicX : BXTEST PASS mprotect
+08-12 00:26:08.199 17660 17685 I BionicX : BXTEST PASS unix-scm-rights
+08-12 00:26:08.199 17660 17685 I BionicX : BXTEST PASS unix-filesystem-socket
+08-12 00:26:08.200 17660 17685 I BionicX : BXTEST PASS tcp-loopback connect
+08-12 00:26:08.200 17660 17685 I BionicX : BXTEST PASS inotify
+08-12 00:26:08.200 17660 17685 I BionicX : BXTEST PASS procfs
+08-12 00:26:08.200 17660 17685 I BionicX : BXTEST PASS dlopen-libm
+08-12 00:26:08.200 17660 17685 I BionicX : BXTEST PASS getrandom
+08-12 00:26:08.200 17660 17685 I BionicX : BXTEST PASS unnamed-semaphore
+08-12 00:26:08.201 17660 17685 I BionicX : BXTEST PASS locale-utf8
+08-12 00:26:08.201 17660 17685 I BionicX : BXTEST PASS prctl-name
+08-12 00:26:08.201 17660 17685 I BionicX : wps-sysvipc-compat: popen via Android shell: printf bionicx-android-shell
+08-12 00:26:08.209 17660 17685 I BionicX : BXTEST PASS android-shell-popen bytes=21 status=0 output=bionicx-android-shell
+08-12 00:26:08.209 17660 17685 I BionicX : BXCAP raw-set-robust-list signal value=31 (Bad system call)
+08-12 00:26:08.209 17660 17685 I BionicX : BXCAP user-namespace denied value=22 (Invalid argument)
+08-12 00:26:08.210 17660 17685 I BionicX : BXCAP sysv-shm signal value=31 (Bad system call)
+08-12 00:26:08.210 17660 17685 I BionicX : BXCAP posix-shm available value=0 (none)
+08-12 00:26:10.224 17660 17685 I BionicX : BXTEST PASS x11-window-text
+08-12 00:26:10.224 17660 17685 I BionicX : BXSUMMARY runtime passed=21 failed=0
+08-12 00:26:10.225 17660 17685 I BionicX : wps-compat-probe exited with 0

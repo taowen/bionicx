@@ -390,6 +390,19 @@ static bool test_locale(void) {
     return locale && codeset && strcasecmp(codeset, "UTF-8") == 0;
 }
 
+static bool test_android_shell_popen(char *detail, size_t size) {
+    FILE *stream = popen("printf bionicx-android-shell", "r");
+    char output[64] = {0};
+    size_t length = stream ? fread(output, 1, sizeof(output) - 1, stream) : 0;
+    int status = stream ? pclose(stream) : -1;
+    bool ok = length == strlen("bionicx-android-shell")
+              && strcmp(output, "bionicx-android-shell") == 0
+              && WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    snprintf(detail, size, "bytes=%zu status=%d output=%s", length, status,
+             length ? output : "<empty>");
+    return ok;
+}
+
 typedef int (*isolated_test)(void);
 
 static void run_capability(const char *name, isolated_test test) {
@@ -499,6 +512,10 @@ int main(int argc, char **argv) {
     check("unnamed-semaphore", test_unnamed_semaphore(), "");
     check("locale-utf8", test_locale(), "");
     check("prctl-name", test_prctl_name(), "");
+    if (getenv("BIONICX_TEST_ANDROID_SHELL") != NULL) {
+        check("android-shell-popen",
+              test_android_shell_popen(detail, sizeof(detail)), detail);
+    }
 
     run_capability("raw-set-robust-list", capability_set_robust_list);
     run_capability("user-namespace", capability_user_namespace);

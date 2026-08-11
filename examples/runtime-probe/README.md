@@ -18,3 +18,8 @@ examples/runtime-probe/build-bundle.sh
 ANDROID_SERIAL=<serial> examples/runtime-probe/install-and-run.sh
 adb -s <serial> logcat -d -s BionicX | grep -E 'BX(TEST|CAP|SUMMARY)'
 ```
+
+`profiles/wps-compat-probe.json` runs the same binary with the WPS compatibility
+module and adds an Android-shell `popen` check. It deliberately sets a glibc
+`LD_LIBRARY_PATH` in the parent so the compatibility layer must sanitize the
+environment before executing Bionic `/system/bin/sh`.
