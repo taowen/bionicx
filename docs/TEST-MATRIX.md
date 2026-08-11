@@ -24,9 +24,9 @@ counters. App profiles always run with diagnostics disabled for final proof.
 | X11 desktop | `x11-desktop-probe` | Render, XFixes selection/regions/ShapeInput, RandR resources/output/CRTC/property/primary/event masks, XInput2 devices/event masks, XKB printable map/event selection/device metadata/names, real xkbcommon compilation and live StateNotify; optional SHM | 8/8 passing; MIT-SHM deliberately unavailable pending safe backend |
 | libc/kernel | `runtime-probe` | threads, robust owner death, epoll, signals, processes, IPC, sockets, mmap | 20/20 passing on x300 with BionicX glibc 2.39 |
 | glibc/Bionic bridge | `wps-compat-probe` | WPS SysV semaphore shim and sanitized Android-shell `popen` | 21/21 passing; Bionic shell output/exit status verified |
-| desktop services | planned probes | fonts, locale, MIME, D-Bus alternatives, audio | pending |
+| desktop services | WPS workflow plus planned probes | deterministic app-private Fontconfig tree and Calibri/Cambria/Arial/Times aliases to static Liberation fonts; locale, MIME, D-Bus alternatives, audio | Latin regular/bold fallback passes cold reopen; remaining services pending |
 | Chromium | real Chrome ARM64 | sandbox, zygote, SHM, network, TLS, GPU/software rendering | pending |
-| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer creates and saves a valid DOCX, survives a cold BionicX restart, reopens it through its native file dialog, and preserves exact mixed-case/shifted text; remaining suites pending |
+| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer creates and saves a valid DOCX, survives a cold BionicX restart, reopens it through its native file dialog, preserves exact mixed-case/shifted text and a structurally plus visually verified bold run; remaining suites pending |
 
 ## Upstream acceptance baseline
 

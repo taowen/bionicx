@@ -55,3 +55,27 @@ The check reads through Android's `run-as` boundary, verifies every ZIP member,
 requires the OOXML package roots, parses `word/document.xml`, and matches whole
 paragraphs. It does not need root and does not mistake a rendered screenshot or
 a merely existing file for a successful Writer save.
+
+Formatting can be asserted against the OOXML run properties as well:
+
+```sh
+ANDROID_SERIAL=01408BH601027129 \
+  examples/wps/verify-docx.sh BionicX.docx BionicX_WPS_2026 abc_A \
+  --bold Bold_WPS_2026
+```
+
+## Deterministic Microsoft-font substitutes
+
+Android system images do not normally contain Calibri, Cambria, Arial, or
+Times New Roman. Install metrically compatible open fonts into the WPS app
+tree and configure deterministic aliases without root:
+
+```sh
+ANDROID_SERIAL=01408BH601027129 examples/wps/install-open-fonts.sh
+```
+
+The installer copies Liberation Sans, Serif, and Mono from the host, installs
+`fonts.conf`, verifies all six device files, and invalidates only its dedicated
+Fontconfig cache. Restart WPS after running it. The configured font paths point
+at `${APP}` directly; `files/wps-root` is legacy migration state and must not
+be treated as the application tree.
