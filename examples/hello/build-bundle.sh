@@ -37,7 +37,11 @@ if [[ -z "$rootfs_tzst" ]]; then
 fi
 [[ -f "$rootfs_tzst" ]] || { echo "missing rootfs.tzst: $rootfs_tzst" >&2; exit 1; }
 
-temporary="$(mktemp -d)"
+# The Winlator archive contains a much larger usr/lib tree than the compact
+# closure copied below. Do not consume the host's often size-limited /tmp
+# while extracting it; all other reproducible build state already lives here.
+mkdir -p "$repo_dir/build/tmp"
+temporary="$(TMPDIR="$repo_dir/build/tmp" mktemp -d)"
 trap 'rm -rf "$temporary"' EXIT
 tar --use-compress-program=unzstd -xf "$rootfs_tzst" -C "$temporary" ./usr/lib
 for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6 libX11.so.6 libxcb.so.1 \
