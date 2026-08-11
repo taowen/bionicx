@@ -56,7 +56,7 @@ static void usage(FILE *stream, const char *program) {
             "  --env NAME=VALUE         set an environment variable (repeatable)\n"
             "  --unset NAME             remove an environment variable (repeatable)\n"
             "  --argv0 VALUE            override target argv[0]\n"
-            "  --diagnose-signals       keep tracing and report fatal signal registers\n"
+            "  --diagnose-signals       report fatal registers and ELF mappings\n"
             "  --debug-stop             stop after bootstrap for an external debugger\n",
             program);
 }
@@ -208,6 +208,43 @@ static int wait_for_stop(pid_t child, int expected, const char *stage) {
     return status;
 }
 
+static void report_address_mapping(pid_t child, const char *name,
+                                   uint64_t address) {
+    if (address == 0) return;
+
+    char maps_path[64];
+    snprintf(maps_path, sizeof(maps_path), "/proc/%ld/maps", (long)child);
+    FILE *maps = fopen(maps_path, "re");
+    if (maps == NULL) {
+        fprintf(stderr, "bionicx-exec: %s maps unavailable: %s\n",
+                name, strerror(errno));
+        return;
+    }
+
+    char *line = NULL;
+    size_t capacity = 0;
+    while (getline(&line, &capacity, maps) >= 0) {
+        unsigned long long start = 0;
+        unsigned long long end = 0;
+        unsigned long long offset = 0;
+        char permissions[5] = {0};
+        if (sscanf(line, "%llx-%llx %4s %llx", &start, &end,
+                   permissions, &offset) != 4 || address < start ||
+                address >= end) {
+            continue;
+        }
+
+        size_t length = strlen(line);
+        if (length != 0 && line[length - 1] == '\n') line[length - 1] = '\0';
+        fprintf(stderr,
+                "bionicx-exec: %s mapping=%s file-offset=0x%llx\n",
+                name, line, offset + (unsigned long long)address - start);
+        break;
+    }
+    free(line);
+    fclose(maps);
+}
+
 static void report_fatal_signal(pid_t child, int signal_number) {
     struct user_pt_regs regs;
     struct iovec io = {.iov_base = &regs, .iov_len = sizeof(regs)};
@@ -222,6 +259,19 @@ static void report_fatal_signal(pid_t child, int signal_number) {
             " code=%d address=%p\n",
             signal_number, (uint64_t)regs.regs[8], (uint64_t)regs.pc,
             (uint64_t)regs.regs[30], info.si_code, info.si_addr);
+    fprintf(stderr,
+            "bionicx-exec: registers x0=0x%" PRIx64 " x1=0x%" PRIx64
+            " x2=0x%" PRIx64 " x3=0x%" PRIx64 " x4=0x%" PRIx64
+            " x5=0x%" PRIx64 " x6=0x%" PRIx64 " x7=0x%" PRIx64
+            " sp=0x%" PRIx64 "\n",
+            (uint64_t)regs.regs[0], (uint64_t)regs.regs[1],
+            (uint64_t)regs.regs[2], (uint64_t)regs.regs[3],
+            (uint64_t)regs.regs[4], (uint64_t)regs.regs[5],
+            (uint64_t)regs.regs[6], (uint64_t)regs.regs[7],
+            (uint64_t)regs.sp);
+    report_address_mapping(child, "pc", (uint64_t)regs.pc);
+    report_address_mapping(child, "lr", (uint64_t)regs.regs[30]);
+    report_address_mapping(child, "fault", (uint64_t)(uintptr_t)info.si_addr);
     fflush(stderr);
 }
 

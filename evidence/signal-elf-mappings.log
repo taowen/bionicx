@@ -1,0 +1,5 @@
+bionicx-exec: signal=11 syscall=129 pc=0x71b28da61c lr=0x5abba20860 code=0 address=0x27d200005861
+bionicx-exec: registers x0=0x0 x1=0xb x2=0x91 x3=0x6968000000000000 x4=0x800000 x5=0x3532361f1f x6=0x1f1fb63235000000 x7=0x2d2d016f65716f sp=0x7ff60bc010
+bionicx-exec: pc mapping=71b2870000-71b28fc000 r-xp 00044000 07:108 24                            /apex/com.android.runtime/lib64/bionic/libc.so file-offset=0xae61c
+bionicx-exec: lr mapping=5abba04000-5abba44000 r-xp 0000c000 fe:09 570                            /system/bin/sh file-offset=0x28860
+exit=139
