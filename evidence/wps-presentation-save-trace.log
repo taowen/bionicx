@@ -1,0 +1,9 @@
+BXDEVICE serial=01408BH601027129 api=34 abi=arm64-v8a
+BXPROFILE id=wps-office executable=wpp diagnostic=BIONICX_TRACE_FILES=1
+wps-file-trace: mkstemp template=??/PreXXXXXXXX result=-1 errno=2 (No such file or directory)
+wps-sysvipc-compat: fopen failed errno=2 path= caller=/data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6/libkso.so+0x364dbe0
+wps-file-trace: frame=2 module=/data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6/libkso.so+0x364e498
+wps-file-trace: frame=8 module=/data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6/libpptxrw.so+0x15a040
+BXSETUP mkdir=/data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6/??
+wps-file-trace: mkstemp template=??/PreAHoShq result=26 errno=0 (success)
+BXARCHIVE name=Presentation1.pptx bytes=36593 zip_test=pass

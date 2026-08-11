@@ -1,9 +1,12 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <errno.h>
+#include <execinfo.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,11 +54,221 @@ __attribute__((constructor)) static void debugger_rendezvous(void) {
     }
 }
 
-static void remember_stream_failure(const char *operation, const char *path) {
+static int trace_files_enabled(void);
+
+static void remember_stream_failure(const char *operation, const char *path,
+                                    void *caller) {
     snprintf(last_failed_stream, sizeof(last_failed_stream), "%s:%s",
              operation, path ? path : "<null>");
-    fprintf(stderr, "wps-sysvipc-compat: %s failed errno=%d path=%s\n",
-            operation, errno, path ? path : "<null>");
+    Dl_info module;
+    memset(&module, 0, sizeof(module));
+    if (dladdr(caller, &module) != 0 && module.dli_fbase != NULL) {
+        fprintf(stderr,
+                "wps-sysvipc-compat: %s failed errno=%d path=%s "
+                "caller=%s+0x%lx\n",
+                operation, errno, path ? path : "<null>",
+                module.dli_fname ? module.dli_fname : "<anonymous>",
+                (unsigned long)((uintptr_t)caller -
+                                (uintptr_t)module.dli_fbase));
+    } else {
+        fprintf(stderr,
+                "wps-sysvipc-compat: %s failed errno=%d path=%s caller=%p\n",
+                operation, errno, path ? path : "<null>", caller);
+    }
+    if (trace_files_enabled() && path != NULL && path[0] == '\0') {
+        void *frames[16];
+        int count = backtrace(frames, (int)(sizeof(frames) / sizeof(frames[0])));
+        for (int i = 1; i < count; ++i) {
+            Dl_info frame;
+            memset(&frame, 0, sizeof(frame));
+            if (dladdr(frames[i], &frame) != 0 && frame.dli_fbase != NULL) {
+                fprintf(stderr, "wps-file-trace: frame=%d module=%s+0x%lx\n",
+                        i, frame.dli_fname ? frame.dli_fname : "<anonymous>",
+                        (unsigned long)((uintptr_t)frames[i] -
+                                        (uintptr_t)frame.dli_fbase));
+            } else {
+                fprintf(stderr, "wps-file-trace: frame=%d address=%p\n", i,
+                        frames[i]);
+            }
+        }
+    }
+}
+
+static int trace_files_enabled(void) {
+    static int initialized;
+    static int enabled;
+    if (!initialized) {
+        enabled = getenv("BIONICX_TRACE_FILES") != NULL;
+        initialized = 1;
+    }
+    return enabled;
+}
+
+static void trace_file_pair(const char *operation, const char *old_path,
+                            const char *new_path, int result,
+                            int saved_errno) {
+    if (!trace_files_enabled()) return;
+    int displayed_errno = result == 0 ? 0 : saved_errno;
+    fprintf(stderr,
+            "wps-file-trace: %s old=%s new=%s result=%d errno=%d (%s)\n",
+            operation, old_path ? old_path : "<null>",
+            new_path ? new_path : "<null>", result, displayed_errno,
+            result == 0 ? "success" : strerror(displayed_errno));
+}
+
+static void trace_temporary_file(const char *operation, const char *path,
+                                 int result, int saved_errno) {
+    if (!trace_files_enabled()) return;
+    int displayed_errno = result >= 0 ? 0 : saved_errno;
+    fprintf(stderr,
+            "wps-file-trace: %s template=%s result=%d errno=%d (%s)\n",
+            operation, path ? path : "<null>", result, displayed_errno,
+            result >= 0 ? "success" : strerror(displayed_errno));
+}
+
+int mkstemp(char *path) {
+    static int (*next_mkstemp)(char *);
+    if (next_mkstemp == NULL)
+        next_mkstemp = (int (*)(char *))dlsym(RTLD_NEXT, "mkstemp");
+    if (next_mkstemp == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    int result = next_mkstemp(path);
+    int saved_errno = errno;
+    trace_temporary_file("mkstemp", path, result, saved_errno);
+    errno = saved_errno;
+    return result;
+}
+
+int mkstemps(char *path, int suffix_length) {
+    static int (*next_mkstemps)(char *, int);
+    if (next_mkstemps == NULL)
+        next_mkstemps = (int (*)(char *, int))dlsym(RTLD_NEXT, "mkstemps");
+    if (next_mkstemps == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    int result = next_mkstemps(path, suffix_length);
+    int saved_errno = errno;
+    trace_temporary_file("mkstemps", path, result, saved_errno);
+    errno = saved_errno;
+    return result;
+}
+
+int mkostemp(char *path, int flags) {
+    static int (*next_mkostemp)(char *, int);
+    if (next_mkostemp == NULL)
+        next_mkostemp = (int (*)(char *, int))dlsym(RTLD_NEXT, "mkostemp");
+    if (next_mkostemp == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    int result = next_mkostemp(path, flags);
+    int saved_errno = errno;
+    trace_temporary_file("mkostemp", path, result, saved_errno);
+    errno = saved_errno;
+    return result;
+}
+
+int mkostemps(char *path, int suffix_length, int flags) {
+    static int (*next_mkostemps)(char *, int, int);
+    if (next_mkostemps == NULL)
+        next_mkostemps = (int (*)(char *, int, int))dlsym(RTLD_NEXT,
+                                                             "mkostemps");
+    if (next_mkostemps == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    int result = next_mkostemps(path, suffix_length, flags);
+    int saved_errno = errno;
+    trace_temporary_file("mkostemps", path, result, saved_errno);
+    errno = saved_errno;
+    return result;
+}
+
+int link(const char *old_path, const char *new_path) {
+    static int (*next_link)(const char *, const char *);
+    if (next_link == NULL)
+        next_link = (int (*)(const char *, const char *))dlsym(RTLD_NEXT,
+                                                                "link");
+    if (next_link == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    int result = next_link(old_path, new_path);
+    int saved_errno = errno;
+    trace_file_pair("link", old_path, new_path, result, saved_errno);
+    errno = saved_errno;
+    return result;
+}
+
+int linkat(int old_directory, const char *old_path, int new_directory,
+           const char *new_path, int flags) {
+    static int (*next_linkat)(int, const char *, int, const char *, int);
+    if (next_linkat == NULL)
+        next_linkat = (int (*)(int, const char *, int, const char *, int))
+                dlsym(RTLD_NEXT, "linkat");
+    if (next_linkat == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    int result = next_linkat(old_directory, old_path, new_directory, new_path,
+                             flags);
+    int saved_errno = errno;
+    if (trace_files_enabled()) {
+        int displayed_errno = result == 0 ? 0 : saved_errno;
+        fprintf(stderr,
+                "wps-file-trace: linkat olddir=%d old=%s newdir=%d new=%s "
+                "flags=0x%x result=%d errno=%d (%s)\n",
+                old_directory, old_path, new_directory, new_path, flags,
+                result, displayed_errno,
+                result == 0 ? "success" : strerror(displayed_errno));
+    }
+    errno = saved_errno;
+    return result;
+}
+
+int rename(const char *old_path, const char *new_path) {
+    static int (*next_rename)(const char *, const char *);
+    if (next_rename == NULL)
+        next_rename = (int (*)(const char *, const char *))dlsym(RTLD_NEXT,
+                                                                  "rename");
+    if (next_rename == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    int result = next_rename(old_path, new_path);
+    int saved_errno = errno;
+    trace_file_pair("rename", old_path, new_path, result, saved_errno);
+    errno = saved_errno;
+    return result;
+}
+
+int renameat(int old_directory, const char *old_path, int new_directory,
+             const char *new_path) {
+    static int (*next_renameat)(int, const char *, int, const char *);
+    if (next_renameat == NULL)
+        next_renameat = (int (*)(int, const char *, int, const char *))
+                dlsym(RTLD_NEXT, "renameat");
+    if (next_renameat == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    int result = next_renameat(old_directory, old_path, new_directory,
+                               new_path);
+    int saved_errno = errno;
+    if (trace_files_enabled()) {
+        int displayed_errno = result == 0 ? 0 : saved_errno;
+        fprintf(stderr,
+                "wps-file-trace: renameat olddir=%d old=%s newdir=%d new=%s "
+                "result=%d errno=%d (%s)\n",
+                old_directory, old_path, new_directory, new_path, result,
+                displayed_errno,
+                result == 0 ? "success" : strerror(displayed_errno));
+    }
+    errno = saved_errno;
+    return result;
 }
 
 FILE *fopen(const char *path, const char *mode) {
@@ -68,7 +281,8 @@ FILE *fopen(const char *path, const char *mode) {
         return NULL;
     }
     FILE *result = next_fopen(path, mode);
-    if (result == NULL) remember_stream_failure("fopen", path);
+    if (result == NULL)
+        remember_stream_failure("fopen", path, __builtin_return_address(0));
     return result;
 }
 
@@ -82,7 +296,8 @@ FILE *fopen64(const char *path, const char *mode) {
         return NULL;
     }
     FILE *result = next_fopen64(path, mode);
-    if (result == NULL) remember_stream_failure("fopen64", path);
+    if (result == NULL)
+        remember_stream_failure("fopen64", path, __builtin_return_address(0));
     return result;
 }
 
