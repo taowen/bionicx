@@ -171,6 +171,9 @@ static void probe_xkb(Display *display) {
                                     XkbStateNotifyMask);
     XkbDescPtr map = XkbGetMap(display, XkbAllClientInfoMask,
                                XkbUseCoreKbd);
+    int names_status = map ? XkbGetNames(
+        display, XkbComponentNamesMask | XkbKeyTypeNamesMask | XkbKeyNamesMask,
+        map) : BadImplementation;
     XkbDeviceInfoPtr device = XkbGetDeviceInfo(
         display, XkbXI_AllDeviceFeaturesMask, XkbUseCoreKbd,
         XkbDfltXIClass, XkbDfltXIId);
@@ -184,7 +187,9 @@ static void probe_xkb(Display *display) {
     bool ok = selected && device && device->name
               && strcmp(device->name, "BionicX keyboard") == 0
               && device->device_spec == 3 && map_status == Success
-              && map && map->map
+              && map && map->map && names_status == Success && map->names
+              && map->names->symbols != None && map->map->types[0].name != None
+              && memcmp(map->names->keys[9].name, "ESC\0", 4) == 0
               && map->map->num_types >= 1
               && map->min_key_code <= 9 && map->max_key_code >= 9
               && XkbKeyNumSyms(map, 9) == 1
@@ -192,9 +197,10 @@ static void probe_xkb(Display *display) {
               && sync_without_error(display, before);
     char detail[160];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d opcode=%d selected=%d device=%s status=%d keys=%u-%u types=%d syms=%d offset=%d escape=0x%lx",
+             "version=%d.%d opcode=%d selected=%d device=%s map=%d names=%d keys=%u-%u types=%d syms=%d offset=%d escape=0x%lx",
              major, minor, opcode, selected,
              device && device->name ? device->name : "(null)", map_status,
+             names_status,
              map ? map->min_key_code : 0,
              map ? map->max_key_code : 0,
              map && map->map ? map->map->num_types : 0,

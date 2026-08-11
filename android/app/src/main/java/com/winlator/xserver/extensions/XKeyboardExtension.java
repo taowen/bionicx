@@ -6,6 +6,7 @@ import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.xserver.Keyboard;
+import com.winlator.xserver.Atom;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.errors.BadImplementation;
@@ -27,11 +28,23 @@ public class XKeyboardExtension extends Extension {
     private static final int REQUIRED_KEY_TYPES = 4;
     private static final int ESCAPE_KEYCODE = 9;
     private static final int XK_ESCAPE = 0xff1b;
+    private static final int XKB_COMPONENT_NAMES_MASK = 0x3f;
+    private static final int XKB_KEY_TYPE_NAMES_MASK = 1 << 6;
+    private static final int XKB_KEY_NAMES_MASK = 1 << 9;
+    private static final int XKB_SUPPORTED_NAMES_MASK = XKB_COMPONENT_NAMES_MASK
+            | XKB_KEY_TYPE_NAMES_MASK | XKB_KEY_NAMES_MASK;
+    private static final String[] COMPONENT_NAMES = {
+        "bionicx", "bionicx", "bionicx", "bionicx", "BIONICX", "bionicx"
+    };
+    private static final String[] KEY_TYPE_NAMES = {
+        "ONE_LEVEL", "TWO_LEVEL", "ALPHABETIC", "KEYPAD"
+    };
 
     private static abstract class ClientOpcodes {
         private static final byte USE_EXTENSION = 0;
         private static final byte SELECT_EVENTS = 1;
         private static final byte GET_MAP = 8;
+        private static final byte GET_NAMES = 17;
         private static final byte GET_DEVICE_INFO = 24;
     }
 
@@ -181,6 +194,73 @@ public class XKeyboardExtension extends Extension {
         }
     }
 
+    private void getNames(XClient client, XInputStream inputStream,
+                          XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        int requested = inputStream.readInt();
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+
+        int present = requested & XKB_SUPPORTED_NAMES_MASK;
+        int atomCount = 0;
+        for (int bit = 0; bit < COMPONENT_NAMES.length; bit++) {
+            if ((present & (1 << bit)) != 0) atomCount++;
+        }
+        if ((present & XKB_KEY_TYPE_NAMES_MASK) != 0) {
+            atomCount += REQUIRED_KEY_TYPES;
+        }
+        int keyCount = (present & XKB_KEY_NAMES_MASK) != 0
+                ? Keyboard.MAX_KEYCODE - Keyboard.MIN_KEYCODE + 1 : 0;
+        int payloadBytes = atomCount * 4 + keyCount * 4;
+
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)CORE_KEYBOARD_ID);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(payloadBytes / 4);
+            outputStream.writeInt(present);
+            outputStream.writeByte((byte)Keyboard.MIN_KEYCODE);
+            outputStream.writeByte((byte)Keyboard.MAX_KEYCODE);
+            outputStream.writeByte((byte)((present & XKB_KEY_TYPE_NAMES_MASK) != 0
+                    ? REQUIRED_KEY_TYPES : 0));
+            outputStream.writeByte((byte)0); // group-name mask
+            outputStream.writeShort((short)0); // virtual-modifier mask
+            outputStream.writeByte((byte)(keyCount > 0 ? Keyboard.MIN_KEYCODE : 0));
+            outputStream.writeByte((byte)keyCount);
+            outputStream.writeInt(0); // indicator-name mask
+            outputStream.writeByte((byte)0); // radio groups
+            outputStream.writeByte((byte)0); // key aliases
+            outputStream.writeShort((short)0); // types with level names
+            outputStream.writeInt(0);
+
+            for (int bit = 0; bit < COMPONENT_NAMES.length; bit++) {
+                if ((present & (1 << bit)) != 0) {
+                    outputStream.writeInt(Atom.internAtom(COMPONENT_NAMES[bit]));
+                }
+            }
+            if ((present & XKB_KEY_TYPE_NAMES_MASK) != 0) {
+                for (String name : KEY_TYPE_NAMES) {
+                    outputStream.writeInt(Atom.internAtom(name));
+                }
+            }
+            if (keyCount > 0) {
+                for (int keycode = Keyboard.MIN_KEYCODE;
+                     keycode <= Keyboard.MAX_KEYCODE; keycode++) {
+                    if (keycode == ESCAPE_KEYCODE) {
+                        outputStream.write(new byte[]{'E', 'S', 'C', 0});
+                    }
+                    else {
+                        outputStream.write(String.format("K%03d", keycode)
+                                .getBytes(StandardCharsets.ISO_8859_1));
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -194,6 +274,9 @@ public class XKeyboardExtension extends Extension {
                 break;
             case ClientOpcodes.GET_MAP:
                 getMap(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_NAMES:
+                getNames(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.GET_DEVICE_INFO:
                 getDeviceInfo(client, inputStream, outputStream);
