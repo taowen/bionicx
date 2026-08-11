@@ -1,0 +1,9 @@
+08-11 23:44:53.578  1641  1682 I BionicX : launching BionicX X11 desktop extension probe: [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --loader, /data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1, --library-path, /data/user/0/io.taowen.bx/files/apps/x11-desktop-probe/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib, --cwd, /data/user/0/io.taowen.bx/files/apps/x11-desktop-probe, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/x11-desktop-probe, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/x11-desktop-probe, --env, LANG=en_US.UTF-8, --env, LOCPATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/locale, --, /data/user/0/io.taowen.bx/files/apps/x11-desktop-probe/bin/x11-desktop-probe, --duration, 8]
+08-11 23:44:53.584  1641  1682 I BionicX : bionicx-exec: running untraced pid=1689
+08-11 23:44:53.593  1641  1682 I BionicX : BXTEST FAIL xrender      extension-missing
+08-11 23:44:53.593  1641  1682 I BionicX : BXTEST FAIL xfixes       extension-missing
+08-11 23:44:53.593  1641  1682 I BionicX : BXTEST FAIL randr        extension-missing
+08-11 23:44:53.593  1641  1682 I BionicX : BXTEST FAIL xinput2      extension-missing
+08-11 23:44:53.593  1641  1682 I BionicX : BXTEST FAIL xkeyboard    extension-missing
+08-11 23:44:53.594  1641  1682 I BionicX : BXCAP mit-shm unavailable version=0.0 pixmaps=0
+08-11 23:44:53.594  1641  1682 I BionicX : BXSUMMARY desktop-x11 passed=0 failed=5 xerrors=0

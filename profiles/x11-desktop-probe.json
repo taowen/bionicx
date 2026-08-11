@@ -1,0 +1,22 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "x11-desktop-probe",
+  "name": "BionicX X11 desktop extension probe",
+  "display": {"dpi": 144, "socket": "filesystem"},
+  "launch": {
+    "mode": "loader",
+    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
+    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
+    "executable": "${APP}/bin/x11-desktop-probe",
+    "workingDirectory": "${APP}",
+    "arguments": ["--duration", "8"],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LANG": "en_US.UTF-8",
+      "LOCPATH": "${RUNTIME}/usr/lib/locale"
+    }
+  }
+}
