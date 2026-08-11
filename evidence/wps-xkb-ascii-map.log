@@ -1,0 +1,3 @@
+08-12 01:01:02.937 30792 30792 I BionicX : profile=wps-office display=1920x1080@144 socket=filesystem
+08-12 01:01:02.954 30792 30817 I BionicX : bionicx-exec: running untraced pid=30822
+08-12 01:01:03.083 30792 30817 I BionicX : qt.qpa.xkeyboard: failed to compile a keymap

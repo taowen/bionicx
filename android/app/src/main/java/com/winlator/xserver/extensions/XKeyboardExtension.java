@@ -27,6 +27,7 @@ public class XKeyboardExtension extends Extension {
     private static final int XKB_KEY_SYMS_MASK = 2;
     private static final int REQUIRED_KEY_TYPES = 4;
     private static final int ESCAPE_KEYCODE = 9;
+    private static final int LAST_MAPPED_KEYCODE = 126;
     private static final int XK_ESCAPE = 0xff1b;
     private static final int XKB_COMPONENT_NAMES_MASK = 0x3f;
     private static final int XKB_KEY_TYPE_NAMES_MASK = 1 << 6;
@@ -100,7 +101,16 @@ public class XKeyboardExtension extends Extension {
                         XOutputStream outputStream) throws IOException {
         inputStream.skip(client.getRemainingRequestLength());
         int present = XKB_KEY_TYPES_MASK | XKB_KEY_SYMS_MASK;
-        int variableBytes = REQUIRED_KEY_TYPES * 8 + 8 + 4;
+        int mappedKeyCount = LAST_MAPPED_KEYCODE - Keyboard.MIN_KEYCODE + 1;
+        int totalKeysyms = 0;
+        for (int keycode = Keyboard.MIN_KEYCODE;
+             keycode <= LAST_MAPPED_KEYCODE; keycode++) {
+            int lower = xServer.keyboard.getKeysym(keycode, 0);
+            int upper = xServer.keyboard.getKeysym(keycode, 1);
+            if (lower != 0) totalKeysyms += upper != 0 && upper != lower ? 2 : 1;
+        }
+        int typeBytes = 8 + 3 * (8 + 8);
+        int variableBytes = typeBytes + mappedKeyCount * 8 + totalKeysyms * 4;
         int replyLength = (8 + variableBytes) / 4;
 
         try (XStreamLock lock = outputStream.lock()) {
@@ -115,9 +125,9 @@ public class XKeyboardExtension extends Extension {
             outputStream.writeByte((byte)0); // first type
             outputStream.writeByte((byte)REQUIRED_KEY_TYPES); // types in reply
             outputStream.writeByte((byte)REQUIRED_KEY_TYPES); // total types
-            outputStream.writeByte((byte)ESCAPE_KEYCODE);
-            outputStream.writeShort((short)1); // total keysyms
-            outputStream.writeByte((byte)1); // keys with symbols
+            outputStream.writeByte((byte)Keyboard.MIN_KEYCODE);
+            outputStream.writeShort((short)totalKeysyms);
+            outputStream.writeByte((byte)mappedKeyCount);
             outputStream.writeByte((byte)0); // first action key
             outputStream.writeShort((short)0); // total actions
             outputStream.writeByte((byte)0); // action keys
@@ -136,23 +146,41 @@ public class XKeyboardExtension extends Extension {
             outputStream.writeByte((byte)0);
             outputStream.writeShort((short)0); // virtual modifiers
 
-            // Four required one-level types with no modifier map entries.
+            // Required ONE_LEVEL followed by three valid Shift-based
+            // two-level types (TWO_LEVEL, ALPHABETIC and KEYPAD).
             for (int i = 0; i < REQUIRED_KEY_TYPES; i++) {
-                outputStream.writeByte((byte)0); // mask
-                outputStream.writeByte((byte)0); // real modifiers
+                boolean twoLevels = i != 0;
+                outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // mask
+                outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // real mods
                 outputStream.writeShort((short)0); // virtual modifiers
-                outputStream.writeByte((byte)1); // levels
-                outputStream.writeByte((byte)0); // map entries
+                outputStream.writeByte((byte)(twoLevels ? 2 : 1)); // levels
+                outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // entries
                 outputStream.writeByte((byte)0); // preserve
                 outputStream.writeByte((byte)0);
+                if (twoLevels) {
+                    outputStream.writeByte((byte)1); // active
+                    outputStream.writeByte((byte)1); // Shift mask
+                    outputStream.writeByte((byte)1); // level 2
+                    outputStream.writeByte((byte)1); // real Shift modifier
+                    outputStream.writeShort((short)0);
+                    outputStream.writeShort((short)0);
+                }
             }
 
-            // One symbol-map record for keycode 9, followed by XK_Escape.
-            outputStream.writePad(4); // key type indices for four groups
-            outputStream.writeByte((byte)1); // one keyboard group
-            outputStream.writeByte((byte)1); // width
-            outputStream.writeShort((short)1); // symbols
-            outputStream.writeInt(XK_ESCAPE);
+            for (int keycode = Keyboard.MIN_KEYCODE;
+                 keycode <= LAST_MAPPED_KEYCODE; keycode++) {
+                int lower = xServer.keyboard.getKeysym(keycode, 0);
+                int upper = xServer.keyboard.getKeysym(keycode, 1);
+                int symbolCount = lower == 0 ? 0
+                        : upper != 0 && upper != lower ? 2 : 1;
+                outputStream.writeByte((byte)(symbolCount == 2 ? 1 : 0));
+                outputStream.writePad(3); // unused group key-type indices
+                outputStream.writeByte((byte)(symbolCount > 0 ? 1 : 0));
+                outputStream.writeByte((byte)symbolCount);
+                outputStream.writeShort((short)symbolCount);
+                if (symbolCount > 0) outputStream.writeInt(lower);
+                if (symbolCount > 1) outputStream.writeInt(upper);
+            }
         }
     }
 
