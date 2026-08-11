@@ -45,7 +45,10 @@ for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6 libX11.so.6 libxcb.so.1
         libXfixes.so.3 libXrandr.so.2 libXi.so.6; do
     cp -L "$temporary/usr/lib/$library" "$output_dir/rootfs/usr/lib/"
 done
-android_glibc="$($repo_dir/tools/build-android-glibc.sh)"
+# A cold toolchain build emits upstream patch/build progress on stdout before
+# its final artifact path. Preserve that useful output while treating only the
+# last line as the machine-readable result.
+android_glibc="$("$repo_dir/tools/build-android-glibc.sh" | tee /dev/stderr | tail -n 1)"
 for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6; do
     cp "$android_glibc/$library" "$output_dir/rootfs/usr/lib/"
 done
