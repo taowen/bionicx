@@ -215,6 +215,37 @@ int main(int argc, char **argv) {
     RECORD(tree_ok);
     if (children) XFree(children);
 
+    before = x_errors;
+    Window input_only = XCreateWindow(display, window, 3, 4, 40, 30, 0, 0,
+                                      InputOnly, CopyFromParent, 0, NULL);
+    XWindowAttributes input_attributes = {0};
+    Window geometry_root = None;
+    int geometry_x = 0;
+    int geometry_y = 0;
+    unsigned geometry_width = 0;
+    unsigned geometry_height = 0;
+    unsigned geometry_border = 0;
+    unsigned geometry_depth = 99;
+    Status attributes_status =
+            XGetWindowAttributes(display, input_only, &input_attributes);
+    Status geometry_status = XGetGeometry(
+            display, input_only, &geometry_root, &geometry_x, &geometry_y,
+            &geometry_width, &geometry_height, &geometry_border,
+            &geometry_depth);
+    XSync(display, False);
+    bool input_geometry_ok = x_errors == before && attributes_status &&
+            geometry_status && input_attributes.class == InputOnly &&
+            geometry_root == root && geometry_x == 3 && geometry_y == 4 &&
+            geometry_width == 40 && geometry_height == 30 &&
+            geometry_border == 0 && geometry_depth == 0;
+    snprintf(detail, sizeof(detail),
+             "class=%d geometry=%ux%u%+d%+d border=%u depth=%u",
+             input_attributes.class, geometry_width, geometry_height,
+             geometry_x, geometry_y, geometry_border, geometry_depth);
+    result("input-only-geometry", input_geometry_ok,
+           input_geometry_ok ? detail : last_x_error);
+    RECORD(input_geometry_ok);
+
     int translated_x = 0;
     int translated_y = 0;
     Window translated_child = None;
@@ -344,6 +375,7 @@ int main(int argc, char **argv) {
 
     XFreeCursor(display, cursor);
     XFreePixmap(display, cursor_source);
+    XDestroyWindow(display, input_only);
     XDestroyWindow(display, child);
     XFreePixmap(display, pixmap);
     XFreeGC(display, gc);
