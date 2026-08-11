@@ -1,0 +1,10 @@
+device=01408BH601027129 Android=14 API=34 ABI=arm64-v8a
+profile=x11-probe injected=abc_A,tap,swipe
+BXINPUT keycode=38 state=0x0 base=0x61 shifted=0x41
+BXINPUT keycode=50 state=0x0 base=0xffe1 shifted=0xffe1
+BXINPUT keycode=20 state=0x1 base=0x2d shifted=0x5f
+BXINPUT release keycode=50 state=0x1
+BXINPUT keycode=38 state=0x1 base=0x61 shifted=0x41
+BXTEST PASS modifier-event-state lower=1 shift-press=1 underscore=1 shift-release=1 releases=7
+BXOBS input-events keys=7 buttons=1 motions=43
+BXSUMMARY passed=14 failed=0 observational_input=yes

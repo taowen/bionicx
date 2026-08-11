@@ -282,15 +282,24 @@ static void probe_xkbcommon(Display *display) {
     const xkb_keysym_t *symbols = NULL;
     int symbol_count = keymap && keycode != XKB_KEYCODE_INVALID
         ? xkb_keymap_key_get_syms_by_level(keymap, keycode, 0, 0, &symbols) : 0;
+    xkb_keysym_t base_minus = state
+        ? xkb_state_key_get_one_sym(state, 20) : XKB_KEY_NoSymbol;
+    if (state) xkb_state_update_key(state, 50, XKB_KEY_DOWN);
+    xkb_keysym_t shifted_minus = state
+        ? xkb_state_key_get_one_sym(state, 20) : XKB_KEY_NoSymbol;
+    if (state) xkb_state_update_key(state, 50, XKB_KEY_UP);
     bool ok = connection && context && device == 3 && keymap && state
               && keycode == 38 && symbol_count == 1
               && symbols && symbols[0] == XKB_KEY_a
-              && xkb_state_key_get_one_sym(state, keycode) == XKB_KEY_a;
+              && xkb_state_key_get_one_sym(state, keycode) == XKB_KEY_a
+              && base_minus == XKB_KEY_minus
+              && shifted_minus == XKB_KEY_underscore;
     char detail[160];
     snprintf(detail, sizeof(detail),
-             "device=%d keymap=%d state=%d keycode=%u syms=%d first=0x%x",
+             "device=%d keymap=%d state=%d keycode=%u syms=%d first=0x%x minus=0x%x/0x%x",
              device, keymap != NULL, state != NULL, keycode, symbol_count,
-             symbols && symbol_count > 0 ? symbols[0] : 0);
+             symbols && symbol_count > 0 ? symbols[0] : 0,
+             base_minus, shifted_minus);
     result("xkbcommon", ok, detail);
     if (state) xkb_state_unref(state);
     if (keymap) xkb_keymap_unref(keymap);

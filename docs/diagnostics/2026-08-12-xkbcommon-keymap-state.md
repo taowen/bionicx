@@ -45,7 +45,5 @@ visible result is `evidence/wps-xkb-state-input.png`.
 
 This exposed the next, narrower input gap: letters currently arrive in upper
 case and shifted punctuation is not selected (underscore arrived as minus).
-`evidence/wps-xkb-state-caps2.png` records that behavior. It is not an XKB
-construction failure; the next controlled test should exercise live modifier
-press/release state and XKB state notifications before claiming full keyboard
-fidelity.
+`evidence/wps-xkb-state-caps2.png` records that behavior. The follow-up core
+event and key-action tests are in `2026-08-12-xkb-modifier-actions.md`.

@@ -69,16 +69,20 @@ public class Keyboard {
         }
         else if (!pressedKeys.contains(keycode)) {
             pressedKeys.add(keycode);
-            if (isModifier(keycode)) modifiersMask.set(getModifierFlag(keycode));
+            // Core KeyPress.state describes the state immediately before the
+            // event, so publish a modifier press before applying its mask.
             triggerOnKeyPress(keycode, keysym);
+            if (isModifier(keycode)) modifiersMask.set(getModifierFlag(keycode));
         }
     }
 
     public void setKeyRelease(byte keycode) {
         if (!isModifierSticky(keycode) && pressedKeys.contains(keycode)) {
+            // Conversely, a modifier is still logically down in its own
+            // KeyRelease event and is cleared only after delivery.
+            triggerOnKeyRelease(keycode);
             pressedKeys.remove(keycode);
             if (isModifier(keycode)) modifiersMask.unset(getModifierFlag(keycode));
-            triggerOnKeyRelease(keycode);
         }
     }
 
@@ -275,6 +279,8 @@ public class Keyboard {
         keyboard.setKeysyms(XKeycode.KEY_CTRL_R.id, 65508, 0);
         keyboard.setKeysyms(XKeycode.KEY_ALT_L.id, 65511, 0);
         keyboard.setKeysyms(XKeycode.KEY_ALT_R.id, 65512, 0);
+        keyboard.setKeysyms(XKeycode.KEY_CAPS_LOCK.id, 65509, 0);
+        keyboard.setKeysyms(XKeycode.KEY_NUM_LOCK.id, 65407, 0);
         keyboard.setKeysyms(XKeycode.KEY_TAB.id, 65289, 0);
         keyboard.setKeysyms(XKeycode.KEY_SPACE.id, 32, 32);
         keyboard.setKeysyms(XKeycode.KEY_A.id, 97, 65);

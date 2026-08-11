@@ -35,6 +35,7 @@ public class XKeyboardExtension extends Extension {
             | XKB_EXPLICIT_COMPONENTS_MASK | XKB_MODIFIER_MAP_MASK
             | XKB_VIRTUAL_MOD_MAP_MASK;
     private static final int REQUIRED_KEY_TYPES = 4;
+    private static final int MODIFIER_ACTION_COUNT = 8;
     private static final int ESCAPE_KEYCODE = 9;
     private static final int LAST_MAPPED_KEYCODE = 126;
     private static final int XK_ESCAPE = 0xff1b;
@@ -131,8 +132,34 @@ public class XKeyboardExtension extends Extension {
     }
 
     private int getMapVariableBytes() {
-        return 8 + 3 * (8 + 8) + Keyboard.KEYS_COUNT * 8
-                + getTotalKeysyms() * 4 + Keyboard.KEYS_COUNT;
+        int typeBytes = 8 + 16 + 32 + 16;
+        return typeBytes + Keyboard.KEYS_COUNT * 8
+                + getTotalKeysyms() * 4 + Keyboard.KEYS_COUNT
+                + MODIFIER_ACTION_COUNT * 8;
+    }
+
+    private int getModifierActionMask(int keycode) {
+        switch (keycode) {
+            case 50:
+            case 62:
+                return 1; // Shift
+            case 66:
+                return 2; // Lock
+            case 37:
+            case 105:
+                return 4; // Control
+            case 64:
+            case 108:
+                return 8; // Mod1 / Alt
+            case 77:
+                return 16; // Mod2 / NumLock
+            default:
+                return 0;
+        }
+    }
+
+    private boolean isLockingModifier(int keycode) {
+        return keycode == 66 || keycode == 77;
     }
 
     private void writeMapReply(XClient client, XOutputStream outputStream) {
@@ -156,7 +183,7 @@ public class XKeyboardExtension extends Extension {
         outputStream.writeShort((short)totalKeysyms);
         outputStream.writeByte((byte)Keyboard.KEYS_COUNT);
         outputStream.writeByte((byte)Keyboard.MIN_KEYCODE); // first action key
-        outputStream.writeShort((short)0); // total actions
+        outputStream.writeShort((short)MODIFIER_ACTION_COUNT);
         outputStream.writeByte((byte)Keyboard.KEYS_COUNT); // action keys
         outputStream.writeByte((byte)0); // first behavior key
         outputStream.writeByte((byte)0); // behavior keys
@@ -173,15 +200,18 @@ public class XKeyboardExtension extends Extension {
         outputStream.writeByte((byte)0);
         outputStream.writeShort((short)0); // virtual modifiers
 
-        // Required ONE_LEVEL followed by three valid Shift-based
-        // two-level types (TWO_LEVEL, ALPHABETIC and KEYPAD).
+        // ONE_LEVEL, TWO_LEVEL, ALPHABETIC and KEYPAD. ALPHABETIC maps
+        // Shift, Lock and Shift+Lock to the conventional two levels.
         for (int i = 0; i < REQUIRED_KEY_TYPES; i++) {
             boolean twoLevels = i != 0;
-            outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // mask
-            outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // real mods
+            boolean alphabetic = i == 2;
+            int modifierMask = alphabetic ? 3 : twoLevels ? 1 : 0;
+            int entryCount = alphabetic ? 3 : twoLevels ? 1 : 0;
+            outputStream.writeByte((byte)modifierMask);
+            outputStream.writeByte((byte)modifierMask);
             outputStream.writeShort((short)0); // virtual modifiers
             outputStream.writeByte((byte)(twoLevels ? 2 : 1)); // levels
-            outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // entries
+            outputStream.writeByte((byte)entryCount);
             outputStream.writeByte((byte)0); // preserve
             outputStream.writeByte((byte)0);
             if (twoLevels) {
@@ -189,6 +219,20 @@ public class XKeyboardExtension extends Extension {
                 outputStream.writeByte((byte)1); // Shift mask
                 outputStream.writeByte((byte)1); // level 2
                 outputStream.writeByte((byte)1); // real Shift modifier
+                outputStream.writeShort((short)0);
+                outputStream.writeShort((short)0);
+            }
+            if (alphabetic) {
+                outputStream.writeByte((byte)1); // active
+                outputStream.writeByte((byte)2); // Lock mask
+                outputStream.writeByte((byte)1); // level 2
+                outputStream.writeByte((byte)2); // real Lock modifier
+                outputStream.writeShort((short)0);
+                outputStream.writeShort((short)0);
+                outputStream.writeByte((byte)1); // active
+                outputStream.writeByte((byte)3); // Shift + Lock mask
+                outputStream.writeByte((byte)0); // level 1
+                outputStream.writeByte((byte)3);
                 outputStream.writeShort((short)0);
                 outputStream.writeShort((short)0);
             }
@@ -200,7 +244,9 @@ public class XKeyboardExtension extends Extension {
             int upper = xServer.keyboard.getKeysym(keycode, 1);
             int symbolCount = lower == 0 ? 0
                     : upper != 0 && upper != lower ? 2 : 1;
-            outputStream.writeByte((byte)(symbolCount == 2 ? 1 : 0));
+            int typeIndex = symbolCount != 2 ? 0
+                    : lower >= 'a' && lower <= 'z' ? 2 : 1;
+            outputStream.writeByte((byte)typeIndex);
             outputStream.writePad(3); // unused group key-type indices
             outputStream.writeByte((byte)(symbolCount > 0 ? 1 : 0));
             outputStream.writeByte((byte)symbolCount);
@@ -208,7 +254,21 @@ public class XKeyboardExtension extends Extension {
             if (symbolCount > 0) outputStream.writeInt(lower);
             if (symbolCount > 1) outputStream.writeInt(upper);
         }
-        outputStream.writePad(Keyboard.KEYS_COUNT); // zero actions per key
+        for (int keycode = Keyboard.MIN_KEYCODE;
+             keycode <= Keyboard.MAX_KEYCODE; keycode++) {
+            outputStream.writeByte((byte)(getModifierActionMask(keycode) != 0
+                    ? 1 : 0));
+        }
+        for (int keycode = Keyboard.MIN_KEYCODE;
+             keycode <= Keyboard.MAX_KEYCODE; keycode++) {
+            int mask = getModifierActionMask(keycode);
+            if (mask == 0) continue;
+            outputStream.writeByte((byte)(isLockingModifier(keycode) ? 3 : 1));
+            outputStream.writeByte((byte)0); // action flags
+            outputStream.writeByte((byte)mask);
+            outputStream.writeByte((byte)mask);
+            outputStream.writePad(4);
+        }
     }
 
     private void getMap(XClient client, XInputStream inputStream,

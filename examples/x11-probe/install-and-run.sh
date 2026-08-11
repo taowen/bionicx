@@ -18,3 +18,7 @@ install=("$repo_dir/tools/install-profile.sh"
 "${adb[@]}" logcat -c
 "${adb[@]}" shell am force-stop io.taowen.bx
 "${adb[@]}" shell am start -W -n io.taowen.bx/com.winlator.BionicXActivity
+sleep 1
+"${adb[@]}" shell input text abc_A
+"${adb[@]}" shell input tap 480 360
+"${adb[@]}" shell input swipe 520 380 760 520 350

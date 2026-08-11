@@ -3,6 +3,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <errno.h>
 #include <gnu/libc-version.h>
 #include <stdbool.h>
@@ -111,7 +112,8 @@ int main(int argc, char **argv) {
                                          BlackPixel(display, screen),
                                          BlackPixel(display, screen));
     XSelectInput(display, window, ExposureMask | StructureNotifyMask |
-                 KeyPressMask | ButtonPressMask | ButtonReleaseMask |
+                 KeyPressMask | KeyReleaseMask |
+                 ButtonPressMask | ButtonReleaseMask |
                  PointerMotionMask | FocusChangeMask | PropertyChangeMask);
     XStoreName(display, window, "BionicX X11 integration probe");
     XClassHint class_hint = {.res_name = "bionicx-probe",
@@ -261,8 +263,13 @@ int main(int argc, char **argv) {
     RECORD(send_ok);
 
     int keys = 0;
+    int key_releases = 0;
     int buttons = 0;
     int motions = 0;
+    bool saw_lower_a = false;
+    bool saw_shift_press_before_mask = false;
+    bool saw_shifted_underscore = false;
+    bool saw_shift_release_with_mask = false;
     bool client_message_received = false;
     double deadline = monotonic_seconds() + duration;
     paint(display, window, gc, width, height, passed, failed,
@@ -271,7 +278,31 @@ int main(int argc, char **argv) {
         while (XPending(display)) {
             XEvent event;
             XNextEvent(display, &event);
-            if (event.type == KeyPress) ++keys;
+            if (event.type == KeyPress) {
+                ++keys;
+                KeySym base = XLookupKeysym(&event.xkey, 0);
+                KeySym shifted = XLookupKeysym(&event.xkey, 1);
+                printf("BXINPUT keycode=%u state=0x%x base=0x%lx shifted=0x%lx\n",
+                       event.xkey.keycode, event.xkey.state,
+                       (unsigned long)base, (unsigned long)shifted);
+                fflush(stdout);
+                if (event.xkey.keycode == 38 && event.xkey.state == 0)
+                    saw_lower_a = base == XK_a;
+                if (event.xkey.keycode == 50 && event.xkey.state == 0)
+                    saw_shift_press_before_mask = true;
+                if (event.xkey.keycode == 20 &&
+                    (event.xkey.state & ShiftMask) != 0)
+                    saw_shifted_underscore = shifted == XK_underscore;
+            }
+            else if (event.type == KeyRelease) {
+                ++key_releases;
+                printf("BXINPUT release keycode=%u state=0x%x\n",
+                       event.xkey.keycode, event.xkey.state);
+                fflush(stdout);
+                if (event.xkey.keycode == 50 &&
+                    (event.xkey.state & ShiftMask) != 0)
+                    saw_shift_release_with_mask = true;
+            }
             else if (event.type == ButtonPress) ++buttons;
             else if (event.type == MotionNotify) ++motions;
             else if (event.type == ClientMessage &&
@@ -296,6 +327,15 @@ int main(int argc, char **argv) {
     result("client-message-receive", client_message_received,
            client_message_received ? "WM_DELETE_WINDOW" : "event not delivered");
     RECORD(client_message_received);
+    bool modifier_state_ok = saw_lower_a && saw_shift_press_before_mask &&
+                             saw_shifted_underscore &&
+                             saw_shift_release_with_mask;
+    snprintf(detail, sizeof(detail),
+             "lower=%d shift-press=%d underscore=%d shift-release=%d releases=%d",
+             saw_lower_a, saw_shift_press_before_mask, saw_shifted_underscore,
+             saw_shift_release_with_mask, key_releases);
+    result("modifier-event-state", modifier_state_ok, detail);
+    RECORD(modifier_state_ok);
     snprintf(detail, sizeof(detail), "keys=%d buttons=%d motions=%d",
              keys, buttons, motions);
     printf("BXOBS input-events %s\n", detail);

@@ -11,7 +11,9 @@ Covered operations:
 - atoms, WM properties and an exact UTF-8 property round trip;
 - GC, Pixmap rendering and `CopyArea`;
 - a custom cursor and CLIPBOARD selection ownership;
-- synthetic ClientMessage delivery and observation of real key/touch events.
+- synthetic ClientMessage delivery and real Android key/touch events;
+- strict core modifier-state semantics for lower-case, Shift press/release and
+  shifted underscore input.
 
 Run on a connected device:
 
@@ -21,5 +23,5 @@ ANDROID_SERIAL=<serial> examples/x11-probe/install-and-run.sh
 adb -s <serial> logcat -d -s BionicX | grep -E 'BX(TEST|INFO|SUMMARY)'
 ```
 
-Input is observational: lack of user input during the 12-second run is logged
-but does not fail the automated core-protocol result.
+`install-and-run.sh` injects `abc_A`, a tap and a swipe. The modifier sequence
+is a strict assertion; pointer counts remain observational.
