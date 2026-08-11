@@ -490,6 +490,15 @@ int main(int argc, char **argv) {
     if (argc == 3 && strcmp(argv[1], "--duration") == 0) duration = atoi(argv[2]);
     if (duration < 1 || duration > 300) return 2;
 
+    const char *expected_argv0 = getenv("BIONICX_EXPECT_ARGV0");
+    if (expected_argv0 != NULL) {
+        char argv0_detail[256];
+        snprintf(argv0_detail, sizeof(argv0_detail), "expected=%s actual=%s",
+                 expected_argv0, argv[0]);
+        check("loader-argv0", strcmp(argv[0], expected_argv0) == 0,
+              argv0_detail);
+    }
+
     char detail[160];
     snprintf(detail, sizeof(detail), "glibc=%s pid=%ld page=%ld",
              gnu_get_libc_version(), (long)getpid(), sysconf(_SC_PAGESIZE));

@@ -202,7 +202,8 @@ static char **build_child_argv(int argc, char **argv,
                                const struct options *options,
                                const char **exec_path) {
     int target_count = argc - options->command_index;
-    size_t prefix = options->mode == MODE_LOADER ? 3 : 0;
+    size_t prefix = options->mode == MODE_LOADER
+            ? (options->argv0 != NULL ? 5 : 3) : 0;
     char **child = calloc(prefix + (size_t)target_count + 1, sizeof(*child));
     if (child == NULL) return NULL;
 
@@ -212,13 +213,17 @@ static char **build_child_argv(int argc, char **argv,
         child[out++] = (char *)options->loader;
         child[out++] = (char *)"--library-path";
         child[out++] = (char *)options->library_path;
+        if (options->argv0 != NULL) {
+            child[out++] = (char *)"--argv0";
+            child[out++] = (char *)options->argv0;
+        }
     }
     else *exec_path = argv[options->command_index];
 
     for (int i = 0; i < target_count; ++i)
         child[out++] = argv[options->command_index + i];
-    if (options->argv0 != NULL)
-        child[options->mode == MODE_LOADER ? 3 : 0] = (char *)options->argv0;
+    if (options->mode == MODE_DIRECT && options->argv0 != NULL)
+        child[0] = (char *)options->argv0;
     child[out] = NULL;
     return child;
 }
