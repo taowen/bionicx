@@ -56,6 +56,7 @@ static void probe_render(Display *display, Window window) {
     bool ok = XRenderQueryVersion(display, &major, &minor) != 0;
     XRenderPictFormat *format = XRenderFindVisualFormat(
         display, DefaultVisual(display, DefaultScreen(display)));
+    XRenderPictFormat *a8 = XRenderFindStandardFormat(display, PictStandardA8);
     Picture picture = format ? XRenderCreatePicture(display, window, format, 0, NULL) : 0;
     if (picture) {
         XRenderColor color = {.red = 0x1800, .green = 0xb800,
@@ -63,14 +64,17 @@ static void probe_render(Display *display, Window window) {
         XRenderFillRectangle(display, PictOpSrc, picture, &color, 24, 84, 300, 92);
         XRenderFreePicture(display, picture);
     }
-    ok = ok && format && picture && sync_without_error(display, before);
+    ok = ok && format && a8 && a8->depth == 8 && a8->direct.alphaMask == 0xff
+         && picture && sync_without_error(display, before);
     XImage *image = ok ? XGetImage(display, window, 100, 120, 1, 1,
                                    AllPlanes, ZPixmap) : NULL;
     ok = ok && image && XGetPixel(image, 0, 0) != 0;
     if (image) XDestroyImage(image);
-    char detail[96];
-    snprintf(detail, sizeof(detail), "version=%d.%d event=%d error=%d",
-             major, minor, event_base, error_base);
+    char detail[128];
+    snprintf(detail, sizeof(detail),
+             "version=%d.%d event=%d error=%d a8=%d alpha-mask=0x%x",
+             major, minor, event_base, error_base, a8 != NULL,
+             a8 ? a8->direct.alphaMask : 0);
     result("xrender", ok, detail);
 }
 

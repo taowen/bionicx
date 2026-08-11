@@ -38,6 +38,7 @@ public class XRenderExtension extends Extension {
     private static final int SUBPIXEL_UNKNOWN = 0;
 
     private final int argb32Format = IDGenerator.generate();
+    private final int a8Format = IDGenerator.generate();
     private final int a1Format = IDGenerator.generate();
     private final SparseArray<Picture> pictures = new SparseArray<>();
     private final IdentityHashMap<XClient, ArrayList<Integer>> clientPictures =
@@ -108,13 +109,13 @@ public class XRenderExtension extends Extension {
     private void queryPictFormats(XClient client, XOutputStream outputStream)
             throws IOException {
         Visual visual = xServer.pixmapManager.visual;
-        int payloadBytes = 2 * 28 + 8 + (8 + 8) + 8 + 4;
+        int payloadBytes = 3 * 28 + 8 + (8 + 8) + 8 + 4;
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
             outputStream.writeByte((byte)0);
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(payloadBytes / 4);
-            outputStream.writeInt(2); // formats
+            outputStream.writeInt(3); // formats
             outputStream.writeInt(1); // screens
             outputStream.writeInt(2); // depths
             outputStream.writeInt(1); // visuals
@@ -123,6 +124,10 @@ public class XRenderExtension extends Extension {
 
             writeDirectFormat(outputStream, argb32Format, 32,
                     16, 0xff, 8, 0xff, 0, 0xff, 24, 0xff);
+            // Xft uses an alpha-only Render format for glyph sets. It need not
+            // correspond to a screen depth or a core-protocol Pixmap format.
+            writeDirectFormat(outputStream, a8Format, 8,
+                    0, 0, 0, 0, 0, 0, 0, 0xff);
             writeDirectFormat(outputStream, a1Format, 1,
                     0, 0, 0, 0, 0, 0, 0, 1);
 

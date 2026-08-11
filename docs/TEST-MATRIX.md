@@ -21,7 +21,7 @@ counters. App profiles always run with diagnostics disabled for final proof.
 |---|---|---|---|
 | ELF/bootstrap | `hello-x11` | glibc loader, dependency closure, X connection | passing on x300 |
 | X11 core | `x11-probe` | windows, properties, drawing, selection, events, modifier event-state ordering | 14/14 strict checks pass; deterministic Android key/tap/swipe injection |
-| X11 desktop | `x11-desktop-probe` | Render, XFixes selection/regions/ShapeInput, RandR resources/output/CRTC/property/primary/event masks, XInput2 devices/event masks, XKB printable map/event selection/device metadata/names, real xkbcommon compilation and live StateNotify; optional SHM | 8/8 passing; MIT-SHM deliberately unavailable pending safe backend |
+| X11 desktop | `x11-desktop-probe` | Render ARGB32 drawing plus A8 glyph-format discovery, XFixes selection/regions/ShapeInput, RandR resources/output/CRTC/property/primary/event masks, XInput2 devices/event masks, XKB printable map/event selection/device metadata/names, real xkbcommon compilation and live StateNotify; optional SHM | 8/8 passing; Render glyph sets/composition and MIT-SHM remain pending |
 | libc/kernel | `runtime-probe` | threads, robust owner death, epoll, signals, processes, IPC, sockets, mmap | 20/20 passing on x300 with BionicX glibc 2.39 |
 | glibc/Bionic bridge | `wps-compat-probe` | WPS SysV semaphore shim and sanitized Android-shell `popen` | 21/21 passing; Bionic shell output/exit status verified |
 | desktop services | WPS workflow plus planned probes | deterministic app-private Fontconfig tree and Calibri/Cambria/Arial/Times aliases to static Liberation fonts; locale, MIME, D-Bus alternatives, audio | Latin regular/bold fallback passes cold reopen; remaining services pending |
