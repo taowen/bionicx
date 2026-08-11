@@ -9,6 +9,9 @@ public class GrabManager implements WindowManager.OnWindowModificationListener {
     private boolean ownerEvents;
     private boolean releaseWithButtons;
     private EventListener eventListener;
+    private Window keyboardWindow;
+    private XClient keyboardClient;
+    private boolean keyboardOwnerEvents;
     private final XServer xServer;
 
     public GrabManager(XServer xServer) {
@@ -20,6 +23,7 @@ public class GrabManager implements WindowManager.OnWindowModificationListener {
     public void onUnmapWindow(Window window) {
         if (window != null && window.getMapState() != Window.MapState.VIEWABLE) {
             deactivatePointerGrab();
+            if (window == keyboardWindow) deactivateKeyboardGrab();
         }
     }
 
@@ -41,6 +45,18 @@ public class GrabManager implements WindowManager.OnWindowModificationListener {
 
     public XClient getClient() {
         return eventListener != null ? eventListener.client : null;
+    }
+
+    public Window getKeyboardWindow() {
+        return keyboardWindow;
+    }
+
+    public XClient getKeyboardClient() {
+        return keyboardClient;
+    }
+
+    public boolean isKeyboardOwnerEvents() {
+        return keyboardOwnerEvents;
     }
 
     public void deactivatePointerGrab() {
@@ -68,5 +84,22 @@ public class GrabManager implements WindowManager.OnWindowModificationListener {
     public void activatePointerGrab(Window window) {
         EventListener eventListener = window.getButtonPressListener();
         activatePointerGrab(window, eventListener, eventListener.isInterestedIn(Event.OWNER_GRAB_BUTTON), true);
+    }
+
+    public void activateKeyboardGrab(Window window, boolean ownerEvents,
+                                     XClient client) {
+        keyboardWindow = window;
+        keyboardOwnerEvents = ownerEvents;
+        keyboardClient = client;
+    }
+
+    public void deactivateKeyboardGrab() {
+        keyboardWindow = null;
+        keyboardClient = null;
+        keyboardOwnerEvents = false;
+    }
+
+    public void deactivateKeyboardGrab(XClient client) {
+        if (keyboardClient == client) deactivateKeyboardGrab();
     }
 }

@@ -1,0 +1,4 @@
+08-12 03:44:58.662 I WinlatorXRequest: seq=2488 opcode=31 data=0 bytes=12
+BXASSERT Android-injected Escape closed the grabbed WPS Paste popup
+BXASSERT no unsupported opcode 31 or 32
+BXASSERT no BadImplementation, FATAL, or SIGSEGV

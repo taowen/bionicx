@@ -24,6 +24,8 @@ public abstract class ClientOpcodes {
     public static final byte SEND_EVENT = 25;
     public static final byte GRAB_POINTER = 26;
     public static final byte UNGRAB_POINTER = 27;
+    public static final byte GRAB_KEYBOARD = 31;
+    public static final byte UNGRAB_KEYBOARD = 32;
     public static final byte QUERY_POINTER = 38;
     public static final byte TRANSLATE_COORDINATES = 40;
     public static final byte WARP_POINTER = 41;

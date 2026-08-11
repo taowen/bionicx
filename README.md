@@ -53,6 +53,7 @@ ANDROID_SERIAL=<serial> adb install -r build/bionicx-debug.apk
 ANDROID_SERIAL=<serial> examples/hello/install-and-run.sh
 ANDROID_SERIAL=<serial> examples/font-xft-probe/install-and-run.sh
 ANDROID_SERIAL=<serial> examples/clipboard-x11-probe/install-and-run.sh
+ANDROID_SERIAL=<serial> examples/keyboard-grab-x11-probe/install-and-run.sh
 ```
 
 `tools/build.sh` does not download or bundle WPS. It builds the Bionic
@@ -72,6 +73,9 @@ glyph rendering before a proprietary desktop application is involved.
 The clipboard probe opens two independent glibc/libX11 connections and verifies
 the complete owner/request/property/notify protocol before WPS or Chrome is
 used as the diagnostic surface.
+The keyboard-grab probe uses three real Android-injected keys to verify
+cross-client `GrabKeyboard`, `UngrabKeyboard`, owner-events routing, contention,
+and disconnect cleanup.
 
 ## Add an application
 

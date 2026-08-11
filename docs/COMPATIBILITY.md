@@ -8,6 +8,11 @@
   temporary directory, X11 transport, and DPI.
 - Recursive `DT_NEEDED` auditing and closure copying.
 - Core X11 rendering/input sufficient for the Xlib hello client and WPS Writer.
+- Core asynchronous `GrabKeyboard`/`UngrabKeyboard`, including cross-client
+  contention, owner-events routing, and disconnect cleanup. Synchronous grab
+  modes still require `AllowEvents` freeze/thaw support and are rejected rather
+  than reported as a false success; non-`CurrentTime` ordering is likewise
+  rejected until the server has a timestamp model.
 
 ## What an application bundle must supply
 

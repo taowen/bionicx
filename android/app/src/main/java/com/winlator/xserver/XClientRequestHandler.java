@@ -283,6 +283,16 @@ public class XClientRequestHandler implements RequestHandler {
                             GrabRequests.ungrabPointer(client, inputStream, outputStream);
                         }
                         break;
+                    case ClientOpcodes.GRAB_KEYBOARD:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.WINDOW_MANAGER, XServer.Lockable.INPUT_DEVICE)) {
+                            GrabRequests.grabKeyboard(client, inputStream, outputStream);
+                        }
+                        break;
+                    case ClientOpcodes.UNGRAB_KEYBOARD:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.INPUT_DEVICE)) {
+                            GrabRequests.ungrabKeyboard(client, inputStream, outputStream);
+                        }
+                        break;
                     case ClientOpcodes.QUERY_POINTER:
                         try (XLock lock = client.xServer.lock(XServer.Lockable.WINDOW_MANAGER, XServer.Lockable.INPUT_DEVICE)) {
                             WindowRequests.queryPointer(client, inputStream, outputStream);

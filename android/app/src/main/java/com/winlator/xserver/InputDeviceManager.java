@@ -250,9 +250,22 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             child = eventWindow.isAncestorOf(pointWindow) ? pointWindow : null;
         }
         if (eventWindow == null) {
-            if (!focusedWindow.hasEventListenerFor(Event.KEY_PRESS)) return;
-            eventWindow = focusedWindow;
+            if (focusedWindow.hasEventListenerFor(Event.KEY_PRESS)) {
+                eventWindow = focusedWindow;
+            }
         }
+
+        Window grabWindow = xServer.grabManager.getKeyboardWindow();
+        XClient grabClient = xServer.grabManager.getKeyboardClient();
+        boolean sendDirectlyToGrabber = grabWindow != null
+                && (!xServer.grabManager.isKeyboardOwnerEvents()
+                || eventWindow == null
+                || !grabClient.isInterestedIn(Event.KEY_PRESS, eventWindow));
+        if (sendDirectlyToGrabber) {
+            eventWindow = grabWindow;
+            child = grabWindow.isAncestorOf(focusedWindow) ? focusedWindow : null;
+        }
+        else if (eventWindow == null) return;
 
         if (!eventWindow.attributes.isEnabled()) return;
 
@@ -273,7 +286,13 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             eventWindow.sendEvent(new MappingNotify(MappingNotify.Request.KEYBOARD, keycode, 1));
         }
 
-        eventWindow.sendEvent(Event.KEY_PRESS, new KeyPress(keycode, xServer.windowManager.rootWindow, eventWindow, child, x, y, localPoint[0], localPoint[1], keyButMask));
+        KeyPress event = new KeyPress(keycode, xServer.windowManager.rootWindow,
+                eventWindow, child, x, y, localPoint[0], localPoint[1], keyButMask);
+        if (sendDirectlyToGrabber) grabClient.sendEvent(event);
+        else if (grabWindow != null) {
+            eventWindow.sendEvent(Event.KEY_PRESS, event, grabClient);
+        }
+        else eventWindow.sendEvent(Event.KEY_PRESS, event);
     }
 
     @Override
@@ -289,9 +308,22 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             child = eventWindow.isAncestorOf(pointWindow) ? pointWindow : null;
         }
         if (eventWindow == null) {
-            if (!focusedWindow.hasEventListenerFor(Event.KEY_RELEASE)) return;
-            eventWindow = focusedWindow;
+            if (focusedWindow.hasEventListenerFor(Event.KEY_RELEASE)) {
+                eventWindow = focusedWindow;
+            }
         }
+
+        Window grabWindow = xServer.grabManager.getKeyboardWindow();
+        XClient grabClient = xServer.grabManager.getKeyboardClient();
+        boolean sendDirectlyToGrabber = grabWindow != null
+                && (!xServer.grabManager.isKeyboardOwnerEvents()
+                || eventWindow == null
+                || !grabClient.isInterestedIn(Event.KEY_RELEASE, eventWindow));
+        if (sendDirectlyToGrabber) {
+            eventWindow = grabWindow;
+            child = grabWindow.isAncestorOf(focusedWindow) ? focusedWindow : null;
+        }
+        else if (eventWindow == null) return;
 
         if (!eventWindow.attributes.isEnabled()) return;
 
@@ -307,7 +339,13 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
         }
 
         short[] localPoint = eventWindow.rootPointToLocal(x, y);
-        eventWindow.sendEvent(Event.KEY_RELEASE, new KeyRelease(keycode, xServer.windowManager.rootWindow, eventWindow, child, x, y, localPoint[0], localPoint[1], keyButMask));
+        KeyRelease event = new KeyRelease(keycode, xServer.windowManager.rootWindow,
+                eventWindow, child, x, y, localPoint[0], localPoint[1], keyButMask);
+        if (sendDirectlyToGrabber) grabClient.sendEvent(event);
+        else if (grabWindow != null) {
+            eventWindow.sendEvent(Event.KEY_RELEASE, event, grabClient);
+        }
+        else eventWindow.sendEvent(Event.KEY_RELEASE, event);
     }
 
     @Override

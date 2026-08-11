@@ -20,7 +20,7 @@ counters. App profiles always run with diagnostics disabled for final proof.
 | Layer | Controlled client | Coverage | State |
 |---|---|---|---|
 | ELF/bootstrap | `hello-x11` | glibc loader, dependency closure, X connection | passing on x300 |
-| X11 core | `x11-probe`, `clipboard-x11-probe` | windows, properties, drawing, cross-client UTF8 selection request/property/notify transfer, owner replacement/clear/None/disconnect cleanup, events, modifier event-state ordering | core 14/14 and clipboard 5/5 strict checks pass; deterministic Android key/tap/swipe injection |
+| X11 core | `x11-probe`, `clipboard-x11-probe`, `keyboard-grab-x11-probe` | windows, properties, drawing, cross-client UTF8 selection transfer and cleanup, async keyboard grab/contention/ungrab/owner-events/disconnect routing, events, modifier ordering | core 14/14, clipboard 5/5, and keyboard grab 7/7 strict checks pass with deterministic Android key/tap/swipe injection |
 | X11 desktop | `x11-desktop-probe`, `font-xft-probe` | Render ARGB32 drawing, A8 glyph format, glyph-set upload/lifecycle and CompositeGlyphs8 alpha-over; XFixes selection/regions/ShapeInput, RandR resources/output/CRTC/property/primary/event masks, XInput2 devices/event masks, XKB printable map/event selection/device metadata/names, real xkbcommon compilation and live StateNotify; optional SHM | desktop 8/8 and Fontconfig/Xft 4/4 pass; MIT-SHM remains pending |
 | libc/kernel | `runtime-probe` | threads, robust owner death, epoll, signals, processes, IPC, sockets, mmap | 20/20 passing on x300 with BionicX glibc 2.39 |
 | glibc/Bionic bridge | `wps-compat-probe` | WPS SysV semaphore shim and sanitized Android-shell `popen` | 21/21 passing; Bionic shell output/exit status verified |
