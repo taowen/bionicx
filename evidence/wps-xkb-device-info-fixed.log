@@ -1,0 +1,3 @@
+08-12 00:42:47.979 23417 23417 I BionicX : profile=wps-office display=1920x1080@144 socket=filesystem
+08-12 00:42:47.997 23417 23443 I BionicX : bionicx-exec: running untraced pid=23447
+08-12 00:42:48.133 23417 23442 W WinlatorXRequest: unimplemented request=XKEYBOARD major=148 minor=17 error=17

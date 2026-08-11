@@ -13,6 +13,7 @@ import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /** Minimal read-only XKB 1.0 map for the core keyboard. */
 public class XKeyboardExtension extends Extension {
@@ -31,6 +32,7 @@ public class XKeyboardExtension extends Extension {
         private static final byte USE_EXTENSION = 0;
         private static final byte SELECT_EVENTS = 1;
         private static final byte GET_MAP = 8;
+        private static final byte GET_DEVICE_INFO = 24;
     }
 
     private void selectEvents(XClient client, XInputStream inputStream)
@@ -141,6 +143,44 @@ public class XKeyboardExtension extends Extension {
         }
     }
 
+    private void getDeviceInfo(XClient client, XInputStream inputStream,
+                               XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        int wanted = inputStream.readUnsignedShort();
+        inputStream.skip(6); // allBtns, button range, pad, LED class and ID
+        inputStream.skip(2);
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+
+        byte[] name = "BionicX keyboard".getBytes(StandardCharsets.ISO_8859_1);
+        int payloadBytes = (name.length + 2 + 3) & ~3;
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)CORE_KEYBOARD_ID);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(payloadBytes / 4);
+            outputStream.writeShort((short)0); // no optional features present
+            outputStream.writeShort((short)0); // no mutable device features
+            outputStream.writeShort((short)wanted); // requested unsupported features
+            outputStream.writeShort((short)0); // LED feedbacks
+            outputStream.writeByte((byte)0); // first button wanted
+            outputStream.writeByte((byte)0); // buttons wanted
+            outputStream.writeByte((byte)0); // first button returned
+            outputStream.writeByte((byte)0); // buttons returned
+            outputStream.writeByte((byte)0); // total buttons
+            outputStream.writeByte((byte)1); // core keyboard owns keyboard state
+            outputStream.writeShort((short)0); // default keyboard feedback ID
+            outputStream.writeShort((short)0); // default LED feedback ID
+            outputStream.writeShort((short)0);
+            outputStream.writeInt(0); // no device-type atom
+            outputStream.writeShort((short)name.length);
+            outputStream.write(name);
+            outputStream.writePad(payloadBytes - name.length - 2);
+        }
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -154,6 +194,9 @@ public class XKeyboardExtension extends Extension {
                 break;
             case ClientOpcodes.GET_MAP:
                 getMap(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_DEVICE_INFO:
+                getDeviceInfo(client, inputStream, outputStream);
                 break;
             default:
                 throw new BadImplementation();

@@ -171,6 +171,9 @@ static void probe_xkb(Display *display) {
                                     XkbStateNotifyMask);
     XkbDescPtr map = XkbGetMap(display, XkbAllClientInfoMask,
                                XkbUseCoreKbd);
+    XkbDeviceInfoPtr device = XkbGetDeviceInfo(
+        display, XkbXI_AllDeviceFeaturesMask, XkbUseCoreKbd,
+        XkbDfltXIClass, XkbDfltXIId);
     int map_status = map ? Success : BadImplementation;
     int key_syms = map && map->map && map->map->key_sym_map
                    ? XkbKeyNumSyms(map, 9) : 0;
@@ -178,7 +181,10 @@ static void probe_xkb(Display *display) {
                      ? map->map->key_sym_map[9].offset : 0;
     KeySym escape = map && map->map && map->map->key_sym_map
                     ? XkbKeySymEntry(map, 9, 0, 0) : NoSymbol;
-    bool ok = selected && map_status == Success && map && map->map
+    bool ok = selected && device && device->name
+              && strcmp(device->name, "BionicX keyboard") == 0
+              && device->device_spec == 3 && map_status == Success
+              && map && map->map
               && map->map->num_types >= 1
               && map->min_key_code <= 9 && map->max_key_code >= 9
               && XkbKeyNumSyms(map, 9) == 1
@@ -186,13 +192,15 @@ static void probe_xkb(Display *display) {
               && sync_without_error(display, before);
     char detail[160];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d opcode=%d selected=%d status=%d keys=%u-%u types=%d syms=%d offset=%d escape=0x%lx",
-             major, minor, opcode, selected, map_status,
+             "version=%d.%d opcode=%d selected=%d device=%s status=%d keys=%u-%u types=%d syms=%d offset=%d escape=0x%lx",
+             major, minor, opcode, selected,
+             device && device->name ? device->name : "(null)", map_status,
              map ? map->min_key_code : 0,
              map ? map->max_key_code : 0,
              map && map->map ? map->map->num_types : 0,
              key_syms, sym_offset, (unsigned long)escape);
     if (map) XkbFreeKeyboard(map, XkbAllComponentsMask, True);
+    if (device) XkbFreeDeviceInfo(device, XkbXI_AllDeviceFeaturesMask, True);
     result("xkeyboard", ok, detail);
 }
 
