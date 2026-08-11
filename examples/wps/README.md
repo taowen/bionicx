@@ -64,6 +64,16 @@ ANDROID_SERIAL=01408BH601027129 \
   --bold Bold_WPS_2026
 ```
 
+Repeated paragraphs can be counted exactly. This is useful for proving that a
+clipboard paste changed the saved document instead of merely repainting the
+editor:
+
+```sh
+ANDROID_SERIAL=01408BH601027129 \
+  examples/wps/verify-docx.sh BionicX.docx abc_A \
+  --bold Bold_WPS_2026 --count BionicX_WPS_2026 2
+```
+
 ## Deterministic Microsoft-font substitutes
 
 Android system images do not normally contain Calibri, Cambria, Arial, or

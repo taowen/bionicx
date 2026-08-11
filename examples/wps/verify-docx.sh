@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 DOCUMENT.docx EXPECTED_TEXT ... [--bold TEXT ...]" >&2
+    echo "usage: $0 DOCUMENT.docx EXPECTED_TEXT ... [--bold TEXT ...] [--count TEXT NUMBER ...]" >&2
 }
 
 [[ $# -ge 2 ]] || { usage; exit 2; }
@@ -35,6 +35,10 @@ while [[ $# -gt 0 ]]; do
         [[ $# -ge 2 ]] || { usage; exit 2; }
         checks+=("bold=$2")
         shift 2
+    elif [[ "$1" == "--count" ]]; then
+        [[ $# -ge 3 && "$3" =~ ^[0-9]+$ ]] || { usage; exit 2; }
+        checks+=("count=$3=$2")
+        shift 3
     else
         checks+=("text=$1")
         shift
@@ -74,6 +78,16 @@ for paragraph in root.findall(".//w:p", namespace):
 
 for check in checks:
     kind, wanted = check.split("=", 1)
+    if kind == "count":
+        expected, wanted = wanted.split("=", 1)
+        actual = paragraphs.count(wanted)
+        if actual != int(expected):
+            rendered = " | ".join(paragraphs)
+            raise SystemExit(
+                f"wrong paragraph count for {wanted!r}: expected {expected}, "
+                f"got {actual}; paragraphs: {rendered}"
+            )
+        continue
     values = paragraphs if kind == "text" else bold_runs
     if wanted not in values:
         rendered = " | ".join(paragraphs)
@@ -87,4 +101,8 @@ for text in paragraphs:
     print(f"BXCONTENT {text}")
 for text in bold_runs:
     print(f"BXFORMAT bold {text}")
+for check in checks:
+    if check.startswith("count="):
+        _, expected, wanted = check.split("=", 2)
+        print(f"BXFORMAT count {expected} {wanted}")
 PY
