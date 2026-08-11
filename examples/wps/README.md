@@ -30,6 +30,24 @@ Android's app seccomp policy blocks the AArch64 SysV IPC syscalls. It also
 routes glibc `popen()` through `/system/bin/sh`. This module is selected by the
 profile and is not loaded for other applications.
 
+## Writer, Spreadsheets, and Presentation entrypoints
+
+The Debian package's `et` and `wpp` entrypoints retain `/lib/ld-linux...`, while
+direct mode needs the app-private loader and Spreadsheets additionally loads
+`libXtst.so.6`. Prepare all three already-installed entrypoints and install the
+audited ARM64 Xtst runtime dependency without root:
+
+```sh
+ANDROID_SERIAL=01408BH601027129 examples/wps/install-entrypoints.sh
+```
+
+Then select `profiles/wps-office.json` for Writer or
+`profiles/wps-spreadsheets.json` for Spreadsheets. Both profiles deliberately
+share the `wps-office` application ID, app tree, HOME, and compatibility module;
+only the selected entry ELF and `argv[0]` differ. Proprietary WPS files are read
+from and written back to the user's installed Android app-private tree and are
+never added to this repository.
+
 WPS currently uses `direct` mode to preserve `/proc/self/exe`. Its `PT_INTERP`
 must therefore point at BionicX's app-private loader. When migrating the
 original POC, the old and new Android package prefixes have equal byte length,

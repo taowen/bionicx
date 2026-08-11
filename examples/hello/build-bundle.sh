@@ -45,6 +45,14 @@ for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6 libX11.so.6 libxcb.so.1
         libXfixes.so.3 libXrandr.so.2 libXi.so.6; do
     cp -L "$temporary/usr/lib/$library" "$output_dir/rootfs/usr/lib/"
 done
+# WPS Spreadsheets loads libXtst through libetmain. Winlator's compact rootfs
+# does not carry it, so take the reproducible ARM64 Debian library from the
+# same content-addressed builder used for every glibc/X11 probe. Its required
+# libc symbol floor is GLIBC_2.17 and is satisfied by our pinned glibc 2.39.
+podman run --rm --userns=keep-id \
+    --volume "$repo_dir:/work:Z" --workdir /work \
+    "$builder_image" sh -c \
+    "cp -L /usr/lib/aarch64-linux-gnu/libXtst.so.6 '$container_output/rootfs/usr/lib/libXtst.so.6'"
 # A cold toolchain build emits upstream patch/build progress on stdout before
 # its final artifact path. Preserve that useful output while treating only the
 # last line as the machine-readable result.

@@ -17,6 +17,7 @@ RUN dpkg --add-architecture arm64 \
         libxi-dev:arm64 \
         libxrandr-dev:arm64 \
         libxrender-dev:arm64 \
+        libxtst-dev:arm64 \
         libxft-dev:arm64 \
         libxkbcommon-x11-dev:arm64 \
         fonts-liberation \

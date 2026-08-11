@@ -43,7 +43,7 @@ controlled clients to Chrome and WPS is tracked in the
 
 ## Build
 
-Requirements: Linux, Android SDK/NDK, JDK 17, Podman, Python 3, and ADB.
+Requirements: Linux, Android SDK/NDK, JDK 17, Podman, Python 3, patchelf, and ADB.
 
 ```sh
 tools/build.sh
