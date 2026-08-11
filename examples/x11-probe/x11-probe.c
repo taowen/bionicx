@@ -162,8 +162,8 @@ int main(int argc, char **argv) {
                                      AllPlanes, ZPixmap);
     XSync(display, False);
     bool drawing_ok = x_errors == before && pixmap_image && window_image &&
-                      XGetPixel(pixmap_image, 0, 0) == 0x3264c8 &&
-                      XGetPixel(window_image, 0, 0) == 0x3264c8;
+                      (XGetPixel(pixmap_image, 0, 0) & 0x00ffffff) == 0x3264c8 &&
+                      (XGetPixel(window_image, 0, 0) & 0x00ffffff) == 0x3264c8;
     if (pixmap_image) XDestroyImage(pixmap_image);
     if (window_image) XDestroyImage(window_image);
     result("pixmap-gc-copy", drawing_ok,

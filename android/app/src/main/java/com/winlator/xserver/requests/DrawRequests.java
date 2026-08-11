@@ -178,7 +178,7 @@ public abstract class DrawRequests {
             short y = inputStream.readShort();
             short width = inputStream.readShort();
             short height = inputStream.readShort();
-            drawable.fillRect(x, y, width, height, graphicsContext.getBackground());
+            drawable.fillRect(x, y, width, height, graphicsContext.getForeground());
             length -= 8;
         }
     }
