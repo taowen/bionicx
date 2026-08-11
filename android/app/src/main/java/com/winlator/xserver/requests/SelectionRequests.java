@@ -20,11 +20,29 @@ public abstract class SelectionRequests {
         int atom = inputStream.readInt();
         int timestamp = inputStream.readInt();
 
-        Window owner = client.xServer.windowManager.getWindow(windowId);
-        if (owner == null) throw new BadWindow(windowId);
+        Window owner = windowId != 0
+                ? client.xServer.windowManager.getWindow(windowId) : null;
+        if (windowId != 0 && owner == null) throw new BadWindow(windowId);
         if (!Atom.isValid(atom)) throw new BadAtom(atom);
 
         client.xServer.selectionManager.setSelection(atom, owner, client, timestamp);
+    }
+
+    public static void convertSelection(XClient client, XInputStream inputStream,
+                                        XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int requestorId = inputStream.readInt();
+        int selection = inputStream.readInt();
+        int target = inputStream.readInt();
+        int property = inputStream.readInt();
+        int timestamp = inputStream.readInt();
+        Window requestor = client.xServer.windowManager.getWindow(requestorId);
+        if (requestor == null) throw new BadWindow(requestorId);
+        if (!Atom.isValid(selection)) throw new BadAtom(selection);
+        if (!Atom.isValid(target)) throw new BadAtom(target);
+        if (property != 0 && !Atom.isValid(property)) throw new BadAtom(property);
+        client.xServer.selectionManager.convertSelection(client, requestor,
+                selection, target, property, timestamp);
     }
 
     public static void getSelectionOwner(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {

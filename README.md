@@ -52,6 +52,7 @@ examples/hello/build-bundle.sh
 ANDROID_SERIAL=<serial> adb install -r build/bionicx-debug.apk
 ANDROID_SERIAL=<serial> examples/hello/install-and-run.sh
 ANDROID_SERIAL=<serial> examples/font-xft-probe/install-and-run.sh
+ANDROID_SERIAL=<serial> examples/clipboard-x11-probe/install-and-run.sh
 ```
 
 `tools/build.sh` does not download or bundle WPS. It builds the Bionic
@@ -68,6 +69,9 @@ Android-blocked `set_robust_list` retains process-private owner-death recovery.
 The Xft probe is the next controlled application: it packages open Liberation
 fonts at build time and verifies real Fontconfig, FreeType, Xft, and XRender
 glyph rendering before a proprietary desktop application is involved.
+The clipboard probe opens two independent glibc/libX11 connections and verifies
+the complete owner/request/property/notify protocol before WPS or Chrome is
+used as the diagnostic surface.
 
 ## Add an application
 

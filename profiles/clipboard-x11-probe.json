@@ -1,0 +1,22 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "clipboard-x11-probe",
+  "name": "BionicX cross-client X11 clipboard probe",
+  "display": {"dpi": 144, "socket": "filesystem"},
+  "launch": {
+    "mode": "loader",
+    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
+    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
+    "executable": "${APP}/bin/clipboard-x11-probe",
+    "workingDirectory": "${APP}",
+    "arguments": ["6"],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LANG": "en_US.UTF-8",
+      "LOCPATH": "${RUNTIME}/usr/lib/locale"
+    }
+  }
+}
