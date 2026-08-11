@@ -1,0 +1,1382 @@
+--------- beginning of system
+08-12 00:21:53.532  2277  2682 I ActivityManager: Force stopping io.taowen.bx appid=10194 user=0: from pid 16063
+08-12 00:21:53.534  2277  2682 I ActivityManager: Killing 15574:io.taowen.bx/u0a194 (adj 0): stop io.taowen.bx due to from pid 16063
+08-12 00:21:53.535  2277  2682 W ActivityTaskManager: Force removing ActivityRecord{bc2e6b8 u0 io.taowen.bx/com.winlator.BionicXActivity t360 f}}: app died, no saved state
+08-12 00:21:53.535  2277  2326 D DisplayManagerService: Drop pending events for gone uid 10194
+--------- beginning of main
+08-12 00:21:53.536   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:53.536  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: killProcess is called for pid : 15574
+08-12 00:21:53.536  2277  2682 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:53.536  2277  2682 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:53.536   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:53.536  2277  2682 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:53.536  2277  2682 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:53.537  2627  2669 V WindowManagerShell: Transition requested: android.os.BinderProxy@7d2fe3f TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=360 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=io.taowen.bx/com.winlator.BionicXActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} numActivities=0 lastActiveTime=10918908 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@207a30c} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+08-12 00:21:53.537   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:53.537  2277  2682 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:53.537  2277  2682 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:53.538  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:21:53.538  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:21:53.539   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:53.539  2277  2682 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:53.539  2277  2682 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:53.539  2277  2682 I DisplayRotation: rotationForOrientation: orientation=6, preferredRotation=1, sensorRotation=1, lastRotation=1
+08-12 00:21:53.539  2277  2682 I DisplayRotation: updateRotation: lastOrientation=6, oldRotation=1, newRotation=1
+08-12 00:21:53.541  2277 15860 D CompatibilityChangeReporter: Compat change id reported: 197654537; UID 1000; state: ENABLED
+08-12 00:21:53.541  2277  2682 I AppsFilter: interaction: PackageSetting{60592c2 com.taowen.arctrl.binderprobe.displaymanager/10211} -> PackageSetting{cb32dd1 io.taowen.bx/10194} BLOCKED
+08-12 00:21:53.541  2277  2682 I AppsFilter: interaction: PackageSetting{931fc10 com.taowen.arctrl.binderprobe.activitymanager/10216} -> PackageSetting{cb32dd1 io.taowen.bx/10194} BLOCKED
+08-12 00:21:53.541  2277  2682 I AppsFilter: interaction: PackageSetting{9756309 com.android.microdroid.empty_payload/10164} -> PackageSetting{cb32dd1 io.taowen.bx/10194} BLOCKED
+08-12 00:21:53.541  2277  2682 I AppsFilter: interaction: PackageSetting{d1e190e com.proot.terminal/10181} -> PackageSetting{cb32dd1 io.taowen.bx/10194} BLOCKED
+08-12 00:21:53.542  2277  2682 I AppsFilter: interaction: PackageSetting{471f2f com.focaltech.fpsensormmitest/10144} -> PackageSetting{cb32dd1 io.taowen.bx/10194} BLOCKED
+08-12 00:21:53.542  2277  2682 I AppsFilter: interaction: PackageSetting{722c93c com.taowen.arctrl.binderprobe.contentprovider/10215} -> PackageSetting{cb32dd1 io.taowen.bx/10194} BLOCKED
+08-12 00:21:53.542  2627  2627 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-12 00:21:53.542  2627  2627 D CentralSurfaces: Received new disable state: enaihbcrso.qingr (unchanged)
+08-12 00:21:53.542  2627  2627 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-12 00:21:53.542  1389  1488 E ANDR-PWR-OPT: VIDEOPOWEROPT: sendEvents() 186: Timer started 
+08-12 00:21:53.542  2277  3302 D CompatibilityChangeReporter: Compat change id reported: 161145287; UID 1000; state: ENABLED
+08-12 00:21:53.543  2277  3302 D CompatibilityChangeReporter: Compat change id reported: 161145287; UID 1000; state: DISABLED
+08-12 00:21:53.543  1389  1488 I ANDR-PWR-OPT: PowerAppClassifier: getAppType() 59: checking app [com.ayaneo.home] is type 3
+08-12 00:21:53.544  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: bindService is called for service : com.google.android.apps.turbo/com.google.android.libraries.smartbattery.appusage.library.InferAppBucketsJob and for client system
+08-12 00:21:53.545  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: total connections for service : com.google.android.apps.turbo/com.google.android.libraries.smartbattery.appusage.library.InferAppBucketsJobare :1
+08-12 00:21:53.545  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: total connections for client : systemare :11
+08-12 00:21:53.545  1534  1534 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+08-12 00:21:53.547  2277  8159 D InputDispatcher: onFocusChangedLocked
+08-12 00:21:53.548  2277  2464 D ActivityManager: sync unfroze 8498 com.google.android.apps.turbo:aab for 6
+08-12 00:21:53.550  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: unbindService is called for service : com.google.android.gms/.chimera.PersistentDirectBootAwareApiService and for client com.google.android.apps.turbo:aab
+08-12 00:21:53.551  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: unbindService is called for service : com.google.android.gms/.chimera.PersistentDirectBootAwareApiService and for client com.google.android.apps.turbo:aab
+08-12 00:21:53.551  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: size of service connections for service: com.google.android.gms/.chimera.PersistentDirectBootAwareApiServiceafter removal is 6
+08-12 00:21:53.551  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: size of client connections for client: com.google.android.apps.turbo:aabafter removal is 1
+08-12 00:21:53.556  1257  1257 I Zygote  : Process 15574 exited due to signal 9 (Killed)
+08-12 00:21:53.556  2277 29758 I ImeTracker: io.taowen.bx:74ae4db3: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_REMOVE_CLIENT
+08-12 00:21:53.556  2277 29758 I ImeTracker: io.taowen.bx:74ae4db3: onCancelled at PHASE_SERVER_SHOULD_HIDE
+08-12 00:21:53.556  2277  3302 I WindowManager: WIN DEATH: Window{db8d073 u0 io.taowen.bx/com.winlator.BionicXActivity}
+08-12 00:21:53.556  2023  2023 I adbd    : Remote process closed the socket (on MSG_PEEK)
+08-12 00:21:53.556  2277  3302 W InputManager-JNI: Input channel object 'db8d073 io.taowen.bx/com.winlator.BionicXActivity (client)' was disposed without first being removed with the input manager!
+08-12 00:21:53.557  2277  2682 V ActivityManager: Got obituary of 15574:io.taowen.bx
+08-12 00:21:53.558  3736  3736 D AutofillManager: view not autofillable - not passing ime action check
+08-12 00:21:53.559  2627  2627 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-12 00:21:53.562  2627  2627 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-12 00:21:53.562  2277  2329 W WindowManager: Failed to deliver inset control state change to w=Window{db8d073 u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-12 00:21:53.562  2277  2329 W WindowManager: android.os.DeadObjectException
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.view.IWindow$Stub$Proxy.insetsControlChanged(IWindow.java:495)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.wm.WindowState.notifyInsetsControlChanged(WindowState.java:3812)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.wm.InsetsStateController.lambda$notifyPendingInsetsControlChanged$3(InsetsStateController.java:343)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.wm.InsetsStateController.$r8$lambda$8yykPRG1GyNq_J17QvL9d5xANMc(InsetsStateController.java:0)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.wm.InsetsStateController$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.wm.WindowAnimator.executeAfterPrepareSurfacesRunnables(WindowAnimator.java:294)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.wm.WindowAnimator.animate(WindowAnimator.java:202)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.wm.WindowAnimator.lambda$new$1(WindowAnimator.java:99)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.wm.WindowAnimator.$r8$lambda$aHNu1uhcqxihX5NZc4McDDQPAyw(WindowAnimator.java:0)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.wm.WindowAnimator$$ExternalSyntheticLambda1.doFrame(R8$$SyntheticClass:0)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1348)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1359)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.view.Choreographer.doCallbacks(Choreographer.java:963)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.view.Choreographer.doFrame(Choreographer.java:888)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.view.Choreographer$FrameDisplayEventReceiver.run(Choreographer.java:1333)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.os.Handler.handleCallback(Handler.java:958)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.os.Handler.dispatchMessage(Handler.java:99)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.os.Looper.loopOnce(Looper.java:205)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.os.Looper.loop(Looper.java:294)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at android.os.HandlerThread.run(HandlerThread.java:67)
+08-12 00:21:53.562  2277  2329 W WindowManager: 	at com.android.server.ServiceThread.run(ServiceThread.java:46)
+08-12 00:21:53.563  2627  2627 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-12 00:21:53.565  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.565  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.565  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.565  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.566  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.566  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.566  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.566  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.568  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: bindService is called for service : com.google.android.gms/.chimera.PersistentDirectBootAwareApiService and for client com.google.android.apps.turbo:aab
+08-12 00:21:53.568  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: total connections for service : com.google.android.gms/.chimera.PersistentDirectBootAwareApiServiceare :7
+08-12 00:21:53.568  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: total connections for client : com.google.android.apps.turbo:aabare :2
+08-12 00:21:53.571  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 161252188; UID 10194; state: DISABLED
+08-12 00:21:53.571  2277  7409 W ActivityTaskManager: callingPackage for (uid=2000, pid=16069) has no WPC
+08-12 00:21:53.571  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 265464455; UID 10194; state: DISABLED
+08-12 00:21:53.571  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 265452344; UID 10194; state: DISABLED
+08-12 00:21:53.571  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 266124927; UID 10194; state: DISABLED
+08-12 00:21:53.571  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 265451093; UID 10194; state: DISABLED
+08-12 00:21:53.571  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 265456536; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 255940284; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 236283604; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 263959004; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 264304459; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 264301586; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 254631730; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 273509367; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 263259275; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 174042980; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 174042936; UID 10194; state: DISABLED
+08-12 00:21:53.572  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 181136395; UID 10194; state: DISABLED
+08-12 00:21:53.574   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:53.574  2277  7409 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:53.574  2277  7409 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:53.574   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:53.574  2277  7409 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:53.574  2277  7409 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:53.574  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 194480991; UID 10194; state: ENABLED
+08-12 00:21:53.575  8498  8524 W Turbo.InferAppBucketsJob: Models given by config: 1
+08-12 00:21:53.576  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: bindService is called for service : com.google.android.gms/.chimera.PersistentDirectBootAwareApiService and for client com.google.android.apps.turbo:aab
+08-12 00:21:53.576  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: total connections for service : com.google.android.gms/.chimera.PersistentDirectBootAwareApiServiceare :7
+08-12 00:21:53.576  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: total connections for client : com.google.android.apps.turbo:aabare :2
+08-12 00:21:53.577  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 184838306; UID 10194; state: DISABLED
+08-12 00:21:53.577  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 185004937; UID 10194; state: DISABLED
+08-12 00:21:53.577  1463  1593 E ANDR-PERF-UTIL: ANDR-PERF-UTIL: save_node_val() 366: Failed to read /sys/devices/system/cpu/cpufreq/policy5/walt/adaptive_high_freq
+08-12 00:21:53.577  1463  1593 E ANDR-PERF-OPTSHANDLER: ANDR-PERF-OPTSHANDLER: modify_sysfsnode() 1095: Failed to read /sys/devices/system/cpu/cpufreq/policy5/walt/adaptive_high_freq
+08-12 00:21:53.577  1463  1593 E ANDR-PERF-RESOURCEQS: ANDR-PERF-RESOURCEQS: AddAndApply() 167: Failed to apply optimization [2, 3]
+08-12 00:21:53.577  1463  1593 E ANDR-PERF-UTIL: ANDR-PERF-UTIL: save_node_val() 366: Failed to read /sys/devices/system/cpu/cpufreq/policy5/walt/adaptive_low_freq
+08-12 00:21:53.577  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 197654537; UID 10194; state: DISABLED
+08-12 00:21:53.577  1463  1593 E ANDR-PERF-OPTSHANDLER: ANDR-PERF-OPTSHANDLER: modify_sysfsnode() 1095: Failed to read /sys/devices/system/cpu/cpufreq/policy5/walt/adaptive_low_freq
+08-12 00:21:53.577  1463  1593 E ANDR-PERF-RESOURCEQS: ANDR-PERF-RESOURCEQS: AddAndApply() 167: Failed to apply optimization [2, 2]
+08-12 00:21:53.578  2277  7409 D CompatibilityChangeReporter: Compat change id reported: 205907456; UID 10194; state: DISABLED
+08-12 00:21:53.578  2277  7409 D ActivityTrigger: ActivityTrigger activityPauseTrigger 
+08-12 00:21:53.578   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:53.578  2277  7409 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:53.578  2277  7409 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:53.578  2277  7409 I ActivityTaskManager: Add Task{e987c91 #360 type=standard A=10194:io.taowen.bx} to hidden list because adding Task{fbaa904 #361 type=standard A=10194:io.taowen.bx}
+08-12 00:21:53.578  1463  1593 E ANDR-PERF-RESOURCEQS: ANDR-PERF-RESOURCEQS: AddAndApply() 131: Resource value ffffffff is not supported
+08-12 00:21:53.579  2277  7409 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=io.taowen.bx/com.winlator.BionicXActivity} with LAUNCH_MULTIPLE from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+08-12 00:21:53.580  1389  1488 I ANDR-PWR-OPT: PowerAppClassifier: getAppType() 59: checking app [io.taowen.bx] is type 1
+08-12 00:21:53.580  1389  1488 I ANDR-PWR-OPT: PowerAppClassifier: getAppType() 59: checking app [com.ayaneo.home] is type 3
+08-12 00:21:53.580  2627  2627 D CentralSurfaces: Received new disable state: enaihbcrso.qingr (unchanged)
+08-12 00:21:53.580  3718  3753 W InputReader: pauseServer
+08-12 00:21:53.580  2277  2328 D CompatibilityChangeReporter: Compat change id reported: 135634846; UID 10194; state: DISABLED
+08-12 00:21:53.580  2277  2328 D CompatibilityChangeReporter: Compat change id reported: 177438394; UID 10194; state: DISABLED
+08-12 00:21:53.580  2277  2328 D CompatibilityChangeReporter: Compat change id reported: 135772972; UID 10194; state: DISABLED
+08-12 00:21:53.580  2277  2328 D CompatibilityChangeReporter: Compat change id reported: 135754954; UID 10194; state: DISABLED
+08-12 00:21:53.581  2277  2335 D CompatibilityChangeReporter: Compat change id reported: 143937733; UID 10194; state: DISABLED
+08-12 00:21:53.581  2277  2682 W WindowManager: Failed looking up window session=Session{9e06bbd 2627:u0a10124} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6067 com.android.server.wm.Session.updateRequestedVisibleTypes:690 android.view.IWindowSession$Stub.onTransact:1034 
+08-12 00:21:53.582  2277  9988 D CompatibilityChangeReporter: Compat change id reported: 168419799; UID 10194; state: DISABLED
+08-12 00:21:53.582  2277  9988 D CompatibilityChangeReporter: Compat change id reported: 273564678; UID 10194; state: DISABLED
+08-12 00:21:53.584  8498  8524 W Turbo.ModelFactory: current model: 9
+08-12 00:21:53.585 16074 16074 I xsu     : sending cmd:chmod 750 /storage
+08-12 00:21:53.585  2277  2682 D CoreBackPreview: Window{8a54abf u0 Splash Screen io.taowen.bx}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@43b76b3, mPriority=0, mIsAnimationCallback=false}
+08-12 00:21:53.585 16074 16074 I xsu     : sending cmd end:chmod 750 /storage
+08-12 00:21:53.585 16074 16074 I xsu     : free cmd end
+08-12 00:21:53.585 16074 16074 I xsu     : xsu_recv cmd before
+08-12 00:21:53.585 16074 16074 I xsu_api : xsu_recv memset enter
+08-12 00:21:53.585 16074 16074 I xsu_api : xsu_recv memset end
+08-12 00:21:53.585  1541 16075 I xsu_api : xsu_recv memset enter
+08-12 00:21:53.585  1541 16075 I xsu_api : xsu_recv memset end
+08-12 00:21:53.585  1541 16075 I xsu_api : xsu_recv retry end
+08-12 00:21:53.585  1541 16075 I xsu_api : ret=4, version=200, type=0, payload_size=22
+08-12 00:21:53.585  1541 16075 I xsu_api : xsu_recv type and len
+08-12 00:21:53.585  1541 16075 I xsu_api : header.type=0, header.payload_size=22, xsu_header_t=4
+08-12 00:21:53.585  1541 16075 I xsu_api : xsu_recv type and len end
+08-12 00:21:53.585  1541 16075 I xsud    : handle comming cmd:chmod 750 /storage
+08-12 00:21:53.586  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.586  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.587  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.587  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.587  2627  2721 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.587  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.587  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.587  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.587  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.587  8498  8524 W Turbo.DataInjectorUtils: shouldApplyDenyList() feature is disabled
+08-12 00:21:53.588  2277  2682 D CompatibilityChangeReporter: Compat change id reported: 218533173; UID 10194; state: DISABLED
+08-12 00:21:53.589  2277  2682 D CompatibilityChangeReporter: Compat change id reported: 262645982; UID 10194; state: DISABLED
+08-12 00:21:53.589  1257  1257 D Zygote  : Forked child process 16078
+08-12 00:21:53.589  2277  2335 I ActivityManager: Start proc 16078:io.taowen.bx/u0a194 for next-top-activity {io.taowen.bx/com.winlator.BionicXActivity}
+08-12 00:21:53.589  8498  8524 W Turbo.AppStandbyBucketManager: Successfully pushed app buckets to the platform using model 9
+08-12 00:21:53.589  2277 16079 W ContextImpl: Calling a method in the system process without a qualified user: android.app.ContextImpl.sendBroadcast:1220 com.qualcomm.qti.Performance$SendGameLaunchBroadcast.run:248 java.lang.Thread.run:1564 <bottom of call stack> <bottom of call stack> 
+08-12 00:21:53.591  3653  4866 W SQLiteLog: (28) double-quoted string literal: "io.taowen.bx"
+08-12 00:21:53.592 16078 16078 I libc    : SetHeapTaggingLevel: tag level set to 0
+08-12 00:21:53.591 16076 16076 I chmod   : type=1400 audit(0.0:287270): avc:  denied  { getattr } for  path="/storage" dev="tmpfs" ino=12 scontext=u:r:xsud:s0 tcontext=u:object_r:mnt_user_file:s0 tclass=dir permissive=1
+08-12 00:21:53.594 16078 16078 I io.taowen.bx: Late-enabling -Xcheck:jni
+08-12 00:21:53.595 16074 16074 I xsu_api : xsu_recv retry end
+08-12 00:21:53.595 16074 16074 I xsu_api : ret=4, version=200, type=3, payload_size=0
+08-12 00:21:53.595 16074 16074 I xsu_api : xsu_recv type and len
+08-12 00:21:53.595 16074 16074 I xsu_api : header.type=3, header.payload_size=0, xsu_header_t=4
+08-12 00:21:53.595 16074 16074 I xsu_api : xsu_recv type and len end
+08-12 00:21:53.595 16074 16074 I xsu     : xsu_recv cmd end
+08-12 00:21:53.595 16074 16074 I xsu     : end session!
+08-12 00:21:53.600 16080 16080 I xsu     : sending cmd:setenforce 0
+08-12 00:21:53.600 16080 16080 I xsu     : sending cmd end:setenforce 0
+08-12 00:21:53.600 16080 16080 I xsu     : free cmd end
+08-12 00:21:53.600 16080 16080 I xsu     : xsu_recv cmd before
+08-12 00:21:53.600 16080 16080 I xsu_api : xsu_recv memset enter
+08-12 00:21:53.600 16080 16080 I xsu_api : xsu_recv memset end
+08-12 00:21:53.600  1541 16081 I xsu_api : xsu_recv memset enter
+08-12 00:21:53.600  1541 16081 I xsu_api : xsu_recv memset end
+08-12 00:21:53.600  1541 16081 I xsu_api : xsu_recv retry end
+08-12 00:21:53.600  1541 16081 I xsu_api : ret=4, version=200, type=0, payload_size=16
+08-12 00:21:53.600  1541 16081 I xsu_api : xsu_recv type and len
+08-12 00:21:53.600  1541 16081 I xsu_api : header.type=0, header.payload_size=16, xsu_header_t=4
+08-12 00:21:53.600  1541 16081 I xsu_api : xsu_recv type and len end
+08-12 00:21:53.600  1541 16081 I xsud    : handle comming cmd:setenforce 0
+08-12 00:21:53.602  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: unbindService is called for service : com.google.android.apps.turbo/com.google.android.libraries.smartbattery.appusage.library.InferAppBucketsJob and for client system
+08-12 00:21:53.602  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: size of service connections for service: com.google.android.apps.turbo/com.google.android.libraries.smartbattery.appusage.library.InferAppBucketsJobafter removal is 0
+08-12 00:21:53.602  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: size of client connections for client: systemafter removal is 10
+08-12 00:21:53.602  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: destroyService is called for service : com.google.android.apps.turbo/com.google.android.libraries.smartbattery.appusage.library.InferAppBucketsJob
+08-12 00:21:53.607 16078 16078 I io.taowen.bx: Using CollectorTypeCMC GC.
+08-12 00:21:53.608 16080 16080 I xsu_api : xsu_recv retry end
+08-12 00:21:53.608 16080 16080 I xsu_api : ret=4, version=200, type=3, payload_size=0
+08-12 00:21:53.608 16080 16080 I xsu_api : xsu_recv type and len
+08-12 00:21:53.608 16080 16080 I xsu_api : header.type=3, header.payload_size=0, xsu_header_t=4
+08-12 00:21:53.608 16080 16080 I xsu_api : xsu_recv type and len end
+08-12 00:21:53.608 16080 16080 I xsu     : xsu_recv cmd end
+08-12 00:21:53.608 16080 16080 I xsu     : end session!
+08-12 00:21:53.609  2023  2173 I adbd    : jdwp connection from 16078
+08-12 00:21:53.611 16078 16078 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+08-12 00:21:53.615  2277  2682 D CompatibilityInfo: mCompatibilityFlags - 0
+08-12 00:21:53.615  2277  2682 D CompatibilityInfo: applicationDensity - 440
+08-12 00:21:53.615  2277  2682 D CompatibilityInfo: applicationScale - 1.0
+08-12 00:21:53.615  2277  2682 I ActivityTaskManager: The Process io.taowen.bx Already Exists in BG. So sending its PID: 16078
+08-12 00:21:53.616  2277  2464 D CompatibilityChangeReporter: Compat change id reported: 265195908; UID 10194; state: ENABLED
+08-12 00:21:53.619 16078 16078 D CompatibilityChangeReporter: Compat change id reported: 171979766; UID 10194; state: DISABLED
+08-12 00:21:53.619 16078 16078 D CompatibilityChangeReporter: Compat change id reported: 242716250; UID 10194; state: DISABLED
+08-12 00:21:53.622  2277  2682 D CompatibilityChangeReporter: Compat change id reported: 170503758; UID 10194; state: DISABLED
+08-12 00:21:53.623 16078 16078 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.test.base.jar
+08-12 00:21:53.639 16095 16095 I xsu     : sending cmd:echo 81 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-12 00:21:53.639 16095 16095 I xsu     : sending cmd end:echo 81 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-12 00:21:53.639 16095 16095 I xsu     : free cmd end
+08-12 00:21:53.639 16095 16095 I xsu     : xsu_recv cmd before
+08-12 00:21:53.639 16095 16095 I xsu_api : xsu_recv memset enter
+08-12 00:21:53.639 16095 16095 I xsu_api : xsu_recv memset end
+08-12 00:21:53.639  1541 16096 I xsu_api : xsu_recv memset enter
+08-12 00:21:53.639  1541 16096 I xsu_api : xsu_recv memset end
+08-12 00:21:53.639  1541 16096 I xsu_api : xsu_recv retry end
+08-12 00:21:53.639  1541 16096 I xsu_api : ret=4, version=200, type=0, payload_size=69
+08-12 00:21:53.639  1541 16096 I xsu_api : xsu_recv type and len
+08-12 00:21:53.639  1541 16096 I xsu_api : header.type=0, header.payload_size=69, xsu_header_t=4
+08-12 00:21:53.639  1541 16096 I xsu_api : xsu_recv type and len end
+08-12 00:21:53.639  1541 16096 I xsud    : handle comming cmd:echo 81 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-12 00:21:53.642 16095 16095 I xsu_api : xsu_recv retry end
+08-12 00:21:53.642 16095 16095 I xsu_api : ret=4, version=200, type=3, payload_size=0
+08-12 00:21:53.642 16095 16095 I xsu_api : xsu_recv type and len
+08-12 00:21:53.642 16095 16095 I xsu_api : header.type=3, header.payload_size=0, xsu_header_t=4
+08-12 00:21:53.642 16095 16095 I xsu_api : xsu_recv type and len end
+08-12 00:21:53.642 16095 16095 I xsu     : xsu_recv cmd end
+08-12 00:21:53.642 16095 16095 I xsu     : end session!
+08-12 00:21:53.696 16078 16078 D nativeloader: Configuring clns-4 for other apk /data/app/~~eov1y3tz-WCMogO32G1u_w==/io.taowen.bx-Or9CcNQEaWwqO48_wLKneg==/base.apk. target_sdk_version=28, uses_libraries=, library_path=/data/app/~~eov1y3tz-WCMogO32G1u_w==/io.taowen.bx-Or9CcNQEaWwqO48_wLKneg==/lib/arm64:/data/app/~~eov1y3tz-WCMogO32G1u_w==/io.taowen.bx-Or9CcNQEaWwqO48_wLKneg==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/io.taowen.bx
+08-12 00:21:53.696 16078 16078 D nativeloader: Extending system_exposed_libraries: libbinauralrenderer_wrapper.qti.so:libhoaeffects.qti.so:libQOC.qti.so:libupdateprof.qti.so:libthermalclient.qti.so:libQOC.qti.so:libdiag_system.qti.so:libqape.qti.so:libqesdk_ndk_platform.qti.so:liblistenjni.qti.so
+08-12 00:21:53.699  3736  4013 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.700 16078 16078 D nativeloader: Load libframework-connectivity-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity.jar: ok
+08-12 00:21:53.701 16078 16078 I Perf    : Connecting to perf service.
+08-12 00:21:53.703 16078 16078 V GraphicsEnvironment: Currently set values for:
+08-12 00:21:53.703 16078 16078 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+08-12 00:21:53.703 16078 16078 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+08-12 00:21:53.703 16078 16078 V GraphicsEnvironment: ANGLE GameManagerService for io.taowen.bx: false
+08-12 00:21:53.703 16078 16078 V GraphicsEnvironment: io.taowen.bx is not listed in per-application setting
+08-12 00:21:53.703 16078 16078 V GraphicsEnvironment: Updatable production driver is not supported on the device.
+08-12 00:21:53.710  2277  2682 I ActivityManager: Flag disabled. Ignoring finishAttachApplication from uid: 10194. pid: 16078
+08-12 00:21:53.745  3736  4013 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.746   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:53.746  2277  9988 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:53.746  2277  9988 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:53.747  1389  1488 I ANDR-PWR-OPT: PowerAppClassifier: getAppType() 59: checking app [io.taowen.bx] is type 1
+08-12 00:21:53.747  2277  9988 I ActivityTaskManager: The Process io.taowen.bx Already Exists in BG. So sending its PID: 16078
+08-12 00:21:53.748  2277  9988 I DisplayRotation: rotationForOrientation: orientation=6, preferredRotation=1, sensorRotation=1, lastRotation=1
+08-12 00:21:53.748  2277  9988 I DisplayRotation: updateRotation: lastOrientation=6, oldRotation=1, newRotation=1
+08-12 00:21:53.750   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:53.750  2277  9988 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:53.750  2277  9988 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:53.751 16078 16101 D vulkan  : searching for layers in '/data/app/~~eov1y3tz-WCMogO32G1u_w==/io.taowen.bx-Or9CcNQEaWwqO48_wLKneg==/lib/arm64'
+08-12 00:21:53.751 16078 16101 D vulkan  : searching for layers in '/data/app/~~eov1y3tz-WCMogO32G1u_w==/io.taowen.bx-Or9CcNQEaWwqO48_wLKneg==/base.apk!/lib/arm64-v8a'
+08-12 00:21:53.752  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.752  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.755  2277  2325 V WindowManager: Sent Transition #101 createdAt=08-12 00:21:53.535 via request=TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=360 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=io.taowen.bx/com.winlator.BionicXActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} numActivities=0 lastActiveTime=10918908 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{73ae1df Task{e987c91 #360 type=standard A=10194:io.taowen.bx}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+08-12 00:21:53.755  2277  2325 V WindowManager:     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+08-12 00:21:53.755  2277  9988 W WindowManager: Failed to deliver inset control state change to w=Window{db8d073 u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-12 00:21:53.755  2277  9988 W WindowManager: android.os.DeadObjectException
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at android.view.IWindow$Stub$Proxy.insetsControlChanged(IWindow.java:495)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.WindowState.notifyInsetsControlChanged(WindowState.java:3812)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.InsetsStateController.lambda$notifyPendingInsetsControlChanged$3(InsetsStateController.java:343)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.InsetsStateController.$r8$lambda$8yykPRG1GyNq_J17QvL9d5xANMc(InsetsStateController.java:0)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.InsetsStateController$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.WindowAnimator.executeAfterPrepareSurfacesRunnables(WindowAnimator.java:294)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacementNoTrace(RootWindowContainer.java:820)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacement(RootWindowContainer.java:765)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacementLoop(WindowSurfacePlacer.java:177)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacement(WindowSurfacePlacer.java:126)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacement(WindowSurfacePlacer.java:115)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.continueLayout(WindowSurfacePlacer.java:97)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.ActivityTaskManagerService.continueWindowLayout(ActivityTaskManagerService.java:4696)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.ActivityRecord.activityPaused(ActivityRecord.java:6469)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.ActivityClientController.activityPaused(ActivityClientController.java:229)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at android.app.IActivityClientController$Stub.onTransact(IActivityClientController.java:663)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at com.android.server.wm.ActivityClientController.onTransact(ActivityClientController.java:166)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at android.os.Binder.execTransactInternal(Binder.java:1339)
+08-12 00:21:53.755  2277  9988 W WindowManager: 	at android.os.Binder.execTransact(Binder.java:1275)
+08-12 00:21:53.755  2277  2325 V WindowManager:     info={id=101 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{39c95ff Task{fbaa904 #361 type=standard A=10194:io.taowen.bx}}} m=OPEN f=MOVE_TO_TOP leash=Surface(name=Task=361)/@0xf13a9a0 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0},{WCT{RemoteToken{73ae1df Task{e987c91 #360 type=standard A=10194:io.taowen.bx}}} m=CLOSE f=NONE leash=Surface(name=Task=360)/@0xe6a1200 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0}]}
+08-12 00:21:53.755  2627  2669 V WindowManagerShell: onTransitionReady android.os.BinderProxy@7d2fe3f: {id=101 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@6515b27} m=OPEN f=MOVE_TO_TOP leash=Surface(name=Task=361)/@0xc23b28 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@193e1d4} m=CLOSE f=NONE leash=Surface(name=Task=360)/@0x9a99041 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0}]}
+08-12 00:21:53.755  2627  2669 V WindowManagerShell: Playing animation for (#101)android.os.BinderProxy@7d2fe3f@0
+08-12 00:21:53.755  2627  2669 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultMixedHandler@b649180
+08-12 00:21:53.755  2627  2669 V WindowManagerShell:  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@69cf213
+08-12 00:21:53.755  2627  2669 V WindowManagerShell:  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@470c50
+08-12 00:21:53.755  2627  2669 V WindowManagerShell:  try handler com.android.wm.shell.recents.RecentsTransitionHandler@9e0ce49
+08-12 00:21:53.755  2627  2669 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+08-12 00:21:53.755  2627  2669 V WindowManagerShell:  try handler com.android.wm.shell.pip.PipTransition@908434e
+08-12 00:21:53.755  2627  2669 V WindowManagerShell:  try handler com.android.wm.shell.splitscreen.StageCoordinator@95a9c6f
+08-12 00:21:53.755  2627  2669 V WindowManagerShell:  try handler com.android.wm.shell.transition.RemoteTransitionHandler@4189d7c
+08-12 00:21:53.755  2627  2669 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=101 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@6515b27} m=OPEN f=MOVE_TO_TOP leash=Surface(name=Task=361)/@0xc23b28 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@193e1d4} m=CLOSE f=NONE leash=Surface(name=Task=360)/@0x9a99041 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0}]}
+08-12 00:21:53.755  2627  2669 V WindowManagerShell:  Delegate animation for #101 to null
+08-12 00:21:53.755  2627  2669 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultTransitionHandler@85f0605
+08-12 00:21:53.755  2627  2669 V WindowManagerShell: start default transition animation, info = {id=101 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@6515b27} m=OPEN f=MOVE_TO_TOP leash=Surface(name=Task=361)/@0xc23b28 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@193e1d4} m=CLOSE f=NONE leash=Surface(name=Task=360)/@0x9a99041 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0}]}
+08-12 00:21:53.756  2627  2669 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@8bdef7d animAttr=0xb type=CLOSE isEntrance=false
+08-12 00:21:53.756  2627  2669 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@f853e72 animAttr=0xa type=CLOSE isEntrance=true
+08-12 00:21:53.756  2277  2328 D OomAdjuster: App adj change from cached state to fg state : 16078 io.taowen.bx
+08-12 00:21:53.756  1463  1593 E ANDR-PERF-RESOURCEQS: ANDR-PERF-RESOURCEQS: AddAndApply() 167: Failed to apply optimization [10, 8]
+08-12 00:21:53.756  2627  2669 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@85f0605
+08-12 00:21:53.763  3736  4013 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.764  1519  1519 I qspmHal : enter getGpuProf at: -241081372
+08-12 00:21:53.764  1519  1519 I qspmHal : PID 16078 from GFX matched.
+08-12 00:21:53.764  1519  1519 I qspmHal : gpuProfName:io.taowen.bx-gpu - gpu prof_info.path:/data/vendor/gaming/io.taowen.bx-gpu
+08-12 00:21:53.764  1519  1519 E qspmHal : GPU profile file NOT found !!
+08-12 00:21:53.765 16078 16101 I AdrenoVK-0: ===== BEGIN DUMP OF OVERRIDDEN SETTINGS =====
+08-12 00:21:53.765 16078 16101 I AdrenoVK-0: ===== END DUMP OF OVERRIDDEN SETTINGS =====
+08-12 00:21:53.769  3736  4013 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: QUALCOMM build          : 43c70540de, Ibee7afe120
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Build Date              : 07/17/24
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Shader Compiler Version : E031.45.02.16
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Local Branch            : 
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Remote Branch           : refs/tags/AU_LINUX_ANDROID_LA.VENDOR.14.3.0.11.00.00.973.576
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Remote Branch           : NONE
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Reconstruct Branch      : NOTHING
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Build Config            : S P 16.1.2 AArch64
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Driver Path             : /vendor/lib64/hw/vulkan.adreno.so
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Driver Version          : 0762.24
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: PFP                     : 0x01520175
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: ME                      : 0x01520023
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Application Name    : android framework
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Application Version : 0x00000000
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Engine Name         : android framework
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Engine Version      : 0x00000000
+08-12 00:21:53.771 16078 16101 I AdrenoVK-0: Api Version         : 0x00401000
+08-12 00:21:53.773 16078 16078 I BionicX : profile=wps-office display=1920x1080@144 socket=filesystem
+08-12 00:21:53.774 16078 16104 D CompatibilityChangeReporter: Compat change id reported: 351566728; UID 10194; state: DISABLED
+08-12 00:21:53.775 16078 16078 D nativeloader: Load /data/app/~~eov1y3tz-WCMogO32G1u_w==/io.taowen.bx-Or9CcNQEaWwqO48_wLKneg==/lib/arm64/libwinlator.so using class loader ns clns-4 (caller=/data/app/~~eov1y3tz-WCMogO32G1u_w==/io.taowen.bx-Or9CcNQEaWwqO48_wLKneg==/base.apk!classes11.dex): ok
+08-12 00:21:53.777 16078 16078 D nativeloader: Load /data/app/~~eov1y3tz-WCMogO32G1u_w==/io.taowen.bx-Or9CcNQEaWwqO48_wLKneg==/lib/arm64/libgladiorenderer.so using class loader ns clns-4 (caller=/data/app/~~eov1y3tz-WCMogO32G1u_w==/io.taowen.bx-Or9CcNQEaWwqO48_wLKneg==/base.apk!classes8.dex): ok
+08-12 00:21:53.783 16078 16078 D CompatibilityChangeReporter: Compat change id reported: 237531167; UID 10194; state: DISABLED
+08-12 00:21:53.783 16078 16078 W OpenGLRenderer: Unknown dataspace 0
+08-12 00:21:53.784 16078 16107 I BionicX : launching WPS Office Writer (AArch64): [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --direct, --cwd, /data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6, --argv0, wps, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/wps-office, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/wps-office, --env, XDG_RUNTIME_DIR=/data/user/0/io.taowen.bx/files/run/wps-office/runtime, --env, GCONV_PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/gconv, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/apps/wps-office/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, LANG=C, --env, QT_QPA_PLATFORM=xcb, --env, QT_X11_NO_MITSHM=1, --env, QT_OPENGL=software, --env, LIBGL_ALWAYS_SOFTWARE=1, --env, LD_LIBRARY_PATH=/data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6:/data/user/0/io.taowen.bx/files/rootfs/usr/lib, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-wps.so:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/libfreetype.so.6, --, /data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6/wps]
+08-12 00:21:53.784  2277  9988 W WindowManager: Failed looking up window session=Session{828fdf6 16078:u0a10194} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6067 com.android.server.wm.Session.updateRequestedVisibleTypes:690 android.view.IWindowSession$Stub.onTransact:1034 
+08-12 00:21:53.788 16078 16107 I BionicX : bionicx-exec: running untraced pid=16111
+08-12 00:21:53.791  2277  3301 D CoreBackPreview: Window{924a93 u0 io.taowen.bx/com.winlator.BionicXActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@7159a85, mPriority=0, mIsAnimationCallback=false}
+08-12 00:21:53.792  2277  3301 W WindowManager: Failed to deliver inset control state change to w=Window{db8d073 u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-12 00:21:53.792  2277  3301 W WindowManager: android.os.DeadObjectException
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at android.view.IWindow$Stub$Proxy.insetsControlChanged(IWindow.java:495)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.WindowState.notifyInsetsControlChanged(WindowState.java:3812)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.InsetsStateController.lambda$notifyPendingInsetsControlChanged$3(InsetsStateController.java:343)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.InsetsStateController.$r8$lambda$8yykPRG1GyNq_J17QvL9d5xANMc(InsetsStateController.java:0)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.InsetsStateController$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.WindowAnimator.executeAfterPrepareSurfacesRunnables(WindowAnimator.java:294)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacementNoTrace(RootWindowContainer.java:820)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacement(RootWindowContainer.java:765)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacementLoop(WindowSurfacePlacer.java:177)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacement(WindowSurfacePlacer.java:126)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.WindowManagerService.relayoutWindow(WindowManagerService.java:2427)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.Session.relayout(Session.java:249)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at android.view.IWindowSession$Stub.onTransact(IWindowSession.java:701)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at com.android.server.wm.Session.onTransact(Session.java:178)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at android.os.Binder.execTransactInternal(Binder.java:1339)
+08-12 00:21:53.792  2277  3301 W WindowManager: 	at android.os.Binder.execTransact(Binder.java:1275)
+08-12 00:21:53.799 16078 16105 D libEGL  : loaded /vendor/lib64/egl/libEGL_adreno.so
+08-12 00:21:53.800 16078 16105 D libEGL  : loaded /vendor/lib64/egl/libGLESv1_CM_adreno.so
+08-12 00:21:53.803 16078 16105 D libEGL  : loaded /vendor/lib64/egl/libGLESv2_adreno.so
+08-12 00:21:53.809  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.809  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.809  2627  2721 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: QUALCOMM build                   : 43c70540de, Ibee7afe120
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: Build Date                       : 07/17/24
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: OpenGL ES Shader Compiler Version: E031.45.02.16
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: Local Branch                     : 
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: Remote Branch                    : refs/tags/AU_LINUX_ANDROID_LA.VENDOR.14.3.0.11.00.00.973.576
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: Remote Branch                    : NONE
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: Reconstruct Branch               : NOTHING
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: Build Config                     : S P 16.1.2 AArch64
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: Driver Version                   : 0762.24
+08-12 00:21:53.819 16078 16105 I AdrenoGLES-0: Process Name                     : io.taowen.bx
+08-12 00:21:53.820 16078 16105 I AdrenoGLES-0: PFP: 0x01520175, ME: 0x01520023
+08-12 00:21:53.822  1519  1519 I qspmHal : enter getGpuProf at: -241081314
+08-12 00:21:53.822  1519  1519 I qspmHal : PID 16078 from GFX matched.
+08-12 00:21:53.822  1519  1519 I qspmHal : gpuProfName:io.taowen.bx-gpu - gpu prof_info.path:/data/vendor/gaming/io.taowen.bx-gpu
+08-12 00:21:53.822  1519  1519 E qspmHal : GPU profile file NOT found !!
+08-12 00:21:53.823 16078 16105 I AdrenoUtils: <ReadGpuID:357>: Reading chip ID through GSL
+08-12 00:21:53.826   765   765 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.allocator@4.0::IAllocator/default in either framework or device VINTF manifest.
+08-12 00:21:53.826  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.826  1433  1758 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.826  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.826  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.827 16078 16101 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.831  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.831  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.832  2277  2325 I ActivityTaskManager: Displayed io.taowen.bx/com.winlator.BionicXActivity for user 0: +259ms
+08-12 00:21:53.834  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.834  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.834  2627  2721 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.838  2277  9988 D InputDispatcher: onFocusChangedLocked
+08-12 00:21:53.840  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.841  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.841  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.841 16078 16101 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.841  2277  9988 D CompatibilityChangeReporter: Compat change id reported: 214016041; UID 10194; state: DISABLED
+08-12 00:21:53.841  2277  9988 I ImeTracker: io.taowen.bx:328f41c0: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+08-12 00:21:53.841  2277  9988 I ImeTracker: io.taowen.bx:328f41c0: onCancelled at PHASE_SERVER_SHOULD_HIDE
+08-12 00:21:53.841  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.842  2627  2721 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.843  4153  4153 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():2259 
+08-12 00:21:53.843  4153  4153 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():103 repeatCheckTimes = 0, locked = false
+08-12 00:21:53.843  4153  4153 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1446 onStartInput(EditorInfo{EditorInfo{packageName=io.taowen.bx, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+08-12 00:21:53.843  4153  4153 W AndroidIME: LatinIMEBase.updateInputViewCoverNavigation():327 Null input view, cannot update padding!
+08-12 00:21:53.843  4153  4153 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():103 repeatCheckTimes = 1, locked = false
+08-12 00:21:53.844  2277  3301 W PackageConfigPersister: App-specific configuration not found for packageName: io.taowen.bx and userId: 0
+08-12 00:21:53.844  2277  2329 W WindowManager: Failed to deliver inset control state change to w=Window{db8d073 u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-12 00:21:53.844  2277  2329 W WindowManager: android.os.DeadObjectException
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at android.view.IWindow$Stub$Proxy.insetsControlChanged(IWindow.java:495)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.WindowState.notifyInsetsControlChanged(WindowState.java:3812)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.InsetsStateController.lambda$notifyPendingInsetsControlChanged$3(InsetsStateController.java:343)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.InsetsStateController.$r8$lambda$8yykPRG1GyNq_J17QvL9d5xANMc(InsetsStateController.java:0)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.InsetsStateController$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.WindowAnimator.executeAfterPrepareSurfacesRunnables(WindowAnimator.java:294)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacementNoTrace(RootWindowContainer.java:820)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacement(RootWindowContainer.java:765)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacementLoop(WindowSurfacePlacer.java:177)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacement(WindowSurfacePlacer.java:126)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacement(WindowSurfacePlacer.java:115)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer$Traverser.run(WindowSurfacePlacer.java:57)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at android.os.Handler.handleCallback(Handler.java:958)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at android.os.Handler.dispatchMessage(Handler.java:99)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at android.os.Looper.loopOnce(Looper.java:205)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at android.os.Looper.loop(Looper.java:294)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at android.os.HandlerThread.run(HandlerThread.java:67)
+08-12 00:21:53.844  2277  2329 W WindowManager: 	at com.android.server.ServiceThread.run(ServiceThread.java:46)
+08-12 00:21:53.890  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.891  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:53.891  2627  2721 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:53.897 16078 16106 I WinlatorXRequest: seq=1 opcode=98 data=0 bytes=16
+08-12 00:21:53.897 16078 16106 I WinlatorXRequest: seq=2 opcode=156 data=0 bytes=0
+08-12 00:21:53.897 16078 16106 I WinlatorXRequest: seq=3 opcode=55 data=0 bytes=16
+08-12 00:21:53.898 16078 16106 I WinlatorXRequest: seq=4 opcode=20 data=0 bytes=20
+08-12 00:21:53.898 16078 16106 I WinlatorXRequest: seq=5 opcode=98 data=0 bytes=16
+08-12 00:21:53.898 16078 16106 I WinlatorXRequest: seq=6 opcode=148 data=0 bytes=4
+08-12 00:21:53.898 16078 16106 I WinlatorXRequest: seq=7 opcode=16 data=0 bytes=16
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=8 opcode=16 data=0 bytes=20
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=9 opcode=16 data=0 bytes=20
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=10 opcode=16 data=0 bytes=16
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=11 opcode=16 data=0 bytes=24
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=12 opcode=16 data=0 bytes=24
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=13 opcode=16 data=0 bytes=32
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=14 opcode=16 data=0 bytes=12
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=15 opcode=16 data=0 bytes=28
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=16 opcode=16 data=0 bytes=12
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=17 opcode=16 data=0 bytes=20
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=18 opcode=16 data=0 bytes=12
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=19 opcode=16 data=0 bytes=12
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=20 opcode=16 data=0 bytes=20
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=21 opcode=16 data=0 bytes=20
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=22 opcode=16 data=0 bytes=16
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=23 opcode=16 data=0 bytes=24
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=24 opcode=16 data=0 bytes=16
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=25 opcode=16 data=0 bytes=8
+08-12 00:21:53.899 16078 16106 I WinlatorXRequest: seq=26 opcode=16 data=0 bytes=12
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=27 opcode=16 data=0 bytes=12
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=28 opcode=16 data=0 bytes=16
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=29 opcode=16 data=0 bytes=16
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=30 opcode=16 data=0 bytes=20
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=31 opcode=16 data=0 bytes=20
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=32 opcode=16 data=0 bytes=28
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=33 opcode=16 data=0 bytes=28
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=34 opcode=16 data=0 bytes=24
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=35 opcode=16 data=0 bytes=20
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=36 opcode=16 data=0 bytes=16
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=37 opcode=16 data=0 bytes=20
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=38 opcode=16 data=0 bytes=24
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=39 opcode=16 data=0 bytes=24
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=40 opcode=16 data=0 bytes=20
+08-12 00:21:53.900 16078 16106 I WinlatorXRequest: seq=41 opcode=16 data=0 bytes=20
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=42 opcode=16 data=0 bytes=28
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=43 opcode=16 data=0 bytes=20
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=44 opcode=16 data=0 bytes=24
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=45 opcode=16 data=0 bytes=20
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=46 opcode=16 data=0 bytes=24
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=47 opcode=16 data=0 bytes=20
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=48 opcode=16 data=0 bytes=28
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=49 opcode=16 data=0 bytes=24
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=50 opcode=16 data=0 bytes=16
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=51 opcode=16 data=0 bytes=24
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=52 opcode=16 data=0 bytes=16
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=53 opcode=16 data=0 bytes=16
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=54 opcode=16 data=0 bytes=28
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=55 opcode=16 data=0 bytes=20
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=56 opcode=16 data=0 bytes=24
+08-12 00:21:53.901 16078 16106 I WinlatorXRequest: seq=57 opcode=16 data=0 bytes=24
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=58 opcode=16 data=0 bytes=28
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=59 opcode=16 data=0 bytes=32
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=60 opcode=16 data=0 bytes=32
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=61 opcode=16 data=0 bytes=24
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=62 opcode=16 data=0 bytes=32
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=63 opcode=16 data=0 bytes=36
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=64 opcode=16 data=0 bytes=24
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=65 opcode=16 data=0 bytes=24
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=66 opcode=16 data=0 bytes=28
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=67 opcode=16 data=0 bytes=28
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=68 opcode=16 data=0 bytes=24
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=69 opcode=16 data=0 bytes=32
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=70 opcode=16 data=0 bytes=28
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=71 opcode=16 data=0 bytes=32
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=72 opcode=16 data=0 bytes=28
+08-12 00:21:53.902 16078 16106 I WinlatorXRequest: seq=73 opcode=16 data=0 bytes=32
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=74 opcode=16 data=0 bytes=32
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=75 opcode=16 data=0 bytes=32
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=76 opcode=16 data=0 bytes=40
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=77 opcode=16 data=0 bytes=36
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=78 opcode=16 data=0 bytes=32
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=79 opcode=16 data=0 bytes=36
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=80 opcode=16 data=0 bytes=32
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=81 opcode=16 data=0 bytes=28
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=82 opcode=16 data=0 bytes=32
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=83 opcode=16 data=0 bytes=36
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=84 opcode=16 data=0 bytes=28
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=85 opcode=16 data=0 bytes=24
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=86 opcode=16 data=0 bytes=24
+08-12 00:21:53.903 16078 16106 I WinlatorXRequest: seq=87 opcode=16 data=0 bytes=28
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=88 opcode=16 data=0 bytes=28
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=89 opcode=16 data=0 bytes=20
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=90 opcode=16 data=0 bytes=28
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=91 opcode=16 data=0 bytes=24
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=92 opcode=16 data=0 bytes=8
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=93 opcode=16 data=0 bytes=16
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=94 opcode=16 data=0 bytes=12
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=95 opcode=16 data=0 bytes=16
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=96 opcode=16 data=0 bytes=16
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=97 opcode=16 data=0 bytes=16
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=98 opcode=16 data=0 bytes=16
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=99 opcode=16 data=0 bytes=12
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=100 opcode=16 data=0 bytes=16
+08-12 00:21:53.904 16078 16106 I WinlatorXRequest: seq=101 opcode=16 data=0 bytes=16
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=102 opcode=16 data=0 bytes=20
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=103 opcode=16 data=0 bytes=20
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=104 opcode=16 data=0 bytes=16
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=105 opcode=16 data=0 bytes=16
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=106 opcode=16 data=0 bytes=20
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=107 opcode=16 data=0 bytes=20
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=108 opcode=16 data=0 bytes=20
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=109 opcode=16 data=0 bytes=20
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=110 opcode=16 data=0 bytes=24
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=111 opcode=16 data=0 bytes=20
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=112 opcode=16 data=0 bytes=12
+08-12 00:21:53.905 16078 16106 I WinlatorXRequest: seq=113 opcode=16 data=0 bytes=16
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=114 opcode=16 data=0 bytes=16
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=115 opcode=16 data=0 bytes=20
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=116 opcode=16 data=0 bytes=16
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=117 opcode=16 data=0 bytes=20
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=118 opcode=16 data=0 bytes=24
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=119 opcode=16 data=0 bytes=28
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=120 opcode=16 data=0 bytes=28
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=121 opcode=16 data=0 bytes=24
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=122 opcode=16 data=0 bytes=24
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=123 opcode=16 data=0 bytes=24
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=124 opcode=16 data=0 bytes=24
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=125 opcode=16 data=0 bytes=24
+08-12 00:21:53.906 16078 16106 I WinlatorXRequest: seq=126 opcode=16 data=0 bytes=20
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=127 opcode=16 data=0 bytes=24
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=128 opcode=16 data=0 bytes=16
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=129 opcode=16 data=0 bytes=12
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=130 opcode=16 data=0 bytes=12
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=131 opcode=16 data=0 bytes=12
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=132 opcode=16 data=0 bytes=12
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=133 opcode=16 data=0 bytes=16
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=134 opcode=16 data=0 bytes=16
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=135 opcode=16 data=0 bytes=16
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=136 opcode=16 data=0 bytes=16
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=137 opcode=16 data=0 bytes=16
+08-12 00:21:53.907 16078 16106 I WinlatorXRequest: seq=138 opcode=16 data=0 bytes=20
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=139 opcode=16 data=0 bytes=12
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=140 opcode=16 data=0 bytes=20
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=141 opcode=16 data=0 bytes=20
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=142 opcode=16 data=0 bytes=20
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=143 opcode=16 data=0 bytes=20
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=144 opcode=16 data=0 bytes=24
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=145 opcode=16 data=0 bytes=28
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=146 opcode=16 data=0 bytes=28
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=147 opcode=16 data=0 bytes=32
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=148 opcode=16 data=0 bytes=28
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=149 opcode=16 data=0 bytes=24
+08-12 00:21:53.908 16078 16106 I WinlatorXRequest: seq=150 opcode=16 data=0 bytes=16
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=151 opcode=16 data=0 bytes=8
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=152 opcode=16 data=0 bytes=16
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=153 opcode=16 data=0 bytes=32
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=154 opcode=98 data=0 bytes=12
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=155 opcode=98 data=0 bytes=12
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=156 opcode=98 data=0 bytes=12
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=157 opcode=98 data=0 bytes=12
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=158 opcode=98 data=0 bytes=8
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=159 opcode=98 data=0 bytes=12
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=160 opcode=98 data=0 bytes=16
+08-12 00:21:53.909 16078 16106 I WinlatorXRequest: seq=161 opcode=98 data=0 bytes=20
+08-12 00:21:53.910 16078 16106 I WinlatorXRequest: seq=162 opcode=150 data=0 bytes=8
+08-12 00:21:53.910 16078 16106 I WinlatorXRequest: seq=163 opcode=151 data=0 bytes=8
+08-12 00:21:53.910 16078 16106 I WinlatorXRequest: seq=164 opcode=152 data=0 bytes=8
+08-12 00:21:53.910 16078 16106 I WinlatorXRequest: seq=165 opcode=149 data=47 bytes=4
+08-12 00:21:53.910 16078 16106 I WinlatorXRequest: seq=166 opcode=148 data=0 bytes=4
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=167 opcode=150 data=4 bytes=8
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=168 opcode=16 data=0 bytes=20
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=169 opcode=23 data=0 bytes=4
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=170 opcode=20 data=0 bytes=20
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=171 opcode=20 data=0 bytes=20
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=172 opcode=3 data=0 bytes=4
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=173 opcode=2 data=0 bytes=12
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=174 opcode=20 data=0 bytes=20
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=175 opcode=150 data=25 bytes=4
+08-12 00:21:53.911 16078 16106 I WinlatorXRequest: seq=176 opcode=150 data=31 bytes=4
+08-12 00:21:53.912 16078 16107 I BionicX : failed to get the primary output of the screen
+08-12 00:21:53.912 16078 16106 I WinlatorXRequest: seq=177 opcode=150 data=4 bytes=8
+08-12 00:21:53.912 16078 16106 I WinlatorXRequest: seq=178 opcode=150 data=20 bytes=8
+08-12 00:21:53.912 16078 16106 I WinlatorXRequest: seq=179 opcode=45 data=0 bytes=16
+08-12 00:21:53.912 16078 16106 I WinlatorXRequest: seq=180 opcode=150 data=15 bytes=24
+08-12 00:21:53.912 16078 16106 I WinlatorXRequest: seq=181 opcode=150 data=15 bytes=24
+08-12 00:21:53.912 16078 16106 I WinlatorXRequest: seq=182 opcode=150 data=15 bytes=24
+08-12 00:21:53.913 16078 16106 I WinlatorXRequest: seq=183 opcode=1 data=0 bytes=28
+08-12 00:21:53.913 16078 16106 I WinlatorXRequest: seq=184 opcode=18 data=0 bytes=48
+08-12 00:21:53.913 16078 16106 I WinlatorXRequest: seq=185 opcode=18 data=0 bytes=48
+08-12 00:21:53.913 16078 16106 I WinlatorXRequest: seq=186 opcode=151 data=2 bytes=12
+08-12 00:21:53.913 16078 16106 I WinlatorXRequest: seq=187 opcode=149 data=48 bytes=4
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=188 opcode=149 data=46 bytes=16
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=189 opcode=20 data=0 bytes=20
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=190 opcode=148 data=1 bytes=12
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=191 opcode=43 data=0 bytes=0
+08-12 00:21:53.914 16078 16107 I BionicX : qt.qpa.xcb: failed to select notify events from XKB
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=192 opcode=98 data=0 bytes=16
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=193 opcode=148 data=24 bytes=12
+08-12 00:21:53.914 16078 16107 I BionicX : qt.qpa.xcb: failed to get core keyboard device info
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=194 opcode=151 data=2 bytes=12
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=195 opcode=151 data=2 bytes=12
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=196 opcode=38 data=0 bytes=4
+08-12 00:21:53.914 16078 16106 I WinlatorXRequest: seq=197 opcode=43 data=0 bytes=0
+08-12 00:21:53.928 16078 16107 I BionicX : wps-sysvipc-compat: fopen64 failed errno=2 path=/etc/ssl/openssl.cnf
+08-12 00:21:53.940 16078 16086 I io.taowen.bx: Compiler allocated 4390KB to compile void android.view.ViewRootImpl.performTraversals()
+08-12 00:21:53.961 16078 16106 I WinlatorXRequest: seq=198 opcode=101 data=0 bytes=4
+08-12 00:21:53.961 16078 16106 I WinlatorXRequest: seq=199 opcode=119 data=0 bytes=0
+08-12 00:21:53.980 16078 16106 I WinlatorXRequest: seq=200 opcode=78 data=0 bytes=12
+08-12 00:21:53.980 16078 16106 I WinlatorXRequest: seq=201 opcode=1 data=32 bytes=56
+08-12 00:21:53.980 16078 16106 I WinlatorXRequest: seq=202 opcode=18 data=0 bytes=92
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=203 opcode=18 data=0 bytes=28
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=204 opcode=18 data=0 bytes=28
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=205 opcode=18 data=0 bytes=24
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=206 opcode=18 data=0 bytes=32
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=207 opcode=1 data=0 bytes=28
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=208 opcode=18 data=0 bytes=24
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=209 opcode=18 data=0 bytes=24
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=210 opcode=18 data=0 bytes=24
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=211 opcode=18 data=0 bytes=56
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=212 opcode=18 data=0 bytes=24
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=213 opcode=18 data=0 bytes=28
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=214 opcode=149 data=46 bytes=16
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=215 opcode=43 data=0 bytes=0
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=216 opcode=2 data=0 bytes=16
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=217 opcode=18 data=0 bytes=32
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=218 opcode=25 data=0 bytes=40
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=219 opcode=25 data=0 bytes=40
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=220 opcode=19 data=0 bytes=8
+08-12 00:21:53.981 16078 16106 I WinlatorXRequest: seq=221 opcode=20 data=0 bytes=20
+08-12 00:21:53.982 16078 16106 I WinlatorXRequest: seq=222 opcode=18 data=0 bytes=56
+08-12 00:21:53.982 16078 16106 I WinlatorXRequest: seq=223 opcode=18 data=0 bytes=24
+08-12 00:21:53.982 16078 16106 I WinlatorXRequest: seq=224 opcode=18 data=0 bytes=20
+08-12 00:21:53.982 16078 16106 I WinlatorXRequest: seq=225 opcode=43 data=112 bytes=0
+08-12 00:21:53.984 16078 16106 I WinlatorXRequest: seq=226 opcode=18 data=0 bytes=24
+08-12 00:21:53.985 16078 16106 I WinlatorXRequest: seq=227 opcode=18 data=0 bytes=397652
+08-12 00:21:54.015 15958 15958 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:21:54.015   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:21:54.015 15958 15958 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:21:54.016   765 16126 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:21:54.016   765 16126 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:21:54.016 16078 16106 I WinlatorXRequest: seq=228 opcode=18 data=0 bytes=24
+08-12 00:21:54.016 16078 16106 I WinlatorXRequest: seq=229 opcode=18 data=0 bytes=20
+08-12 00:21:54.016 16078 16106 I WinlatorXRequest: seq=230 opcode=18 data=0 bytes=20
+08-12 00:21:54.016 16078 16106 I WinlatorXRequest: seq=231 opcode=18 data=0 bytes=397652
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=232 opcode=53 data=4 bytes=12
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=233 opcode=54 data=255 bytes=4
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=234 opcode=53 data=8 bytes=12
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=235 opcode=54 data=114 bytes=4
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=236 opcode=53 data=24 bytes=12
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=237 opcode=54 data=0 bytes=4
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=238 opcode=43 data=0 bytes=0
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=239 opcode=98 data=4 bytes=12
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=240 opcode=152 data=0 bytes=8
+08-12 00:21:54.029 16078 16106 I WinlatorXRequest: seq=241 opcode=152 data=1 bytes=0
+08-12 00:21:54.030 16078 16106 I WinlatorXRequest: seq=242 opcode=45 data=0 bytes=16
+08-12 00:21:54.030 16078 16106 I WinlatorXRequest: seq=243 opcode=94 data=0 bytes=28
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/user/0/io.taowen.bx/files/homes/wps-office/.local/share/icons/dmz/cursors/left_ptr
+08-12 00:21:54.030 16078 16106 I WinlatorXRequest: seq=244 opcode=2 data=0 bytes=12
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/user/0/io.taowen.bx/files/homes/wps-office/.local/share/icons/dmz/index.theme
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/user/0/io.taowen.bx/files/homes/wps-office/.icons/dmz/cursors/left_ptr
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/user/0/io.taowen.bx/files/homes/wps-office/.icons/dmz/index.theme
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/data/io.taowen.bx/files/rootfs/usr/share/icons/dmz/cursors/left_ptr
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/data/io.taowen.bx/files/rootfs/usr/share/icons/dmz/index.theme
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/data/io.taowen.bx/files/rootfs/usr/share/pixmaps/dmz/cursors/left_ptr
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/data/io.taowen.bx/files/rootfs/usr/share/pixmaps/dmz/index.theme
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/user/0/io.taowen.bx/files/homes/wps-office/.local/share/icons/default/cursors/left_ptr
+08-12 00:21:54.030 16078 16106 I WinlatorXRequest: seq=245 opcode=2 data=0 bytes=12
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/user/0/io.taowen.bx/files/homes/wps-office/.local/share/icons/default/index.theme
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/user/0/io.taowen.bx/files/homes/wps-office/.icons/default/cursors/left_ptr
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/user/0/io.taowen.bx/files/homes/wps-office/.icons/default/index.theme
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/data/io.taowen.bx/files/rootfs/usr/share/icons/default/cursors/left_ptr
+08-12 00:21:54.030 16078 16106 I WinlatorXRequest: seq=246 opcode=18 data=0 bytes=92
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/data/io.taowen.bx/files/rootfs/usr/share/icons/default/index.theme
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/data/io.taowen.bx/files/rootfs/usr/share/pixmaps/default/cursors/left_ptr
+08-12 00:21:54.030 16078 16107 I BionicX : wps-sysvipc-compat: fopen failed errno=2 path=/data/data/io.taowen.bx/files/rootfs/usr/share/pixmaps/default/index.theme
+08-12 00:21:54.030 16078 16106 I WinlatorXRequest: seq=247 opcode=18 data=0 bytes=24
+08-12 00:21:54.030 16078 16106 I WinlatorXRequest: seq=248 opcode=18 data=0 bytes=24
+08-12 00:21:54.030 16078 16106 I WinlatorXRequest: seq=249 opcode=20 data=0 bytes=20
+08-12 00:21:54.031 16078 16106 I WinlatorXRequest: seq=250 opcode=19 data=0 bytes=8
+08-12 00:21:54.032 16078 16106 I WinlatorXRequest: seq=251 opcode=8 data=0 bytes=4
+08-12 00:21:54.032 16078 16106 I WinlatorXRequest: seq=252 opcode=53 data=32 bytes=12
+08-12 00:21:54.032 16078 16106 I WinlatorXRequest: seq=253 opcode=55 data=0 bytes=12
+08-12 00:21:54.032  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:54.033  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:54.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS19.400000 FRAMECOUNT51
+08-12 00:21:54.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 19.400000
+08-12 00:21:54.035 16078 16106 I WinlatorXRequest: seq=254 opcode=72 data=2 bytes=3255124
+08-12 00:21:54.038 16078 16106 I WinlatorXRequest: seq=255 opcode=2 data=0 bytes=12
+08-12 00:21:54.038 16078 16106 I WinlatorXRequest: seq=256 opcode=60 data=0 bytes=4
+08-12 00:21:54.038 16078 16106 I WinlatorXRequest: seq=257 opcode=54 data=0 bytes=4
+08-12 00:21:54.038 16078 16106 I WinlatorXRequest: seq=258 opcode=43 data=0 bytes=0
+08-12 00:21:54.042 16078 16106 I WinlatorXRequest: seq=259 opcode=53 data=32 bytes=12
+08-12 00:21:54.042 16078 16106 I WinlatorXRequest: seq=260 opcode=55 data=0 bytes=16
+08-12 00:21:54.042 16078 16106 I WinlatorXRequest: seq=261 opcode=59 data=3 bytes=16
+08-12 00:21:54.042 16078 16106 I WinlatorXRequest: seq=262 opcode=72 data=2 bytes=3255124
+08-12 00:21:54.043 16078 16106 I WinlatorXRequest: seq=263 opcode=59 data=3 bytes=16
+08-12 00:21:54.043 16078 16106 I WinlatorXRequest: seq=264 opcode=62 data=0 bytes=24
+08-12 00:21:54.044 16078 16106 I WinlatorXRequest: seq=265 opcode=56 data=0 bytes=12
+08-12 00:21:54.044 16078 16106 I WinlatorXRequest: seq=266 opcode=59 data=3 bytes=16
+08-12 00:21:54.044 16078 16106 I WinlatorXRequest: seq=267 opcode=59 data=3 bytes=16
+08-12 00:21:54.044 16078 16106 I WinlatorXRequest: seq=268 opcode=62 data=0 bytes=24
+08-12 00:21:54.044 16078 16106 I WinlatorXRequest: seq=269 opcode=56 data=0 bytes=12
+08-12 00:21:54.045  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:54.045  1433  1759 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-12 00:21:54.052 16078 16106 I WinlatorXRequest: seq=270 opcode=1 data=32 bytes=52
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=271 opcode=18 data=0 bytes=92
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=272 opcode=18 data=0 bytes=28
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=273 opcode=18 data=0 bytes=28
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=274 opcode=18 data=0 bytes=24
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=275 opcode=18 data=0 bytes=32
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=276 opcode=18 data=0 bytes=56
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=277 opcode=18 data=0 bytes=24
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=278 opcode=18 data=0 bytes=28
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=279 opcode=149 data=46 bytes=16
+08-12 00:21:54.053 16078 16106 I WinlatorXRequest: seq=280 opcode=43 data=0 bytes=0
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=281 opcode=2 data=0 bytes=16
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=282 opcode=18 data=0 bytes=28
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=283 opcode=25 data=0 bytes=40
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=284 opcode=25 data=0 bytes=40
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=285 opcode=18 data=0 bytes=40
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=286 opcode=20 data=0 bytes=20
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=287 opcode=18 data=0 bytes=56
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=288 opcode=18 data=0 bytes=24
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=289 opcode=18 data=0 bytes=20
+08-12 00:21:54.054 16078 16106 I WinlatorXRequest: seq=290 opcode=43 data=0 bytes=0
+08-12 00:21:54.055 16078 16106 I WinlatorXRequest: seq=291 opcode=18 data=0 bytes=24
+08-12 00:21:54.055 16078 16106 I WinlatorXRequest: seq=292 opcode=18 data=0 bytes=397652
+08-12 00:21:54.069 16078 16106 I WinlatorXRequest: seq=293 opcode=18 data=0 bytes=24
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=294 opcode=18 data=0 bytes=20
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=295 opcode=18 data=0 bytes=20
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=296 opcode=1 data=32 bytes=52
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=297 opcode=18 data=0 bytes=92
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=298 opcode=18 data=0 bytes=28
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=299 opcode=18 data=0 bytes=28
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=300 opcode=18 data=0 bytes=24
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=301 opcode=18 data=0 bytes=32
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=302 opcode=18 data=0 bytes=56
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=303 opcode=18 data=0 bytes=24
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=304 opcode=18 data=0 bytes=28
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=305 opcode=149 data=46 bytes=16
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=306 opcode=43 data=0 bytes=0
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=307 opcode=2 data=0 bytes=16
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=308 opcode=18 data=0 bytes=24
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=309 opcode=25 data=0 bytes=40
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=310 opcode=25 data=0 bytes=40
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=311 opcode=18 data=0 bytes=40
+08-12 00:21:54.070 16078 16106 I WinlatorXRequest: seq=312 opcode=20 data=0 bytes=20
+08-12 00:21:54.071 16078 16106 I WinlatorXRequest: seq=313 opcode=18 data=0 bytes=56
+08-12 00:21:54.071 16078 16106 I WinlatorXRequest: seq=314 opcode=18 data=0 bytes=24
+08-12 00:21:54.071 16078 16106 I WinlatorXRequest: seq=315 opcode=18 data=0 bytes=20
+08-12 00:21:54.071 16078 16106 I WinlatorXRequest: seq=316 opcode=43 data=0 bytes=0
+08-12 00:21:54.071 16078 16106 I WinlatorXRequest: seq=317 opcode=18 data=0 bytes=24
+08-12 00:21:54.071 16078 16106 I WinlatorXRequest: seq=318 opcode=18 data=0 bytes=20
+08-12 00:21:54.071 16078 16106 I WinlatorXRequest: seq=319 opcode=18 data=0 bytes=397652
+08-12 00:21:54.074 16078 16107 I BionicX : wps-sysvipc-compat: emulating sem key=0x5135f6a4 id=5722112
+08-12 00:21:54.074 16078 16107 I BionicX : wps-sysvipc-compat: semctl id=5722112 cmd=16
+08-12 00:21:54.074 16078 16107 I BionicX : wps-sysvipc-compat: semctl id=5722112 cmd=16
+08-12 00:21:54.074 16078 16107 I BionicX : wps-sysvipc-compat: semop id=5722112 count=1 first=-1
+08-12 00:21:54.075 16078 16107 I BionicX : wps-sysvipc-compat: semop id=5722112 count=1 first=1
+08-12 00:21:54.075 16078 16107 I BionicX : wps-sysvipc-compat: semop id=5722112 count=1 first=-1
+08-12 00:21:54.075 16078 16107 I BionicX : wps-sysvipc-compat: semop id=5722112 count=1 first=1
+08-12 00:21:54.075 16078 16107 I BionicX : wps-sysvipc-compat: semctl id=5722112 cmd=0
+08-12 00:21:54.071 16111 16111 W wps     : type=1400 audit(0.0:288388): avc:  granted  { open } for  path="/dev/ashmem" dev="tmpfs" ino=1005 scontext=u:r:untrusted_app_27:s0:c194,c256,c512,c768 tcontext=u:object_r:ashmem_device:s0 tclass=chr_file app=io.taowen.bx
+08-12 00:21:54.084 16078 16106 I WinlatorXRequest: seq=320 opcode=18 data=0 bytes=92
+08-12 00:21:54.084 16078 16106 I WinlatorXRequest: seq=321 opcode=12 data=0 bytes=16
+08-12 00:21:54.084 16078 16106 I WinlatorXRequest: seq=322 opcode=18 data=0 bytes=20
+08-12 00:21:54.084 16078 16106 I WinlatorXRequest: seq=323 opcode=18 data=0 bytes=32
+08-12 00:21:54.085 16078 16107 I BionicX : wps-sysvipc-compat: popen via Android shell: gsettings get org.ukui.SettingsDaemon.plugins.tablet-mode tablet-mode 2>/dev/null
+--------- beginning of crash
+08-12 00:21:54.088 16130 16130 F linker  : CANNOT LINK EXECUTABLE "sh": "/data/user/0/io.taowen.bx/files/rootfs/usr/lib/libc.so" has bad ELF magic: 2f2a2047
+08-12 00:21:54.088 16078 16107 I BionicX : CANNOT LINK EXECUTABLE "sh": "/data/user/0/io.taowen.bx/files/rootfs/usr/lib/libc.so" has bad ELF magic: 2f2a2047
+08-12 00:21:54.089 16078 16106 I WinlatorXRequest: seq=324 opcode=18 data=0 bytes=32
+08-12 00:21:54.089 16078 16106 I WinlatorXRequest: seq=325 opcode=25 data=0 bytes=40
+08-12 00:21:54.089 16078 16106 I WinlatorXRequest: seq=326 opcode=20 data=0 bytes=20
+08-12 00:21:54.089 16078 16106 I WinlatorXRequest: seq=327 opcode=18 data=0 bytes=56
+08-12 00:21:54.090 16078 16106 I WinlatorXRequest: seq=328 opcode=43 data=0 bytes=0
+08-12 00:21:54.087 16111 16111 W wps     : type=1400 audit(0.0:288389): avc:  granted  { execute } for  path="/data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6/addons/kstartpage/libkstartpage.so" dev="dm-53" ino=172556 scontext=u:r:untrusted_app_27:s0:c194,c256,c512,c768 tcontext=u:object_r:app_data_file:s0 tclass=file app=io.taowen.bx
+08-12 00:21:54.087 16111 16111 I wps     : type=1400 audit(0.0:288390): avc:  denied  { read } for  name="libqrencode.so.4" dev="dm-53" ino=193192 scontext=u:r:untrusted_app_27:s0:c194,c256,c512,c768 tcontext=u:object_r:app_data_file:s0 tclass=lnk_file permissive=1 app=io.taowen.bx
+08-12 00:21:54.087 16111 16111 W wps     : type=1400 audit(0.0:288391): avc:  granted  { execute } for  path="/data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6/libqrencode.so.4.1.1" dev="dm-53" ino=173914 scontext=u:r:untrusted_app_27:s0:c194,c256,c512,c768 tcontext=u:object_r:app_data_file:s0 tclass=file app=io.taowen.bx
+08-12 00:21:54.102  2627  2676 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@7193a10
+08-12 00:21:54.099 16111 16111 W wps     : type=1400 audit(0.0:288392): avc:  granted  { execute } for  path="/data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6/qt/plugins/iconengines/libqsvgicon.so" dev="dm-53" ino=174005 scontext=u:r:untrusted_app_27:s0:c194,c256,c512,c768 tcontext=u:object_r:app_data_file:s0 tclass=file app=io.taowen.bx
+08-12 00:21:54.103  2277  3302 D CoreBackPreview: Window{8a54abf u0 Splash Screen io.taowen.bx EXITING}: Setting back callback null
+08-12 00:21:54.103  2277  3302 W InputManager-JNI: Input channel object '8a54abf Splash Screen io.taowen.bx (client)' was disposed without first being removed with the input manager!
+08-12 00:21:54.109 16078 16106 I WinlatorXRequest: seq=329 opcode=38 data=0 bytes=4
+08-12 00:21:54.109 16078 16106 I WinlatorXRequest: seq=330 opcode=38 data=0 bytes=4
+08-12 00:21:54.109 16078 16106 I WinlatorXRequest: seq=331 opcode=38 data=0 bytes=4
+08-12 00:21:54.109 16078 16106 I WinlatorXRequest: seq=332 opcode=38 data=0 bytes=4
+08-12 00:21:54.110 16078 16106 I WinlatorXRequest: seq=333 opcode=38 data=0 bytes=4
+08-12 00:21:54.203 16078 16107 I BionicX : wps-sysvipc-compat: popen via Android shell: pidof wpsupdate
+08-12 00:21:54.207 16145 16145 F linker  : CANNOT LINK EXECUTABLE "sh": "/data/user/0/io.taowen.bx/files/rootfs/usr/lib/libc.so" has bad ELF magic: 2f2a2047
+08-12 00:21:54.207 16078 16107 I BionicX : CANNOT LINK EXECUTABLE "sh": "/data/user/0/io.taowen.bx/files/rootfs/usr/lib/libc.so" has bad ELF magic: 2f2a2047
+08-12 00:21:54.207 16078 16106 I WinlatorXRequest: seq=334 opcode=18 data=0 bytes=92
+08-12 00:21:54.207 16078 16106 I WinlatorXRequest: seq=335 opcode=18 data=0 bytes=92
+08-12 00:21:54.207 16078 16106 I WinlatorXRequest: seq=336 opcode=12 data=0 bytes=24
+08-12 00:21:54.207 16078 16106 I WinlatorXRequest: seq=337 opcode=43 data=0 bytes=0
+08-12 00:21:54.207 16078 16106 I WinlatorXRequest: seq=338 opcode=18 data=0 bytes=24
+08-12 00:21:54.207 16078 16106 I WinlatorXRequest: seq=339 opcode=8 data=0 bytes=4
+08-12 00:21:54.207 16078 16106 I WinlatorXRequest: seq=340 opcode=43 data=0 bytes=0
+08-12 00:21:54.208 16078 16106 I WinlatorXRequest: seq=341 opcode=18 data=0 bytes=92
+08-12 00:21:54.208 16078 16106 I WinlatorXRequest: seq=342 opcode=12 data=0 bytes=24
+08-12 00:21:54.208 16078 16106 I WinlatorXRequest: seq=343 opcode=2 data=0 bytes=12
+08-12 00:21:54.208 16078 16106 I WinlatorXRequest: seq=344 opcode=2 data=0 bytes=12
+08-12 00:21:54.208 16078 16106 I WinlatorXRequest: seq=345 opcode=18 data=0 bytes=92
+08-12 00:21:54.208 16078 16106 I WinlatorXRequest: seq=346 opcode=19 data=0 bytes=8
+08-12 00:21:54.208 16078 16106 I WinlatorXRequest: seq=347 opcode=20 data=0 bytes=20
+08-12 00:21:54.209 16078 16106 I WinlatorXRequest: seq=348 opcode=18 data=0 bytes=28
+08-12 00:21:54.209 16078 16106 I WinlatorXRequest: seq=349 opcode=18 data=0 bytes=24
+08-12 00:21:54.209 16078 16106 I WinlatorXRequest: seq=350 opcode=8 data=0 bytes=4
+08-12 00:21:54.209 16078 16106 I WinlatorXRequest: seq=351 opcode=43 data=0 bytes=0
+08-12 00:21:54.210 16078 16106 I WinlatorXRequest: seq=352 opcode=43 data=0 bytes=0
+08-12 00:21:54.210 16078 16106 I WinlatorXRequest: seq=353 opcode=16 data=0 bytes=20
+08-12 00:21:54.210 16078 16106 I WinlatorXRequest: seq=354 opcode=20 data=0 bytes=20
+08-12 00:21:54.210 16078 16106 I WinlatorXRequest: seq=355 opcode=16 data=0 bytes=24
+08-12 00:21:54.210 16078 16106 I WinlatorXRequest: seq=356 opcode=25 data=0 bytes=40
+08-12 00:21:54.218 16078 16106 I WinlatorXRequest: seq=357 opcode=12 data=0 bytes=12
+08-12 00:21:54.218 16078 16106 I WinlatorXRequest: seq=358 opcode=8 data=0 bytes=4
+08-12 00:21:54.218 16078 16106 I WinlatorXRequest: seq=359 opcode=43 data=0 bytes=0
+08-12 00:21:54.234 16078 16106 I WinlatorXRequest: seq=360 opcode=42 data=0 bytes=8
+08-12 00:21:54.234 16078 16106 I WinlatorXRequest: seq=361 opcode=18 data=0 bytes=92
+08-12 00:21:54.234 16078 16106 I WinlatorXRequest: seq=362 opcode=43 data=0 bytes=0
+08-12 00:21:54.234 16078 16106 I WinlatorXRequest: seq=363 opcode=16 data=0 bytes=20
+08-12 00:21:54.235 16078 16106 I WinlatorXRequest: seq=364 opcode=20 data=0 bytes=20
+08-12 00:21:54.235 16078 16106 I WinlatorXRequest: seq=365 opcode=16 data=0 bytes=24
+08-12 00:21:54.250 16078 16106 I WinlatorXRequest: seq=366 opcode=25 data=0 bytes=40
+08-12 00:21:54.250 16078 16106 I WinlatorXRequest: seq=367 opcode=12 data=0 bytes=12
+08-12 00:21:54.250 16078 16106 I WinlatorXRequest: seq=368 opcode=8 data=0 bytes=4
+08-12 00:21:54.250 16078 16106 I WinlatorXRequest: seq=369 opcode=59 data=3 bytes=16
+08-12 00:21:54.250 16078 16106 I WinlatorXRequest: seq=370 opcode=72 data=2 bytes=3255124
+08-12 00:21:54.251 16078 16106 I WinlatorXRequest: seq=371 opcode=59 data=3 bytes=16
+08-12 00:21:54.251 16078 16106 I WinlatorXRequest: seq=372 opcode=62 data=0 bytes=24
+08-12 00:21:54.251 16078 16106 I WinlatorXRequest: seq=373 opcode=56 data=0 bytes=12
+08-12 00:21:54.251 16078 16106 I WinlatorXRequest: seq=374 opcode=20 data=0 bytes=20
+08-12 00:21:54.251 16078 16106 I WinlatorXRequest: seq=375 opcode=18 data=0 bytes=24
+08-12 00:21:54.251 16078 16106 I WinlatorXRequest: seq=376 opcode=42 data=2 bytes=8
+08-12 00:21:54.251 16078 16106 I WinlatorXRequest: seq=377 opcode=43 data=0 bytes=0
+08-12 00:21:54.252 16078 16106 I WinlatorXRequest: seq=378 opcode=59 data=3 bytes=16
+08-12 00:21:54.253 16078 16106 I WinlatorXRequest: seq=379 opcode=72 data=2 bytes=3255124
+08-12 00:21:54.253 16078 16106 I WinlatorXRequest: seq=380 opcode=59 data=3 bytes=16
+08-12 00:21:54.253 16078 16106 I WinlatorXRequest: seq=381 opcode=62 data=0 bytes=24
+08-12 00:21:54.254 16078 16106 I WinlatorXRequest: seq=382 opcode=56 data=0 bytes=12
+08-12 00:21:54.265  2627  2669 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#101)android.os.BinderProxy@7d2fe3f@0
+08-12 00:21:54.266  2277  2325 V WindowManager: Finish Transition #101: created at 08-12 00:21:53.535 collect-started=0.032ms request-sent=0.071ms started=5.002ms ready=215.768ms sent=219.56ms finished=730.627ms
+08-12 00:21:54.267  2277  2682 W WindowManager: Exception thrown during dispatchAppVisibility Window{db8d073 u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-12 00:21:54.267  2277  2682 W WindowManager: android.os.DeadObjectException
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at android.view.IWindow$Stub$Proxy.dispatchAppVisibility(IWindow.java:562)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.WindowState.sendAppVisibilityToClients(WindowState.java:3281)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.WindowContainer.sendAppVisibilityToClients(WindowContainer.java:1221)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.WindowToken.setClientVisible(WindowToken.java:414)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.ActivityRecord.setClientVisible(ActivityRecord.java:7114)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.ActivityRecord.postApplyAnimation(ActivityRecord.java:5670)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.ActivityRecord.commitVisibility(ActivityRecord.java:5613)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.Transition.finishTransition(Transition.java:1166)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.TransitionController.finishTransition(TransitionController.java:868)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.WindowOrganizerController.finishTransition(WindowOrganizerController.java:396)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at android.window.IWindowOrganizerController$Stub.onTransact(IWindowOrganizerController.java:286)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at com.android.server.wm.WindowOrganizerController.onTransact(WindowOrganizerController.java:181)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at android.os.Binder.execTransactInternal(Binder.java:1344)
+08-12 00:21:54.267  2277  2682 W WindowManager: 	at android.os.Binder.execTransact(Binder.java:1275)
+08-12 00:21:54.267  2277  2682 I Process : Sending signal. PID: 15574 SIG: 9
+08-12 00:21:54.270 16078 16106 I WinlatorXRequest: seq=383 opcode=40 data=0 bytes=12
+08-12 00:21:54.270 16078 16106 I WinlatorXRequest: seq=384 opcode=15 data=0 bytes=4
+08-12 00:21:54.270 16078 16106 I WinlatorXRequest: seq=385 opcode=15 data=0 bytes=4
+08-12 00:21:54.270 16078 16106 I WinlatorXRequest: seq=386 opcode=40 data=0 bytes=12
+08-12 00:21:54.270 16078 16106 I WinlatorXRequest: seq=387 opcode=14 data=0 bytes=4
+08-12 00:21:54.271  2627  2669 V WindowManagerShell: Track 0 became idle
+08-12 00:21:54.271  2627  2669 V WindowManagerShell: All active transition animations finished
+08-12 00:21:54.272   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:54.272  2277  2328 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:54.272  2277  2328 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:54.272   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:54.272  2277  2328 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:54.272  2277  2328 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:54.272  2277  2328 W ActivityManager: setHasOverlayUi called on unknown pid: 15574
+08-12 00:21:54.275  2731  2741 W DynamicDDSService: appName is not found in cache: com.ayaneo.home
+08-12 00:21:54.284  2277  9988 W ProcessStats: Tracking association SourceState{ac71f0 io.taowen.bx/10194 BTop #16758} whose proc state 2 is better than process ProcessState{1f7fd2d com.google.android.gms.persistent/10097 pkg=com.google.android.gms} proc state 4 (7 skipped)
+08-12 00:21:54.285  1690  1714 I FontLog : (REDACTED) Received query %s, URI %s
+08-12 00:21:54.285  1690  1714 I FontLog : (REDACTED) Query [%s] resolved to %s
+08-12 00:21:54.286  1690  1714 I FontLog : (REDACTED) Fetch %s end status %s
+08-12 00:21:54.287  1534  1534 E BpTransactionCompletedListener: Failed to transact (-32)
+08-12 00:21:54.287  1534  1534 E BpTransactionCompletedListener: Failed to transact (-32)
+08-12 00:21:54.287  1690  1714 I FontLog : (REDACTED) Pulling font file for id = %d, cache size = %d
+08-12 00:21:54.289  1690  1714 I FontLog : (REDACTED) Pulling font file for id = %d, cache size = %d
+08-12 00:21:54.292  3736  3736 D AutofillManager: view not autofillable - not passing ime action check
+08-12 00:21:54.293 16078 16106 I WinlatorXRequest: seq=388 opcode=53 data=32 bytes=12
+08-12 00:21:54.293 16078 16106 I WinlatorXRequest: seq=389 opcode=38 data=0 bytes=4
+08-12 00:21:54.293 16078 16106 I WinlatorXRequest: seq=390 opcode=40 data=0 bytes=12
+08-12 00:21:54.298  3736  3736 D AutofillManager: view not autofillable - not passing ime action check
+08-12 00:21:54.321   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:54.322  2277  9988 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:54.322  2277  9988 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:54.322   765   765 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-12 00:21:54.322  2277  9988 W ActivityTaskManager: servicetracker HIDL not available
+08-12 00:21:54.322  2277  9988 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-12 00:21:54.356 16078 16106 I WinlatorXRequest: seq=391 opcode=55 data=0 bytes=16
+08-12 00:21:54.356 16078 16106 I WinlatorXRequest: seq=392 opcode=59 data=3 bytes=16
+08-12 00:21:54.360 16078 16106 I WinlatorXRequest: seq=393 opcode=72 data=2 bytes=8294420
+08-12 00:21:54.362 16078 16106 I WinlatorXRequest: seq=394 opcode=59 data=3 bytes=16
+08-12 00:21:54.362 16078 16106 I WinlatorXRequest: seq=395 opcode=62 data=0 bytes=24
+08-12 00:21:54.364 16078 16106 I WinlatorXRequest: seq=396 opcode=56 data=0 bytes=12
+08-12 00:21:54.364 16078 16106 I WinlatorXRequest: seq=397 opcode=60 data=0 bytes=4
+08-12 00:21:54.364 16078 16106 I WinlatorXRequest: seq=398 opcode=55 data=0 bytes=16
+08-12 00:21:54.364 16078 16106 I WinlatorXRequest: seq=399 opcode=59 data=3 bytes=16
+08-12 00:21:54.364 16078 16106 I WinlatorXRequest: seq=400 opcode=59 data=3 bytes=16
+08-12 00:21:54.364 16078 16106 I WinlatorXRequest: seq=401 opcode=62 data=0 bytes=24
+08-12 00:21:54.367 16078 16106 I WinlatorXRequest: seq=402 opcode=56 data=0 bytes=12
+08-12 00:21:54.370 16078 16106 I WinlatorXRequest: seq=403 opcode=59 data=3 bytes=16
+08-12 00:21:54.370 16078 16106 I WinlatorXRequest: seq=404 opcode=59 data=3 bytes=16
+08-12 00:21:54.370 16078 16106 I WinlatorXRequest: seq=405 opcode=62 data=0 bytes=24
+08-12 00:21:54.370 16078 16106 I WinlatorXRequest: seq=406 opcode=56 data=0 bytes=12
+08-12 00:21:54.371 16078 16106 I WinlatorXRequest: seq=407 opcode=15 data=0 bytes=4
+08-12 00:21:54.371 16078 16106 I WinlatorXRequest: seq=408 opcode=40 data=0 bytes=12
+08-12 00:21:54.371 16078 16106 I WinlatorXRequest: seq=409 opcode=14 data=0 bytes=4
+08-12 00:21:54.371 16078 16106 I WinlatorXRequest: seq=410 opcode=60 data=0 bytes=4
+08-12 00:21:54.371 16078 16106 I WinlatorXRequest: seq=411 opcode=55 data=0 bytes=16
+08-12 00:21:54.374 16078 16106 I WinlatorXRequest: seq=412 opcode=59 data=3 bytes=16
+08-12 00:21:54.374 16078 16106 I WinlatorXRequest: seq=413 opcode=59 data=3 bytes=16
+08-12 00:21:54.374 16078 16106 I WinlatorXRequest: seq=414 opcode=62 data=0 bytes=24
+08-12 00:21:54.374 16078 16106 I WinlatorXRequest: seq=415 opcode=56 data=0 bytes=12
+08-12 00:21:54.374 16078 16106 I WinlatorXRequest: seq=416 opcode=10 data=0 bytes=4
+08-12 00:21:54.374 16078 16106 I WinlatorXRequest: seq=417 opcode=25 data=0 bytes=40
+08-12 00:21:54.377 16078 16106 I WinlatorXRequest: seq=418 opcode=59 data=3 bytes=16
+08-12 00:21:54.377 16078 16106 I WinlatorXRequest: seq=419 opcode=59 data=3 bytes=16
+08-12 00:21:54.377 16078 16106 I WinlatorXRequest: seq=420 opcode=62 data=0 bytes=24
+08-12 00:21:54.377  2277  7473 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-12 00:21:54.378 16078 16106 I WinlatorXRequest: seq=421 opcode=56 data=0 bytes=12
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=422 opcode=1 data=32 bytes=52
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=423 opcode=18 data=0 bytes=92
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=424 opcode=18 data=0 bytes=28
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=425 opcode=18 data=0 bytes=28
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=426 opcode=18 data=0 bytes=24
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=427 opcode=18 data=0 bytes=32
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=428 opcode=18 data=0 bytes=56
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=429 opcode=18 data=0 bytes=24
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=430 opcode=18 data=0 bytes=28
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=431 opcode=149 data=46 bytes=16
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=432 opcode=43 data=0 bytes=0
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=433 opcode=2 data=0 bytes=16
+08-12 00:21:54.399 16078 16106 I WinlatorXRequest: seq=434 opcode=18 data=0 bytes=28
+08-12 00:21:54.400 16078 16106 I WinlatorXRequest: seq=435 opcode=25 data=0 bytes=40
+08-12 00:21:54.400 16078 16106 I WinlatorXRequest: seq=436 opcode=25 data=0 bytes=40
+08-12 00:21:54.400 16078 16106 I WinlatorXRequest: seq=437 opcode=18 data=0 bytes=40
+08-12 00:21:54.400 16078 16106 I WinlatorXRequest: seq=438 opcode=20 data=0 bytes=20
+08-12 00:21:54.400 16078 16106 I WinlatorXRequest: seq=439 opcode=18 data=0 bytes=56
+08-12 00:21:54.400 16078 16106 I WinlatorXRequest: seq=440 opcode=18 data=0 bytes=24
+08-12 00:21:54.400 16078 16106 I WinlatorXRequest: seq=441 opcode=18 data=0 bytes=20
+08-12 00:21:54.400 16078 16106 I WinlatorXRequest: seq=442 opcode=43 data=80 bytes=0
+08-12 00:21:54.401 16078 16106 I WinlatorXRequest: seq=443 opcode=18 data=0 bytes=24
+08-12 00:21:54.401 16078 16106 I WinlatorXRequest: seq=444 opcode=18 data=0 bytes=397652
+08-12 00:21:54.417 16078 16106 I WinlatorXRequest: seq=445 opcode=18 data=0 bytes=24
+08-12 00:21:54.417 16078 16106 I WinlatorXRequest: seq=446 opcode=18 data=0 bytes=20
+08-12 00:21:54.417 16078 16106 I WinlatorXRequest: seq=447 opcode=18 data=0 bytes=20
+08-12 00:21:54.417 16078 16106 I WinlatorXRequest: seq=448 opcode=18 data=0 bytes=397652
+08-12 00:21:54.464 16078 16106 I WinlatorXRequest: seq=449 opcode=40 data=0 bytes=12
+08-12 00:21:54.466 16078 16106 I WinlatorXRequest: seq=450 opcode=40 data=0 bytes=12
+08-12 00:21:54.466 16078 16106 I WinlatorXRequest: seq=451 opcode=40 data=0 bytes=12
+08-12 00:21:54.466 16078 16106 I WinlatorXRequest: seq=452 opcode=40 data=0 bytes=12
+08-12 00:21:54.467 16078 16106 I WinlatorXRequest: seq=453 opcode=40 data=0 bytes=12
+08-12 00:21:54.468 16078 16106 I WinlatorXRequest: seq=454 opcode=40 data=0 bytes=12
+08-12 00:21:54.468 16078 16106 I WinlatorXRequest: seq=455 opcode=40 data=0 bytes=12
+08-12 00:21:54.468 16078 16106 I WinlatorXRequest: seq=456 opcode=40 data=0 bytes=12
+08-12 00:21:54.468 16078 16106 I WinlatorXRequest: seq=457 opcode=40 data=0 bytes=12
+08-12 00:21:54.468 16078 16106 I WinlatorXRequest: seq=458 opcode=40 data=0 bytes=12
+08-12 00:21:54.469 16078 16106 I WinlatorXRequest: seq=459 opcode=40 data=0 bytes=12
+08-12 00:21:54.469 16078 16106 I WinlatorXRequest: seq=460 opcode=40 data=0 bytes=12
+08-12 00:21:54.469 16078 16106 I WinlatorXRequest: seq=461 opcode=40 data=0 bytes=12
+08-12 00:21:54.471 16078 16106 I WinlatorXRequest: seq=462 opcode=40 data=0 bytes=12
+08-12 00:21:54.471 16078 16106 I WinlatorXRequest: seq=463 opcode=40 data=0 bytes=12
+08-12 00:21:54.471 16078 16106 I WinlatorXRequest: seq=464 opcode=40 data=0 bytes=12
+08-12 00:21:54.471 16078 16106 I WinlatorXRequest: seq=465 opcode=40 data=0 bytes=12
+08-12 00:21:54.477 16078 16106 I WinlatorXRequest: seq=466 opcode=60 data=0 bytes=4
+08-12 00:21:54.477 16078 16106 I WinlatorXRequest: seq=467 opcode=54 data=0 bytes=4
+08-12 00:21:54.477 16078 16106 I WinlatorXRequest: seq=468 opcode=4 data=0 bytes=4
+08-12 00:21:54.477 16078 16106 I WinlatorXRequest: seq=469 opcode=79 data=0 bytes=4
+08-12 00:21:54.484  1436  1631 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-12 00:21:54.493 16078 16106 I WinlatorXRequest: seq=470 opcode=18 data=0 bytes=397652
+08-12 00:21:54.504  1436  1631 I SDM     : HWDeviceDRM::SetupConcurrentWriteback: Tear down the Concurrent Writeback topology
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=471 opcode=1 data=32 bytes=52
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=472 opcode=18 data=0 bytes=92
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=473 opcode=18 data=0 bytes=28
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=474 opcode=18 data=0 bytes=28
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=475 opcode=18 data=0 bytes=24
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=476 opcode=18 data=0 bytes=32
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=477 opcode=18 data=0 bytes=56
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=478 opcode=18 data=0 bytes=24
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=479 opcode=18 data=0 bytes=28
+08-12 00:21:54.508 16078 16106 I WinlatorXRequest: seq=480 opcode=149 data=46 bytes=16
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=481 opcode=43 data=0 bytes=0
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=482 opcode=2 data=0 bytes=16
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=483 opcode=18 data=0 bytes=28
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=484 opcode=25 data=0 bytes=40
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=485 opcode=25 data=0 bytes=40
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=486 opcode=18 data=0 bytes=40
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=487 opcode=20 data=0 bytes=20
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=488 opcode=18 data=0 bytes=56
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=489 opcode=18 data=0 bytes=24
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=490 opcode=18 data=0 bytes=20
+08-12 00:21:54.509 16078 16106 I WinlatorXRequest: seq=491 opcode=43 data=80 bytes=0
+08-12 00:21:54.510 16078 16106 I WinlatorXRequest: seq=492 opcode=18 data=0 bytes=24
+08-12 00:21:54.510 16078 16106 I WinlatorXRequest: seq=493 opcode=18 data=0 bytes=397652
+08-12 00:21:54.523 16078 16106 I WinlatorXRequest: seq=494 opcode=18 data=0 bytes=32
+08-12 00:21:54.523 16078 16106 I WinlatorXRequest: seq=495 opcode=18 data=0 bytes=32
+08-12 00:21:54.523 16078 16106 I WinlatorXRequest: seq=496 opcode=18 data=0 bytes=20
+08-12 00:21:54.523 16078 16106 I WinlatorXRequest: seq=497 opcode=18 data=0 bytes=32
+08-12 00:21:54.523 16078 16106 I WinlatorXRequest: seq=498 opcode=18 data=0 bytes=32
+08-12 00:21:54.523 16078 16106 I WinlatorXRequest: seq=499 opcode=18 data=0 bytes=397652
+08-12 00:21:54.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS29.400000 FRAMECOUNT92
+08-12 00:21:54.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 29.400000
+08-12 00:21:54.535 16078 16106 I WinlatorXRequest: seq=500 opcode=18 data=0 bytes=92
+08-12 00:21:54.535 16078 16106 I WinlatorXRequest: seq=501 opcode=12 data=0 bytes=12
+08-12 00:21:54.535 16078 16106 I WinlatorXRequest: seq=502 opcode=2 data=0 bytes=12
+08-12 00:21:54.535 16078 16106 I WinlatorXRequest: seq=503 opcode=2 data=0 bytes=12
+08-12 00:21:54.535 16078 16106 I WinlatorXRequest: seq=504 opcode=18 data=0 bytes=92
+08-12 00:21:54.536 16078 16106 I WinlatorXRequest: seq=505 opcode=18 data=0 bytes=24
+08-12 00:21:54.536 16078 16106 I WinlatorXRequest: seq=506 opcode=18 data=0 bytes=24
+08-12 00:21:54.536 16078 16106 I WinlatorXRequest: seq=507 opcode=20 data=0 bytes=20
+08-12 00:21:54.536 16078 16106 I WinlatorXRequest: seq=508 opcode=19 data=0 bytes=8
+08-12 00:21:54.536 16078 16106 I WinlatorXRequest: seq=509 opcode=18 data=0 bytes=24
+08-12 00:21:54.536 16078 16106 I WinlatorXRequest: seq=510 opcode=8 data=0 bytes=4
+08-12 00:21:54.536 16078 16106 I WinlatorXRequest: seq=511 opcode=43 data=0 bytes=0
+08-12 00:21:54.547 16078 16106 I WinlatorXRequest: seq=512 opcode=40 data=0 bytes=12
+08-12 00:21:54.547 16078 16106 I WinlatorXRequest: seq=513 opcode=15 data=0 bytes=4
+08-12 00:21:54.547 16078 16106 I WinlatorXRequest: seq=514 opcode=40 data=0 bytes=12
+08-12 00:21:54.547 16078 16106 I WinlatorXRequest: seq=515 opcode=14 data=0 bytes=4
+08-12 00:21:54.548 16078 16106 I WinlatorXRequest: seq=516 opcode=53 data=32 bytes=12
+08-12 00:21:54.548 16078 16106 I WinlatorXRequest: seq=517 opcode=38 data=0 bytes=4
+08-12 00:21:54.548 16078 16106 I WinlatorXRequest: seq=518 opcode=40 data=0 bytes=12
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=519 opcode=55 data=0 bytes=16
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=520 opcode=59 data=3 bytes=16
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=521 opcode=72 data=2 bytes=914312
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=522 opcode=59 data=3 bytes=16
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=523 opcode=62 data=0 bytes=24
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=524 opcode=56 data=0 bytes=12
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=525 opcode=59 data=3 bytes=16
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=526 opcode=59 data=3 bytes=16
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=527 opcode=62 data=0 bytes=24
+08-12 00:21:54.549 16078 16106 I WinlatorXRequest: seq=528 opcode=56 data=0 bytes=12
+08-12 00:21:54.634  1436  1631 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-12 00:21:54.655  1436  1631 I SDM     : HWDeviceDRM::SetupConcurrentWriteback: Tear down the Concurrent Writeback topology
+08-12 00:21:54.725  1436  1631 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-12 00:21:55.015 15958 15958 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:21:55.016   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:21:55.016 15958 15958 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:21:55.017   765 16164 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:21:55.017   765 16164 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:21:55.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS47.900002 FRAMECOUNT48
+08-12 00:21:55.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 47.900002
+08-12 00:21:55.075 16165 16165 I top     : type=1400 audit(0.0:288463): avc:  denied  { getattr } for  path="/proc/1610" dev="proc" ino=2255653 scontext=u:r:system_app:s0 tcontext=u:r:vendor_qwesd:s0 tclass=dir permissive=1
+08-12 00:21:55.075 16165 16165 I top     : type=1400 audit(0.0:288464): avc:  denied  { search } for  name="1610" dev="proc" ino=2255653 scontext=u:r:system_app:s0 tcontext=u:r:vendor_qwesd:s0 tclass=dir permissive=1
+08-12 00:21:55.075 16165 16165 I top     : type=1400 audit(0.0:288465): avc:  denied  { open } for  path="/proc/1798/stat" dev="proc" ino=2233081 scontext=u:r:system_app:s0 tcontext=u:r:vendor_perfservice:s0 tclass=file permissive=1
+08-12 00:21:55.075 16165 16165 I top     : type=1400 audit(0.0:288466): avc:  denied  { getattr } for  path="/proc/3359" dev="proc" ino=2232410 scontext=u:r:system_app:s0 tcontext=u:r:vendor_qspmsvc:s0 tclass=dir permissive=1
+08-12 00:21:55.075 16165 16165 I top     : type=1400 audit(0.0:288467): avc:  denied  { search } for  name="3359" dev="proc" ino=2232410 scontext=u:r:system_app:s0 tcontext=u:r:vendor_qspmsvc:s0 tclass=dir permissive=1
+08-12 00:21:55.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS6.800000 FRAMECOUNT7
+08-12 00:21:55.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 6.800000
+08-12 00:21:55.930 16078 16087 W io.taowen.bx: userfaultfd: MOVE ioctl seems unsupported: Connection timed out
+08-12 00:21:55.981  2277  2334 W ActivityManager: Timeout executing service: ServiceRecord{f6c471a u0 com.qti.diagservices/.QTIDiagServices}
+08-12 00:21:55.982  2277 16167 D ActivityManager: created ANR temporary file:/data/anr/temp_anr_3773881813772386118.txt
+08-12 00:21:55.982  2277 16167 I ActivityManager: Collecting stacks for pid 15958 into temporary file temp_anr_3773881813772386118.txt
+08-12 00:21:55.982  2277 16166 D ActivityManager: created ANR temporary file:/data/anr/temp_anr_5077154674007618475.txt
+08-12 00:21:55.982  2277 16166 I ActivityManager: Collecting stacks for pid 15958 into temporary file temp_anr_5077154674007618475.txt
+08-12 00:21:55.982  2277 16167 I system_server: libdebuggerd_client: started dumping process 15958
+08-12 00:21:55.983  2277 16166 I system_server: libdebuggerd_client: started dumping process 15958
+08-12 00:21:55.983  1101  1101 I tombstoned: registered intercept for pid 15958 and type kDebuggerdJavaBacktrace
+08-12 00:21:55.983  1101  1101 W tombstoned: pid 15958 already intercepted, type 2
+08-12 00:21:55.983  2277 16166 E system_server: libdebuggerd_client: unexpected registration response: 0
+08-12 00:21:55.983 15958 15959 I ti.diagservices: Thread[2,tid=15959,WaitingInMainSignalCatcherLoop,Thread*=0xb400006e0186f2c0,peer=0x20b8020,"Signal Catcher"]: reacting to signal 3
+08-12 00:21:55.983 15958 15959 I ti.diagservices: 
+08-12 00:21:55.984  2277 16168 I ActivityManager: dumpStackTraces pids=null
+08-12 00:21:55.984  2277 16168 I ActivityManager: Dumping to /data/anr/anr_2026-08-12-00-21-55-984
+08-12 00:21:55.987  2277 16166 W ActivityManager: Dumping Java threads failed, initiating native stack dump.
+08-12 00:21:55.988  2277 16166 I system_server: libdebuggerd_client: started dumping process 15958
+08-12 00:21:55.988  1101  1101 W tombstoned: pid 15958 already intercepted, type 0
+08-12 00:21:55.988  2277 16166 E system_server: libdebuggerd_client: unexpected registration response: 0
+08-12 00:21:55.988  2277 16166 W ActivityManager: Native stack dump failed!
+08-12 00:21:56.000  2277 16168 I ActivityManager: dumpStackTraces nativepids=null
+08-12 00:21:56.001  2277 16168 I ActivityManager: dumpStackTraces extraPids=null
+08-12 00:21:56.001  2277 16168 I ActivityManager: Done dumping
+08-12 00:21:56.002  2277 16168 E ActivityManager: ANR in com.qti.diagservices
+08-12 00:21:56.002  2277 16168 E ActivityManager: PID: 15958
+08-12 00:21:56.002  2277 16168 E ActivityManager: Reason: executing service com.qti.diagservices/.QTIDiagServices
+08-12 00:21:56.002  2277 16168 E ActivityManager: ErrorId: 902c423f-f1f1-4174-9008-580c9d1930d4
+08-12 00:21:56.002  2277 16168 E ActivityManager: Frozen: false
+08-12 00:21:56.002  2277 16168 E ActivityManager: Load: 0.0 / 0.0 / 0.0
+08-12 00:21:56.002  2277 16168 E ActivityManager: ----- Output from /proc/pressure/memory -----
+08-12 00:21:56.002  2277 16168 E ActivityManager: some avg10=0.00 avg60=0.00 avg300=0.00 total=2111799
+08-12 00:21:56.002  2277 16168 E ActivityManager: full avg10=0.00 avg60=0.00 avg300=0.00 total=1823265
+08-12 00:21:56.002  2277 16168 E ActivityManager: ----- End output from /proc/pressure/memory -----
+08-12 00:21:56.002  2277 16168 E ActivityManager: ----- Output from /proc/pressure/cpu -----
+08-12 00:21:56.002  2277 16168 E ActivityManager: some avg10=1.35 avg60=0.92 avg300=0.94 total=175647372
+08-12 00:21:56.002  2277 16168 E ActivityManager: full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+08-12 00:21:56.002  2277 16168 E ActivityManager: ----- End output from /proc/pressure/cpu -----
+08-12 00:21:56.002  2277 16168 E ActivityManager: ----- Output from /proc/pressure/io -----
+08-12 00:21:56.002  2277 16168 E ActivityManager: some avg10=0.00 avg60=0.00 avg300=0.00 total=9262434
+08-12 00:21:56.002  2277 16168 E ActivityManager: full avg10=0.00 avg60=0.00 avg300=0.00 total=6549435
+08-12 00:21:56.002  2277 16168 E ActivityManager: ----- End output from /proc/pressure/io -----
+08-12 00:21:56.002  2277 16168 E ActivityManager: 
+08-12 00:21:56.002  2277 16168 E ActivityManager: CPU usage from 20048ms to -1ms ago (2026-08-12 00:21:35.934 to 2026-08-12 00:21:55.982):
+08-12 00:21:56.002  2277 16168 E ActivityManager:   3.3% 3718/com.ayaneo.gamewindow: 1% user + 2.3% kernel / faults: 2087 minor
+08-12 00:21:56.002  2277 16168 E ActivityManager:   1.5% 1534/surfaceflinger: 0.8% user + 0.6% kernel / faults: 41 minor
+08-12 00:21:56.002  2277 16168 E ActivityManager:   1.5% 2277/system_server: 0.7% user + 0.7% kernel / faults: 7625 minor
+08-12 00:21:56.002  2277 16168 E ActivityManager:   0.4% 3736/com.ayaneo.home: 0.3% user + 0% kernel / faults: 14561 minor
+08-12 00:21:56.002  2277 16168 E ActivityManager:   0.7% 2627/com.android.systemui: 0.4% user + 0.2% kernel / faults: 352 minor 4 major
+08-12 00:21:56.002  2277 16168 E ActivityManager:   0.5% 1436/vendor.qti.hardware.display.composer-service: 0.3% user + 0.2% kernel / faults: 46 minor
+08-12 00:21:56.002  2277 16168 E ActivityManager:   0.4% 1738/cnss_diag: 0.3% user + 0% kernel
+08-12 00:21:56.002  2277 16168 E ActivityManager:   0.1% 938/crtc_commit:198: 0% user + 0.1% kernel
+08-12 00:21:56.002  2277 16168 E ActivityManager:   0.2% 10884/kworker/u16:4-memlat_wq: 0% user + 0.2% kernel / faults: 16 minor
+08-12 00:21:56.002  2277 16168 E ActivityManager:   0.2% 13314/kworker/u16:0-memlat_wq: 0% user + 0.2% kernel / faults: 2 minor
+08-12 00:21:56.002  2277 16168 E ActivityManager: 3.4% TOTAL: 1.6% user + 1.3% kernel + 0% iowait + 0.3% irq + 0.1% softirq
+08-12 00:21:56.002  2277 16168 E ActivityManager: CPU usage from 11011101ms to 11011101ms ago (1970-01-01 08:00:00.000 to 1970-01-01 08:00:00.000) with 0% awake:
+08-12 00:21:56.002  2277 16168 E ActivityManager: 0% TOTAL: 0% user + 0% kernel
+08-12 00:21:56.002  2277 16168 I ActivityManager: Killing 15958:com.qti.diagservices/1000 (adj -800): bg anr
+08-12 00:21:56.003  2277 16168 D ActivityManager: Completed ANR of com.qti.diagservices in 21ms, latency 0ms
+08-12 00:21:56.014  1257  1257 I Zygote  : Process 15958 exited due to signal 9 (Killed)
+08-12 00:21:56.014  2277  3302 I ActivityManager: Process com.qti.diagservices (pid 15958) has died: pers PER 
+08-12 00:21:56.014  2277  3302 W ActivityManager: Scheduling restart of crashed service com.qti.diagservices/.QTIDiagServices in 0ms for persistent
+08-12 00:21:56.014  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: killProcess is called for pid : 15958
+08-12 00:21:56.014  1473  1473 I vendor.qti.hardware.servicetrackeraidl-service: process with pid 15958 is service
+08-12 00:21:56.014  2277  3302 W ActivityManager: Re-adding persistent process ProcessRecord{64672d9 15958:com.qti.diagservices/1000}
+08-12 00:21:56.015  2277  3302 I ActivityManager: com.qti.diagservices is exempt from freezer
+08-12 00:21:56.015  2277  3302 D CompatibilityChangeReporter: Compat change id reported: 135634846; UID 1000; state: DISABLED
+08-12 00:21:56.015  2277  3302 D CompatibilityChangeReporter: Compat change id reported: 177438394; UID 1000; state: DISABLED
+08-12 00:21:56.015  2277  3302 D CompatibilityChangeReporter: Compat change id reported: 135772972; UID 1000; state: DISABLED
+08-12 00:21:56.015  2277  3302 D CompatibilityChangeReporter: Compat change id reported: 135754954; UID 1000; state: ENABLED
+08-12 00:21:56.018  2277  2354 I libprocessgroup: Successfully killed process cgroup uid 1000 pid 15958 in 15ms
+08-12 00:21:56.019  2277  2354 I libprocessgroup: Successfully killed process cgroup uid 1000 pid 15958 in 0ms
+08-12 00:21:56.021  1257  1257 D Zygote  : Forked child process 16170
+08-12 00:21:56.021  2277  2335 I ActivityManager: Start proc 16170:com.qti.diagservices/1000 for restart com.qti.diagservices
+08-12 00:21:56.028 16170 16170 I ti.diagservices: Using CollectorTypeCMC GC.
+08-12 00:21:56.032 16170 16170 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+08-12 00:21:56.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:21:56.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:21:56.034  2277  3302 D CompatibilityInfo: mCompatibilityFlags - 0
+08-12 00:21:56.034  2277  3302 D CompatibilityInfo: applicationDensity - 440
+08-12 00:21:56.034  2277  3302 D CompatibilityInfo: applicationScale - 1.0
+08-12 00:21:56.036 16170 16170 D CompatibilityChangeReporter: Compat change id reported: 171979766; UID 1000; state: ENABLED
+08-12 00:21:56.036 16170 16170 D CompatibilityChangeReporter: Compat change id reported: 242716250; UID 1000; state: ENABLED
+08-12 00:21:56.039 16170 16170 D nativeloader: Configuring clns-shared-4 for other apk /system_ext/app/QTIDiagServices/QTIDiagServices.apk. target_sdk_version=34, uses_libraries=, library_path=/system_ext/app/QTIDiagServices/lib/arm64:/system_ext/app/QTIDiagServices/QTIDiagServices.apk!/lib/arm64-v8a:/system/lib64:/system_ext/lib64, permitted_path=/data:/mnt/expand:/data/user/0/com.qti.diagservices:/system_ext/app/QTIDiagServices:/system/lib64:/system_ext/lib64
+08-12 00:21:56.041 16170 16170 D nativeloader: Load libframework-connectivity-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity.jar: ok
+08-12 00:21:56.042 16170 16170 I Perf    : Connecting to perf service.
+08-12 00:21:56.043 16170 16170 V GraphicsEnvironment: Currently set values for:
+08-12 00:21:56.043 16170 16170 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+08-12 00:21:56.043 16170 16170 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+08-12 00:21:56.043 16170 16170 V GraphicsEnvironment: ANGLE GameManagerService for com.qti.diagservices: false
+08-12 00:21:56.043 16170 16170 V GraphicsEnvironment: com.qti.diagservices is not listed in per-application setting
+08-12 00:21:56.045 16170 16170 E ANDR-PERF-CLIENT-SYS: death recipent object is fine
+08-12 00:21:56.045  2277  3302 I ActivityManager: Flag disabled. Ignoring finishAttachApplication from uid: 1000. pid: 16170
+08-12 00:21:56.045 16170 16170 E DiagJNIInterface: Trying to load libDiagService
+08-12 00:21:56.047 16170 16170 D nativeloader: Load /system_ext/lib64/libDiagService.so using class loader ns clns-shared-4 (caller=/system_ext/app/QTIDiagServices/QTIDiagServices.apk): ok
+08-12 00:21:56.047 16170 16170 E ti.diagservices: diag: Diag_LSM_Init: invoked for pid: 16170 with init_count: 0
+08-12 00:21:56.047   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:21:56.048   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:21:56.048 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:21:56.048   765 16183 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:21:56.049   765 16183 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:21:56.049   765 16185 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:21:56.049   765 16185 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:21:56.319 16186 16186 I top     : type=1400 audit(0.0:288635): avc:  denied  { getattr } for  path="/proc/893" dev="proc" ino=2232957 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_keymint_qti:s0 tclass=dir permissive=1
+08-12 00:21:56.319 16186 16186 I top     : type=1400 audit(0.0:288636): avc:  denied  { search } for  name="893" dev="proc" ino=2232957 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_keymint_qti:s0 tclass=dir permissive=1
+08-12 00:21:56.319 16186 16186 I top     : type=1400 audit(0.0:288637): avc:  denied  { getattr } for  path="/proc/895" dev="proc" ino=2232958 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_qseecom_default:s0 tclass=dir permissive=1
+08-12 00:21:56.319 16186 16186 I top     : type=1400 audit(0.0:288638): avc:  denied  { search } for  name="895" dev="proc" ino=2232958 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_qseecom_default:s0 tclass=dir permissive=1
+08-12 00:21:56.319 16186 16186 I top     : type=1400 audit(0.0:288639): avc:  denied  { getattr } for  path="/proc/1351" dev="proc" ino=2232962 scontext=u:r:system_app:s0 tcontext=u:r:hal_allocator_default:s0 tclass=dir permissive=1
+08-12 00:21:56.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:21:56.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:21:57.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:21:57.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:21:57.049 16170 16170 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:21:57.050   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:21:57.050 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:21:57.051   765 16187 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:21:57.051   765 16187 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:21:57.323 16188 16188 I top     : type=1400 audit(0.0:288656): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_qesdsect:s0 tclass=file permissive=1
+08-12 00:21:57.323 16188 16188 I top     : type=1400 audit(0.0:288657): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:hal_fingerprint_default:s0 tclass=file permissive=1
+08-12 00:21:57.323 16188 16188 I top     : type=1400 audit(0.0:288658): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_capabilityconfigstore_qti_default:s0 tclass=file permissive=1
+08-12 00:21:57.327 16188 16188 I top     : type=1400 audit(0.0:288659): avc:  denied  { getattr } for  path="/proc/1062" dev="proc" ino=2232961 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_keymint_spu_qti:s0 tclass=dir permissive=1
+08-12 00:21:57.327 16188 16188 I top     : type=1400 audit(0.0:288660): avc:  denied  { search } for  name="1062" dev="proc" ino=2232961 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_keymint_spu_qti:s0 tclass=dir permissive=1
+08-12 00:21:57.340  1436  1631 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-12 00:21:57.362  1436  1631 I SDM     : HWDeviceDRM::SetupConcurrentWriteback: Tear down the Concurrent Writeback topology
+08-12 00:21:57.433  1436  1631 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-12 00:21:57.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS1.400000 FRAMECOUNT4
+08-12 00:21:57.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 1.400000
+08-12 00:21:58.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS1.200000 FRAMECOUNT4
+08-12 00:21:58.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 1.200000
+08-12 00:21:58.051 16170 16170 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:21:58.051   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:21:58.052 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:21:58.053   765 16191 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:21:58.053   765 16191 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:21:58.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:21:58.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:21:58.658 16193 16193 I xsu     : sending cmd:echo 76 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-12 00:21:58.658 16193 16193 I xsu     : sending cmd end:echo 76 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-12 00:21:58.658 16193 16193 I xsu     : free cmd end
+08-12 00:21:58.658 16193 16193 I xsu     : xsu_recv cmd before
+08-12 00:21:58.658 16193 16193 I xsu_api : xsu_recv memset enter
+08-12 00:21:58.658 16193 16193 I xsu_api : xsu_recv memset end
+08-12 00:21:58.658  1541 16194 I xsu_api : xsu_recv memset enter
+08-12 00:21:58.658  1541 16194 I xsu_api : xsu_recv memset end
+08-12 00:21:58.658  1541 16194 I xsu_api : xsu_recv retry end
+08-12 00:21:58.658  1541 16194 I xsu_api : ret=4, version=200, type=0, payload_size=69
+08-12 00:21:58.658  1541 16194 I xsu_api : xsu_recv type and len
+08-12 00:21:58.658  1541 16194 I xsu_api : header.type=0, header.payload_size=69, xsu_header_t=4
+08-12 00:21:58.658  1541 16194 I xsu_api : xsu_recv type and len end
+08-12 00:21:58.659  1541 16194 I xsud    : handle comming cmd:echo 76 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-12 00:21:58.667 16193 16193 I xsu_api : xsu_recv retry end
+08-12 00:21:58.663 16195 16195 I sh      : type=1400 audit(0.0:288684): avc:  denied  { write } for  name="pwm1" dev="sysfs" ino=106872 scontext=u:r:xsud:s0 tcontext=u:object_r:sysfs:s0 tclass=file permissive=1
+08-12 00:21:58.667 16193 16193 I xsu_api : ret=4, version=200, type=3, payload_size=0
+08-12 00:21:58.667 16193 16193 I xsu_api : xsu_recv type and len
+08-12 00:21:58.663 16195 16195 I sh      : type=1400 audit(0.0:288685): avc:  denied  { open } for  path="/sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1" dev="sysfs" ino=106872 scontext=u:r:xsud:s0 tcontext=u:object_r:sysfs:s0 tclass=file permissive=1
+08-12 00:21:58.667 16193 16193 I xsu_api : header.type=3, header.payload_size=0, xsu_header_t=4
+08-12 00:21:58.667 16193 16193 I xsu_api : xsu_recv type and len end
+08-12 00:21:58.667 16193 16193 I xsu     : xsu_recv cmd end
+08-12 00:21:58.668 16193 16193 I xsu     : end session!
+08-12 00:21:59.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:21:59.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:21:59.053 16170 16170 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:21:59.054   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:21:59.054 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:21:59.055   765 16196 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:21:59.055   765 16196 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:21:59.063 16197 16197 I top     : type=1400 audit(0.0:288686): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:servicemanager:s0 tclass=file permissive=1
+08-12 00:21:59.063 16197 16197 I top     : type=1400 audit(0.0:288687): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_sec_nvm:s0 tclass=file permissive=1
+08-12 00:21:59.063 16197 16197 I top     : type=1400 audit(0.0:288688): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:hal_light_default:s0 tclass=file permissive=1
+08-12 00:21:59.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:21:59.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:22:00.001  2277  2478 V AlarmManager: set(android) : type=3 triggerAtTime=2026-08-12 00:23:00 win=0 maxElapsed=11075120 interval=0 flags=0x9 callingUid=1000
+08-12 00:22:00.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.300000 FRAMECOUNT1
+08-12 00:22:00.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.300000
+08-12 00:22:00.055 16170 16170 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:22:00.055   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:22:00.056 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:22:00.057   765 16200 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:22:00.058   765 16200 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:22:00.063 16199 16199 I top     : type=1400 audit(0.0:288721): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_dpmQmiMgr:s0 tclass=file permissive=1
+08-12 00:22:00.067 16199 16199 I top     : type=1400 audit(0.0:288722): avc:  denied  { open } for  path="/proc/1700/stat" dev="proc" ino=2233073 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_dpmQmiMgr:s0 tclass=file permissive=1
+08-12 00:22:00.089  1436  1631 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-12 00:22:00.111  1436  1631 I SDM     : HWDeviceDRM::SetupConcurrentWriteback: Tear down the Concurrent Writeback topology
+08-12 00:22:00.181  1436  1631 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-12 00:22:00.319 16199 16199 I top     : type=1400 audit(0.0:288723): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_gatekeeper_qti:s0 tclass=file permissive=1
+08-12 00:22:00.319 16199 16199 I top     : type=1400 audit(0.0:288724): avc:  denied  { getattr } for  path="/proc/1464" dev="proc" ino=2232977 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_secureprocessor_qti:s0 tclass=dir permissive=1
+08-12 00:22:00.319 16199 16199 I top     : type=1400 audit(0.0:288725): avc:  denied  { search } for  name="1464" dev="proc" ino=2232977 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_secureprocessor_qti:s0 tclass=dir permissive=1
+08-12 00:22:00.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS1.200000 FRAMECOUNT4
+08-12 00:22:00.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 1.200000
+08-12 00:22:01.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS2.900000 FRAMECOUNT3
+08-12 00:22:01.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 2.900000
+08-12 00:22:01.056 16170 16170 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:22:01.056   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:22:01.056 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:22:01.058   765 16203 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:22:01.058   765 16203 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:22:01.067 16202 16202 I top     : type=1400 audit(0.0:288735): avc:  denied  { getattr } for  path="/proc/1473" dev="proc" ino=2255648 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_srvctracker_default:s0 tclass=dir permissive=1
+08-12 00:22:01.067 16202 16202 I top     : type=1400 audit(0.0:288736): avc:  denied  { search } for  name="1473" dev="proc" ino=2255648 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_srvctracker_default:s0 tclass=dir permissive=1
+08-12 00:22:01.067 16202 16202 I top     : type=1400 audit(0.0:288737): avc:  denied  { open } for  path="/proc/1476/stat" dev="proc" ino=2233042 scontext=u:r:system_app:s0 tcontext=u:r:hal_vibrator_default:s0 tclass=file permissive=1
+08-12 00:22:01.067 16202 16202 I top     : type=1400 audit(0.0:288738): avc:  denied  { open } for  path="/proc/1693/stat" dev="proc" ino=2233065 scontext=u:r:system_app:s0 tcontext=u:r:vendor_tcmd:s0 tclass=file permissive=1
+08-12 00:22:01.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:22:01.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:22:02.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:22:02.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:22:02.057 16170 16170 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:22:02.057   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:22:02.057 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:22:02.058   765 16205 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:22:02.058   765 16205 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:22:02.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:22:02.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:22:02.861  2686  5008 D IpClient/wlan0: interfaceLinkStateChanged: ifindex 15 up
+08-12 00:22:03.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:22:03.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:22:03.058 16170 16170 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:22:03.058   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:22:03.059 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:22:03.060   765 16207 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:22:03.060   765 16207 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:22:03.063 16206 16206 I top     : type=1400 audit(0.0:288739): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_trustedui_qti:s0 tclass=file permissive=1
+08-12 00:22:03.067 16206 16206 I top     : type=1400 audit(0.0:288740): avc:  denied  { open } for  path="/proc/1474/stat" dev="proc" ino=2233038 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_trustedui_qti:s0 tclass=file permissive=1
+08-12 00:22:03.067 16206 16206 I top     : type=1400 audit(0.0:288741): avc:  denied  { getattr } for  path="/proc/1946" dev="proc" ino=2232409 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_soter_qti:s0 tclass=dir permissive=1
+08-12 00:22:03.067 16206 16206 I top     : type=1400 audit(0.0:288742): avc:  denied  { search } for  name="1946" dev="proc" ino=2232409 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_soter_qti:s0 tclass=dir permissive=1
+08-12 00:22:03.363  1436  1631 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-12 00:22:03.385  1436  1631 I SDM     : HWDeviceDRM::SetupConcurrentWriteback: Tear down the Concurrent Writeback topology
+08-12 00:22:03.455  1436  1631 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-12 00:22:03.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS1.100000 FRAMECOUNT4
+08-12 00:22:03.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 1.100000
+08-12 00:22:03.620  2277  2473 D ActivityManager: freezing 8498 com.google.android.apps.turbo:aab
+08-12 00:22:03.682 16210 16210 I xsu     : sending cmd:echo 76 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-12 00:22:03.683 16210 16210 I xsu     : sending cmd end:echo 76 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-12 00:22:03.683 16210 16210 I xsu     : free cmd end
+08-12 00:22:03.683 16210 16210 I xsu     : xsu_recv cmd before
+08-12 00:22:03.683 16210 16210 I xsu_api : xsu_recv memset enter
+08-12 00:22:03.683 16210 16210 I xsu_api : xsu_recv memset end
+08-12 00:22:03.683  1541 16211 I xsu_api : xsu_recv memset enter
+08-12 00:22:03.683  1541 16211 I xsu_api : xsu_recv memset end
+08-12 00:22:03.683  1541 16211 I xsu_api : xsu_recv retry end
+08-12 00:22:03.683  1541 16211 I xsu_api : ret=4, version=200, type=0, payload_size=69
+08-12 00:22:03.683  1541 16211 I xsu_api : xsu_recv type and len
+08-12 00:22:03.683  1541 16211 I xsu_api : header.type=0, header.payload_size=69, xsu_header_t=4
+08-12 00:22:03.683  1541 16211 I xsu_api : xsu_recv type and len end
+08-12 00:22:03.683  1541 16211 I xsud    : handle comming cmd:echo 76 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-12 00:22:03.691 16210 16210 I xsu_api : xsu_recv retry end
+08-12 00:22:03.691 16210 16210 I xsu_api : ret=4, version=200, type=3, payload_size=0
+08-12 00:22:03.691 16210 16210 I xsu_api : xsu_recv type and len
+08-12 00:22:03.691 16210 16210 I xsu_api : header.type=3, header.payload_size=0, xsu_header_t=4
+08-12 00:22:03.691 16210 16210 I xsu_api : xsu_recv type and len end
+08-12 00:22:03.691 16210 16210 I xsu     : xsu_recv cmd end
+08-12 00:22:03.691 16210 16210 I xsu     : end session!
+08-12 00:22:04.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS1.000000 FRAMECOUNT4
+08-12 00:22:04.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 1.000000
+08-12 00:22:04.060 16170 16170 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:22:04.060   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:22:04.061 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:22:04.061   765 16214 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:22:04.061   765 16214 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:22:04.059 16213 16213 I top     : type=1400 audit(0.0:288743): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_qspmhal_default:s0 tclass=file permissive=1
+08-12 00:22:04.059 16213 16213 I top     : type=1400 audit(0.0:288744): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:hal_tsnv_default:s0 tclass=file permissive=1
+08-12 00:22:04.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:22:04.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:22:05.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:22:05.034  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-12 00:22:05.061 16170 16170 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-12 00:22:05.061   765   765 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-12 00:22:05.059 16215 16215 I top     : type=1400 audit(0.0:288751): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_keymint_spu_qti:s0 tclass=file permissive=1
+08-12 00:22:05.061 16170 16170 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-12 00:22:05.059 16215 16215 I top     : type=1400 audit(0.0:288752): avc:  denied  { open } for  path="/proc/1062/stat" dev="proc" ino=2255688 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_keymint_spu_qti:s0 tclass=file permissive=1
+08-12 00:22:05.062   765 16216 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-12 00:22:05.062   765 16216 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-12 00:22:05.059 16215 16215 I top     : type=1400 audit(0.0:288753): avc:  denied  { getattr } for  path="/proc/1423" dev="proc" ino=2232975 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_capabilityconfigstore_qti_default:s0 tclass=dir permissive=1
+08-12 00:22:05.059 16215 16215 I top     : type=1400 audit(0.0:288754): avc:  denied  { search } for  name="1423" dev="proc" ino=2232975 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_capabilityconfigstore_qti_default:s0 tclass=dir permissive=1
+08-12 00:22:05.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-12 00:22:05.534  1389  1600 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000

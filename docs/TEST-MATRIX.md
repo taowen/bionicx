@@ -25,7 +25,7 @@ counters. App profiles always run with diagnostics disabled for final proof.
 | libc/kernel | `runtime-probe` | threads, robust owner death, epoll, signals, processes, IPC, sockets, mmap | 20/20 passing on x300 with BionicX glibc 2.39 |
 | desktop services | planned probes | fonts, locale, MIME, D-Bus alternatives, audio | pending |
 | Chromium | real Chrome ARM64 | sandbox, zygote, SHM, network, TLS, GPU/software rendering | pending |
-| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer baseline passing |
+| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer main UI renders; primary-output/XKB warnings and shell-env contamination remain |
 
 ## Upstream acceptance baseline
 
