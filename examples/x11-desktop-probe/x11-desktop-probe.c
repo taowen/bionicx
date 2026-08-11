@@ -133,11 +133,19 @@ static void probe_xinput2(Display *display) {
     bool ok = XIQueryVersion(display, &major, &minor) == Success;
     int count = 0;
     XIDeviceInfo *devices = XIQueryDevice(display, XIAllDevices, &count);
-    ok = ok && devices && count >= 2 && sync_without_error(display, before);
+    bool master_pointer = false, master_keyboard = false;
+    for (int i = 0; devices && i < count; i++) {
+        master_pointer |= devices[i].use == XIMasterPointer
+                          && devices[i].attachment != devices[i].deviceid;
+        master_keyboard |= devices[i].use == XIMasterKeyboard
+                           && devices[i].attachment != devices[i].deviceid;
+    }
+    ok = ok && devices && count >= 2 && master_pointer && master_keyboard
+         && sync_without_error(display, before);
     if (devices) XIFreeDeviceInfo(devices);
     char detail[96];
-    snprintf(detail, sizeof(detail), "version=%d.%d devices=%d",
-             major, minor, count);
+    snprintf(detail, sizeof(detail), "version=%d.%d devices=%d masters=%d/%d",
+             major, minor, count, master_pointer, master_keyboard);
     result("xinput2", ok, detail);
 }
 

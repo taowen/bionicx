@@ -12,6 +12,7 @@ import com.winlator.xserver.extensions.GLXExtension;
 import com.winlator.xserver.extensions.PresentExtension;
 import com.winlator.xserver.extensions.XComposite;
 import com.winlator.xserver.extensions.XFixesExtension;
+import com.winlator.xserver.extensions.XInputExtension;
 import com.winlator.xserver.extensions.XRandRExtension;
 import com.winlator.xserver.extensions.XRenderExtension;
 
@@ -205,6 +206,7 @@ public class XServer {
             new XRenderExtension(this, opcode--),
             new XFixesExtension(this, opcode--),
             new XRandRExtension(this, opcode--),
+            new XInputExtension(this, opcode--),
             new GLXExtension(this, opcode--)
         };
     }
