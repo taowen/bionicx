@@ -15,7 +15,8 @@
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",
       "TMPDIR": "${TMP}",
-      "LANG": "C.UTF-8"
+      "LANG": "en_US.UTF-8",
+      "LOCPATH": "${RUNTIME}/usr/lib/locale"
     }
   }
 }

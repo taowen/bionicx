@@ -9,6 +9,7 @@
 #include <gnu/libc-version.h>
 #include <linux/futex.h>
 #include <linux/memfd.h>
+#include <langinfo.h>
 #include <locale.h>
 #include <math.h>
 #include <netinet/in.h>
@@ -384,7 +385,9 @@ static bool test_prctl_name(void) {
 }
 
 static bool test_locale(void) {
-    return setlocale(LC_ALL, "C.UTF-8") != NULL;
+    const char *locale = setlocale(LC_ALL, "");
+    const char *codeset = locale ? nl_langinfo(CODESET) : NULL;
+    return locale && codeset && strcasecmp(codeset, "UTF-8") == 0;
 }
 
 typedef int (*isolated_test)(void);
@@ -494,7 +497,7 @@ int main(int argc, char **argv) {
     check("dlopen-libm", test_dlopen(), "");
     check("getrandom", test_getrandom(), "");
     check("unnamed-semaphore", test_unnamed_semaphore(), "");
-    check("locale-c-utf8", test_locale(), "");
+    check("locale-utf8", test_locale(), "");
     check("prctl-name", test_prctl_name(), "");
 
     run_capability("raw-set-robust-list", capability_set_robust_list);

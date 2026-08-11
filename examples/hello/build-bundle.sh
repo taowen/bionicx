@@ -43,6 +43,9 @@ for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6 libX11.so.6 libxcb.so.1
         libXau.so.6 libXdmcp.so.6; do
     cp -L "$temporary/usr/lib/$library" "$output_dir/rootfs/usr/lib/"
 done
+mkdir -p "$output_dir/rootfs/usr/lib/locale"
+cp -a "$temporary/usr/lib/locale/en_US.utf8" \
+    "$output_dir/rootfs/usr/lib/locale/"
 python3 "$repo_dir/tools/relocate-prefix.py" "$output_dir/rootfs" \
     --from-prefix /data/data/com.winlator --to-prefix /data/data/io.taowen.bx
 
