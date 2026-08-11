@@ -1,0 +1,211 @@
+package com.winlator.xserver.extensions;
+
+import static com.winlator.xserver.XClientRequestHandler.RESPONSE_CODE_SUCCESS;
+
+import android.util.SparseArray;
+
+import com.winlator.core.Callback;
+import com.winlator.xconnector.XInputStream;
+import com.winlator.xconnector.XOutputStream;
+import com.winlator.xconnector.XStreamLock;
+import com.winlator.xserver.XClient;
+import com.winlator.xserver.XServer;
+import com.winlator.xserver.errors.BadIdChoice;
+import com.winlator.xserver.errors.BadImplementation;
+import com.winlator.xserver.errors.XRequestError;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+
+/** Stateful subset of XFixes 2.0 region resources. */
+public class XFixesExtension extends Extension {
+    public static final int MAJOR_VERSION = 2;
+    public static final int MINOR_VERSION = 0;
+    private static final byte FIRST_EVENT = 70;
+    private static final byte FIRST_ERROR = -110;
+
+    private final SparseArray<Region> regions = new SparseArray<>();
+    private final IdentityHashMap<XClient, ArrayList<Integer>> clientRegions =
+            new IdentityHashMap<>();
+    private final Callback<XClient> onClientDestroy = this::freeClientRegions;
+
+    private static abstract class ClientOpcodes {
+        private static final byte QUERY_VERSION = 0;
+        private static final byte CREATE_REGION = 5;
+        private static final byte DESTROY_REGION = 10;
+        private static final byte FETCH_REGION = 19;
+    }
+
+    private static final class Rectangle {
+        private final short x;
+        private final short y;
+        private final int width;
+        private final int height;
+
+        private Rectangle(short x, short y, int width, int height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+    }
+
+    private static final class Region {
+        private final ArrayList<Rectangle> rectangles;
+
+        private Region(ArrayList<Rectangle> rectangles) {
+            this.rectangles = rectangles;
+        }
+    }
+
+    public XFixesExtension(XServer xServer, byte majorOpcode) {
+        super(xServer, majorOpcode);
+    }
+
+    @Override
+    public String getName() {
+        return "XFIXES";
+    }
+
+    @Override
+    public byte getFirstEventId() {
+        return FIRST_EVENT;
+    }
+
+    @Override
+    public byte getFirstErrorId() {
+        return FIRST_ERROR;
+    }
+
+    private XRequestError badRegion(int id) {
+        return new XRequestError(Byte.toUnsignedInt(FIRST_ERROR), id);
+    }
+
+    private void queryVersion(XClient client, XInputStream inputStream,
+                              XOutputStream outputStream) throws IOException {
+        inputStream.skip(8);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(MAJOR_VERSION);
+            outputStream.writeInt(MINOR_VERSION);
+            outputStream.writePad(16);
+        }
+    }
+
+    private void createRegion(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int id = inputStream.readInt();
+        if (!client.isValidResourceId(id)) throw new BadIdChoice(id);
+
+        int remaining = client.getRemainingRequestLength();
+        ArrayList<Rectangle> rectangles = new ArrayList<>(remaining / 8);
+        while (remaining >= 8) {
+            rectangles.add(new Rectangle(inputStream.readShort(), inputStream.readShort(),
+                    inputStream.readUnsignedShort(), inputStream.readUnsignedShort()));
+            remaining -= 8;
+        }
+        if (remaining > 0) inputStream.skip(remaining);
+
+        synchronized (regions) {
+            if (regions.indexOfKey(id) >= 0) throw new BadIdChoice(id);
+            regions.put(id, new Region(rectangles));
+            ArrayList<Integer> owned = clientRegions.get(client);
+            if (owned == null) {
+                owned = new ArrayList<>();
+                clientRegions.put(client, owned);
+                client.addOnDestroyListener(onClientDestroy);
+            }
+            owned.add(id);
+        }
+    }
+
+    private void destroyRegion(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int id = inputStream.readInt();
+        synchronized (regions) {
+            if (regions.indexOfKey(id) < 0) throw badRegion(id);
+            regions.remove(id);
+            ArrayList<Integer> owned = clientRegions.get(client);
+            if (owned != null) owned.remove(Integer.valueOf(id));
+        }
+    }
+
+    private void freeClientRegions(XClient client) {
+        synchronized (regions) {
+            ArrayList<Integer> owned = clientRegions.remove(client);
+            if (owned == null) return;
+            for (int id : owned) regions.remove(id);
+        }
+    }
+
+    private void fetchRegion(XClient client, XInputStream inputStream,
+                             XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int id = inputStream.readInt();
+        Region region;
+        synchronized (regions) {
+            region = regions.get(id);
+        }
+        if (region == null) throw badRegion(id);
+
+        int minX = 0, minY = 0, maxX = 0, maxY = 0;
+        if (!region.rectangles.isEmpty()) {
+            Rectangle first = region.rectangles.get(0);
+            minX = first.x;
+            minY = first.y;
+            maxX = first.x + first.width;
+            maxY = first.y + first.height;
+            for (int i = 1; i < region.rectangles.size(); i++) {
+                Rectangle rectangle = region.rectangles.get(i);
+                minX = Math.min(minX, rectangle.x);
+                minY = Math.min(minY, rectangle.y);
+                maxX = Math.max(maxX, rectangle.x + rectangle.width);
+                maxY = Math.max(maxY, rectangle.y + rectangle.height);
+            }
+        }
+
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(region.rectangles.size() * 2);
+            outputStream.writeShort((short)minX);
+            outputStream.writeShort((short)minY);
+            outputStream.writeShort((short)(maxX - minX));
+            outputStream.writeShort((short)(maxY - minY));
+            outputStream.writePad(16);
+            for (Rectangle rectangle : region.rectangles) {
+                outputStream.writeShort(rectangle.x);
+                outputStream.writeShort(rectangle.y);
+                outputStream.writeShort((short)rectangle.width);
+                outputStream.writeShort((short)rectangle.height);
+            }
+        }
+    }
+
+    @Override
+    public void handleRequest(XClient client, XInputStream inputStream,
+                              XOutputStream outputStream)
+            throws IOException, XRequestError {
+        switch (client.getRequestData()) {
+            case ClientOpcodes.QUERY_VERSION:
+                queryVersion(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.CREATE_REGION:
+                createRegion(client, inputStream);
+                break;
+            case ClientOpcodes.DESTROY_REGION:
+                destroyRegion(client, inputStream);
+                break;
+            case ClientOpcodes.FETCH_REGION:
+                fetchRegion(client, inputStream, outputStream);
+                break;
+            default:
+                throw new BadImplementation();
+        }
+    }
+}

@@ -11,6 +11,7 @@ import com.winlator.xserver.extensions.Extension;
 import com.winlator.xserver.extensions.GLXExtension;
 import com.winlator.xserver.extensions.PresentExtension;
 import com.winlator.xserver.extensions.XComposite;
+import com.winlator.xserver.extensions.XFixesExtension;
 import com.winlator.xserver.extensions.XRenderExtension;
 
 import java.nio.charset.Charset;
@@ -201,6 +202,7 @@ public class XServer {
             // it makes Qt enable SYNC and then receive BadImplementation.
             new XComposite(this, opcode--),
             new XRenderExtension(this, opcode--),
+            new XFixesExtension(this, opcode--),
             new GLXExtension(this, opcode--)
         };
     }
