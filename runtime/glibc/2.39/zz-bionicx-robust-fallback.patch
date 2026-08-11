@@ -1,0 +1,45 @@
+diff --git a/sysdeps/unix/sysv/linux/kernel-features.h b/sysdeps/unix/sysv/linux/kernel-features.h
+index e3630245..f9f4b722 100644
+--- a/sysdeps/unix/sysv/linux/kernel-features.h
++++ b/sysdeps/unix/sysv/linux/kernel-features.h
+@@ -52,7 +52,6 @@
+ /* Support for inter-process robust mutexes was added in 2.6.17 (but
+    some architectures lack futex_atomic_cmpxchg_inatomic in some
+    configurations).  */
+-#define __ASSUME_SET_ROBUST_LIST	1
+ 
+ /* Support for various CLOEXEC and NONBLOCK flags was added in 2.6.27.  */
+ #define __ASSUME_IN_NONBLOCK	1
+diff --git a/sysdeps/nptl/dl-tls_init_tp.c b/sysdeps/nptl/dl-tls_init_tp.c
+index 47566dce..1b0d6a33 100644
+--- a/sysdeps/nptl/dl-tls_init_tp.c
++++ b/sysdeps/nptl/dl-tls_init_tp.c
+@@ -91,7 +91,7 @@ __tls_init_tp (void)
+     pd->robust_head.futex_offset = (offsetof (pthread_mutex_t, __data.__lock)
+                                     - offsetof (pthread_mutex_t,
+                                                 __data.__list.__next));
+ #ifndef __ASSUME_SET_ROBUST_LIST
+-        __nptl_set_robust_list_avail = true;
++        __nptl_set_robust_list_avail = false;
+ #endif
+   }
+ 
+diff --git a/nptl/pthread_mutex_init.c b/nptl/pthread_mutex_init.c
+index 64d3bc19..fd34d1e4 100644
+--- a/nptl/pthread_mutex_init.c
++++ b/nptl/pthread_mutex_init.c
+@@ -94,8 +94,12 @@ ___pthread_mutex_init (pthread_mutex_t *mutex,
+   if ((imutexattr->mutexkind & PTHREAD_MUTEXATTR_FLAG_ROBUST) != 0)
+     {
+ #ifndef __ASSUME_SET_ROBUST_LIST
+-      if ((imutexattr->mutexkind & PTHREAD_MUTEXATTR_FLAG_PSHARED) != 0
+-	  && !__nptl_set_robust_list_avail)
++      /* The userspace exit fallback cannot reproduce kernel robust-list
++         handling for process-shared or priority-inheritance mutexes.  */
++      if (!__nptl_set_robust_list_avail
++          && ((imutexattr->mutexkind & PTHREAD_MUTEXATTR_FLAG_PSHARED) != 0
++              || (imutexattr->mutexkind & PTHREAD_MUTEXATTR_PROTOCOL_MASK)
++                 != PTHREAD_PRIO_NONE << PTHREAD_MUTEXATTR_PROTOCOL_SHIFT))
+	return ENOTSUP;
+ #endif
+ 

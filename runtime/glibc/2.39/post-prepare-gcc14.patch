@@ -1,0 +1,33 @@
+diff --git a/sysdeps/unix/sysv/linux/fake-syscall.h b/sysdeps/unix/sysv/linux/fake-syscall.h
+index 2ee236f2..cc24028f 100644
+--- a/sysdeps/unix/sysv/linux/fake-syscall.h
++++ b/sysdeps/unix/sysv/linux/fake-syscall.h
+@@ -16,14 +16,28 @@ struct FakeSyscall {
+ 			 long int);
+ };
+ 
+-long int JustReturnZero() {
++static long int
++JustReturnZero (long int a0, long int a1, long int a2, long int a3,
++                long int a4, long int a5)
++{
++	(void) a0; (void) a1; (void) a2;
++	(void) a3; (void) a4; (void) a5;
+ 	return 0;
+ }
+ 
++static long int
++CloseRange (long int first, long int last, long int flags,
++            long int a3, long int a4, long int a5)
++{
++	(void) a3; (void) a4; (void) a5;
++	return close_range ((unsigned int) first, (unsigned int) last,
++			    (int) flags);
++}
++
+ static struct FakeSyscall FakeSyscalls[] = {
+-	{ __NR_close_range, close_range },
++	{ __NR_close_range, CloseRange },
+ 	{ __NR_mbind, JustReturnZero },
+ 	{ __NR_get_mempolicy, JustReturnZero },
+ 	{ __NR_set_mempolicy, JustReturnZero },

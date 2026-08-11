@@ -18,9 +18,10 @@ podman run --rm --network host \
     aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
         examples/hello/hello-x11.c -o "$container_output/app/bin/hello-x11" -lX11
 
-# Vanilla Debian glibc calls set_robust_list during startup and Android app
-# seccomp kills it with SIGSYS. Use Winlator's pinned Android-compatible glibc
-# runtime for the device bundle. Applications remain ordinary glibc ELFs.
+# Winlator supplies the audited Android path/syscall compatibility closure and
+# X11 libraries. BionicX replaces its loader/libc/libm with a reproducible build
+# of the same glibc 2.39 recipe so owner-death robust mutexes retain their
+# process-private semantics even though Android seccomp blocks set_robust_list.
 rootfs_tzst="${BIONICX_ROOTFS_TZST:-}"
 if [[ -z "$rootfs_tzst" ]]; then
     winlator_commit="c2f4ad4534f4637b543a9a3b085e28f50cf6d01c"
@@ -42,6 +43,10 @@ tar --use-compress-program=unzstd -xf "$rootfs_tzst" -C "$temporary" ./usr/lib
 for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6 libX11.so.6 libxcb.so.1 \
         libXau.so.6 libXdmcp.so.6; do
     cp -L "$temporary/usr/lib/$library" "$output_dir/rootfs/usr/lib/"
+done
+android_glibc="$($repo_dir/tools/build-android-glibc.sh)"
+for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6; do
+    cp "$android_glibc/$library" "$output_dir/rootfs/usr/lib/"
 done
 mkdir -p "$output_dir/rootfs/usr/lib/locale"
 cp -a "$temporary/usr/lib/locale/en_US.utf8" \
