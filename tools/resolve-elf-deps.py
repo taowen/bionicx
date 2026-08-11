@@ -72,6 +72,7 @@ for root in roots:
 queue = deque(entries)
 seen: dict[Path, dict[str, object]] = {}
 missing: dict[str, list[str]] = {}
+copy_names: dict[Path, set[str]] = {path: {path.name} for path in entries}
 while queue:
     owner = queue.popleft().resolve()
     if owner in seen:
@@ -89,6 +90,7 @@ while queue:
             continue
         dependency = candidates[0]
         resolved[soname] = str(dependency)
+        copy_names.setdefault(dependency, set()).add(soname)
         queue.append(dependency)
     seen[owner] = {
         "needed": needed,
@@ -101,19 +103,23 @@ report = {
     "entries": [str(path) for path in entries],
     "objects": {str(path): metadata for path, metadata in sorted(seen.items())},
     "missing": missing,
+    "copyNames": {
+        str(path): sorted(names) for path, names in sorted(copy_names.items())
+    },
 }
 
 if args.copy_to:
     args.copy_to.mkdir(parents=True, exist_ok=True)
     copied: dict[str, Path] = {}
     for path in seen:
-        existing = copied.get(path.name)
-        if existing and existing.read_bytes() != path.read_bytes():
-            raise SystemExit(f"SONAME collision for {path.name}: {existing} and {path}")
-        destination = args.copy_to / path.name
-        if not destination.exists():
-            shutil.copy2(path, destination, follow_symlinks=True)
-        copied[path.name] = path
+        for name in sorted(copy_names.get(path, {path.name})):
+            existing = copied.get(name)
+            if existing and existing.read_bytes() != path.read_bytes():
+                raise SystemExit(f"SONAME collision for {name}: {existing} and {path}")
+            destination = args.copy_to / name
+            if not destination.exists():
+                shutil.copy2(path, destination, follow_symlinks=True)
+            copied[name] = path
 
 rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
 if args.json:
