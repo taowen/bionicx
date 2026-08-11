@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
+#include <spawn.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -55,6 +56,7 @@ __attribute__((constructor)) static void debugger_rendezvous(void) {
 }
 
 static int trace_files_enabled(void);
+static int trace_commands_enabled(void);
 
 static void remember_stream_failure(const char *operation, const char *path,
                                     void *caller) {
@@ -102,6 +104,158 @@ static int trace_files_enabled(void) {
         initialized = 1;
     }
     return enabled;
+}
+
+static int trace_commands_enabled(void) {
+    static int initialized;
+    static int enabled;
+    if (!initialized) {
+        enabled = getenv("BIONICX_TRACE_COMMANDS") != NULL;
+        initialized = 1;
+    }
+    return enabled;
+}
+
+static void trace_command_caller(const char *command, const char *mode,
+                                 void *caller) {
+    Dl_info module;
+    memset(&module, 0, sizeof(module));
+    if (dladdr(caller, &module) != 0 && module.dli_fbase != NULL) {
+        fprintf(stderr,
+                "wps-sysvipc-compat: popen via Android shell: %s mode=%s "
+                "caller=%s+0x%lx\n",
+                command, mode,
+                module.dli_fname ? module.dli_fname : "<anonymous>",
+                (unsigned long)((uintptr_t)caller -
+                                (uintptr_t)module.dli_fbase));
+    } else {
+        fprintf(stderr,
+                "wps-sysvipc-compat: popen via Android shell: %s mode=%s "
+                "caller=%p\n",
+                command, mode, caller);
+    }
+    if (!trace_commands_enabled()) return;
+    void *frames[16];
+    int count = backtrace(frames, (int)(sizeof(frames) / sizeof(frames[0])));
+    for (int i = 1; i < count; ++i) {
+        Dl_info frame;
+        memset(&frame, 0, sizeof(frame));
+        if (dladdr(frames[i], &frame) != 0 && frame.dli_fbase != NULL) {
+            fprintf(stderr, "wps-command-trace: frame=%d module=%s+0x%lx\n",
+                    i, frame.dli_fname ? frame.dli_fname : "<anonymous>",
+                    (unsigned long)((uintptr_t)frames[i] -
+                                    (uintptr_t)frame.dli_fbase));
+        } else {
+            fprintf(stderr, "wps-command-trace: frame=%d address=%p\n", i,
+                    frames[i]);
+        }
+    }
+}
+
+static void trace_command_arguments(const char *operation, const char *path,
+                                    char *const arguments[]) {
+    if (!trace_commands_enabled()) return;
+    fprintf(stderr, "wps-command-trace: %s path=%s", operation,
+            path ? path : "<null>");
+    if (arguments != NULL) {
+        for (int i = 0; arguments[i] != NULL && i < 8; ++i)
+            fprintf(stderr, " argv[%d]=%s", i, arguments[i]);
+    }
+    fprintf(stderr, "\n");
+}
+
+int execve(const char *path, char *const arguments[],
+           char *const environment[]) {
+    static int (*next_execve)(const char *, char *const[], char *const[]);
+    if (next_execve == NULL)
+        next_execve = (int (*)(const char *, char *const[], char *const[]))
+                dlsym(RTLD_NEXT, "execve");
+    trace_command_arguments("execve", path, arguments);
+    if (next_execve == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    return next_execve(path, arguments, environment);
+}
+
+int execv(const char *path, char *const arguments[]) {
+    static int (*next_execv)(const char *, char *const[]);
+    if (next_execv == NULL)
+        next_execv = (int (*)(const char *, char *const[]))dlsym(RTLD_NEXT,
+                                                                  "execv");
+    trace_command_arguments("execv", path, arguments);
+    if (next_execv == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    return next_execv(path, arguments);
+}
+
+int execvp(const char *file, char *const arguments[]) {
+    static int (*next_execvp)(const char *, char *const[]);
+    if (next_execvp == NULL)
+        next_execvp = (int (*)(const char *, char *const[]))dlsym(RTLD_NEXT,
+                                                                   "execvp");
+    trace_command_arguments("execvp", file, arguments);
+    if (next_execvp == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    return next_execvp(file, arguments);
+}
+
+int posix_spawn(pid_t *pid, const char *path,
+                const posix_spawn_file_actions_t *file_actions,
+                const posix_spawnattr_t *attributes, char *const arguments[],
+                char *const environment[]) {
+    static int (*next_posix_spawn)(pid_t *, const char *,
+                                   const posix_spawn_file_actions_t *,
+                                   const posix_spawnattr_t *, char *const[],
+                                   char *const[]);
+    if (next_posix_spawn == NULL)
+        next_posix_spawn = (int (*)(pid_t *, const char *,
+                                    const posix_spawn_file_actions_t *,
+                                    const posix_spawnattr_t *, char *const[],
+                                    char *const[]))dlsym(RTLD_NEXT,
+                                                        "posix_spawn");
+    trace_command_arguments("posix_spawn", path, arguments);
+    if (next_posix_spawn == NULL) return ENOSYS;
+    return next_posix_spawn(pid, path, file_actions, attributes, arguments,
+                            environment);
+}
+
+int posix_spawnp(pid_t *pid, const char *file,
+                 const posix_spawn_file_actions_t *file_actions,
+                 const posix_spawnattr_t *attributes, char *const arguments[],
+                 char *const environment[]) {
+    static int (*next_posix_spawnp)(pid_t *, const char *,
+                                    const posix_spawn_file_actions_t *,
+                                    const posix_spawnattr_t *, char *const[],
+                                    char *const[]);
+    if (next_posix_spawnp == NULL)
+        next_posix_spawnp = (int (*)(pid_t *, const char *,
+                                     const posix_spawn_file_actions_t *,
+                                     const posix_spawnattr_t *, char *const[],
+                                     char *const[]))dlsym(RTLD_NEXT,
+                                                         "posix_spawnp");
+    trace_command_arguments("posix_spawnp", file, arguments);
+    if (next_posix_spawnp == NULL) return ENOSYS;
+    return next_posix_spawnp(pid, file, file_actions, attributes, arguments,
+                             environment);
+}
+
+int system(const char *command) {
+    static int (*next_system)(const char *);
+    if (next_system == NULL)
+        next_system = (int (*)(const char *))dlsym(RTLD_NEXT, "system");
+    if (trace_commands_enabled())
+        fprintf(stderr, "wps-command-trace: system command=%s\n",
+                command ? command : "<null>");
+    if (next_system == NULL) {
+        errno = ENOSYS;
+        return -1;
+    }
+    return next_system(command);
 }
 
 static void trace_file_pair(const char *operation, const char *old_path,
@@ -350,8 +504,7 @@ FILE *popen(const char *command, const char *mode) {
             popen_slots[i].stream = stream;
             popen_slots[i].child = child;
             pthread_mutex_unlock(&popen_lock);
-            fprintf(stderr, "wps-sysvipc-compat: popen via Android shell: %s\n",
-                    command);
+            trace_command_caller(command, mode, __builtin_return_address(0));
             return stream;
         }
     }
