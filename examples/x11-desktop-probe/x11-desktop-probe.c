@@ -101,12 +101,22 @@ static void probe_randr(Display *display, Window root) {
     bool ok = XRRQueryVersion(display, &major, &minor) != 0;
     XRRScreenResources *resources = XRRGetScreenResourcesCurrent(display, root);
     ok = ok && resources && resources->ncrtc > 0 && resources->noutput > 0
-         && resources->nmode > 0 && sync_without_error(display, before);
-    char detail[128];
-    snprintf(detail, sizeof(detail), "version=%d.%d crtcs=%d outputs=%d modes=%d",
+         && resources->nmode > 0
+         && resources->modes[0].width
+                == (unsigned int)DisplayWidth(display, DefaultScreen(display))
+         && resources->modes[0].height
+                == (unsigned int)DisplayHeight(display, DefaultScreen(display))
+         && resources->modes[0].nameLength > 0
+         && sync_without_error(display, before);
+    char detail[160];
+    snprintf(detail, sizeof(detail),
+             "version=%d.%d crtcs=%d outputs=%d mode=%dx%d name=%.*s",
              major, minor, resources ? resources->ncrtc : 0,
              resources ? resources->noutput : 0,
-             resources ? resources->nmode : 0);
+             resources ? resources->modes[0].width : 0,
+             resources ? resources->modes[0].height : 0,
+             resources ? resources->modes[0].nameLength : 0,
+             resources ? resources->modes[0].name : "");
     if (resources) XRRFreeScreenResources(resources);
     result("randr", ok, detail);
 }
