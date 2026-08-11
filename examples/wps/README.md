@@ -82,6 +82,17 @@ ANDROID_SERIAL=01408BH601027129 \
 The test intentionally regenerates the tiny fixture instead of committing a
 binary. `pdfinfo` and `pdftotext` are required on the development host.
 
+The same verifier checks PDFs exported by Writer. For example:
+
+```sh
+ANDROID_SERIAL=01408BH601027129 \
+  examples/wps/verify-pdf.sh BionicX.pdf 1 \
+  BionicX_WPS_2026 abc_A Bold_WPS_2026
+```
+
+This distinguishes a real, parseable export with retained document text from
+an export dialog that merely reported completion.
+
 WPS currently uses `direct` mode to preserve `/proc/self/exe`. Its `PT_INTERP`
 must therefore point at BionicX's app-private loader. When migrating the
 original POC, the old and new Android package prefixes have equal byte length,
