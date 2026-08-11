@@ -61,7 +61,27 @@ temporary_mode="$("${adb[@]}" shell \
 }
 printf 'BXTEMP path=%s mode=%s\n' "$temporary_dir" "$temporary_mode"
 
+# Qt's generic Unix desktop services search PATH for xdg-open. Install a real
+# glibc dispatcher: a /system/bin/sh script cannot start while the inherited
+# glibc LD_LIBRARY_PATH is active in an Android process.
 builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
+podman run --rm --userns=keep-id \
+    --volume "$repo_dir:/work:Z" --volume "$work_dir:/output:Z" \
+    --workdir /work "$builder_image" \
+    aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
+    native/desktop/bionicx-open.c -o /output/xdg-open
+patchelf --set-interpreter "$interpreter" "$work_dir/xdg-open"
+dispatcher_temporary="/data/local/tmp/bionicx-xdg-open-$$"
+"${adb[@]}" push "$work_dir/xdg-open" "$dispatcher_temporary" >/dev/null
+"${adb[@]}" shell run-as "$package" mkdir -p files/apps/wps-office/bin
+"${adb[@]}" shell run-as "$package" cp "$dispatcher_temporary" \
+    files/apps/wps-office/bin/xdg-open
+"${adb[@]}" shell run-as "$package" chmod 700 \
+    files/apps/wps-office/bin/xdg-open
+"${adb[@]}" shell rm "$dispatcher_temporary"
+printf 'BXOPEN dispatcher=%s mode=700\n' \
+    files/apps/wps-office/bin/xdg-open
+
 podman run --rm --userns=keep-id \
     --volume "$work_dir:/output:Z" "$builder_image" sh -c \
     'cp -L /usr/lib/aarch64-linux-gnu/libXtst.so.6 /output/libXtst.so.6'

@@ -56,6 +56,12 @@ PPTX temporary-file template under the profile's `LANG=C`; see the retained
 [diagnosis](../../docs/diagnostics/2026-08-12-wps-file-trace.md). This narrow
 deployment provision avoids changing `mkstemp` behavior for other clients.
 
+The same preparation builds and installs the generic glibc `bionicx-open`
+dispatcher as `${APP}/bin/xdg-open`. Writer uses it to open an exported PDF in
+`wpspdf` inside the existing BionicX display session. The profile's private
+`PATH` and `BIONICX_OPEN_PDF` mapping are required; no system desktop MIME
+database or Android root service is used.
+
 WPS PDF additionally needs the legacy TIFF/WebP ABI selected by the Pi-Apps
 installation baseline. Download the pinned Debian ARM64 packages, verify their
 hashes, and install only their runtime libraries into the app-private glibc

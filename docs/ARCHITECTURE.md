@@ -76,3 +76,16 @@ needs those semantics.
 
 Future modules can cover narrow filesystem, IPC, or desktop-service gaps, but
 the project does not aim to translate arbitrary Linux syscalls.
+
+## 6. Desktop-service dispatch
+
+Linux GUI toolkits commonly delegate URI opening to a program such as
+`xdg-open`. Profiles can prepend an app-private directory to `PATH` and map
+file classes to explicit handlers through `bionicx-open`. The dispatcher is a
+glibc ELF, not a shell script: a Bionic shebang interpreter cannot safely start
+after a glibc GUI process has exported its loader search path.
+
+The current dispatcher decodes local file URIs and supports the configured PDF
+handler. It executes the handler inside the same app UID and display session.
+Additional MIME classes should be added with controlled integration clients;
+BionicX does not pretend to supply a complete freedesktop MIME/D-Bus session.

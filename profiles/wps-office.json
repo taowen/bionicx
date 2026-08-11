@@ -23,6 +23,8 @@
       "QT_X11_NO_MITSHM": "1",
       "QT_OPENGL": "software",
       "LIBGL_ALWAYS_SOFTWARE": "1",
+      "PATH": "${APP}/bin:/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin",
+      "BIONICX_OPEN_PDF": "${APP}/opt/kingsoft/wps-office/office6/wpspdf",
       "LD_LIBRARY_PATH": "${APP}/opt/kingsoft/wps-office/office6:${RUNTIME}/usr/lib",
       "LD_PRELOAD": "${RUNTIME}/usr/lib/libfreetype.so.6"
     }
