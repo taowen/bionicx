@@ -45,3 +45,12 @@ and exit 143. No root, Frida, PRoot, Termux, or long-lived ptrace was involved.
 The unchanged runtime probe subsequently passed 20/20 and drained zero extra
 children.
 
+## Genuine WPS regression
+
+The untraced Writer export/Open File workflow was repeated after enabling the
+supervisor. Writer remained the primary child and the detached `wpspdf` was
+adopted directly by `bionicx-exec`, rather than PID 1, while rendering the
+exported page. Sending TERM to the supervisor as the app UID removed the
+executor, Writer, and PDF viewer in about 53 ms. Exact process relationships
+and cleanup assertions are retained in
+`evidence/wps-session-supervision.log`.

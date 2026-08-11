@@ -1,0 +1,18 @@
+device=01408BH601027129 Android=14 API=34 ABI=arm64-v8a
+profile=wps-office diagnostics=off root=unused
+workflow=Writer open DOCX -> export PDF -> Open File -> WPS PDF render
+
+live process ownership:
+pid=9941 ppid=9911 uid=10194 name=bionicx-exec
+pid=9943 ppid=9941 uid=10194 name=wps
+pid=10451 ppid=9941 uid=10194 name=wpspdf
+argv[10451]=wpspdf <HOME>/Documents/PS on Android.pdf
+render=PASS exact exported text visible in WPS PDF
+
+unrooted supervisor shutdown:
+05:45:13.257 bionicx-exec: stopping session signal=15
+05:45:13.310 wps-office exited with 143
+BXTEST PASS wps-session-process-cleaned pid=9941
+BXTEST PASS wps-session-process-cleaned pid=9943
+BXTEST PASS wps-session-process-cleaned pid=10451
+result=PASS detached viewer adopted and complete WPS session reclaimed
