@@ -34,6 +34,10 @@ public class XKeyboardExtension extends Extension {
     private static final int XKB_KEY_NAMES_MASK = 1 << 9;
     private static final int XKB_SUPPORTED_NAMES_MASK = XKB_COMPONENT_NAMES_MASK
             | XKB_KEY_TYPE_NAMES_MASK | XKB_KEY_NAMES_MASK;
+    private static final int XKB_GBN_TYPES_MASK = 1;
+    private static final int XKB_GBN_SYMBOLS_MASK = (1 << 2) | (1 << 3);
+    private static final int XKB_GBN_SUPPORTED_MASK = XKB_GBN_TYPES_MASK
+            | XKB_GBN_SYMBOLS_MASK;
     private static final String[] COMPONENT_NAMES = {
         "bionicx", "bionicx", "bionicx", "bionicx", "BIONICX", "bionicx"
     };
@@ -46,6 +50,7 @@ public class XKeyboardExtension extends Extension {
         private static final byte SELECT_EVENTS = 1;
         private static final byte GET_MAP = 8;
         private static final byte GET_NAMES = 17;
+        private static final byte GET_KBD_BY_NAME = 23;
         private static final byte GET_DEVICE_INFO = 24;
     }
 
@@ -97,11 +102,7 @@ public class XKeyboardExtension extends Extension {
         }
     }
 
-    private void getMap(XClient client, XInputStream inputStream,
-                        XOutputStream outputStream) throws IOException {
-        inputStream.skip(client.getRemainingRequestLength());
-        int present = XKB_KEY_TYPES_MASK | XKB_KEY_SYMS_MASK;
-        int mappedKeyCount = LAST_MAPPED_KEYCODE - Keyboard.MIN_KEYCODE + 1;
+    private int getTotalKeysyms() {
         int totalKeysyms = 0;
         for (int keycode = Keyboard.MIN_KEYCODE;
              keycode <= LAST_MAPPED_KEYCODE; keycode++) {
@@ -109,78 +110,95 @@ public class XKeyboardExtension extends Extension {
             int upper = xServer.keyboard.getKeysym(keycode, 1);
             if (lower != 0) totalKeysyms += upper != 0 && upper != lower ? 2 : 1;
         }
-        int typeBytes = 8 + 3 * (8 + 8);
-        int variableBytes = typeBytes + mappedKeyCount * 8 + totalKeysyms * 4;
+        return totalKeysyms;
+    }
+
+    private int getMapVariableBytes() {
+        int mappedKeyCount = LAST_MAPPED_KEYCODE - Keyboard.MIN_KEYCODE + 1;
+        return 8 + 3 * (8 + 8) + mappedKeyCount * 8 + getTotalKeysyms() * 4;
+    }
+
+    private void writeMapReply(XClient client, XOutputStream outputStream) {
+        int present = XKB_KEY_TYPES_MASK | XKB_KEY_SYMS_MASK;
+        int mappedKeyCount = LAST_MAPPED_KEYCODE - Keyboard.MIN_KEYCODE + 1;
+        int totalKeysyms = getTotalKeysyms();
+        int variableBytes = getMapVariableBytes();
         int replyLength = (8 + variableBytes) / 4;
 
-        try (XStreamLock lock = outputStream.lock()) {
-            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
-            outputStream.writeByte((byte)CORE_KEYBOARD_ID);
-            outputStream.writeShort(client.getSequenceNumber());
-            outputStream.writeInt(replyLength);
-            outputStream.writeShort((short)0);
-            outputStream.writeByte((byte)Keyboard.MIN_KEYCODE);
-            outputStream.writeByte((byte)Keyboard.MAX_KEYCODE);
-            outputStream.writeShort((short)present);
-            outputStream.writeByte((byte)0); // first type
-            outputStream.writeByte((byte)REQUIRED_KEY_TYPES); // types in reply
-            outputStream.writeByte((byte)REQUIRED_KEY_TYPES); // total types
-            outputStream.writeByte((byte)Keyboard.MIN_KEYCODE);
-            outputStream.writeShort((short)totalKeysyms);
-            outputStream.writeByte((byte)mappedKeyCount);
-            outputStream.writeByte((byte)0); // first action key
-            outputStream.writeShort((short)0); // total actions
-            outputStream.writeByte((byte)0); // action keys
-            outputStream.writeByte((byte)0); // first behavior key
-            outputStream.writeByte((byte)0); // behavior keys
-            outputStream.writeByte((byte)0); // total behaviors
-            outputStream.writeByte((byte)0); // first explicit key
-            outputStream.writeByte((byte)0); // explicit keys
-            outputStream.writeByte((byte)0); // total explicit
-            outputStream.writeByte((byte)0); // first modifier-map key
-            outputStream.writeByte((byte)0); // modifier-map keys
-            outputStream.writeByte((byte)0); // total modifier-map entries
-            outputStream.writeByte((byte)0); // first virtual-mod-map key
-            outputStream.writeByte((byte)0); // virtual-mod-map keys
-            outputStream.writeByte((byte)0); // total virtual-mod-map entries
-            outputStream.writeByte((byte)0);
+        outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+        outputStream.writeByte((byte)CORE_KEYBOARD_ID);
+        outputStream.writeShort(client.getSequenceNumber());
+        outputStream.writeInt(replyLength);
+        outputStream.writeShort((short)0);
+        outputStream.writeByte((byte)Keyboard.MIN_KEYCODE);
+        outputStream.writeByte((byte)Keyboard.MAX_KEYCODE);
+        outputStream.writeShort((short)present);
+        outputStream.writeByte((byte)0); // first type
+        outputStream.writeByte((byte)REQUIRED_KEY_TYPES); // types in reply
+        outputStream.writeByte((byte)REQUIRED_KEY_TYPES); // total types
+        outputStream.writeByte((byte)Keyboard.MIN_KEYCODE);
+        outputStream.writeShort((short)totalKeysyms);
+        outputStream.writeByte((byte)mappedKeyCount);
+        outputStream.writeByte((byte)0); // first action key
+        outputStream.writeShort((short)0); // total actions
+        outputStream.writeByte((byte)0); // action keys
+        outputStream.writeByte((byte)0); // first behavior key
+        outputStream.writeByte((byte)0); // behavior keys
+        outputStream.writeByte((byte)0); // total behaviors
+        outputStream.writeByte((byte)0); // first explicit key
+        outputStream.writeByte((byte)0); // explicit keys
+        outputStream.writeByte((byte)0); // total explicit
+        outputStream.writeByte((byte)0); // first modifier-map key
+        outputStream.writeByte((byte)0); // modifier-map keys
+        outputStream.writeByte((byte)0); // total modifier-map entries
+        outputStream.writeByte((byte)0); // first virtual-mod-map key
+        outputStream.writeByte((byte)0); // virtual-mod-map keys
+        outputStream.writeByte((byte)0); // total virtual-mod-map entries
+        outputStream.writeByte((byte)0);
+        outputStream.writeShort((short)0); // virtual modifiers
+
+        // Required ONE_LEVEL followed by three valid Shift-based
+        // two-level types (TWO_LEVEL, ALPHABETIC and KEYPAD).
+        for (int i = 0; i < REQUIRED_KEY_TYPES; i++) {
+            boolean twoLevels = i != 0;
+            outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // mask
+            outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // real mods
             outputStream.writeShort((short)0); // virtual modifiers
-
-            // Required ONE_LEVEL followed by three valid Shift-based
-            // two-level types (TWO_LEVEL, ALPHABETIC and KEYPAD).
-            for (int i = 0; i < REQUIRED_KEY_TYPES; i++) {
-                boolean twoLevels = i != 0;
-                outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // mask
-                outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // real mods
-                outputStream.writeShort((short)0); // virtual modifiers
-                outputStream.writeByte((byte)(twoLevels ? 2 : 1)); // levels
-                outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // entries
-                outputStream.writeByte((byte)0); // preserve
-                outputStream.writeByte((byte)0);
-                if (twoLevels) {
-                    outputStream.writeByte((byte)1); // active
-                    outputStream.writeByte((byte)1); // Shift mask
-                    outputStream.writeByte((byte)1); // level 2
-                    outputStream.writeByte((byte)1); // real Shift modifier
-                    outputStream.writeShort((short)0);
-                    outputStream.writeShort((short)0);
-                }
+            outputStream.writeByte((byte)(twoLevels ? 2 : 1)); // levels
+            outputStream.writeByte((byte)(twoLevels ? 1 : 0)); // entries
+            outputStream.writeByte((byte)0); // preserve
+            outputStream.writeByte((byte)0);
+            if (twoLevels) {
+                outputStream.writeByte((byte)1); // active
+                outputStream.writeByte((byte)1); // Shift mask
+                outputStream.writeByte((byte)1); // level 2
+                outputStream.writeByte((byte)1); // real Shift modifier
+                outputStream.writeShort((short)0);
+                outputStream.writeShort((short)0);
             }
+        }
 
-            for (int keycode = Keyboard.MIN_KEYCODE;
-                 keycode <= LAST_MAPPED_KEYCODE; keycode++) {
-                int lower = xServer.keyboard.getKeysym(keycode, 0);
-                int upper = xServer.keyboard.getKeysym(keycode, 1);
-                int symbolCount = lower == 0 ? 0
-                        : upper != 0 && upper != lower ? 2 : 1;
-                outputStream.writeByte((byte)(symbolCount == 2 ? 1 : 0));
-                outputStream.writePad(3); // unused group key-type indices
-                outputStream.writeByte((byte)(symbolCount > 0 ? 1 : 0));
-                outputStream.writeByte((byte)symbolCount);
-                outputStream.writeShort((short)symbolCount);
-                if (symbolCount > 0) outputStream.writeInt(lower);
-                if (symbolCount > 1) outputStream.writeInt(upper);
-            }
+        for (int keycode = Keyboard.MIN_KEYCODE;
+             keycode <= LAST_MAPPED_KEYCODE; keycode++) {
+            int lower = xServer.keyboard.getKeysym(keycode, 0);
+            int upper = xServer.keyboard.getKeysym(keycode, 1);
+            int symbolCount = lower == 0 ? 0
+                    : upper != 0 && upper != lower ? 2 : 1;
+            outputStream.writeByte((byte)(symbolCount == 2 ? 1 : 0));
+            outputStream.writePad(3); // unused group key-type indices
+            outputStream.writeByte((byte)(symbolCount > 0 ? 1 : 0));
+            outputStream.writeByte((byte)symbolCount);
+            outputStream.writeShort((short)symbolCount);
+            if (symbolCount > 0) outputStream.writeInt(lower);
+            if (symbolCount > 1) outputStream.writeInt(upper);
+        }
+    }
+
+    private void getMap(XClient client, XInputStream inputStream,
+                        XOutputStream outputStream) throws IOException {
+        inputStream.skip(client.getRemainingRequestLength());
+        try (XStreamLock lock = outputStream.lock()) {
+            writeMapReply(client, outputStream);
         }
     }
 
@@ -289,6 +307,36 @@ public class XKeyboardExtension extends Extension {
         }
     }
 
+    private void getKeyboardByName(XClient client, XInputStream inputStream,
+                                   XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        inputStream.readUnsignedShort(); // required components
+        inputStream.readUnsignedShort(); // wanted components
+        boolean load = inputStream.readUnsignedByte() != 0;
+        inputStream.skip(1);
+        inputStream.skip(client.getRemainingRequestLength());
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+
+        int nestedMapBytes = 40 + getMapVariableBytes();
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)CORE_KEYBOARD_ID);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(nestedMapBytes / 4);
+            outputStream.writeByte((byte)Keyboard.MIN_KEYCODE);
+            outputStream.writeByte((byte)Keyboard.MAX_KEYCODE);
+            outputStream.writeByte((byte)(load ? 1 : 0));
+            outputStream.writeByte((byte)0); // existing keyboard
+            outputStream.writeShort((short)XKB_GBN_SUPPORTED_MASK);
+            outputStream.writeShort((short)XKB_GBN_SUPPORTED_MASK);
+            outputStream.writePad(16);
+            writeMapReply(client, outputStream);
+        }
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -305,6 +353,9 @@ public class XKeyboardExtension extends Extension {
                 break;
             case ClientOpcodes.GET_NAMES:
                 getNames(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_KBD_BY_NAME:
+                getKeyboardByName(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.GET_DEVICE_INFO:
                 getDeviceInfo(client, inputStream, outputStream);

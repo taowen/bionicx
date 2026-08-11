@@ -206,6 +206,9 @@ static void probe_xkb(Display *display) {
     XkbDeviceInfoPtr device = XkbGetDeviceInfo(
         display, XkbXI_AllDeviceFeaturesMask, XkbUseCoreKbd,
         XkbDfltXIClass, XkbDfltXIId);
+    XkbDescPtr named = XkbGetKeyboard(
+        display, XkbGBN_TypesMask | XkbGBN_ClientSymbolsMask,
+        XkbUseCoreKbd);
     int map_status = map ? Success : BadImplementation;
     int key_syms = map && map->map && map->map->key_sym_map
                    ? XkbKeyNumSyms(map, 9) : 0;
@@ -217,6 +220,10 @@ static void probe_xkb(Display *display) {
                      ? XkbKeySymEntry(map, 38, 0, 0) : NoSymbol;
     KeySym upper_a = map && map->map && map->map->key_sym_map
                      ? XkbKeySymEntry(map, 38, 1, 0) : NoSymbol;
+    bool named_map_ok = named && named->map
+                        && XkbKeyNumSyms(named, 38) == 2
+                        && XkbKeySymEntry(named, 38, 0, 0) == XK_a
+                        && XkbKeySymEntry(named, 38, 1, 0) == XK_A;
     bool ok = selected && device && device->name
               && strcmp(device->name, "BionicX keyboard") == 0
               && device->device_spec == 3 && map_status == Success
@@ -229,6 +236,7 @@ static void probe_xkb(Display *display) {
               && escape == XK_Escape
               && XkbKeyNumSyms(map, 38) == 2
               && lower_a == XK_a && upper_a == XK_A
+              && named_map_ok
               && sync_without_error(display, before);
     char detail[208];
     snprintf(detail, sizeof(detail),
@@ -244,6 +252,7 @@ static void probe_xkb(Display *display) {
              (unsigned long)lower_a, (unsigned long)upper_a);
     if (map) XkbFreeKeyboard(map, XkbAllComponentsMask, True);
     if (device) XkbFreeDeviceInfo(device, XkbXI_AllDeviceFeaturesMask, True);
+    if (named) XkbFreeKeyboard(named, XkbAllComponentsMask, True);
     result("xkeyboard", ok, detail);
 }
 
