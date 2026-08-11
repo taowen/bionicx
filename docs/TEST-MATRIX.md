@@ -26,7 +26,7 @@ counters. App profiles always run with diagnostics disabled for final proof.
 | glibc/Bionic bridge | `wps-compat-probe` | WPS SysV semaphore shim and sanitized Android-shell `popen` | 21/21 passing; Bionic shell output/exit status verified |
 | desktop services | `font-xft-probe`, WPS workflow plus planned probes | app-private Fontconfig discovery, separate regular/bold FreeType faces and real Xft rendering; deterministic Calibri/Cambria/Arial/Times aliases to static Liberation fonts; locale, MIME, D-Bus alternatives, audio | controlled Fontconfig/Xft 4/4 and WPS Latin regular/bold cold reopen pass; remaining services pending |
 | Chromium | real Chrome ARM64 | sandbox, zygote, SHM, network, TLS, GPU/software rendering | pending |
-| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer durable copy/paste and cold reopen pass; Spreadsheets now reaches its genuine home UI through a prepared direct-mode `et` entrypoint and audited Xtst dependency, while creating a new workbook currently exits 139 and is the next isolated failure |
+| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer durable copy/paste and cold reopen pass; Spreadsheets creates a workbook, calculates `SUM(A1:A2)`, saves valid OOXML, and cold-reopens it untraced with all values visible; Presentation and PDF remain pending |
 
 ## Upstream acceptance baseline
 

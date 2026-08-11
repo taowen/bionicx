@@ -53,10 +53,11 @@ was no missing ELF, unsupported X request, `BadImplementation`, or fatal signal
 during this startup checkpoint. See `evidence/wps-spreadsheets-home.png` and
 `evidence/wps-spreadsheets-entrypoint.log`.
 
-## Next isolated failure
+## Follow-up resolution
 
-Clicking New Document from that home UI terminates the `et` process with status
-139. The entrypoint/dependency correction is retained because it turns an
-unconditional pre-exec failure into a reproducible later application path, but
-it does not claim workbook creation. The signal will be diagnosed separately,
-with the startup profile kept free of tracing and debugger dependencies.
+The first New Document attempt terminated with status 139, but the same action
+could not reproduce the failure in either short-lived signal-diagnostic mode or
+two subsequent normal untraced launches. The diagnostic run reached `Book1`;
+the final untraced run created, calculated, saved, and cold-reopened a workbook.
+No workaround was added for a single non-reproducible process exit. See
+`2026-08-12-wps-spreadsheets-formula.md` for the durable functional check.
