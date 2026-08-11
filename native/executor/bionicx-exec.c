@@ -7,9 +7,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ptrace.h>
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 /*
@@ -41,6 +43,37 @@ struct options {
     int debug_stop;
     int command_index;
 };
+
+static volatile sig_atomic_t shutdown_signal;
+
+static void request_shutdown(int signal_number) {
+    shutdown_signal = signal_number;
+}
+
+static int install_shutdown_handlers(void) {
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = request_shutdown;
+    sigemptyset(&action.sa_mask);
+    return sigaction(SIGTERM, &action, NULL) == 0 &&
+                   sigaction(SIGINT, &action, NULL) == 0 &&
+                   sigaction(SIGHUP, &action, NULL) == 0
+            ? 0 : -1;
+}
+
+static int reset_child_signals(void) {
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = SIG_DFL;
+    sigemptyset(&action.sa_mask);
+    const int signals[] = {SIGTERM, SIGINT, SIGHUP, SIGPIPE};
+    for (size_t i = 0; i < sizeof(signals) / sizeof(signals[0]); ++i) {
+        if (sigaction(signals[i], &action, NULL) != 0) return -1;
+    }
+    sigset_t mask;
+    sigemptyset(&mask);
+    return sigprocmask(SIG_SETMASK, &mask, NULL);
+}
 
 static void usage(FILE *stream, const char *program) {
     fprintf(stream,
@@ -302,6 +335,91 @@ static int diagnose_signals(pid_t child) {
     }
 }
 
+static void signal_session(pid_t primary, int signal_number) {
+    if (primary > 0) kill(-primary, signal_number);
+    /* One Android application UID owns one BionicX display session.  Linux's
+     * pid=-1 form reaches detached descendants even after setsid(), while
+     * excluding this supervisor itself. */
+    kill(-1, signal_number);
+}
+
+static int reap_and_check_empty(void) {
+    for (;;) {
+        int status;
+        pid_t result = waitpid(-1, &status, WNOHANG);
+        if (result > 0) continue;
+        if (result == 0) return 0;
+        if (errno == EINTR) continue;
+        return errno == ECHILD;
+    }
+}
+
+static void terminate_session(pid_t primary, int signal_number) {
+    fprintf(stderr, "bionicx-exec: stopping session signal=%d\n",
+            signal_number);
+    signal_session(primary, SIGTERM);
+    for (int attempt = 0; attempt < 40; ++attempt) {
+        if (reap_and_check_empty()) return;
+        signal_session(primary, SIGTERM);
+        struct timespec delay = {.tv_sec = 0, .tv_nsec = 50 * 1000 * 1000};
+        nanosleep(&delay, NULL);
+    }
+    signal_session(primary, SIGKILL);
+    for (;;) {
+        int status;
+        pid_t result = waitpid(-1, &status, 0);
+        if (result > 0) continue;
+        if (result < 0 && errno == EINTR) continue;
+        break;
+    }
+}
+
+static int supervise_session(pid_t primary) {
+    int primary_status = 0;
+    int primary_exited = 0;
+    unsigned int session_children = 0;
+
+    for (;;) {
+        int status = 0;
+        pid_t exited = waitpid(-1, &status, 0);
+        if (exited < 0) {
+            if (errno == EINTR) {
+                if (shutdown_signal != 0) {
+                    int signal_number = shutdown_signal;
+                    terminate_session(primary, signal_number);
+                    return 128 + signal_number;
+                }
+                continue;
+            }
+            if (errno == ECHILD && primary_exited) break;
+            fprintf(stderr, "bionicx-exec: session wait failed: %s\n",
+                    strerror(errno));
+            return 1;
+        }
+
+        if (exited == primary) {
+            primary_status = status;
+            primary_exited = 1;
+            fprintf(stderr,
+                    "bionicx-exec: primary pid=%d exited status=0x%x; "
+                    "draining session\n",
+                    primary, status);
+        }
+        else {
+            ++session_children;
+            fprintf(stderr,
+                    "bionicx-exec: session child pid=%d exited status=0x%x\n",
+                    exited, status);
+        }
+    }
+
+    fprintf(stderr, "bionicx-exec: session drained children=%u\n",
+            session_children);
+    if (WIFEXITED(primary_status)) return WEXITSTATUS(primary_status);
+    if (WIFSIGNALED(primary_status)) return 128 + WTERMSIG(primary_status);
+    return 1;
+}
+
 int main(int argc, char **argv) {
     struct options options;
     if (parse_options(argc, argv, &options) != 0) {
@@ -313,9 +431,18 @@ int main(int argc, char **argv) {
     char **child_argv = build_child_argv(argc, argv, &options, &exec_path);
     if (child_argv == NULL) return 111;
 
+    if (prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0) != 0) {
+        fprintf(stderr, "bionicx-exec: cannot become child subreaper: %s\n",
+                strerror(errno));
+        return 111;
+    }
+
     pid_t child = fork();
     if (child < 0) return 111;
     if (child == 0) {
+        if (prctl(PR_SET_PDEATHSIG, SIGKILL, 0, 0, 0) != 0 ||
+                getppid() == 1) _exit(119);
+        if (reset_child_signals() != 0) _exit(118);
         if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) != 0) _exit(120);
         raise(SIGSTOP);
         if (configure_child(&options) != 0) {
@@ -330,6 +457,12 @@ int main(int argc, char **argv) {
     }
 
     free(child_argv);
+    if (setpgid(child, child) != 0 && errno != EACCES) {
+        fprintf(stderr, "bionicx-exec: setpgid(%d): %s\n", child,
+                strerror(errno));
+        kill(child, SIGKILL);
+        return 111;
+    }
     if (wait_for_stop(child, SIGSTOP, "initial stop") < 0) return 3;
     if (ptrace(PTRACE_SETOPTIONS, child, NULL,
                (void *)(long)PTRACE_O_TRACEEXEC) != 0) return 4;
@@ -355,6 +488,13 @@ int main(int argc, char **argv) {
     if (options.diagnose) return diagnose_signals(child);
     if (ptrace(PTRACE_DETACH, child, NULL, NULL) != 0) return 13;
 
+    if (install_shutdown_handlers() != 0) {
+        fprintf(stderr, "bionicx-exec: cannot install signal handlers: %s\n",
+                strerror(errno));
+        kill(-child, SIGKILL);
+        return 111;
+    }
+
     if (options.debug_stop) {
         kill(child, SIGSTOP);
         do {
@@ -367,11 +507,6 @@ int main(int argc, char **argv) {
 
     printf("bionicx-exec: running untraced pid=%d\n", child);
     fflush(stdout);
-    do {
-        status = 0;
-    } while (waitpid(child, &status, 0) < 0 && errno == EINTR);
     free(options.assignments);
-    if (WIFEXITED(status)) return WEXITSTATUS(status);
-    if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
-    return 1;
+    return supervise_session(child);
 }

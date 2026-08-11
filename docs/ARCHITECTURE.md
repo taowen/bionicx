@@ -32,8 +32,17 @@ directories isolated from each other.
 
 The executor forks a child, observes only the exec boundary with ptrace,
 single-steps the loader entry, suppresses the synthetic Android SIGSEGV seen on
-affected devices, and detaches. It then waits as a normal process supervisor.
-There is no ongoing debugger or syscall-emulation dependency.
+affected devices, and detaches. It then acts as a Linux child subreaper for the
+whole display session. A primary process may exit after spawning detached GUI
+children; the executor remains until every adopted descendant exits. There is
+no ongoing debugger or syscall-emulation dependency.
+
+Before handoff, ignored termination signals and the inherited signal mask are
+reset so glibc children obey normal process semantics. Activity shutdown sends
+TERM to the supervisor, which terminates the primary process group and the
+single-UID BionicX session, waits briefly, and escalates remaining children to
+KILL. One APK process/UID owns one active display session, matching the Android
+sandbox and preventing detached clients from outliving their X server.
 
 Environment variables such as `LD_LIBRARY_PATH` and `LD_PRELOAD` are set in the
 child after the Bionic executable has started. This prevents Android's linker
