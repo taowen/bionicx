@@ -7,12 +7,17 @@ sequence selects master input events on a window and reads the masks back.
 The XKB
 sequence includes selecting core-keyboard state notifications, reading its
 device metadata, and then reading a coherent keymap and keyboard-name set.
+It also links the real AArch64 glibc `libxkbcommon-x11`, compiles that server
+map with the same API used by Qt, creates an XKB state, and resolves a key
+through the compiled state. This stricter path catches semantic protocol gaps
+which libX11's structure-only helpers accept.
 MIT-SHM
 is reported as an optional capability because BionicX deliberately withholds
 it until a safe shared-memory backend exists.
 
 The server currently provides stateful Render 0.1 support. The probe's strict
-summary is the capability ledger for the remaining desktop extensions.
+summary is the capability ledger for the remaining desktop extensions. The
+probe currently has six strict checks.
 
 ```sh
 examples/x11-desktop-probe/build-bundle.sh

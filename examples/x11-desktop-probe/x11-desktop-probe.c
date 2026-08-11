@@ -2,12 +2,15 @@
 #include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Xlib-xcb.h>
 #include <X11/keysym.h>
 #include <X11/extensions/XInput2.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/Xrender.h>
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-x11.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -201,7 +204,9 @@ static void probe_xkb(Display *display) {
     XkbDescPtr map = XkbGetMap(display, XkbAllClientInfoMask,
                                XkbUseCoreKbd);
     int names_status = map ? XkbGetNames(
-        display, XkbComponentNamesMask | XkbKeyTypeNamesMask | XkbKeyNamesMask,
+        display, XkbComponentNamesMask | XkbKeyTypeNamesMask
+                 | XkbKTLevelNamesMask | XkbKeyNamesMask
+                 | XkbVirtualModNamesMask,
         map) : BadImplementation;
     XkbDeviceInfoPtr device = XkbGetDeviceInfo(
         display, XkbXI_AllDeviceFeaturesMask, XkbUseCoreKbd,
@@ -229,6 +234,8 @@ static void probe_xkb(Display *display) {
               && device->device_spec == 3 && map_status == Success
               && map && map->map && names_status == Success && map->names
               && map->names->symbols != None && map->map->types[0].name != None
+              && map->map->types[1].level_names
+              && map->map->types[1].level_names[1] != None
               && memcmp(map->names->keys[9].name, "ESC\0", 4) == 0
               && map->map->num_types >= 1
               && map->min_key_code <= 9 && map->max_key_code >= 9
@@ -254,6 +261,40 @@ static void probe_xkb(Display *display) {
     if (device) XkbFreeDeviceInfo(device, XkbXI_AllDeviceFeaturesMask, True);
     if (named) XkbFreeKeyboard(named, XkbAllComponentsMask, True);
     result("xkeyboard", ok, detail);
+}
+
+static void probe_xkbcommon(Display *display) {
+    xcb_connection_t *connection = XGetXCBConnection(display);
+    // A keymap read from X11 is self-contained; do not make this protocol
+    // probe depend on the host's text keymap database being installed.
+    struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_DEFAULT_INCLUDES);
+    if (context) xkb_context_set_log_level(context, XKB_LOG_LEVEL_DEBUG);
+    int32_t device = connection
+        ? xkb_x11_get_core_keyboard_device_id(connection) : -1;
+    struct xkb_keymap *keymap = context && device >= 0
+        ? xkb_x11_keymap_new_from_device(context, connection, device,
+                                         XKB_KEYMAP_COMPILE_NO_FLAGS)
+        : NULL;
+    struct xkb_state *state = keymap
+        ? xkb_x11_state_new_from_device(keymap, connection, device) : NULL;
+    xkb_keycode_t keycode = keymap
+        ? xkb_keymap_key_by_name(keymap, "K038") : XKB_KEYCODE_INVALID;
+    const xkb_keysym_t *symbols = NULL;
+    int symbol_count = keymap && keycode != XKB_KEYCODE_INVALID
+        ? xkb_keymap_key_get_syms_by_level(keymap, keycode, 0, 0, &symbols) : 0;
+    bool ok = connection && context && device == 3 && keymap && state
+              && keycode == 38 && symbol_count == 1
+              && symbols && symbols[0] == XKB_KEY_a
+              && xkb_state_key_get_one_sym(state, keycode) == XKB_KEY_a;
+    char detail[160];
+    snprintf(detail, sizeof(detail),
+             "device=%d keymap=%d state=%d keycode=%u syms=%d first=0x%x",
+             device, keymap != NULL, state != NULL, keycode, symbol_count,
+             symbols && symbol_count > 0 ? symbols[0] : 0);
+    result("xkbcommon", ok, detail);
+    if (state) xkb_state_unref(state);
+    if (keymap) xkb_keymap_unref(keymap);
+    if (context) xkb_context_unref(context);
 }
 
 static void probe_optional_shm(Display *display) {
@@ -295,6 +336,7 @@ int main(int argc, char **argv) {
     probe_randr(display, root);
     probe_xinput2(display, window);
     probe_xkb(display);
+    probe_xkbcommon(display);
     probe_optional_shm(display);
 
     char summary[128];

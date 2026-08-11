@@ -18,7 +18,21 @@ podman run --rm --network host \
     aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
         examples/x11-desktop-probe/x11-desktop-probe.c \
         -o "$container_output/app/bin/x11-desktop-probe" \
-        -lXrender -lXfixes -lXrandr -lXi -lXext -lX11
+        -lXrender -lXfixes -lXrandr -lXi -lXext \
+        -lxkbcommon-x11 -lxkbcommon -lX11-xcb -lX11
+
+# These libraries are not part of Winlator's minimal rootfs closure. Keep the
+# probe self-contained by taking the matching AArch64 runtime artifacts from
+# the same cross-toolchain image used to link it.
+podman run --rm --network host --userns=keep-id \
+    --volume "$repo_dir:/work:Z" --workdir /work \
+    "$builder_image" sh -eu -c '
+        for library in libX11-xcb.so.1 libxcb-xkb.so.1 \
+                       libxkbcommon.so.0 libxkbcommon-x11.so.0; do
+            cp -L "/usr/lib/aarch64-linux-gnu/$library" \
+                "'"$container_output"'/rootfs/usr/lib/$library"
+        done
+    '
 
 "$repo_dir/tools/resolve-elf-deps.py" \
     --entry "$output_dir/app/bin/x11-desktop-probe" \

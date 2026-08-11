@@ -21,12 +21,12 @@ counters. App profiles always run with diagnostics disabled for final proof.
 |---|---|---|---|
 | ELF/bootstrap | `hello-x11` | glibc loader, dependency closure, X connection | passing on x300 |
 | X11 core | `x11-probe` | windows, properties, drawing, selection, events | 13/13 strict checks pass; Android key/tap/swipe observed |
-| X11 desktop | `x11-desktop-probe` | Render, XFixes, RandR resources/primary, XInput2 devices/event masks, XKB printable map/event selection/device metadata/names; optional SHM | 5/5 passing; MIT-SHM deliberately unavailable pending safe backend |
+| X11 desktop | `x11-desktop-probe` | Render, XFixes, RandR resources/primary, XInput2 devices/event masks, XKB printable map/event selection/device metadata/names plus real xkbcommon keymap/state compilation; optional SHM | 6/6 passing; MIT-SHM deliberately unavailable pending safe backend |
 | libc/kernel | `runtime-probe` | threads, robust owner death, epoll, signals, processes, IPC, sockets, mmap | 20/20 passing on x300 with BionicX glibc 2.39 |
 | glibc/Bionic bridge | `wps-compat-probe` | WPS SysV semaphore shim and sanitized Android-shell `popen` | 21/21 passing; Bionic shell output/exit status verified |
 | desktop services | planned probes | fonts, locale, MIME, D-Bus alternatives, audio | pending |
 | Chromium | real Chrome ARM64 | sandbox, zygote, SHM, network, TLS, GPU/software rendering | pending |
-| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer opens/creates a document and keyboard-by-name works; xkbcommon compilation blocks text input; save/reopen and other workflows remain |
+| office | real WPS ARM64 | Writer, Sheets, Presentation, PDF import/export, clipboard | Writer opens/creates a document, Qt compiles the XKB keymap/state, and Android-injected text enters the document; modifier fidelity (currently all-caps and unshifted punctuation), save/reopen, and other workflows remain |
 
 ## Upstream acceptance baseline
 
