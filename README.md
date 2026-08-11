@@ -37,7 +37,9 @@ The repository separates four concerns:
 - `android`: display/input/socket host based on Winlator's in-process X server.
 
 See [the detailed architecture](docs/ARCHITECTURE.md) and
-[compatibility boundaries](docs/COMPATIBILITY.md).
+[compatibility boundaries](docs/COMPATIBILITY.md). The staged path from
+controlled clients to Chrome and WPS is tracked in the
+[integration test matrix](docs/TEST-MATRIX.md).
 
 ## Build
 
