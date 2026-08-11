@@ -11,6 +11,7 @@ import com.winlator.xserver.extensions.Extension;
 import com.winlator.xserver.extensions.GLXExtension;
 import com.winlator.xserver.extensions.PresentExtension;
 import com.winlator.xserver.extensions.XComposite;
+import com.winlator.xserver.extensions.XRenderExtension;
 
 import java.nio.charset.Charset;
 import java.util.EnumMap;
@@ -199,6 +200,7 @@ public class XServer {
             // not the legacy counters Qt creates with opcode 2. Advertising
             // it makes Qt enable SYNC and then receive BadImplementation.
             new XComposite(this, opcode--),
+            new XRenderExtension(this, opcode--),
             new GLXExtension(this, opcode--)
         };
     }
