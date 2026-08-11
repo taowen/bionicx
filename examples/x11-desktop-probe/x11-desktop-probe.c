@@ -2,6 +2,7 @@
 #include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <X11/extensions/XInput2.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xfixes.h>
@@ -160,11 +161,26 @@ static void probe_xkb(Display *display) {
     int before = x_errors;
     XkbDescPtr map = XkbGetMap(display, XkbAllClientInfoMask,
                                XkbUseCoreKbd);
-    bool ok = map && sync_without_error(display, before);
+    int map_status = map ? Success : BadImplementation;
+    int key_syms = map && map->map && map->map->key_sym_map
+                   ? XkbKeyNumSyms(map, 9) : 0;
+    int sym_offset = map && map->map && map->map->key_sym_map
+                     ? map->map->key_sym_map[9].offset : 0;
+    KeySym escape = map && map->map && map->map->key_sym_map
+                    ? XkbKeySymEntry(map, 9, 0, 0) : NoSymbol;
+    bool ok = map_status == Success && map && map->map && map->map->num_types >= 1
+              && map->min_key_code <= 9 && map->max_key_code >= 9
+              && XkbKeyNumSyms(map, 9) == 1
+              && escape == XK_Escape
+              && sync_without_error(display, before);
+    char detail[160];
+    snprintf(detail, sizeof(detail),
+             "version=%d.%d opcode=%d status=%d keys=%u-%u types=%d syms=%d offset=%d escape=0x%lx",
+             major, minor, opcode, map_status, map ? map->min_key_code : 0,
+             map ? map->max_key_code : 0,
+             map && map->map ? map->map->num_types : 0,
+             key_syms, sym_offset, (unsigned long)escape);
     if (map) XkbFreeKeyboard(map, XkbAllComponentsMask, True);
-    char detail[96];
-    snprintf(detail, sizeof(detail), "version=%d.%d opcode=%d",
-             major, minor, opcode);
     result("xkeyboard", ok, detail);
 }
 

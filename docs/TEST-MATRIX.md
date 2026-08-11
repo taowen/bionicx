@@ -21,7 +21,7 @@ counters. App profiles always run with diagnostics disabled for final proof.
 |---|---|---|---|
 | ELF/bootstrap | `hello-x11` | glibc loader, dependency closure, X connection | passing on x300 |
 | X11 core | `x11-probe` | windows, properties, drawing, selection, events | 13/13 strict checks pass; Android key/tap/swipe observed |
-| X11 desktop | `x11-desktop-probe` | Render, XFixes, RandR, XInput2, XKB; optional SHM capability | 4/5 passing: Render, XFixes, RandR, and paired XI2 master devices |
+| X11 desktop | `x11-desktop-probe` | Render, XFixes, RandR, XInput2, XKB; optional SHM capability | 5/5 passing; MIT-SHM deliberately unavailable pending safe backend |
 | libc/kernel | `runtime-probe` | threads, robust owner death, epoll, signals, processes, IPC, sockets, mmap | 20/20 passing on x300 with BionicX glibc 2.39 |
 | desktop services | planned probes | fonts, locale, MIME, D-Bus alternatives, audio | pending |
 | Chromium | real Chrome ARM64 | sandbox, zygote, SHM, network, TLS, GPU/software rendering | pending |
