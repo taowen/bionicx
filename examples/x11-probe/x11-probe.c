@@ -117,6 +117,8 @@ int main(int argc, char **argv) {
     XClassHint class_hint = {.res_name = "bionicx-probe",
                              .res_class = "BionicXProbe"};
     XSetClassHint(display, window, &class_hint);
+    XWMHints wm_hints = {.flags = WindowGroupHint, .window_group = window};
+    XSetWMHints(display, window, &wm_hints);
     Atom wm_delete = XInternAtom(display, "WM_DELETE_WINDOW", False);
     Atom wm_protocols = XInternAtom(display, "WM_PROTOCOLS", False);
     Atom utf8 = XInternAtom(display, "UTF8_STRING", False);
@@ -126,6 +128,10 @@ int main(int argc, char **argv) {
     int before = x_errors;
     XMapWindow(display, window);
     RECORD(sync_step(display, "window-create-map", before));
+
+    before = x_errors;
+    XSetInputFocus(display, window, RevertToParent, CurrentTime);
+    RECORD(sync_step(display, "input-focus", before));
 
     const char payload[] = "bionicx-property-roundtrip";
     before = x_errors;
