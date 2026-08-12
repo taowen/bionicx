@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <X11/Xlib.h>
 #include <vulkan/vulkan.h>
@@ -12,6 +13,7 @@ static unsigned failed;
 
 static void result(const char *name, bool ok, const char *details) {
     printf("BXTEST %s %s %s\n", ok ? "PASS" : "FAIL", name, details);
+    fflush(stdout);
     ok ? passed++ : failed++;
 }
 
@@ -124,8 +126,23 @@ int main(void) {
     uint32_t queue_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(
             physical_device, &queue_count, NULL);
-    snprintf(details, sizeof(details), "families=%u", queue_count);
-    result("host-vulkan-queue-families", queue_count > 0, details);
+    VkQueueFamilyProperties *queue_families = calloc(
+            queue_count, sizeof(*queue_families));
+    vkGetPhysicalDeviceQueueFamilyProperties(
+            physical_device, &queue_count, queue_families);
+    uint32_t graphics_family = UINT32_MAX;
+    for (uint32_t i = 0; i < queue_count; ++i) {
+        if (queue_families[i].queueCount > 0
+                && (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
+            graphics_family = i;
+            break;
+        }
+    }
+    snprintf(details, sizeof(details), "families=%u graphics=%u",
+             queue_count, graphics_family);
+    result("host-vulkan-queue-families",
+           queue_count > 0 && graphics_family != UINT32_MAX, details);
+    free(queue_families);
 
     VkPhysicalDeviceMemoryProperties memory;
     memset(&memory, 0, sizeof(memory));
@@ -231,6 +248,252 @@ int main(void) {
              status, mode_count, returned_mode_count, has_fifo);
     result("host-vulkan-present-modes",
            status == VK_SUCCESS && mode_count > 0 && has_fifo, details);
+
+    float queue_priority = 1.0f;
+    VkDeviceQueueCreateInfo queue_create_info = {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueFamilyIndex = graphics_family,
+        .queueCount = 1,
+        .pQueuePriorities = &queue_priority,
+    };
+    const char *device_extensions[] = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    };
+    VkDeviceCreateInfo device_create_info = {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .queueCreateInfoCount = 1,
+        .pQueueCreateInfos = &queue_create_info,
+        .enabledExtensionCount = 1,
+        .ppEnabledExtensionNames = device_extensions,
+    };
+    VkDevice device = VK_NULL_HANDLE;
+    status = graphics_family != UINT32_MAX
+            ? vkCreateDevice(physical_device, &device_create_info,
+                             NULL, &device)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    snprintf(details, sizeof(details), "status=%d handle=%s family=%u",
+             status, device != VK_NULL_HANDLE ? "valid" : "null",
+             graphics_family);
+    result("host-vulkan-logical-device",
+           status == VK_SUCCESS && device != VK_NULL_HANDLE, details);
+
+    VkQueue queue = VK_NULL_HANDLE;
+    if (device != VK_NULL_HANDLE)
+        vkGetDeviceQueue(device, graphics_family, 0, &queue);
+    snprintf(details, sizeof(details), "handle=%s family=%u index=0",
+             queue != VK_NULL_HANDLE ? "valid" : "null", graphics_family);
+    result("host-vulkan-device-queue", queue != VK_NULL_HANDLE, details);
+
+    VkSurfaceFormatKHR selected_format = {
+        .format = VK_FORMAT_B8G8R8A8_UNORM,
+        .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+    };
+    bool preferred_format = false;
+    for (uint32_t i = 0; i < returned_format_count; ++i) {
+        if (formats[i].format == selected_format.format
+                && formats[i].colorSpace == selected_format.colorSpace) {
+            selected_format = formats[i];
+            preferred_format = true;
+            break;
+        }
+    }
+    if (!preferred_format && returned_format_count > 0)
+        selected_format = formats[0];
+
+    VkCompositeAlphaFlagBitsKHR composite_alpha =
+            VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    if (!(capabilities.supportedCompositeAlpha & composite_alpha)) {
+        composite_alpha = (VkCompositeAlphaFlagBitsKHR)
+                (capabilities.supportedCompositeAlpha
+                 & (0u - capabilities.supportedCompositeAlpha));
+    }
+    VkSwapchainCreateInfoKHR swapchain_create_info = {
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .surface = surface,
+        .minImageCount = capabilities.minImageCount,
+        .imageFormat = selected_format.format,
+        .imageColorSpace = selected_format.colorSpace,
+        .imageExtent = capabilities.currentExtent,
+        .imageArrayLayers = 1,
+        .imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .preTransform = capabilities.currentTransform,
+        .compositeAlpha = composite_alpha,
+        .presentMode = VK_PRESENT_MODE_FIFO_KHR,
+        .clipped = VK_TRUE,
+    };
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    status = device != VK_NULL_HANDLE && surface != VK_NULL_HANDLE
+            ? vkCreateSwapchainKHR(device, &swapchain_create_info,
+                                   NULL, &swapchain)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    snprintf(details, sizeof(details),
+             "status=%d handle=%s format=%d extent=%ux%u images=%u",
+             status, swapchain != VK_NULL_HANDLE ? "valid" : "null",
+             selected_format.format, swapchain_create_info.imageExtent.width,
+             swapchain_create_info.imageExtent.height,
+             swapchain_create_info.minImageCount);
+    result("host-vulkan-swapchain",
+           status == VK_SUCCESS && swapchain != VK_NULL_HANDLE, details);
+
+    uint32_t swapchain_image_count = 0;
+    if (swapchain != VK_NULL_HANDLE)
+        status = vkGetSwapchainImagesKHR(
+                device, swapchain, &swapchain_image_count, NULL);
+    else
+        status = VK_ERROR_INITIALIZATION_FAILED;
+    VkImage *swapchain_images = calloc(
+            swapchain_image_count, sizeof(*swapchain_images));
+    uint32_t returned_image_count = swapchain_image_count;
+    if (status == VK_SUCCESS && returned_image_count > 0) {
+        status = vkGetSwapchainImagesKHR(
+                device, swapchain, &returned_image_count, swapchain_images);
+    }
+    snprintf(details, sizeof(details), "status=%d advertised=%u returned=%u",
+             status, swapchain_image_count, returned_image_count);
+    result("host-vulkan-swapchain-images",
+           status == VK_SUCCESS && returned_image_count > 0, details);
+
+    VkCommandPool command_pool = VK_NULL_HANDLE;
+    VkCommandPoolCreateInfo pool_create_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+        .queueFamilyIndex = graphics_family,
+    };
+    VkResult pool_status = device != VK_NULL_HANDLE
+            ? vkCreateCommandPool(device, &pool_create_info,
+                                  NULL, &command_pool)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    VkCommandBuffer command_buffer = VK_NULL_HANDLE;
+    VkCommandBufferAllocateInfo command_allocate_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = command_pool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    VkResult command_status = pool_status == VK_SUCCESS
+            ? vkAllocateCommandBuffers(
+                    device, &command_allocate_info, &command_buffer)
+            : pool_status;
+    snprintf(details, sizeof(details), "pool=%d allocate=%d handle=%s",
+             pool_status, command_status,
+             command_buffer != VK_NULL_HANDLE ? "valid" : "null");
+    result("host-vulkan-command-buffer",
+           pool_status == VK_SUCCESS && command_status == VK_SUCCESS
+                   && command_buffer != VK_NULL_HANDLE,
+           details);
+
+    uint32_t image_index = UINT32_MAX;
+    VkResult acquire_status = swapchain != VK_NULL_HANDLE
+            ? vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
+                                    VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                    &image_index)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    snprintf(details, sizeof(details), "status=%d index=%u count=%u",
+             acquire_status, image_index, returned_image_count);
+    result("host-vulkan-acquire",
+           acquire_status == VK_SUCCESS && image_index < returned_image_count,
+           details);
+
+    VkResult record_status = VK_ERROR_INITIALIZATION_FAILED;
+    if (command_buffer != VK_NULL_HANDLE
+            && image_index < returned_image_count) {
+        VkCommandBufferBeginInfo begin_info = {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        };
+        record_status = vkBeginCommandBuffer(command_buffer, &begin_info);
+        VkImageSubresourceRange color_range = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        };
+        VkImageMemoryBarrier to_transfer = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = swapchain_images[image_index],
+            .subresourceRange = color_range,
+        };
+        vkCmdPipelineBarrier(command_buffer,
+                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                             0, NULL, 0, NULL, 1, &to_transfer);
+        const VkClearColorValue clear_color = {
+            .float32 = {0.10f, 0.75f, 0.25f, 1.0f},
+        };
+        vkCmdClearColorImage(command_buffer, swapchain_images[image_index],
+                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                             &clear_color, 1, &color_range);
+        VkImageMemoryBarrier to_present = to_transfer;
+        to_present.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        to_present.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        to_present.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        to_present.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        vkCmdPipelineBarrier(command_buffer,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0,
+                             0, NULL, 0, NULL, 1, &to_present);
+        if (record_status == VK_SUCCESS)
+            record_status = vkEndCommandBuffer(command_buffer);
+    }
+    snprintf(details, sizeof(details), "status=%d color=26,191,64,255",
+             record_status);
+    result("host-vulkan-record-clear", record_status == VK_SUCCESS, details);
+
+    VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = command_buffer != VK_NULL_HANDLE ? 1u : 0u,
+        .pCommandBuffers = command_buffer != VK_NULL_HANDLE
+                ? &command_buffer : NULL,
+    };
+    VkResult submit_status = queue != VK_NULL_HANDLE
+            && record_status == VK_SUCCESS
+            ? vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    VkResult idle_status = submit_status == VK_SUCCESS
+            ? vkQueueWaitIdle(queue) : submit_status;
+    snprintf(details, sizeof(details), "submit=%d idle=%d",
+             submit_status, idle_status);
+    result("host-vulkan-submit-clear",
+           submit_status == VK_SUCCESS && idle_status == VK_SUCCESS, details);
+
+    VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .swapchainCount = swapchain != VK_NULL_HANDLE ? 1u : 0u,
+        .pSwapchains = swapchain != VK_NULL_HANDLE ? &swapchain : NULL,
+        .pImageIndices = image_index < returned_image_count
+                ? &image_index : NULL,
+    };
+    VkResult present_status = idle_status == VK_SUCCESS
+            ? vkQueuePresentKHR(queue, &present_info)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    XSync(display, False);
+    snprintf(details, sizeof(details), "status=%d index=%u color=26,191,64,255",
+             present_status, image_index);
+    result("host-vulkan-present", present_status == VK_SUCCESS, details);
+
+    if (present_status == VK_SUCCESS) {
+        for (unsigned frame = 0; frame < 50; ++frame) {
+            vkQueuePresentKHR(queue, &present_info);
+            XSync(display, False);
+            usleep(100000);
+        }
+    }
+    if (device != VK_NULL_HANDLE) vkDeviceWaitIdle(device);
+    if (command_pool != VK_NULL_HANDLE)
+        vkDestroyCommandPool(device, command_pool, NULL);
+    free(swapchain_images);
+    if (swapchain != VK_NULL_HANDLE)
+        vkDestroySwapchainKHR(device, swapchain, NULL);
+    if (device != VK_NULL_HANDLE) vkDestroyDevice(device, NULL);
 
     if (surface != VK_NULL_HANDLE) vkDestroySurfaceKHR(instance, surface, NULL);
 

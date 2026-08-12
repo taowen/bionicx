@@ -1,0 +1,30 @@
+I/AdrenoVK-0: Driver Path             : /vendor/lib64/hw/vulkan.adreno.so
+I/BionicX: bionicx-exec: running untraced pid=10793
+I/BionicX: BXTEST PASS host-vulkan-loader status=0 version=1.4.309
+I/BionicX: BXTEST PASS host-vulkan-instance-extensions status=0 extensions=16
+I/BionicX: BXTEST PASS host-vulkan-xlib-extensions status=0 returned=16 surface=1 xlib=1
+I/BionicX: BXTEST PASS host-vulkan-xlib-window display=open window=0x400001 size=640x360
+I/BionicX: BXTEST PASS host-vulkan-create-instance status=0 handle=valid
+I/BionicX: BXTEST PASS host-vulkan-physical-devices status=0 devices=1
+I/BionicX: BXTEST PASS host-vulkan-device-properties status=0 name=Vortek (Adreno (TM) 750) api=1.3.128 vendor=0x5143 device=0x43051401
+I/BionicX: BXTEST PASS host-vulkan-queue-families families=3 graphics=0
+I/BionicX: BXTEST PASS host-vulkan-memory types=9 heaps=2 bytes=9388290048
+I/BionicX: BXTEST PASS host-vulkan-xlib-surface status=0 handle=valid window=0x400001
+I/BionicX: BXTEST PASS host-vulkan-presentation-support status=0 surface=1 xlib=1
+I/BionicX: BXTEST PASS host-vulkan-surface-capabilities status=0 extent=640x360 images=1..2 usage=0x9f
+I/BionicX: BXTEST PASS host-vulkan-surface-formats status=0 advertised=4 returned=4
+I/BionicX: BXTEST PASS host-vulkan-present-modes status=0 advertised=4 returned=4 fifo=1
+I/BionicX: BXTEST PASS host-vulkan-logical-device status=0 handle=valid family=0
+I/BionicX: BXTEST PASS host-vulkan-device-queue handle=valid family=0 index=0
+I/BionicX: BXTEST PASS host-vulkan-swapchain status=0 handle=valid format=44 extent=640x360 images=1
+I/BionicX: BXTEST PASS host-vulkan-swapchain-images status=0 advertised=1 returned=1
+I/BionicX: BXTEST PASS host-vulkan-command-buffer pool=0 allocate=0 handle=valid
+I/BionicX: BXTEST PASS host-vulkan-acquire status=0 index=0 count=1
+I/BionicX: BXTEST PASS host-vulkan-record-clear status=0 color=26,191,64,255
+I/BionicX: BXTEST PASS host-vulkan-submit-clear submit=0 idle=0
+I/BionicX: BXTEST PASS host-vulkan-present status=0 index=0 color=26,191,64,255
+I/BionicX: BXSUMMARY host-vulkan passed=23 failed=0
+I/BionicX: bionicx-exec: primary pid=10793 exited status=0x0; draining session
+I/BionicX: bionicx-exec: session drained children=0
+I/BionicX: vulkan-probe exited with 0
+BXTEST PASS host-vulkan-compositor pixels=230293 bounds=0,0-639,359 size=1920x1080
