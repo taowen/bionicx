@@ -325,7 +325,12 @@ static int diagnose_signals(pid_t child) {
         if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
         if (!WIFSTOPPED(status)) continue;
         int signal_number = WSTOPSIG(status);
-        if (signal_number == SIGSYS || signal_number == SIGSEGV ||
+        /* Bootstrap single-step traps have already been consumed before this
+         * loop. A later SIGTRAP is an application crash/breakpoint (Chromium
+         * uses a deliberate trap for CHECK failures); suppressing it repeats
+         * the same instruction forever and hides the decisive PC. */
+        if (signal_number == SIGTRAP || signal_number == SIGSYS ||
+                signal_number == SIGSEGV ||
                 signal_number == SIGBUS || signal_number == SIGILL ||
                 signal_number == SIGABRT) {
             report_fatal_signal(child, signal_number);
@@ -333,8 +338,7 @@ static int diagnose_signals(pid_t child) {
             waitpid(child, &status, 0);
             return 128 + signal_number;
         }
-        int delivered = signal_number == SIGTRAP || signal_number == SIGSTOP
-                ? 0 : signal_number;
+        int delivered = signal_number == SIGSTOP ? 0 : signal_number;
         if (ptrace(PTRACE_CONT, child, NULL,
                    (void *)(long)delivered) != 0) return 22;
     }

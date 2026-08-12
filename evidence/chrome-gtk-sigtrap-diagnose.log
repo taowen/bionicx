@@ -1,0 +1,9 @@
+BIONICX propagated --disable-crashpad-for-testing to Chrome child
+BIONICX propagated --disable-crashpad-for-testing to Chrome child
+[32406:32406:0812/000230.046721:ERROR:chrome/browser/policy/browser_dm_token_storage_linux.cc:118] Error: /etc/machine-id contains 0 characters (32 were expected).
+[32406:32414:0812/000230.050247:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+bionicx-exec: signal=5 syscall=15 pc=0x6062f65ecc lr=0x6062f65d94 code=1 address=0x6062f65ecc
+bionicx-exec: registers x0=0x0 x1=0x0 x2=0x0 x3=0x0 x4=0x1 x5=0x7fdd90d4d0 x6=0x440000b7df x7=0x440000b7c0 sp=0x7fdd90d760
+bionicx-exec: pc mapping=605b630000-606897f000 r-xp 02df0000 fe:35 213253                         /data/user/0/io.taowen.bx/files/apps/chrome/opt/google/chrome/chrome file-offset=0xa725ecc
+bionicx-exec: lr mapping=605b630000-606897f000 r-xp 02df0000 fe:35 213253                         /data/user/0/io.taowen.bx/files/apps/chrome/opt/google/chrome/chrome file-offset=0xa725d94
+bionicx-exec: fault mapping=605b630000-606897f000 r-xp 02df0000 fe:35 213253                         /data/user/0/io.taowen.bx/files/apps/chrome/opt/google/chrome/chrome file-offset=0xa725ecc
