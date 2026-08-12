@@ -329,6 +329,11 @@ public class XClientRequestHandler implements RequestHandler {
                             GrabRequests.ungrabKey(client, inputStream, outputStream);
                         }
                         break;
+                    case ClientOpcodes.ALLOW_EVENTS:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.WINDOW_MANAGER, XServer.Lockable.INPUT_DEVICE)) {
+                            GrabRequests.allowEvents(client, inputStream, outputStream);
+                        }
+                        break;
                     case ClientOpcodes.GRAB_SERVER:
                         client.xServer.grabServer(client);
                         break;

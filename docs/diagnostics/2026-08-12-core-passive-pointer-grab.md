@@ -28,14 +28,21 @@ connections and drives three physical Android taps:
 BXTEST PASS passive-button-grab route=1
 BXTEST PASS glyph-cursor-grab resource=4194307
 BXTEST PASS passive-button-contention bad-access=1
+BXTEST PASS passive-button-replay click-through=1
 BXTEST PASS passive-button-owner-events normal-route=1
 BXTEST PASS passive-button-ungrab normal-route=1
-BXSUMMARY pointer-grab-x11 passed=5/5 xerrors=0
+BXSUMMARY pointer-grab-x11 passed=6/6 xerrors=0
 ```
 
+Parameter diagnostics showed IceWM's four remaining opcode-28 errors were
+`GrabModeSync` pointer registrations (`pointer=0 keyboard=1 confineTo=0
+cursor=0`), not cursor overrides. BionicX now freezes subsequent core release
+and motion events for those grabs and implements opcode 35 `ReplayPointer`:
+the initiating press is delivered first to the manager, then replayed to the
+normal client without re-triggering the passive grab, followed by queued events.
+The probe deliberately waits 250 ms before `XAllowEvents`, ensuring the physical
+release is frozen and drained only after the replayed press.
+
 Core X11 remains 22/22, keyboard grabs remain 9/9, and a fresh ordinary-app-UID
-IceWM run remains 3/3 with no unsupported opcodes. Parameter diagnostics show
-its remaining four opcode-28 errors are `GrabModeSync` pointer registrations
-(`pointer=0 keyboard=1 confineTo=0 cursor=0`), not cursor overrides.
-Synchronous modes and non-None confinement remain rejected until their complete
-semantics exist.
+IceWM run remains 3/3 with no unsupported opcodes or request errors. Other
+`AllowEvents` modes and non-None confinement remain explicit errors.

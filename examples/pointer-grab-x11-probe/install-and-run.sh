@@ -34,6 +34,8 @@ wait_log "BXREADY passive-button-grab tap-peer"
 # still consuming touches. Keep that UI transition out of the protocol test.
 sleep 0.3
 "${adb[@]}" shell input tap 1050 260
+wait_log "BXREADY passive-button-replay tap-peer"
+"${adb[@]}" shell input tap 1050 260
 wait_log "BXREADY passive-button-owner-events tap-grabber"
 "${adb[@]}" shell input tap 300 260
 wait_log "BXREADY passive-button-ungrab tap-peer"
@@ -43,5 +45,5 @@ wait_log "pointer-grab-x11-probe exited with 0"
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(READY|EVENT|TEST|SUMMARY|ERROR)|pointer-grab-x11-probe exited with')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY pointer-grab-x11 passed=5/5 xerrors=0" <<<"$result"
+grep -Fq "BXSUMMARY pointer-grab-x11 passed=6/6 xerrors=0" <<<"$result"
 grep -Fq "pointer-grab-x11-probe exited with 0" <<<"$result"

@@ -24,6 +24,6 @@ BXSUMMARY save-set-x11 passed=2/2 xerrors=0
 
 The client window survives as a viewable root child at its exact screen
 coordinates. A fresh ordinary-app-UID IceWM run remains 3/3 and now produces
-zero unsupported core opcodes. Separately, some recognized GrabButton requests
-still return `BadImplementation` for cursor overrides; that is tracked as the
-next semantic gap rather than hidden by the opcode count.
+zero unsupported core opcodes. The later passive-pointer-grab work identified
+the remaining recognized errors as synchronous-pointer registrations (not
+cursor overrides) and eliminated them with `ReplayPointer` support.

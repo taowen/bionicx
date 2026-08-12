@@ -11,6 +11,7 @@ import com.winlator.core.Bitmask;
 import com.winlator.xserver.Window;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.Cursor;
+import com.winlator.xserver.Pointer;
 import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.errors.BadAccess;
 import com.winlator.xserver.errors.BadValue;
@@ -102,7 +103,8 @@ public abstract class GrabRequests {
         Cursor cursor = cursorId == 0 ? null
                 : client.xServer.cursorManager.getCursor(cursorId);
         if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
-        if (pointerMode != 1 || keyboardMode != 1 || confineTo != 0) {
+        if ((pointerMode != 0 && pointerMode != 1)
+                || keyboardMode != 1 || confineTo != 0) {
             Log.w(TAG, "unsupported GrabButton modes pointer=" + pointerMode
                     + " keyboard=" + keyboardMode
                     + " confineTo=" + Integer.toUnsignedString(confineTo)
@@ -110,8 +112,28 @@ public abstract class GrabRequests {
             throw new BadImplementation();
         }
         if (!client.xServer.grabManager.addPassiveButtonGrab(window, button,
-                modifiers, ownerEvents, eventMask, client, cursor))
+                modifiers, ownerEvents, eventMask, client, cursor,
+                pointerMode == 0))
             throw new BadAccess();
+    }
+
+    public static void allowEvents(XClient client, XInputStream inputStream,
+                                   XOutputStream outputStream)
+            throws XRequestError {
+        int mode = client.getRequestData() & 0xff;
+        int timestamp = inputStream.readInt();
+        if (timestamp != 0) throw new BadImplementation();
+        if (client.xServer.grabManager.getClient() != client) return;
+
+        if (mode == 2) { // ReplayPointer
+            Pointer.Button button =
+                    client.xServer.grabManager.getPassiveActivationButton();
+            if (!client.xServer.grabManager.isPointerSynchronous()
+                    || button == null) return;
+            client.xServer.grabManager.deactivatePointerGrabForReplay();
+            client.xServer.inputDeviceManager.replayPointerButtonPress(button);
+        }
+        else throw new BadImplementation();
     }
 
     public static void ungrabButton(XClient client, XInputStream inputStream,

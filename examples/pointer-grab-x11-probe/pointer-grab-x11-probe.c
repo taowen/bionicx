@@ -97,6 +97,66 @@ static bool wait_for_click(Display *wanted_display, Window wanted_window,
     return pressed && released && !leaked && state_valid;
 }
 
+static bool wait_for_replayed_click(Display *manager, Window manager_window,
+                                    Display *peer, Window peer_window,
+                                    double timeout_seconds) {
+    double deadline = now_seconds() + timeout_seconds;
+    bool manager_press = false;
+    bool replay_press = false;
+    bool replay_release = false;
+    bool invalid = false;
+    while (now_seconds() < deadline && !replay_release) {
+        Display *displays[] = {manager, peer};
+        for (size_t i = 0; i < 2; ++i) {
+            while (XPending(displays[i])) {
+                XEvent event;
+                XNextEvent(displays[i], &event);
+                if (event.type != ButtonPress && event.type != ButtonRelease)
+                    continue;
+                printf("BXEVENT replay source=%s type=%s window=0x%lx state=0x%x\n",
+                        displays[i] == manager ? "manager" : "peer",
+                        event.type == ButtonPress ? "press" : "release",
+                        event.xbutton.window, event.xbutton.state);
+                fflush(stdout);
+                if (displays[i] == manager && event.type == ButtonPress
+                        && event.xbutton.window == manager_window
+                        && !manager_press) {
+                    manager_press = true;
+                    /* Let the physical release reach the server while the
+                     * synchronous pointer is frozen. ReplayPointer must drain
+                     * it only after replaying this press to the peer. */
+                    usleep(250000);
+                    XAllowEvents(manager, ReplayPointer, CurrentTime);
+                    XFlush(manager);
+                }
+                else if (displays[i] == peer
+                        && event.xbutton.window == peer_window) {
+                    if (event.type == ButtonPress) {
+                        replay_press = true;
+                        if (event.xbutton.state != 0) invalid = true;
+                    }
+                    else {
+                        replay_release = true;
+                        if (event.xbutton.state != Button1Mask) invalid = true;
+                    }
+                }
+                else invalid = true;
+            }
+        }
+        if (replay_release) break;
+        fd_set descriptors;
+        FD_ZERO(&descriptors);
+        int manager_fd = ConnectionNumber(manager);
+        int peer_fd = ConnectionNumber(peer);
+        FD_SET(manager_fd, &descriptors);
+        FD_SET(peer_fd, &descriptors);
+        int max_fd = manager_fd > peer_fd ? manager_fd : peer_fd;
+        struct timeval timeout = {.tv_sec = 0, .tv_usec = 50000};
+        (void)select(max_fd + 1, &descriptors, NULL, NULL, &timeout);
+    }
+    return manager_press && replay_press && replay_release && !invalid;
+}
+
 int main(int argc, char **argv) {
     int duration = argc > 1 ? atoi(argv[1]) : 4;
     Display *grabber = XOpenDisplay(NULL);
@@ -141,6 +201,18 @@ int main(int argc, char **argv) {
     drain(grabber);
     drain(peer);
 
+    XGrabButton(grabber, AnyButton, AnyModifier, root, False,
+            ButtonPressMask, GrabModeSync, GrabModeAsync, None, None);
+    XSync(grabber, False);
+    printf("BXREADY passive-button-replay tap-peer\n");
+    fflush(stdout);
+    bool replay_ok = wait_for_replayed_click(grabber, root, peer,
+            peer_window, 5.0);
+    XUngrabButton(grabber, AnyButton, AnyModifier, root);
+    XSync(grabber, False);
+    drain(grabber);
+    drain(peer);
+
     XGrabButton(grabber, AnyButton, AnyModifier, root, True,
             ButtonPressMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync,
             None, None);
@@ -163,14 +235,17 @@ int main(int argc, char **argv) {
             glyph_cursor_ok ? "PASS" : "FAIL", grab_cursor);
     printf("BXTEST %s passive-button-contention bad-access=%d\n",
             contention_ok ? "PASS" : "FAIL", expected_bad_access);
+    printf("BXTEST %s passive-button-replay click-through=%d\n",
+            replay_ok ? "PASS" : "FAIL", replay_ok);
     printf("BXTEST %s passive-button-owner-events normal-route=%d\n",
             owner_events_ok ? "PASS" : "FAIL", owner_events_ok);
     printf("BXTEST %s passive-button-ungrab normal-route=%d\n",
             ungrab_route_ok ? "PASS" : "FAIL", ungrab_route_ok);
-    bool passed = glyph_cursor_ok && passive_route_ok && contention_ok && owner_events_ok
+    bool passed = glyph_cursor_ok && passive_route_ok && contention_ok
+            && replay_ok && owner_events_ok
             && ungrab_route_ok && x_errors == 0;
-    printf("BXSUMMARY pointer-grab-x11 passed=%d/5 xerrors=%d\n",
-            passed ? 5 : 0, x_errors);
+    printf("BXSUMMARY pointer-grab-x11 passed=%d/6 xerrors=%d\n",
+            passed ? 6 : 0, x_errors);
     fflush(stdout);
     sleep((unsigned)(duration > 0 && duration <= 60 ? duration : 4));
 

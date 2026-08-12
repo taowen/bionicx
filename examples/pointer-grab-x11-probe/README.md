@@ -7,11 +7,13 @@ window receives the physical Android tap. The grab uses a real cursor-font
 routed only to the grab owner. A second grab with `owner_events=True` verifies
 normal delivery to a window selected by that same connection. It then calls
 `UngrabButton` and verifies that the final tap follows normal pointer routing
-to the peer. A competing registration from the peer must receive `BadAccess`.
+to the peer. A synchronous passive grab additionally uses `ReplayPointer` to
+verify that the manager sees the press before it is replayed to the peer. A
+competing registration from the peer must receive `BadAccess`.
 
 ```sh
 ANDROID_SERIAL=<serial> examples/pointer-grab-x11-probe/install-and-run.sh
 ```
 
-Success requires five strict checks, zero unexpected X errors, and a
+Success requires six strict checks, zero unexpected X errors, and a
 normal process exit. The taps are server input, not synthetic X events.

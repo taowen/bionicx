@@ -16,12 +16,14 @@
 - Core asynchronous passive `GrabKey`/`UngrabKey`, including exact or wildcard
   modifier matching, ancestor activation, automatic release, conflict checks,
   and client/window cleanup.
-- Core asynchronous passive `GrabButton`/`UngrabButton`, including exact or
+- Core passive `GrabButton`/`UngrabButton`, including exact or
   wildcard button/modifier matching, ancestor activation, owner-events routing,
   automatic release, conflict checks, client/window cleanup, and cursor
   overrides backed by cursor-font `CreateGlyphCursor` resources. Cursor-font
   glyphs currently use a built-in crosshair image rather than glyph-exact
-  shapes. Synchronous pointer mode and non-None confinement remain explicit
+  shapes. Synchronous pointer grabs freeze later core events and support
+  `AllowEvents(ReplayPointer)` click-through, including queued release/motion
+  delivery. Other `AllowEvents` modes and non-None confinement remain explicit
   errors.
 - Core `GrabServer`/`UngrabServer`: other connections, including new setup
   handshakes, are deferred while the owner continues; explicit ungrab and owner
