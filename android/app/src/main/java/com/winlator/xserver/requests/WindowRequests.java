@@ -392,23 +392,29 @@ public abstract class WindowRequests {
     }
 
     public static void setInputFocus(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
-        WindowManager.FocusRevertTo focusRevertTo = WindowManager.FocusRevertTo.values()[client.getRequestData()];
+        int revertValue = client.getRequestData() & 0xff;
+        if (revertValue > WindowManager.FocusRevertTo.PARENT.ordinal())
+            throw new BadValue(revertValue);
+        WindowManager.FocusRevertTo focusRevertTo =
+                WindowManager.FocusRevertTo.values()[revertValue];
         int windowId = inputStream.readInt();
         inputStream.skip(4);
 
-        switch (focusRevertTo) {
-            case NONE:
-                client.xServer.windowManager.setFocus(null, focusRevertTo);
-                break;
-            case POINTER_ROOT:
-                client.xServer.windowManager.setFocus(client.xServer.windowManager.rootWindow, focusRevertTo);
-                break;
-            case PARENT:
-                Window window = client.xServer.windowManager.getWindow(windowId);
-                if (window == null) throw new BadWindow(windowId);
-                client.xServer.windowManager.setFocus(window, focusRevertTo);
-                break;
+        // The request's data byte is the policy used only if the selected
+        // focus window later becomes unviewable.  It does not select the
+        // focus window itself; None and PointerRoot are special window IDs.
+        Window focusedWindow;
+        if (windowId == 0) focusedWindow = null;
+        else if (windowId == 1) {
+            client.xServer.windowManager.setPointerRootFocus(focusRevertTo);
+            return;
         }
+        else {
+            focusedWindow = client.xServer.windowManager.getWindow(windowId);
+            if (focusedWindow == null) throw new BadWindow(windowId);
+            if (!focusedWindow.attributes.isViewable()) throw new BadMatch();
+        }
+        client.xServer.windowManager.setFocus(focusedWindow, focusRevertTo);
     }
 
     public static void getInputFocus(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
@@ -419,7 +425,9 @@ public abstract class WindowRequests {
             outputStream.writeByte((byte)client.xServer.windowManager.getFocusRevertTo().ordinal());
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(0);
-            outputStream.writeInt(focusedWindow != null ? focusedWindow.id : 0);
+            outputStream.writeInt(focusedWindow == null ? 0
+                    : client.xServer.windowManager.isPointerRootFocus()
+                    ? 1 : focusedWindow.id);
             outputStream.writePad(20);
         }
     }

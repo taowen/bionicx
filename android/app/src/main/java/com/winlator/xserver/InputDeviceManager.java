@@ -360,7 +360,8 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
 
     @Override
     public void onKeyPress(byte keycode, int keysym) {
-        Window focusedWindow = xServer.windowManager.getFocusedWindow();
+        Window focusedWindow = xServer.windowManager.resolveFocusedWindow(
+                xServer.pointer.getClampedX(), xServer.pointer.getClampedY());
         if (focusedWindow == null) return;
         xServer.grabManager.activatePassiveKeyGrab(focusedWindow, keycode,
                 xServer.keyboard.getModifiersMask().getBits());
@@ -423,7 +424,8 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
     public void onKeyRelease(byte keycode) {
         boolean allKeysReleased =
                 xServer.keyboard.willHaveNoPressedKeysAfterRelease(keycode);
-        Window focusedWindow = xServer.windowManager.getFocusedWindow();
+        Window focusedWindow = xServer.windowManager.resolveFocusedWindow(
+                xServer.pointer.getClampedX(), xServer.pointer.getClampedY());
         if (focusedWindow == null) {
             xServer.grabManager.releasePassiveKeyGrab(allKeysReleased);
             return;

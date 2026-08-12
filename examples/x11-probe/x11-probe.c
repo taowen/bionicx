@@ -130,6 +130,20 @@ int main(int argc, char **argv) {
     Window root = RootWindow(display, screen);
     int width = DisplayWidth(display, screen);
     int height = DisplayHeight(display, screen);
+
+    before = x_errors;
+    Window initial_focus = None;
+    int initial_revert = 0;
+    XGetInputFocus(display, &initial_focus, &initial_revert);
+    XSync(display, False);
+    bool initial_focus_ok = x_errors == before &&
+            initial_focus == PointerRoot;
+    snprintf(detail, sizeof(detail), "focus=0x%lx expected=0x%lx revert=%d",
+             initial_focus, (unsigned long)PointerRoot, initial_revert);
+    result("initial-pointer-root-focus", initial_focus_ok,
+           initial_focus_ok ? detail : last_x_error);
+    RECORD(initial_focus_ok);
+
     Window window = XCreateSimpleWindow(display, root, 0, 0,
                                          (unsigned)width, (unsigned)height, 0,
                                          BlackPixel(display, screen),
@@ -170,6 +184,40 @@ int main(int argc, char **argv) {
     before = x_errors;
     XSetInputFocus(display, window, RevertToParent, CurrentTime);
     RECORD(sync_step(display, "input-focus", before));
+
+    before = x_errors;
+    Window focused_window = None;
+    int focus_revert = 0;
+    XSetInputFocus(display, window, RevertToPointerRoot, CurrentTime);
+    XGetInputFocus(display, &focused_window, &focus_revert);
+    XSync(display, False);
+    bool focus_policy_ok = x_errors == before && focused_window == window &&
+            focus_revert == RevertToPointerRoot;
+    snprintf(detail, sizeof(detail), "window=0x%lx expected=0x%lx revert=%d",
+             focused_window, window, focus_revert);
+    result("input-focus-revert-policy", focus_policy_ok,
+           focus_policy_ok ? detail : last_x_error);
+    RECORD(focus_policy_ok);
+
+    before = x_errors;
+    int keysyms_per_keycode = 0;
+    KeySym *keyboard_map = XGetKeyboardMapping(display, 24, 2,
+                                                &keysyms_per_keycode);
+    XSync(display, False);
+    bool keyboard_map_ok = x_errors == before && keyboard_map != NULL &&
+            keysyms_per_keycode == 2 && keyboard_map[0] == XK_q &&
+            keyboard_map[1] == XK_Q && keyboard_map[2] == XK_w &&
+            keyboard_map[3] == XK_W;
+    snprintf(detail, sizeof(detail), "width=%d q=0x%lx Q=0x%lx w=0x%lx W=0x%lx",
+             keysyms_per_keycode,
+             keyboard_map != NULL ? keyboard_map[0] : 0,
+             keyboard_map != NULL ? keyboard_map[1] : 0,
+             keyboard_map != NULL ? keyboard_map[2] : 0,
+             keyboard_map != NULL ? keyboard_map[3] : 0);
+    result("keyboard-mapping-levels", keyboard_map_ok,
+           keyboard_map_ok ? detail : last_x_error);
+    RECORD(keyboard_map_ok);
+    if (keyboard_map != NULL) XFree(keyboard_map);
 
     const char payload[] = "bionicx-property-roundtrip";
     before = x_errors;
@@ -220,6 +268,78 @@ int main(int argc, char **argv) {
     result("font-open-close", font_lifecycle_ok,
            font_lifecycle_ok ? "cursor resource released" : last_x_error);
     RECORD(font_lifecycle_ok);
+
+    before = x_errors;
+    XFontStruct *fixed_font = XLoadQueryFont(display, "fixed");
+    XSync(display, False);
+    bool fixed_font_ok = x_errors == before && fixed_font != NULL &&
+            fixed_font->min_bounds.width > 0 &&
+            fixed_font->ascent > 0 && fixed_font->descent >= 0;
+    snprintf(detail, sizeof(detail), "width=%d ascent=%d descent=%d",
+             fixed_font ? fixed_font->min_bounds.width : -1,
+             fixed_font ? fixed_font->ascent : -1,
+             fixed_font ? fixed_font->descent : -1);
+    result("core-font-query", fixed_font_ok,
+           fixed_font_ok ? detail : last_x_error);
+    RECORD(fixed_font_ok);
+
+    int direction = -1;
+    int font_ascent = -1;
+    int font_descent = -1;
+    XCharStruct overall = {0};
+    before = x_errors;
+    if (fixed_font) XQueryTextExtents(display, fixed_font->fid,
+                                      "BionicX", 7, &direction,
+                                      &font_ascent, &font_descent, &overall);
+    XSync(display, False);
+    bool text_extents_ok = x_errors == before && fixed_font &&
+            direction == FontLeftToRight && overall.width > 0 &&
+            font_ascent == fixed_font->ascent &&
+            font_descent == fixed_font->descent;
+    snprintf(detail, sizeof(detail), "width=%d direction=%d",
+             overall.width, direction);
+    result("core-font-text-extents", text_extents_ok,
+           text_extents_ok ? detail : last_x_error);
+    RECORD(text_extents_ok);
+
+    int fixed_name_count = 0;
+    before = x_errors;
+    char **fixed_names = XListFonts(display, "fixed", 8,
+                                    &fixed_name_count);
+    XSync(display, False);
+    bool list_fonts_ok = x_errors == before && fixed_names &&
+            fixed_name_count == 1 && strcmp(fixed_names[0], "fixed") == 0;
+    snprintf(detail, sizeof(detail), "count=%d", fixed_name_count);
+    result("core-font-list", list_fonts_ok,
+           list_fonts_ok ? detail : last_x_error);
+    RECORD(list_fonts_ok);
+    if (fixed_names) XFreeFontNames(fixed_names);
+    if (fixed_font) XFreeFont(display, fixed_font);
+
+    XColor allocated_color = {.red = 0x1234, .green = 0x5678,
+                              .blue = 0x9abc,
+                              .flags = DoRed | DoGreen | DoBlue};
+    before = x_errors;
+    Status alloc_color_status = XAllocColor(
+            display, DefaultColormap(display, screen), &allocated_color);
+    XColor queried_color = {.pixel = allocated_color.pixel};
+    XQueryColor(display, DefaultColormap(display, screen), &queried_color);
+    XSync(display, False);
+    bool truecolor_ok = x_errors == before && alloc_color_status &&
+            allocated_color.pixel == 0x12569a &&
+            allocated_color.red == 0x1212 &&
+            allocated_color.green == 0x5656 &&
+            allocated_color.blue == 0x9a9a &&
+            queried_color.red == allocated_color.red &&
+            queried_color.green == allocated_color.green &&
+            queried_color.blue == allocated_color.blue;
+    snprintf(detail, sizeof(detail),
+             "pixel=0x%lx rgb=%04x/%04x/%04x",
+             allocated_color.pixel, queried_color.red,
+             queried_color.green, queried_color.blue);
+    result("truecolor-alloc-query", truecolor_ok,
+           truecolor_ok ? detail : last_x_error);
+    RECORD(truecolor_ok);
 
     before = x_errors;
     Pixmap pixmap = XCreatePixmap(display, window, 160, 100,
@@ -468,6 +588,15 @@ int main(int argc, char **argv) {
                                         &foreground, &background, 0, 0);
     XDefineCursor(display, window, cursor);
     RECORD(sync_step(display, "cursor-create-define", before));
+
+    XColor recolor_foreground = {.red = 0xffff, .green = 0x2222,
+                                 .blue = 0x1111};
+    XColor recolor_background = {.red = 0x1111, .green = 0x2222,
+                                 .blue = 0xffff};
+    before = x_errors;
+    XRecolorCursor(display, cursor, &recolor_foreground,
+                   &recolor_background);
+    RECORD(sync_step(display, "cursor-recolor", before));
 
     before = x_errors;
     XSetSelectionOwner(display, clipboard, window, CurrentTime);

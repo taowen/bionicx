@@ -87,14 +87,20 @@ The keyboard-grab probe uses three real Android-injected keys to verify
 cross-client `GrabKeyboard`, `UngrabKeyboard`, owner-events routing, contention,
 and disconnect cleanup.
 
-Chrome, WPS and IceWM consume one content-addressed Debian 13 (trixie) desktop
-rootfs. A pinned ARM64 Debian image installs all three with ordinary `apt` and
+Chrome, WPS, IceWM and xterm consume one content-addressed Debian 13 (trixie)
+desktop rootfs. A pinned ARM64 Debian image installs all four with ordinary `apt` and
 `dpkg`, including maintainer scripts, triggers, package data and the dpkg
 database. The Debian archive snapshot, OCI digest and proprietary application
 package hashes are fixed inputs. Application `/opt` payloads are split into
 profile-private trees after installation; Android never runs apt. Host bundles
 hard-link the canonical system tree, and the device installer skips transfer
 when its content ID is already installed.
+
+The xterm profile is the first package-installed terminal boundary. It starts
+Debian bash through a real PTY and verifies Android-injected keyboard input,
+command execution and rendered output. Loader-mode profiles automatically
+export their library search path so glibc parents can `exec` package-installed
+glibc children without PRoot.
 
 ## Add an application
 

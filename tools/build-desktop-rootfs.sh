@@ -111,6 +111,15 @@ rm -f "$compat/app/bin/hello-x11"
 cp -a "$compat/rootfs/usr/lib/." "$output_dir/rootfs/usr/lib/"
 "$repo_dir/tools/build-gladio.sh" "$output_dir/rootfs/usr/lib"
 
+# GUI terminal emulators execute a login shell as a child.  With no chroot or
+# PRoot the kernel cannot resolve Debian's stock /lib/ld-linux path, so adapt
+# the shared bash entrypoint to the app-private loader.  This is a deliberate
+# executable compatibility overlay; dpkg's original package metadata remains
+# available for auditing.
+patchelf --set-interpreter \
+    /data/data/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1 \
+    "$output_dir/rootfs/usr/bin/bash"
+
 # Debian's generated pixbuf cache names modules by absolute FHS paths.  There
 # is intentionally no chroot/proot on Android, so relocate those text entries
 # to the app-private runtime prefix while retaining Debian's directory layout.
@@ -118,6 +127,30 @@ pixbuf_cache="$output_dir/rootfs/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0
 if [[ -f "$pixbuf_cache" ]]; then
     device_root=/data/data/io.taowen.bx/files/rootfs
     sed -i "s|\"/usr/lib/|\"$device_root/usr/lib/|g" "$pixbuf_cache"
+fi
+
+# Fontconfig is another package service whose configuration contains absolute
+# FHS paths. Keep Debian's enabled conf.d policy, but make it self-contained
+# and relocate only filesystem locations into the immutable Android rootfs.
+fontconfig_root="$output_dir/rootfs/etc/fonts"
+if [[ -f "$fontconfig_root/fonts.conf" ]]; then
+    device_root=/data/data/io.taowen.bx/files/rootfs
+    sed -i \
+        -e "s|<dir>/usr/share/fonts</dir>|<dir>$device_root/usr/share/fonts</dir>|" \
+        -e "s|<dir>/usr/local/share/fonts</dir>|<dir>$device_root/usr/local/share/fonts</dir>|" \
+        -e "s|<cachedir>/var/cache/fontconfig</cachedir>|<cachedir>$device_root/var/cache/fontconfig</cachedir>|" \
+        "$fontconfig_root/fonts.conf"
+    for config in "$fontconfig_root/conf.d"/*; do
+        target="$(readlink "$config" || true)"
+        [[ "$target" == /usr/share/fontconfig/conf.avail/* ]] || continue
+        source="$output_dir/rootfs$target"
+        [[ -f "$source" ]] || {
+            echo "missing Fontconfig policy target: $target" >&2
+            exit 1
+        }
+        rm "$config"
+        cp "$source" "$config"
+    done
 fi
 
 "$repo_dir/tools/check-glibc-symbol-floor.py" "$output_dir/rootfs" --maximum 2.41

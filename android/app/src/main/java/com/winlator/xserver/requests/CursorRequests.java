@@ -37,12 +37,12 @@ public abstract class CursorRequests {
             throw new BadMatch();
         }
 
-        byte foreRed = (byte)inputStream.readShort();
-        byte foreGreen = (byte)inputStream.readShort();
-        byte foreBlue = (byte)inputStream.readShort();
-        byte backRed = (byte)inputStream.readShort();
-        byte backGreen = (byte)inputStream.readShort();
-        byte backBlue = (byte)inputStream.readShort();
+        int foreRed = inputStream.readUnsignedShort();
+        int foreGreen = inputStream.readUnsignedShort();
+        int foreBlue = inputStream.readUnsignedShort();
+        int backRed = inputStream.readUnsignedShort();
+        int backGreen = inputStream.readUnsignedShort();
+        int backBlue = inputStream.readUnsignedShort();
         short x = inputStream.readShort();
         short y = inputStream.readShort();
 
@@ -50,6 +50,24 @@ public abstract class CursorRequests {
         if (cursor == null) throw new BadIdChoice(cursorId);
         client.xServer.cursorManager.recolorCursor(cursor, foreRed, foreGreen, foreBlue, backRed, backGreen, backBlue);
         client.registerAsOwnerOfResource(cursor);
+    }
+
+    public static void recolorCursor(XClient client,
+                                     XInputStream inputStream,
+                                     XOutputStream outputStream)
+            throws XRequestError {
+        int cursorId = inputStream.readInt();
+        Cursor cursor = client.xServer.cursorManager.getCursor(cursorId);
+        if (cursor == null)
+            throw new com.winlator.xserver.errors.BadCursor(cursorId);
+        int foreRed = inputStream.readUnsignedShort();
+        int foreGreen = inputStream.readUnsignedShort();
+        int foreBlue = inputStream.readUnsignedShort();
+        int backRed = inputStream.readUnsignedShort();
+        int backGreen = inputStream.readUnsignedShort();
+        int backBlue = inputStream.readUnsignedShort();
+        client.xServer.cursorManager.recolorCursor(cursor, foreRed, foreGreen,
+                foreBlue, backRed, backGreen, backBlue);
     }
 
     public static void freeCursor(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {

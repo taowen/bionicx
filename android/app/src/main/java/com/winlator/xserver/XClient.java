@@ -29,7 +29,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
             new ArrayMap<>();
     private final ArrayMap<Window, Integer> randrEventMasks = new ArrayMap<>();
     private final ArrayList<XResource> resources = new ArrayList<>();
-    private final ArraySet<Integer> openFonts = new ArraySet<>();
+    private final ArrayMap<Integer, String> openFonts = new ArrayMap<>();
     private final ArrayList<Window> saveSet = new ArrayList<>();
     private final ArrayList<Callback<XClient>> onDestroyListeners = new ArrayList<>();
 
@@ -242,16 +242,22 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
         return xServer.resourceIDs.isInInterval(id, resourceIDBase);
     }
 
-    public boolean openFont(int id) {
-        return openFonts.add(id);
+    public boolean openFont(int id, String name) {
+        if (openFonts.containsKey(id)) return false;
+        openFonts.put(id, name);
+        return true;
     }
 
     public boolean closeFont(int id) {
-        return openFonts.remove(id);
+        return openFonts.remove(id) != null;
     }
 
     public boolean hasOpenFont(int id) {
-        return openFonts.contains(id);
+        return openFonts.containsKey(id);
+    }
+
+    public String getOpenFontName(int id) {
+        return openFonts.get(id);
     }
 
     public boolean changeSaveSet(Window window, boolean insert) {

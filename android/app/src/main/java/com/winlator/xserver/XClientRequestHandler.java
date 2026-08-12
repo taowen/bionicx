@@ -12,6 +12,7 @@ import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.extensions.Extension;
 import com.winlator.xserver.requests.AtomRequests;
 import com.winlator.xserver.requests.CursorRequests;
+import com.winlator.xserver.requests.ColorRequests;
 import com.winlator.xserver.requests.DrawRequests;
 import com.winlator.xserver.requests.ExtensionRequests;
 import com.winlator.xserver.requests.FontRequests;
@@ -373,6 +374,14 @@ public class XClientRequestHandler implements RequestHandler {
                         FontRequests.closeFont(client, inputStream,
                                 outputStream);
                         break;
+                    case ClientOpcodes.QUERY_FONT:
+                        FontRequests.queryFont(client, inputStream,
+                                outputStream);
+                        break;
+                    case ClientOpcodes.QUERY_TEXT_EXTENTS:
+                        FontRequests.queryTextExtents(client, inputStream,
+                                outputStream);
+                        break;
                     case ClientOpcodes.LIST_FONTS:
                         FontRequests.listFonts(client, inputStream, outputStream);
                         break;
@@ -466,6 +475,14 @@ public class XClientRequestHandler implements RequestHandler {
                     case ClientOpcodes.FREE_COLORMAP:
                         client.skipRequest();
                         break;
+                    case ClientOpcodes.ALLOC_COLOR:
+                        ColorRequests.allocColor(client, inputStream,
+                                outputStream);
+                        break;
+                    case ClientOpcodes.QUERY_COLORS:
+                        ColorRequests.queryColors(client, inputStream,
+                                outputStream);
+                        break;
                     case ClientOpcodes.CREATE_CURSOR:
                         try (XLock lock = client.xServer.lock(XServer.Lockable.PIXMAP_MANAGER, XServer.Lockable.DRAWABLE_MANAGER, XServer.Lockable.CURSOR_MANAGER)) {
                             CursorRequests.createCursor(client, inputStream, outputStream);
@@ -482,6 +499,13 @@ public class XClientRequestHandler implements RequestHandler {
                     case ClientOpcodes.FREE_CURSOR:
                         try (XLock lock = client.xServer.lock(XServer.Lockable.PIXMAP_MANAGER, XServer.Lockable.DRAWABLE_MANAGER, XServer.Lockable.CURSOR_MANAGER)) {
                             CursorRequests.freeCursor(client, inputStream, outputStream);
+                        }
+                        break;
+                    case ClientOpcodes.RECOLOR_CURSOR:
+                        try (XLock lock = client.xServer.lock(
+                                XServer.Lockable.CURSOR_MANAGER)) {
+                            CursorRequests.recolorCursor(client, inputStream,
+                                    outputStream);
                         }
                         break;
                     case ClientOpcodes.QUERY_EXTENSION:

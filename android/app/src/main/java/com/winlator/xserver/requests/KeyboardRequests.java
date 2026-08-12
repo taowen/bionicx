@@ -22,14 +22,15 @@ public abstract class KeyboardRequests {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
             outputStream.writeByte(KEYSYMS_PER_KEYCODE);
             outputStream.writeShort(client.getSequenceNumber());
-            outputStream.writeInt(count);
+            outputStream.writeInt(count * KEYSYMS_PER_KEYCODE);
             outputStream.writePad(24);
 
-            int i = firstKeycode - Keyboard.MIN_KEYCODE;
-            while (count != 0) {
-                outputStream.writeInt(client.xServer.keyboard.keysyms[i]);
-                count--;
-                i++;
+            int first = (firstKeycode & 0xff) - Keyboard.MIN_KEYCODE;
+            for (int key = 0; key < count; ++key) {
+                int base = (first + key) * KEYSYMS_PER_KEYCODE;
+                for (int level = 0; level < KEYSYMS_PER_KEYCODE; ++level)
+                    outputStream.writeInt(
+                            client.xServer.keyboard.keysyms[base + level]);
             }
         }
     }

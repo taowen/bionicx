@@ -28,8 +28,8 @@ public class CursorManager extends XResourceManager {
         return cursor;
     }
 
-    public Cursor createGlyphCursor(int id, int foreground, int background) {
-        if (cursors.indexOfKey(id) >= 0) return null;
+    private static void paintGlyphCursor(Drawable drawable, int foreground,
+                                         int background) {
         Bitmap bitmap = Bitmap.createBitmap(17, 17, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         Paint outline = new Paint();
@@ -42,8 +42,19 @@ public class CursorManager extends XResourceManager {
         stroke.setStrokeWidth(2.0f);
         canvas.drawLine(8, 1, 8, 15, stroke);
         canvas.drawLine(1, 8, 15, 8, stroke);
+        drawable.getData().rewind();
+        bitmap.copyPixelsToBuffer(drawable.getData());
+        drawable.getData().rewind();
+        drawable.forceUpdate();
+        bitmap.recycle();
+    }
+
+    public Cursor createGlyphCursor(int id, int foreground, int background) {
+        if (cursors.indexOfKey(id) >= 0) return null;
+        Bitmap bitmap = Bitmap.createBitmap(17, 17, Bitmap.Config.ARGB_8888);
         Drawable drawable = Drawable.fromBitmap(bitmap);
         bitmap.recycle();
+        paintGlyphCursor(drawable, foreground, background);
         Cursor cursor = new Cursor(id, 8, 8, drawable, drawable, null);
         cursors.put(id, cursor);
         triggerOnCreateResourceListener(cursor);
@@ -67,11 +78,27 @@ public class CursorManager extends XResourceManager {
         return result;
     }
 
-    public void recolorCursor(Cursor cursor, byte foreRed, byte foreGreen, byte foreBlue, byte backRed, byte backGreen, byte backBlue) {
+    public void recolorCursor(Cursor cursor, int foreRed, int foreGreen,
+                              int foreBlue, int backRed, int backGreen,
+                              int backBlue) {
+        byte foreRed8 = (byte)(foreRed >>> 8);
+        byte foreGreen8 = (byte)(foreGreen >>> 8);
+        byte foreBlue8 = (byte)(foreBlue >>> 8);
+        byte backRed8 = (byte)(backRed >>> 8);
+        byte backGreen8 = (byte)(backGreen >>> 8);
+        byte backBlue8 = (byte)(backBlue >>> 8);
         if (cursor.maskImage != null) {
             boolean visible = !isEmptyMaskImage(cursor.maskImage);
             cursor.setVisible(visible);
-            if (visible) cursor.cursorImage.drawAlphaMaskedBitmap(foreRed, foreGreen, foreBlue, backRed, backGreen, backBlue, cursor.sourceImage, cursor.maskImage);
+            if (visible) cursor.cursorImage.drawAlphaMaskedBitmap(foreRed8,
+                    foreGreen8, foreBlue8, backRed8, backGreen8, backBlue8,
+                    cursor.sourceImage, cursor.maskImage);
         }
+        else if (cursor.sourceImage == cursor.cursorImage)
+            paintGlyphCursor(cursor.cursorImage,
+                    0xff000000 | ((foreRed >>> 8) << 16)
+                            | ((foreGreen >>> 8) << 8) | (foreBlue >>> 8),
+                    0xff000000 | ((backRed >>> 8) << 16)
+                            | ((backGreen >>> 8) << 8) | (backBlue >>> 8));
     }
 }

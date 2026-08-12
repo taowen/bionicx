@@ -13,7 +13,11 @@ Covered operations:
 - GC, Pixmap rendering, `CopyArea`, both PolyPoint coordinate modes, and tiled
   window-background pixmaps used by `ClearArea`;
 - a custom cursor and CLIPBOARD selection ownership;
-- cursor-font open/close resource lifetime;
+- cursor-font open/close resource lifetime plus fixed-font query, text metrics
+  and font-name enumeration;
+- root TrueColor allocation/query round trips and cursor recoloring;
+- initial/dynamic `PointerRoot` focus, independent focus revert policy and
+  exact lower/upper keysym pairs from the core keyboard map;
 - synthetic ClientMessage delivery and real Android key/touch events;
 - strict core modifier-state semantics for lower-case, Shift press/release and
   shifted underscore input.

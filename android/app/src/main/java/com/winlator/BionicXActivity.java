@@ -132,6 +132,17 @@ public final class BionicXActivity extends Activity {
                 command.add(variable.getKey() + "="
                         + profile.expand(this, variable.getValue()));
             }
+            // --library-path only affects the first image loaded by ld.so.
+            // Export the same search path by default so a glibc parent can
+            // exec package-installed glibc children without a chroot/PRoot.
+            // Profiles remain free to override it (for application-private
+            // libraries such as WPS or Chrome).
+            if (profile.mode.equals("loader")
+                    && !profile.environment.containsKey("LD_LIBRARY_PATH")) {
+                command.add("--env");
+                command.add("LD_LIBRARY_PATH="
+                        + profile.expand(this, profile.libraryPath));
+            }
             if (profile.compatibility.contains("android-dns")
                     && !profile.environment.containsKey("BIONICX_DNS_SERVERS")) {
                 List<String> servers = new NetworkHelper(this).getIPv4DnsServers();

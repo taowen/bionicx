@@ -29,6 +29,7 @@ public class WindowManager extends XResourceManager {
     public final DrawableManager drawableManager;
     private Window focusedWindow;
     private FocusRevertTo focusRevertTo = FocusRevertTo.NONE;
+    private boolean pointerRootFocus;
     private final ArrayList<OnWindowModificationListener> onWindowModificationListeners = new ArrayList<>();
 
     public interface OnWindowModificationListener {
@@ -53,6 +54,11 @@ public class WindowManager extends XResourceManager {
         Drawable drawable = drawableManager.createDrawable(id, screenInfo.width, screenInfo.height, drawableManager.getVisual());
         rootWindow = new Window(id, drawable, 0, 0, screenInfo.width, screenInfo.height, null);
         rootWindow.attributes.setMapped(true);
+        // Xorg starts with the special PointerRoot focus.  Represent it as
+        // rootWindow plus POINTER_ROOT, and resolve it dynamically for input.
+        focusedWindow = rootWindow;
+        focusRevertTo = FocusRevertTo.POINTER_ROOT;
+        pointerRootFocus = true;
         windows.put(id, rootWindow);
     }
 
@@ -150,12 +156,15 @@ public class WindowManager extends XResourceManager {
         switch (focusRevertTo) {
             case NONE:
                 focusedWindow = null;
+                pointerRootFocus = false;
                 break;
             case POINTER_ROOT:
                 focusedWindow = rootWindow;
+                pointerRootFocus = true;
                 break;
             case PARENT:
                 if (focusedWindow.getParent() != null) focusedWindow = focusedWindow.getParent();
+                pointerRootFocus = false;
                 break;
         }
     }
@@ -163,6 +172,28 @@ public class WindowManager extends XResourceManager {
     public void setFocus(Window focusedWindow, FocusRevertTo focusRevertTo) {
         this.focusedWindow = focusedWindow;
         this.focusRevertTo = focusRevertTo;
+        pointerRootFocus = false;
+    }
+
+    public void setPointerRootFocus(FocusRevertTo focusRevertTo) {
+        focusedWindow = rootWindow;
+        this.focusRevertTo = focusRevertTo;
+        pointerRootFocus = true;
+    }
+
+    public boolean isPointerRootFocus() {
+        return pointerRootFocus;
+    }
+
+    /**
+     * Resolve PointerRoot to the deepest currently viewable window below the
+     * pointer.  X11 represents PointerRoot as the special focus ID 1; keeping
+     * rootWindow as the stored value loses that dynamic routing semantic.
+     */
+    public Window resolveFocusedWindow(short pointerX, short pointerY) {
+        if (!pointerRootFocus) return focusedWindow;
+        Window pointed = findPointWindow(pointerX, pointerY, true);
+        return pointed != null ? pointed : rootWindow;
     }
 
     public FocusRevertTo getFocusRevertTo() {
