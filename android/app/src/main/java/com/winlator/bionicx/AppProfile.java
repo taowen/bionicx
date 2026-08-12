@@ -111,12 +111,14 @@ public final class AppProfile {
         File runtime = new File(files, "rootfs").getCanonicalFile();
         File home = new File(files, "homes/" + id).getCanonicalFile();
         File tmp = new File(files, "run/" + id).getCanonicalFile();
+        File cache = context.getCacheDir().getCanonicalFile();
         String expanded = value
                 .replace("${FILES}", files.getPath())
                 .replace("${APP}", app.getPath())
                 .replace("${RUNTIME}", runtime.getPath())
                 .replace("${HOME}", home.getPath())
                 .replace("${TMP}", tmp.getPath())
+                .replace("${CACHE}", cache.getPath())
                 .replace("${DISPLAY}", ":0");
         if (expanded.contains("${"))
             throw new IOException("unknown token in profile value: " + value);

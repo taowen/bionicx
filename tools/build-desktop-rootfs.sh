@@ -201,6 +201,22 @@ if [[ -f "$fontconfig_root/fonts.conf" ]]; then
     done
 fi
 
+# LibreOffice resolves its component registry through file: URLs stored in
+# package-owned bootstrap files.  Those URLs bypass the dynamic loader and
+# therefore need the same app-private FHS relocation as symlinks, RUNPATH and
+# Fontconfig.  Keep the package layout intact and change only absolute URLs.
+libreoffice_program="$output_dir/rootfs/usr/lib/libreoffice/program"
+if [[ -d "$libreoffice_program" ]]; then
+    device_root=/data/data/io.taowen.bx/files/rootfs
+    for bootstrap in "$libreoffice_program"/*rc; do
+        [[ -f "$bootstrap" ]] || continue
+        sed -i \
+            -e "s|file:///usr/|file://$device_root/usr/|g" \
+            -e "s|file:///etc/|file://$device_root/etc/|g" \
+            "$bootstrap"
+    done
+fi
+
 "$repo_dir/tools/check-glibc-symbol-floor.py" "$output_dir/rootfs" --maximum 2.41
 
 manifest="$output_dir/rootfs/.bionicx-desktop-rootfs.manifest"

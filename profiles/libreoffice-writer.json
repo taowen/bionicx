@@ -1,0 +1,35 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "libreoffice-writer",
+  "name": "LibreOffice Writer (Debian trixie ARM64)",
+  "display": {"dpi": 144, "socket": "filesystem"},
+  "compatibility": ["android-seccomp", "android-dns", "android-tmp"],
+  "launch": {
+    "mode": "direct",
+    "executable": "${RUNTIME}/usr/lib/libreoffice/program/soffice.bin",
+    "workingDirectory": "${RUNTIME}/usr/lib/libreoffice/program",
+    "arguments": ["--writer", "--nologo", "--nofirststartwizard", "--nodefault", "${APP}/fixtures/bionicx-writer.odt"],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${CACHE}",
+      "TEMP": "${CACHE}",
+      "XDG_RUNTIME_DIR": "${TMP}/runtime",
+      "XDG_CONFIG_HOME": "${HOME}/.config",
+      "XDG_CACHE_HOME": "${HOME}/.cache",
+      "XDG_DATA_HOME": "${HOME}/.local/share",
+      "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
+      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
+      "FONTCONFIG_FILE": "fonts.conf",
+      "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
+      "SAL_USE_VCLPLUGIN": "gtk3",
+      "SAL_DISABLE_OPENCL": "1",
+      "DBUS_SESSION_BUS_ADDRESS": "disabled:",
+      "NO_AT_BRIDGE": "1",
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
+      "LANG": "C.UTF-8",
+      "LD_LIBRARY_PATH": "${RUNTIME}/usr/lib/libreoffice/program:${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu"
+    }
+  }
+}

@@ -66,6 +66,7 @@ public class XKeyboardExtension extends Extension {
         private static final byte GET_CONTROLS = 6;
         private static final byte GET_MAP = 8;
         private static final byte GET_COMPAT_MAP = 10;
+        private static final byte GET_INDICATOR_STATE = 12;
         private static final byte GET_INDICATOR_MAP = 13;
         private static final byte GET_NAMES = 17;
         private static final byte GET_KBD_BY_NAME = 23;
@@ -404,6 +405,24 @@ public class XKeyboardExtension extends Extension {
         }
     }
 
+    private void getIndicatorState(XClient client, XInputStream inputStream,
+                                   XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)CORE_KEYBOARD_ID);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(0); // no keyboard LEDs are active
+            outputStream.writePad(20);
+        }
+    }
+
     private void getDeviceInfo(XClient client, XInputStream inputStream,
                                XOutputStream outputStream)
             throws IOException, XRequestError {
@@ -578,6 +597,9 @@ public class XKeyboardExtension extends Extension {
                 break;
             case ClientOpcodes.GET_COMPAT_MAP:
                 getCompatMap(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_INDICATOR_STATE:
+                getIndicatorState(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.GET_INDICATOR_MAP:
                 getIndicatorMap(client, inputStream, outputStream);

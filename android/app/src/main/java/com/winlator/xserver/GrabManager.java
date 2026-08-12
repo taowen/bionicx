@@ -142,6 +142,13 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
                 ownerEvents, false, cursor, false, null);
     }
 
+    public void changeActivePointerGrab(Bitmask eventMask, Cursor cursor,
+                                        XClient client) {
+        if (window == null || getClient() != client) return;
+        eventListener = new EventListener(client, eventMask);
+        pointerGrabCursor = cursor;
+    }
+
     public void activatePointerGrab(Window window) {
         EventListener eventListener = window.getButtonPressListener();
         activatePointerGrab(window, eventListener,

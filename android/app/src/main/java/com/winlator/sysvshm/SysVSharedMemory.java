@@ -64,8 +64,20 @@ public class SysVSharedMemory {
     public ByteBuffer attach(int shmid) {
         synchronized (shmemories) {
             SHMemory shmemory = shmemories.get(shmid);
+            if (shmemory == null) {
+                int fd = openRemoteSHMSegment(shmid);
+                long size = fd >= 0 ? getMemorySize(fd) : -1;
+                if (size <= 0) {
+                    if (fd >= 0) XConnectorEpoll.closeFd(fd);
+                    return null;
+                }
+                shmemory = new SHMemory();
+                shmemory.fd = fd;
+                shmemory.size = size;
+                shmemories.put(shmid, shmemory);
+            }
             if (shmemory != null) {
-                if (shmemory.data == null) shmemory.data = mapSHMSegment(shmemory.fd, shmemory.size, 0, true);
+                if (shmemory.data == null) shmemory.data = mapSHMSegment(shmemory.fd, shmemory.size, 0, false);
                 return shmemory.data;
             }
             else return null;
@@ -90,6 +102,10 @@ public class SysVSharedMemory {
     public static native int createMemoryFd(String name, int size);
 
     private static native int ashmemCreateRegion(int index, long size);
+
+    private static native int openRemoteSHMSegment(int shmid);
+
+    private static native long getMemorySize(int fd);
 
     public static native ByteBuffer mapSHMSegment(int fd, long size, int offset, boolean readonly);
 

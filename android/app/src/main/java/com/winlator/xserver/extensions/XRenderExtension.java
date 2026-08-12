@@ -75,6 +75,7 @@ public class XRenderExtension extends Extension {
         private static final byte SET_PICTURE_FILTER = 30;
         private static final byte CREATE_SOLID_FILL = 33;
         private static final byte CREATE_LINEAR_GRADIENT = 34;
+        private static final byte CREATE_RADIAL_GRADIENT = 35;
     }
 
     private static final class Picture {
@@ -83,6 +84,7 @@ public class XRenderExtension extends Extension {
         private final int format;
         private final Integer solidColor;
         private final LinearGradient gradient;
+        private final RadialGradient radialGradient;
         private int repeat;
         private int clipX;
         private int clipY;
@@ -96,16 +98,23 @@ public class XRenderExtension extends Extension {
 
         private Picture(int id, Drawable drawable, int format,
                         Integer solidColor) {
-            this(id, drawable, format, solidColor, null);
+            this(id, drawable, format, solidColor, null, null);
         }
 
         private Picture(int id, Drawable drawable, int format,
                         Integer solidColor, LinearGradient gradient) {
+            this(id, drawable, format, solidColor, gradient, null);
+        }
+
+        private Picture(int id, Drawable drawable, int format,
+                        Integer solidColor, LinearGradient gradient,
+                        RadialGradient radialGradient) {
             this.id = id;
             this.drawable = drawable;
             this.format = format;
             this.solidColor = solidColor;
             this.gradient = gradient;
+            this.radialGradient = radialGradient;
         }
     }
 
@@ -120,6 +129,26 @@ public class XRenderExtension extends Extension {
             this.y1 = y1;
             this.x2 = x2;
             this.y2 = y2;
+            this.stops = stops;
+            this.colors = colors;
+        }
+    }
+
+    private static final class RadialGradient {
+        private final int innerX, innerY, outerX, outerY;
+        private final int innerRadius, outerRadius;
+        private final int[] stops;
+        private final int[] colors;
+
+        private RadialGradient(int innerX, int innerY, int outerX, int outerY,
+                               int innerRadius, int outerRadius,
+                               int[] stops, int[] colors) {
+            this.innerX = innerX;
+            this.innerY = innerY;
+            this.outerX = outerX;
+            this.outerY = outerY;
+            this.innerRadius = innerRadius;
+            this.outerRadius = outerRadius;
             this.stops = stops;
             this.colors = colors;
         }
@@ -407,6 +436,34 @@ public class XRenderExtension extends Extension {
                 new LinearGradient(x1, y1, x2, y2, stops, colors)));
     }
 
+    private void createRadialGradient(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int id = inputStream.readInt();
+        int innerX = inputStream.readInt();
+        int innerY = inputStream.readInt();
+        int outerX = inputStream.readInt();
+        int outerY = inputStream.readInt();
+        int innerRadius = inputStream.readInt();
+        int outerRadius = inputStream.readInt();
+        int count = inputStream.readInt();
+        if (innerRadius < 0 || outerRadius < 0 || count < 2 || count > 4096
+                || (long)count * 12 > client.getRemainingRequestLength())
+            throw new BadValue(count);
+        int[] stops = new int[count];
+        for (int index = 0; index < count; index++)
+            stops[index] = inputStream.readInt();
+        int[] colors = new int[count];
+        for (int index = 0; index < count; index++) {
+            colors[index] = colorToArgb(inputStream.readUnsignedShort(),
+                    inputStream.readUnsignedShort(),
+                    inputStream.readUnsignedShort(),
+                    inputStream.readUnsignedShort());
+        }
+        registerPicture(client, new Picture(id, null, argb32Format, null,
+                null, new RadialGradient(innerX, innerY, outerX, outerY,
+                        innerRadius, outerRadius, stops, colors)));
+    }
+
     private void setPictureFilter(XClient client, XInputStream inputStream)
             throws XRequestError {
         int pictureId = inputStream.readInt();
@@ -575,6 +632,25 @@ public class XRenderExtension extends Extension {
         return value;
     }
 
+    private static int gradientColor(int[] stops, int[] colors, double value,
+                                     int repeat) {
+        if (repeat == 0 && (value < 0.0 || value > 1.0)) return 0;
+        double fixedValue = applyRepeat(value, repeat) * 65536.0;
+        if (fixedValue <= stops[0]) return colors[0];
+        int last = stops.length - 1;
+        if (fixedValue >= stops[last]) return colors[last];
+        for (int index = 1; index <= last; index++) {
+            if (fixedValue <= stops[index]) {
+                double span = stops[index] - (double)stops[index - 1];
+                double amount = span == 0.0 ? 1.0
+                        : (fixedValue - stops[index - 1]) / span;
+                return interpolateColor(colors[index - 1], colors[index],
+                        amount);
+            }
+        }
+        return colors[last];
+    }
+
     private int pictureColor(Picture picture, int x, int y) {
         if (picture.solidColor != null) return picture.solidColor;
         if (picture.gradient != null) {
@@ -587,23 +663,44 @@ public class XRenderExtension extends Extension {
             double value = lengthSquared == 0.0 ? 0.0
                     : ((px - gradient.x1) * dx + (py - gradient.y1) * dy)
                       / lengthSquared;
-            if (picture.repeat == 0 && (value < 0.0 || value > 1.0)) return 0;
-            value = applyRepeat(value, picture.repeat);
-            double fixedValue = value * 65536.0;
-            if (fixedValue <= gradient.stops[0]) return gradient.colors[0];
-            int last = gradient.stops.length - 1;
-            if (fixedValue >= gradient.stops[last]) return gradient.colors[last];
-            for (int index = 1; index <= last; index++) {
-                if (fixedValue <= gradient.stops[index]) {
-                    double span = gradient.stops[index]
-                            - (double)gradient.stops[index - 1];
-                    double amount = span == 0.0 ? 1.0
-                            : (fixedValue - gradient.stops[index - 1]) / span;
-                    return interpolateColor(gradient.colors[index - 1],
-                            gradient.colors[index], amount);
-                }
+            return gradientColor(gradient.stops, gradient.colors, value,
+                    picture.repeat);
+        }
+        if (picture.radialGradient != null) {
+            RadialGradient gradient = picture.radialGradient;
+            double px = x * 65536.0 + 32768.0 - gradient.innerX;
+            double py = y * 65536.0 + 32768.0 - gradient.innerY;
+            double dx = gradient.outerX - (double)gradient.innerX;
+            double dy = gradient.outerY - (double)gradient.innerY;
+            double radiusDelta = gradient.outerRadius
+                    - (double)gradient.innerRadius;
+            double a = dx * dx + dy * dy - radiusDelta * radiusDelta;
+            double b = -2.0 * (px * dx + py * dy
+                    + gradient.innerRadius * radiusDelta);
+            double c = px * px + py * py
+                    - (double)gradient.innerRadius * gradient.innerRadius;
+            double value;
+            if (Math.abs(a) < 1.0e-12) {
+                value = Math.abs(b) < 1.0e-12 ? 0.0 : -c / b;
             }
-            return gradient.colors[last];
+            else {
+                double discriminant = b * b - 4.0 * a * c;
+                if (discriminant < 0.0) return 0;
+                double root = Math.sqrt(discriminant);
+                double first = (-b - root) / (2.0 * a);
+                double second = (-b + root) / (2.0 * a);
+                boolean firstValid = gradient.innerRadius
+                        + first * radiusDelta >= 0.0;
+                boolean secondValid = gradient.innerRadius
+                        + second * radiusDelta >= 0.0;
+                if (firstValid && secondValid)
+                    value = Math.max(first, second);
+                else if (firstValid) value = first;
+                else if (secondValid) value = second;
+                else return 0;
+            }
+            return gradientColor(gradient.stops, gradient.colors, value,
+                    picture.repeat);
         }
         if (picture.drawable == null) return 0;
         int width = picture.drawable.width;
@@ -699,7 +796,7 @@ public class XRenderExtension extends Extension {
             throw new BadValue(operation);
         if (source == null
                 || (source.solidColor == null && source.drawable == null
-                    && source.gradient == null)
+                    && source.gradient == null && source.radialGradient == null)
                 || destination == null || destination.drawable == null)
             throw new BadValue(0);
         if (mask != null && mask.drawable == null) throw new BadMatch();
@@ -906,6 +1003,9 @@ public class XRenderExtension extends Extension {
                 break;
             case ClientOpcodes.CREATE_LINEAR_GRADIENT:
                 createLinearGradient(client, inputStream);
+                break;
+            case ClientOpcodes.CREATE_RADIAL_GRADIENT:
+                createRadialGradient(client, inputStream);
                 break;
             default:
                 throw new BadImplementation();

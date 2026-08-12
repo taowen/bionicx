@@ -28,6 +28,7 @@ public class MITSHMExtension extends Extension {
         private static final byte ATTACH = 1;
         private static final byte DETACH = 2;
         private static final byte PUT_IMAGE = 3;
+        private static final byte GET_IMAGE = 4;
         private static final byte CREATE_PIXMAP = 5;
     }
 
@@ -93,7 +94,7 @@ public class MITSHMExtension extends Extension {
         byte depth = inputStream.readByte();
         inputStream.skip(3);
         int shmseg = inputStream.readInt();
-        inputStream.skip(4);
+        int offset = inputStream.readInt();
 
         Drawable drawable = xServer.drawableManager.getDrawable(drawableId);
         if (drawable == null) throw new BadDrawable(drawableId);
@@ -101,8 +102,12 @@ public class MITSHMExtension extends Extension {
         GraphicsContext graphicsContext = xServer.graphicsContextManager.getGraphicsContext(gcId);
         if (graphicsContext == null) throw new BadGraphicsContext(gcId);
 
-        ByteBuffer data = xServer.getSHMSegmentManager().getData(shmseg);
-        if (data == null) throw new BadSHMSegment(shmseg);
+        ByteBuffer segment = xServer.getSHMSegmentManager().getData(shmseg);
+        if (segment == null || offset < 0 || offset >= segment.capacity())
+            throw new BadSHMSegment(shmseg);
+        ByteBuffer data = segment.duplicate().order(segment.order());
+        data.position(offset);
+        data = data.slice().order(segment.order());
 
         if (graphicsContext.getFunction() != GraphicsContext.Function.COPY) {
             throw new UnsupportedOperationException("GC Function other than COPY is not supported.");
@@ -129,6 +134,47 @@ public class MITSHMExtension extends Extension {
         drawable.setUseSharedData(width == drawable.width);
     }
 
+    private void getImage(XClient client, XInputStream inputStream,
+                          XOutputStream outputStream) throws IOException, XRequestError {
+        int drawableId = inputStream.readInt();
+        short x = inputStream.readShort();
+        short y = inputStream.readShort();
+        short width = inputStream.readShort();
+        short height = inputStream.readShort();
+        inputStream.skip(4); // plane mask
+        byte format = inputStream.readByte();
+        inputStream.skip(3);
+        int shmseg = inputStream.readInt();
+        int offset = inputStream.readInt();
+
+        Drawable drawable = xServer.drawableManager.getDrawable(drawableId);
+        if (drawable == null) throw new BadDrawable(drawableId);
+        ByteBuffer target = xServer.getSHMSegmentManager().getData(shmseg);
+        if (target == null) throw new BadSHMSegment(shmseg);
+        // MIT-SHM format 2 is ZPixmap, the only GetImage format supported by
+        // the core server and by the 32-bpp Android drawable storage.
+        if (format != 2) throw new BadImplementation();
+
+        ByteBuffer source = drawable.getImage(x, y, width, height);
+        int size = source.remaining();
+        if (offset < 0 || offset > target.capacity() - size)
+            throw new BadSHMSegment(shmseg);
+        for (int index = 0; index < size; index++)
+            target.put(offset + index, source.get(index));
+
+        int visualId = xServer.pixmapManager.getPixmap(drawableId) == null
+                ? drawable.visual.id : 0;
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(drawable.visual.depth);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(visualId);
+            outputStream.writeInt(size);
+            outputStream.writePad(16);
+        }
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
         int opcode = client.getRequestData();
@@ -149,6 +195,12 @@ public class MITSHMExtension extends Extension {
             case ClientOpcodes.PUT_IMAGE :
                 try (XLock lock = xServer.lock(XServer.Lockable.SHMSEGMENT_MANAGER, XServer.Lockable.DRAWABLE_MANAGER, XServer.Lockable.GRAPHIC_CONTEXT_MANAGER)) {
                     putImage(client, inputStream, outputStream);
+                }
+                break;
+            case ClientOpcodes.GET_IMAGE :
+                try (XLock lock = xServer.lock(XServer.Lockable.SHMSEGMENT_MANAGER,
+                        XServer.Lockable.DRAWABLE_MANAGER)) {
+                    getImage(client, inputStream, outputStream);
                 }
                 break;
             case ClientOpcodes.CREATE_PIXMAP :

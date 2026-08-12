@@ -20,6 +20,7 @@ import com.winlator.xconnector.UnixSocketConfig;
 import com.winlator.xenvironment.RootFS;
 import com.winlator.xenvironment.XEnvironment;
 import com.winlator.xenvironment.components.PulseAudioComponent;
+import com.winlator.xenvironment.components.SysVSharedMemoryComponent;
 import com.winlator.xenvironment.components.XServerComponent;
 import com.winlator.xenvironment.components.VortekRendererComponent;
 import com.winlator.xserver.ScreenInfo;
@@ -90,6 +91,9 @@ public final class BionicXActivity extends Activity {
                 : UnixSocketConfig.create(rootFS.getRootDir().getAbsolutePath(),
                         UnixSocketConfig.XSERVER_PATH);
         environment = new XEnvironment(this, rootFS);
+        environment.addComponent(new SysVSharedMemoryComponent(xServer,
+                UnixSocketConfig.create(rootFS.getRootDir().getAbsolutePath(),
+                        UnixSocketConfig.SYSVSHM_SERVER_PATH)));
         environment.addComponent(new XServerComponent(xServer, socket));
         if (profile.hostServices.contains("pulseaudio")) {
             File pulseDir = new File(getFilesDir(), "pulseaudio");
@@ -162,6 +166,12 @@ public final class BionicXActivity extends Activity {
                 Log.i(TAG, "discovered " + servers.size() + " IPv4 DNS server(s)");
                 command.add("--env");
                 command.add("BIONICX_DNS_SERVERS=" + String.join(",", servers));
+            }
+            if (profile.compatibility.contains("android-tmp")
+                    && !profile.environment.containsKey("BIONICX_TMPDIR")) {
+                command.add("--env");
+                command.add("BIONICX_TMPDIR="
+                        + profile.expand(this, "${CACHE}"));
             }
             if (!profile.compatibility.isEmpty()) {
                 List<String> preloads = new ArrayList<>();

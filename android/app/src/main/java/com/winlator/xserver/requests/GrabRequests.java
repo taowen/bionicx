@@ -150,6 +150,26 @@ public abstract class GrabRequests {
                 modifiers, client);
     }
 
+    public static void changeActivePointerGrab(XClient client,
+                                                XInputStream inputStream,
+                                                XOutputStream outputStream)
+            throws XRequestError {
+        int cursorId = inputStream.readInt();
+        // X11 timestamps are advisory for this request. The server currently
+        // has no wrap-aware last-grab clock, so consume the value and apply
+        // the change whenever this client owns the active pointer grab.
+        inputStream.readInt();
+        Bitmask eventMask = new Bitmask(inputStream.readShort() & 0xffff);
+        inputStream.skip(2);
+        if ((eventMask.getBits() & ~0x7ffc) != 0)
+            throw new BadValue(eventMask.getBits());
+        Cursor cursor = cursorId == 0 ? null
+                : client.xServer.cursorManager.getCursor(cursorId);
+        if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
+        client.xServer.grabManager.changeActivePointerGrab(eventMask, cursor,
+                client);
+    }
+
     public static void grabKeyboard(XClient client, XInputStream inputStream,
                                     XOutputStream outputStream)
             throws IOException, XRequestError {
