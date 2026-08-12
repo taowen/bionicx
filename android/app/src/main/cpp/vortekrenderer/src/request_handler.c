@@ -188,13 +188,14 @@ void vt_handle_vkEnumerateInstanceVersion(VkContext* context) {
 void vt_handle_vkEnumerateInstanceExtensionProperties(VkContext* context) {
     uint32_t propertyCount;
     vt_unserialize_vkEnumerateInstanceExtensionProperties(NULL, &propertyCount, NULL, context->inputBuffer, &context->memoryPool);
-    VkResult result;
-
-    uint32_t exposedExtensionCount;
-    result = vulkanWrapper.vkEnumerateInstanceExtensionProperties(NULL, &exposedExtensionCount, NULL);
-
-    VkExtensionProperties* exposedExtensions = vt_alloc(&context->memoryPool, propertyCount * sizeof(VkExtensionProperties));
-    result = vulkanWrapper.vkEnumerateInstanceExtensionProperties(NULL, &exposedExtensionCount, exposedExtensions);
+    uint32_t exposedExtensionCount = 0;
+    VkResult result = vulkanWrapper.vkEnumerateInstanceExtensionProperties(
+            NULL, &exposedExtensionCount, NULL);
+    VkExtensionProperties* exposedExtensions = vt_alloc(
+            &context->memoryPool,
+            exposedExtensionCount * sizeof(VkExtensionProperties));
+    result = vulkanWrapper.vkEnumerateInstanceExtensionProperties(
+            NULL, &exposedExtensionCount, exposedExtensions);
 
     const char* extraExtensions[] = {"VK_KHR_surface", "VK_KHR_xlib_surface"};
     const char* skipExtensions[] = {"VK_KHR_android_surface"};
@@ -203,8 +204,16 @@ void vt_handle_vkEnumerateInstanceExtensionProperties(VkContext* context) {
                       skipExtensions, ARRAY_SIZE(skipExtensions));
 
     bool nullProperties = propertyCount == 0;
-    VkExtensionProperties* properties = !nullProperties ? exposedExtensions : NULL;
-    if (nullProperties) propertyCount = exposedExtensionCount;
+    VkExtensionProperties* properties = nullProperties ? NULL : exposedExtensions;
+    if (nullProperties) {
+        propertyCount = exposedExtensionCount;
+    }
+    else if (propertyCount < exposedExtensionCount) {
+        result = VK_INCOMPLETE;
+    }
+    else {
+        propertyCount = exposedExtensionCount;
+    }
 
     VT_SERIALIZE_CMD(vkEnumerateInstanceExtensionProperties, NULL, &propertyCount, properties);
     vt_send(context->clientRing, result, outputBuffer, bufferSize);

@@ -20,9 +20,10 @@ podman run --rm --network host --userns=keep-id \
     "$builder_image" sh -eu -c '
         app_dir="'"$container_output"'/app"
         aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
+            -DVK_USE_PLATFORM_XLIB_KHR \
             examples/vulkan-probe/vulkan-probe.c \
             -Wl,-rpath,'"'"'$ORIGIN/../lib'"'"' \
-            -o "$app_dir/bin/vulkan-probe" -lvulkan
+            -o "$app_dir/bin/vulkan-probe" -lvulkan -lX11
         cp -L /usr/lib/aarch64-linux-gnu/libvulkan.so.1 "$app_dir/lib/"
     '
 

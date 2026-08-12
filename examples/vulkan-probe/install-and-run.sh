@@ -28,5 +28,5 @@ done
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(TEST|SUMMARY)|vulkan-probe exited with|enabled Vulkan')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY host-vulkan passed=7 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY host-vulkan passed=14 failed=0" <<<"$result"
 grep -Fq "vulkan-probe exited with 0" <<<"$result"
