@@ -51,6 +51,7 @@ public class MITSHMExtension extends Extension {
     }
 
     private void queryVersion(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
+        if (xServer.getSHMSegmentManager() == null) throw new BadImplementation();
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
             outputStream.writeByte((byte)0);

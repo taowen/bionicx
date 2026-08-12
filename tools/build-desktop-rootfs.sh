@@ -102,6 +102,19 @@ chmod u+w "$output_dir/rootfs/etc/machine-id"
 printf '%s' '21eeeb73de5941e9a77d41bb0b9953d5' \
     > "$output_dir/rootfs/etc/machine-id"
 
+# Debian packages intentionally use absolute FHS symlinks, especially through
+# dpkg alternatives.  With no mount namespace/chroot those links would escape
+# the app-private image and resolve against Android.  Preserve their targets
+# while rewriting every internally resolvable absolute link to a relative one.
+while IFS= read -r -d '' link; do
+    target="$(readlink "$link")"
+    [[ "$target" == /* ]] || continue
+    rooted_target="$output_dir/rootfs$target"
+    [[ -e "$rooted_target" || -L "$rooted_target" ]] || continue
+    relative="$(realpath -m --relative-to="$(dirname "$link")" "$rooted_target")"
+    ln -sfn "$relative" "$link"
+done < <(find "$output_dir/rootfs" -type l -print0)
+
 # Overlay the Android-seccomp/path-compatible loader and libc at the first
 # library-search location.  Debian's original multiarch files remain intact as
 # package-owned data; BionicX processes always enter through this loader.
@@ -111,14 +124,49 @@ rm -f "$compat/app/bin/hello-x11"
 cp -a "$compat/rootfs/usr/lib/." "$output_dir/rootfs/usr/lib/"
 "$repo_dir/tools/build-gladio.sh" "$output_dir/rootfs/usr/lib"
 
-# GUI terminal emulators execute a login shell as a child.  With no chroot or
-# PRoot the kernel cannot resolve Debian's stock /lib/ld-linux path, so adapt
-# the shared bash entrypoint to the app-private loader.  This is a deliberate
-# executable compatibility overlay; dpkg's original package metadata remains
-# available for auditing.
-patchelf --set-interpreter \
-    /data/data/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1 \
-    "$output_dir/rootfs/usr/bin/bash"
+# Any Debian program can execute another packaged ELF (shells, GIMP plug-ins,
+# media helpers, and so on).  With no chroot or PRoot, the kernel cannot resolve
+# their stock /lib/ld-linux path.  Adapt every executable carrying PT_INTERP to
+# the app-private loader, while leaving shared objects and scripts untouched.
+# dpkg's package database remains available to audit the compatibility overlay.
+device_loader=/data/data/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
+patched_interpreters=0
+while IFS= read -r -d '' executable; do
+    interpreter="$(patchelf --print-interpreter "$executable" 2>/dev/null || true)"
+    [[ -n "$interpreter" ]] || continue
+    [[ "$interpreter" == "$device_loader" ]] || \
+        patchelf --set-interpreter "$device_loader" "$executable"
+    ((patched_interpreters += 1))
+done < <(find "$output_dir/rootfs" -type f -perm /111 -print0)
+printf 'patched %d executable ELF interpreters\n' "$patched_interpreters"
+
+# DT_RPATH/DT_RUNPATH entries from Debian packages are FHS paths too.  The
+# dynamic loader cannot resolve an entry such as /usr/lib/.../vlc without a
+# mount namespace, even though the package and its private libraries are both
+# present in the shared image.  Relocate every absolute search component once
+# at rootfs build time; keep $ORIGIN and other relative components unchanged.
+device_root=/data/data/io.taowen.bx/files/rootfs
+relocated_runpaths=0
+while IFS= read -r -d '' elf; do
+    old_runpath="$(patchelf --print-rpath "$elf" 2>/dev/null || true)"
+    [[ -n "$old_runpath" ]] || continue
+    IFS=: read -r -a components <<< "$old_runpath"
+    new_runpath=
+    for component in "${components[@]}"; do
+        case "$component" in
+            /usr/*|/lib|/lib/*|/lib64|/lib64/*)
+                component="$device_root$component"
+                ;;
+        esac
+        [[ -z "$new_runpath" ]] || new_runpath+=:
+        new_runpath+="$component"
+    done
+    [[ "$new_runpath" == "$old_runpath" ]] || {
+        patchelf --set-rpath "$new_runpath" "$elf"
+        ((relocated_runpaths += 1))
+    }
+done < <(find "$output_dir/rootfs" -type f -print0)
+printf 'relocated %d absolute ELF runpaths\n' "$relocated_runpaths"
 
 # Debian's generated pixbuf cache names modules by absolute FHS paths.  There
 # is intentionally no chroot/proot on Android, so relocate those text entries

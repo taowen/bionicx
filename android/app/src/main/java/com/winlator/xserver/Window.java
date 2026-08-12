@@ -241,12 +241,12 @@ public class Window extends XResource {
 
     public boolean isWoW64() {
         Property property = getProperty(Atom._NET_WM_WOW64);
-        return property != null && property.data.get(0) == 1;
+        return property != null && property.getByte(0) == 1;
     }
 
     public boolean isSurface() {
         Property property = getProperty(Atom._NET_WM_SURFACE);
-        return property != null && property.data.get(0) == 1;
+        return property != null && property.getByte(0) == 1;
     }
 
     public boolean isDesktopWindow() {

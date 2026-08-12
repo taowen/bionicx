@@ -77,16 +77,33 @@ static unsigned int print_tree(Display *display, Window window, Atom net_wm_name
         const Status have_attributes =
             XGetWindowAttributes(display, children[i], &attributes);
         const Status have_class = XGetClassHint(display, children[i], &class_hint);
+        unsigned long center_pixel = 0;
+        char center[32] = "-";
+
+        if (have_attributes && attributes.class == InputOutput &&
+            attributes.map_state == IsViewable && attributes.width > 0 &&
+            attributes.height > 0) {
+            XImage *image = XGetImage(display, children[i],
+                                     attributes.width / 2,
+                                     attributes.height / 2, 1, 1,
+                                     AllPlanes, ZPixmap);
+            if (image != NULL) {
+                center_pixel = XGetPixel(image, 0, 0);
+                snprintf(center, sizeof(center), "0x%08lx", center_pixel);
+                XDestroyImage(image);
+            }
+        }
 
         if (have_attributes) {
             printf("BXWINDOW depth=%u id=0x%" PRIx64
                    " map=%s override=%d geometry=%dx%d%+d%+d"
-                   " title=%s class=%s/%s\n",
+                   " center=%s title=%s class=%s/%s\n",
                    depth, (uint64_t)children[i],
                    map_state_name(attributes.map_state),
                    attributes.override_redirect,
                    attributes.width, attributes.height,
                    attributes.x, attributes.y,
+                   center,
                    title != NULL ? title : "-",
                    have_class && class_hint.res_name != NULL
                        ? class_hint.res_name : "-",

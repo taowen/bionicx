@@ -8,6 +8,7 @@ import com.winlator.winhandler.WinHandler;
 import com.winlator.xserver.extensions.BigReqExtension;
 import com.winlator.xserver.extensions.Extension;
 import com.winlator.xserver.extensions.GLXExtension;
+import com.winlator.xserver.extensions.MITSHMExtension;
 import com.winlator.xserver.extensions.PresentExtension;
 import com.winlator.xserver.extensions.XComposite;
 import com.winlator.xserver.extensions.XFixesExtension;
@@ -245,9 +246,11 @@ public class XServer {
         byte opcode = Extension.START_MAJOR_OPCODE;
         return new Extension[]{
             new BigReqExtension(this, opcode--),
-            // Do not advertise MIT-SHM unless a SysV shared-memory backend is
-            // installed. Real glibc Qt clients otherwise call shmget() after
-            // QueryVersion and crash before they can fall back to XPutImage.
+            // Keep the extension discoverable even without a shared-memory
+            // backend. Some XCB clients (notably VLC) poison their connection
+            // when an absent extension is queried, while a protocol error from
+            // QueryVersion lets them retain the connection and use XPutImage.
+            new MITSHMExtension(this, opcode--),
             // DRI3 Open must return an authenticated DRM descriptor through
             // SCM_RIGHTS. The inherited handler cannot do that on Android and
             // replying without an fd makes real clients consume invalid

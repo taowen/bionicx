@@ -71,7 +71,7 @@ public class Property {
                 cachedString = StringUtils.fromANSIString(data.array(), XServer.LATIN1_CHARSET);
                 return cachedString;
             case "ATOM":
-                return Atom.getName(data.getInt(0));
+                return data.capacity() >= Integer.BYTES ? Atom.getName(data.getInt(0)) : "";
             default:
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0, size = data.capacity() / (format.value >> 3); i < size; i++) {
@@ -94,11 +94,19 @@ public class Property {
     }
 
     public int getInt(int index) {
-        return data.getInt(index * 4);
+        return index >= 0 && data.capacity() >= Integer.BYTES
+                && index <= (data.capacity() - Integer.BYTES) / Integer.BYTES
+                ? data.getInt(index * Integer.BYTES) : 0;
     }
 
     public long getLong(int index) {
-        return data.getLong(index * 8);
+        return index >= 0 && data.capacity() >= Long.BYTES
+                && index <= (data.capacity() - Long.BYTES) / Long.BYTES
+                ? data.getLong(index * Long.BYTES) : 0;
+    }
+
+    public byte getByte(int index) {
+        return index >= 0 && index < data.capacity() ? data.get(index) : 0;
     }
 
     public String nameAsString() {
