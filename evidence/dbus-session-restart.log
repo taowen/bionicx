@@ -1,0 +1,26 @@
+x300 serial: 01408BH601027129
+Android package: io.taowen.bx
+profile: dbus-probe
+rootfs content ID: b7ea6f1f1aac7a71432910ec5bcd78511d4f74870ec490586da1512e5e0da049
+
+cycle 1 after force-stop:
+enabled D-Bus session service at /data/user/0/io.taowen.bx/files/run/dbus-probe/runtime/bus
+method return sender=org.freedesktop.DBus -> destination=:1.0
+   array [
+      string "org.freedesktop.DBus"
+      string ":1.0"
+   ]
+bionicx-exec: primary pid=11198 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+dbus-probe exited with 0
+
+cycle 2 after force-stop (stale-socket recovery):
+enabled D-Bus session service at /data/user/0/io.taowen.bx/files/run/dbus-probe/runtime/bus
+method return sender=org.freedesktop.DBus -> destination=:1.0
+   array [
+      string "org.freedesktop.DBus"
+      string ":1.0"
+   ]
+bionicx-exec: primary pid=11274 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+dbus-probe exited with 0

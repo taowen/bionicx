@@ -46,8 +46,8 @@ for name in launch.get("environment", {}):
         fail(f"invalid environment variable: {name}")
 host_services = profile.get("hostServices", [])
 if not isinstance(host_services, list) or any(
-        service not in ("pulseaudio", "vulkan") for service in host_services):
-    fail("hostServices may only contain pulseaudio and vulkan")
+        service not in ("dbus", "pulseaudio", "vulkan") for service in host_services):
+    fail("hostServices may only contain dbus, pulseaudio and vulkan")
 if len(host_services) != len(set(host_services)):
     fail("hostServices must not contain duplicates")
 

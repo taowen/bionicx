@@ -53,5 +53,6 @@ then exposed XI2 `XIGetClientPointer`, which now reports the real synthetic
 master pointer. Both additions use their standard wire layouts and are server
 capabilities, not application bypasses.
 
-The remaining D-Bus warning is non-fatal. A real session-bus service remains a
-desktop-service task rather than a per-application workaround.
+The D-Bus warning was non-fatal and identified a desktop-service task rather
+than a per-application workaround. It is resolved by the subsequent
+profile-selected session service documented in `2026-08-13-dbus-session.md`.

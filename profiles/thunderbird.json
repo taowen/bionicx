@@ -4,6 +4,7 @@
   "id": "thunderbird",
   "name": "Thunderbird (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
+  "hostServices": ["dbus"],
   "compatibility": ["android-seccomp", "android-dns", "android-tmp"],
   "launch": {
     "mode": "direct",

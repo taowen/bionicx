@@ -116,7 +116,24 @@ needs those semantics.
 Future modules can cover narrow filesystem, IPC, or desktop-service gaps, but
 the project does not aim to translate arbitrary Linux syscalls.
 
-## 6. Desktop-service dispatch
+## 6. Desktop services
+
+Profiles opt into app-private desktop daemons through `hostServices`. The
+`dbus` service starts Debian's unmodified `dbus-daemon` with the session
+configuration shipped in the shared rootfs and publishes its Unix socket at
+`${TMP}/runtime/bus`. BionicX injects the matching
+`DBUS_SESSION_BUS_ADDRESS`; every glibc process in that profile therefore uses
+one real session bus without PRoot, Termux, a system daemon, or a second copy of
+the Debian packages. The daemon has the same Android UID and lifecycle as the
+X11 session. A stale socket left by Android force-stop is removed before the
+next daemon starts.
+
+This supplies transport, name ownership and Debian's normal activation lookup.
+It does not claim that every optional desktop service is installed or usable:
+portals, notifications, secrets and accessibility daemons require separate
+controlled tests before profiles can depend on them.
+
+### URI dispatch
 
 Linux GUI toolkits commonly delegate URI opening to a program such as
 `xdg-open`. Profiles can prepend an app-private directory to `PATH` and map
@@ -127,4 +144,4 @@ after a glibc GUI process has exported its loader search path.
 The current dispatcher decodes local file URIs and supports the configured PDF
 handler. It executes the handler inside the same app UID and display session.
 Additional MIME classes should be added with controlled integration clients;
-BionicX does not pretend to supply a complete freedesktop MIME/D-Bus session.
+BionicX does not pretend to supply a complete freedesktop portal environment.

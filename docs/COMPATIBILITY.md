@@ -60,8 +60,9 @@ domain, app seccomp filter, page size, and Android filesystem. In particular:
   fallback is retained and regression-tested; process-shared and PI robust
   mutexes remain unsupported without kernel registration. BionicX does not
   hide this requirement with long-lived ptrace syscall emulation.
-- `/bin/sh`, `/tmp`, `/proc` details, D-Bus, systemd, and desktop portals may
-  differ or be absent.
+- `/bin/sh`, `/tmp` and `/proc` details may differ. An app-private D-Bus
+  session daemon is available to opted-in profiles, but a system bus, systemd,
+  desktop portals and optional activated services may differ or be absent.
 - Executing extracted app-data files currently relies on the experimental APK's
   target SDK 28 behavior. A modern target-SDK product needs a code-loading and
   packaging design compatible with current Android policy.

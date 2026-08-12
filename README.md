@@ -146,8 +146,11 @@ ELFs from being duplicated into the flat library closure.
 
 BionicX is currently an ARM64 research runtime, not a general Linux container.
 Applications still see the Android kernel, app sandbox, seccomp policy, and
-filesystem. Absolute FHS paths, D-Bus, audio, OpenGL, uncommon X11 extensions,
-and 16 KiB page compatibility need application-specific verification.
+filesystem. Absolute FHS paths, optional D-Bus services, audio, GPU APIs,
+uncommon X11 extensions, and 16 KiB page compatibility need
+application-specific verification. Profiles can request the implemented
+app-private session bus, PulseAudio bridge and Vulkan bridge through
+`hostServices`.
 
 Profiles and application bundles are trusted native code with the full rights
 of the BionicX Android UID. Do not install untrusted bundles.

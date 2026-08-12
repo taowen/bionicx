@@ -19,6 +19,7 @@ import com.winlator.widget.XServerView;
 import com.winlator.xconnector.UnixSocketConfig;
 import com.winlator.xenvironment.RootFS;
 import com.winlator.xenvironment.XEnvironment;
+import com.winlator.xenvironment.components.DBusComponent;
 import com.winlator.xenvironment.components.PulseAudioComponent;
 import com.winlator.xenvironment.components.SysVSharedMemoryComponent;
 import com.winlator.xenvironment.components.XServerComponent;
@@ -95,6 +96,13 @@ public final class BionicXActivity extends Activity {
                 UnixSocketConfig.create(rootFS.getRootDir().getAbsolutePath(),
                         UnixSocketConfig.SYSVSHM_SERVER_PATH)));
         environment.addComponent(new XServerComponent(xServer, socket));
+        if (profile.hostServices.contains("dbus")) {
+            File busSocket = new File(getFilesDir(),
+                    "run/" + profile.id + "/runtime/bus");
+            environment.addComponent(new DBusComponent(busSocket,
+                    new File(getFilesDir(), "homes/" + profile.id)));
+            Log.i(TAG, "enabled D-Bus session service at " + busSocket);
+        }
         if (profile.hostServices.contains("pulseaudio")) {
             File pulseDir = new File(getFilesDir(), "pulseaudio");
             if (!TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD,
@@ -172,6 +180,12 @@ public final class BionicXActivity extends Activity {
                 command.add("--env");
                 command.add("BIONICX_TMPDIR="
                         + profile.expand(this, "${CACHE}"));
+            }
+            if (profile.hostServices.contains("dbus")
+                    && !profile.environment.containsKey("DBUS_SESSION_BUS_ADDRESS")) {
+                command.add("--env");
+                command.add("DBUS_SESSION_BUS_ADDRESS=unix:path="
+                        + profile.expand(this, "${TMP}/runtime/bus"));
             }
             if (!profile.compatibility.isEmpty()) {
                 List<String> preloads = new ArrayList<>();
