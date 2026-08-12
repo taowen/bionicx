@@ -20,6 +20,9 @@
   wildcard button/modifier matching, ancestor activation, owner-events routing,
   automatic release, conflict checks, and client/window cleanup. Synchronous
   pointer mode and non-None confine/cursor overrides remain explicit errors.
+- Core `GrabServer`/`UngrabServer`: other connections, including new setup
+  handshakes, are deferred while the owner continues; explicit ungrab and owner
+  disconnect both drain buffered requests.
 
 ## What an application bundle must supply
 

@@ -5,9 +5,12 @@ import com.winlator.xconnector.ConnectionHandler;
 
 public class XClientConnectionHandler implements ConnectionHandler {
     private final XServer xServer;
+    private final XClientRequestHandler requestHandler;
 
-    public XClientConnectionHandler(XServer xServer) {
+    public XClientConnectionHandler(XServer xServer,
+                                    XClientRequestHandler requestHandler) {
         this.xServer = xServer;
+        this.requestHandler = requestHandler;
     }
 
     @Override
@@ -25,6 +28,7 @@ public class XClientConnectionHandler implements ConnectionHandler {
         XClient xClient = (XClient)client;
         xServer.selectionManager.releaseClientSelections(xClient);
         xClient.freeResources();
-        xServer.removeClient(xClient);
+        if (xServer.removeClient(xClient))
+            requestHandler.processDeferredRequests(xServer);
     }
 }

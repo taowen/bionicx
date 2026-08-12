@@ -38,6 +38,9 @@ public class XClientRequestHandler implements RequestHandler {
         XInputStream inputStream = client.getInputStream();
         XOutputStream outputStream = client.getOutputStream();
 
+        XClient serverGrabClient = xClient.xServer.getServerGrabClient();
+        if (serverGrabClient != null && serverGrabClient != xClient)
+            return false;
         if (xClient.isAuthenticated()) {
             return handleNormalRequest(xClient, inputStream, outputStream);
         }
@@ -318,6 +321,13 @@ public class XClientRequestHandler implements RequestHandler {
                             GrabRequests.ungrabKey(client, inputStream, outputStream);
                         }
                         break;
+                    case ClientOpcodes.GRAB_SERVER:
+                        client.xServer.grabServer(client);
+                        break;
+                    case ClientOpcodes.UNGRAB_SERVER:
+                        if (client.xServer.ungrabServer(client))
+                            processDeferredRequests(client.xServer);
+                        break;
                     case ClientOpcodes.QUERY_POINTER:
                         try (XLock lock = client.xServer.lock(XServer.Lockable.WINDOW_MANAGER, XServer.Lockable.INPUT_DEVICE)) {
                             WindowRequests.queryPointer(client, inputStream, outputStream);
@@ -515,5 +525,23 @@ public class XClientRequestHandler implements RequestHandler {
         }
 
         return true;
+    }
+
+    public void processDeferredRequests(XServer xServer) {
+        for (XClient deferred : xServer.getClientsSnapshot()) {
+            if (xServer.getServerGrabClient() != null) return;
+            try {
+                XInputStream input = deferred.getInputStream();
+                XOutputStream output = deferred.getOutputStream();
+                while (input != null && output != null
+                        && handleRequest(deferred)) {
+                    if (xServer.getServerGrabClient() != null) return;
+                }
+            }
+            catch (IOException e) {
+                Log.e(TAG, "deferred request I/O failure fd=" + deferred.fd,
+                        e);
+            }
+        }
     }
 }

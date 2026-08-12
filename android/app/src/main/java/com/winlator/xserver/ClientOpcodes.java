@@ -31,6 +31,8 @@ public abstract class ClientOpcodes {
     public static final byte UNGRAB_KEYBOARD = 32;
     public static final byte GRAB_KEY = 33;
     public static final byte UNGRAB_KEY = 34;
+    public static final byte GRAB_SERVER = 36;
+    public static final byte UNGRAB_SERVER = 37;
     public static final byte QUERY_POINTER = 38;
     public static final byte TRANSLATE_COORDINATES = 40;
     public static final byte WARP_POINTER = 41;

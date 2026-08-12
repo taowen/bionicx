@@ -47,6 +47,7 @@ public class XServer {
     private final EnumMap<Lockable, ReentrantLock> locks = new EnumMap<>(Lockable.class);
     private boolean relativeMouseMovement = false;
     private final ArrayList<XClient> clients = new ArrayList<>();
+    private XClient serverGrabClient;
 
     public XServer(XServerDisplayActivity activity, ScreenInfo screenInfo) {
         this.activity = activity;
@@ -198,7 +199,22 @@ public class XServer {
         }
     }
 
-    public void removeClient(XClient client) {
+    public synchronized XClient getServerGrabClient() {
+        return serverGrabClient;
+    }
+
+    public synchronized void grabServer(XClient client) {
+        if (serverGrabClient == null) serverGrabClient = client;
+    }
+
+    public synchronized boolean ungrabServer(XClient client) {
+        if (serverGrabClient != client) return false;
+        serverGrabClient = null;
+        return true;
+    }
+
+    public boolean removeClient(XClient client) {
+        boolean releasedServerGrab = ungrabServer(client);
         try (XLock lock = lock(Lockable.INPUT_DEVICE)) {
             grabManager.deactivatePointerGrab(client);
             grabManager.deactivateKeyboardGrab(client);
@@ -208,6 +224,7 @@ public class XServer {
         synchronized (clients) {
             clients.remove(client);
         }
+        return releasedServerGrab;
     }
 
     public XClient[] getClientsSnapshot() {
