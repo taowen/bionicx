@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +12,11 @@
 
 static unsigned passed;
 static unsigned failed;
+
+typedef struct Vertex {
+    float position[2];
+    float color[3];
+} Vertex;
 
 static void result(const char *name, bool ok, const char *details) {
     printf("BXTEST %s %s %s\n", ok ? "PASS" : "FAIL", name, details);
@@ -556,6 +562,69 @@ int main(void) {
                    && fragment_module_status == VK_SUCCESS,
            details);
 
+    const Vertex vertices[3] = {
+        {{0.0f, -0.72f}, {0.90f, 0.08f, 0.04f}},
+        {{0.72f, 0.62f}, {0.90f, 0.08f, 0.04f}},
+        {{-0.72f, 0.62f}, {0.90f, 0.08f, 0.04f}},
+    };
+    VkBufferCreateInfo vertex_buffer_info = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = sizeof(vertices),
+        .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
+    VkBuffer vertex_buffer = VK_NULL_HANDLE;
+    VkResult vertex_buffer_status = vkCreateBuffer(
+            device, &vertex_buffer_info, NULL, &vertex_buffer);
+    VkMemoryRequirements vertex_memory_requirements = {0};
+    if (vertex_buffer_status == VK_SUCCESS)
+        vkGetBufferMemoryRequirements(
+                device, vertex_buffer, &vertex_memory_requirements);
+    uint32_t vertex_memory_type = UINT32_MAX;
+    for (uint32_t i = 0; i < memory.memoryTypeCount; i++) {
+        VkMemoryPropertyFlags required = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        if ((vertex_memory_requirements.memoryTypeBits & (1u << i))
+                && (memory.memoryTypes[i].propertyFlags & required)
+                        == required) {
+            vertex_memory_type = i;
+            break;
+        }
+    }
+    VkMemoryAllocateInfo vertex_allocate_info = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = vertex_memory_requirements.size,
+        .memoryTypeIndex = vertex_memory_type,
+    };
+    VkDeviceMemory vertex_memory = VK_NULL_HANDLE;
+    VkResult vertex_allocate_status = vertex_memory_type != UINT32_MAX
+            ? vkAllocateMemory(device, &vertex_allocate_info, NULL,
+                               &vertex_memory)
+            : VK_ERROR_FEATURE_NOT_PRESENT;
+    VkResult vertex_bind_status = vertex_allocate_status == VK_SUCCESS
+            ? vkBindBufferMemory(device, vertex_buffer, vertex_memory, 0)
+            : vertex_allocate_status;
+    void *vertex_mapping = NULL;
+    VkResult vertex_map_status = vertex_bind_status == VK_SUCCESS
+            ? vkMapMemory(device, vertex_memory, 0, sizeof(vertices), 0,
+                          &vertex_mapping)
+            : vertex_bind_status;
+    if (vertex_map_status == VK_SUCCESS) {
+        memcpy(vertex_mapping, vertices, sizeof(vertices));
+        vkUnmapMemory(device, vertex_memory);
+    }
+    snprintf(details, sizeof(details),
+             "create=%d type=%u allocate=%d bind=%d map=%d bytes=%zu",
+             vertex_buffer_status, vertex_memory_type,
+             vertex_allocate_status, vertex_bind_status, vertex_map_status,
+             sizeof(vertices));
+    result("host-vulkan-vertex-upload",
+           vertex_buffer_status == VK_SUCCESS
+                   && vertex_allocate_status == VK_SUCCESS
+                   && vertex_bind_status == VK_SUCCESS
+                   && vertex_map_status == VK_SUCCESS,
+           details);
+
     VkPipelineLayoutCreateInfo layout_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     };
@@ -579,6 +648,29 @@ int main(void) {
     VkPipelineVertexInputStateCreateInfo vertex_input = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
     };
+    VkVertexInputBindingDescription vertex_binding = {
+        .binding = 0,
+        .stride = sizeof(Vertex),
+        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+    };
+    VkVertexInputAttributeDescription vertex_attributes[2] = {
+        {
+            .location = 0,
+            .binding = 0,
+            .format = VK_FORMAT_R32G32_SFLOAT,
+            .offset = offsetof(Vertex, position),
+        },
+        {
+            .location = 1,
+            .binding = 0,
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset = offsetof(Vertex, color),
+        },
+    };
+    vertex_input.vertexBindingDescriptionCount = 1;
+    vertex_input.pVertexBindingDescriptions = &vertex_binding;
+    vertex_input.vertexAttributeDescriptionCount = 2;
+    vertex_input.pVertexAttributeDescriptions = vertex_attributes;
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
@@ -717,6 +809,9 @@ int main(void) {
                              VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           pipeline);
+        VkDeviceSize vertex_offset = 0;
+        vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer,
+                               &vertex_offset);
         vkCmdDraw(command_buffer, 3, 1, 0, 0);
         vkCmdEndRenderPass(command_buffer);
         if (record_status == VK_SUCCESS)
@@ -809,6 +904,10 @@ int main(void) {
         vkDestroyRenderPass(device, render_pass, NULL);
     if (image_view != VK_NULL_HANDLE)
         vkDestroyImageView(device, image_view, NULL);
+    if (vertex_buffer != VK_NULL_HANDLE)
+        vkDestroyBuffer(device, vertex_buffer, NULL);
+    if (vertex_memory != VK_NULL_HANDLE)
+        vkFreeMemory(device, vertex_memory, NULL);
     free(swapchain_images);
     if (swapchain != VK_NULL_HANDLE)
         vkDestroySwapchainKHR(device, swapchain, NULL);

@@ -1,0 +1,10 @@
+device=01408BH601027129 ordinary-app-uid=io.taowen.bx
+before-sync=BXTEST PASS host-vulkan-vertex-upload create=0 type=6 allocate=0 bind=0 map=0 bytes=60
+before-sync=BXTEST FAIL host-vulkan-compositor pixels=0 bounds=-1,-1--1,-1 triangle=0 triangleBounds=-1,-1--1,-1 size=1920x1080
+after-sync=BXTEST PASS host-vulkan-vertex-upload create=0 type=6 allocate=0 bind=0 map=0 bytes=60
+after-sync=BXTEST PASS host-vulkan-graphics-pipeline layout=0 pipeline=0 handle=valid
+after-sync=BXTEST PASS host-vulkan-record-triangle status=0 background=26,191,64 triangle=230,20,10
+after-sync=BXTEST PASS host-vulkan-submit-graphics submit=0 signal=present-semaphore
+after-sync=BXSUMMARY host-vulkan passed=32 failed=0
+after-sync=BXTEST PASS host-vulkan-compositor pixels=174537 bounds=0,0-639,359 triangle=55756 triangleBounds=90,51-549,291 size=1920x1080
+after-sync=vulkan-probe exited with 0
