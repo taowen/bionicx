@@ -34,6 +34,10 @@ adb=("$adb_bin")
 
 if [[ -n "$app_root" ]]; then
     [[ -d "$app_root" ]] || { echo "missing app root: $app_root" >&2; exit 1; }
+    # App payloads are immutable bundles. Clear only this profile's payload so
+    # removed plugins cannot survive an upgrade and mask an incomplete build.
+    "${adb[@]}" shell run-as "$package" find \
+        "files/apps/$profile_id" -mindepth 1 -delete >/dev/null
     tar -C "$app_root" -cf - . | \
         "${adb[@]}" shell run-as "$package" tar -C "files/apps/$profile_id" -xf -
 fi

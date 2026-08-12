@@ -54,8 +54,9 @@ if ! lock_matches; then
             apt-get download \
                 libblkid1 libbz2-1.0 libcap2 libgcc-s1 libgmp10 \
                 libhogweed6t64 libmount1 \
-                libnettle8t64 libpcre2-8-0 libselinux1 libsqlite3-0 \
-                libsystemd0 libudev1 zlib1g >/dev/null
+                liblzma5 libnettle8t64 libpcre2-8-0 libselinux1 \
+                libsqlite3-0 libstdc++6 libsystemd0 libudev1 libzstd1 \
+                zlib1g >/dev/null
         '
     if ! lock_matches; then
         echo "Chrome dependency set drifted from examples/chrome/dependencies.lock" >&2
@@ -90,12 +91,21 @@ podman run --rm --userns=keep-id \
     '
 
 mkdir -p "$output_dir/app/opt/google" "$output_dir/app/etc/fonts" \
-    "$output_dir/app/lib" "$output_dir/app/share/glib-2.0"
+    "$output_dir/app/lib" "$output_dir/app/share/glib-2.0" \
+    "$output_dir/app/share/mime" "$output_dir/app/share/icons"
 cp -a "$temporary/extracted/opt/google/chrome" "$output_dir/app/opt/google/"
 cp "$repo_dir/examples/chrome/fonts.conf" "$output_dir/app/etc/fonts/fonts.conf"
 cp -a "$temporary/extracted/usr/share/glib-2.0/schemas" \
     "$output_dir/app/share/glib-2.0/"
 glib-compile-schemas "$output_dir/app/share/glib-2.0/schemas"
+cp -a "$temporary/extracted/usr/share/mime/packages" \
+    "$output_dir/app/share/mime/"
+update-mime-database "$output_dir/app/share/mime"
+for theme in Adwaita hicolor; do
+    cp -a "$temporary/extracted/usr/share/icons/$theme" \
+        "$output_dir/app/share/icons/"
+    gtk-update-icon-cache --force "$output_dir/app/share/icons/$theme"
+done
 
 interpreter=/data/data/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
 while IFS= read -r executable; do
@@ -105,7 +115,11 @@ while IFS= read -r executable; do
 done < <(find "$output_dir/app/opt/google/chrome" -type f -perm /111 -print)
 
 library_root="$temporary/extracted/usr/lib/aarch64-linux-gnu"
+pixbuf_loader_root="$library_root/gdk-pixbuf-2.0/2.10.0/loaders"
 runtime_modules=(
+    # Chromium loads the native Linux UI with dlopen(), so GTK is not visible
+    # from the chrome executable's DT_NEEDED graph.
+    libgtk-3.so.0
     libsoftokn3.so
     libfreebl3.so
     libfreeblpriv3.so
@@ -124,6 +138,13 @@ for module in "${runtime_modules[@]}"; do
     }
     entries+=(--entry "$library_root/$module")
 done
+for loader in "$pixbuf_loader_root"/*.so; do
+    [[ -f "$loader" ]] || {
+        echo "missing GDK Pixbuf loader modules" >&2
+        exit 1
+    }
+    entries+=(--entry "$loader")
+done
 
 "$repo_dir/tools/resolve-elf-deps.py" \
     "${entries[@]}" \
@@ -137,13 +158,36 @@ for checksum in "$library_root"/*.chk; do
     cp "$checksum" "$output_dir/app/lib/"
 done
 
+# The ARM64 query tool must inspect the ARM64 plugins themselves. Run it in a
+# native-architecture build container, then rewrite its build-stage paths to
+# the fixed app-private Android install location.
+pixbuf_cache_dir="$output_dir/app/lib/gdk-pixbuf-2.0/2.10.0"
+mkdir -p "$pixbuf_cache_dir"
+output_rel="${output_dir#"$repo_dir/"}"
+stage_rel="${temporary#"$repo_dir/"}"
+podman run --rm --arch arm64 --network none --userns=keep-id \
+    --env OUTPUT_REL="$output_rel" --env STAGE_REL="$stage_rel" \
+    --volume "$repo_dir:/work:Z" --workdir /work \
+    docker.io/library/debian:trixie-slim sh -eu -c '
+        library_root="/work/$STAGE_REL/extracted/usr/lib/aarch64-linux-gnu"
+        LD_LIBRARY_PATH="$library_root" \
+            "$library_root/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders" \
+            "$library_root"/gdk-pixbuf-2.0/2.10.0/loaders/*.so \
+            > "/work/$OUTPUT_REL/app/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.stage"
+    '
+container_loader_root="/work/$stage_rel/extracted/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders"
+device_app_root=/data/data/io.taowen.bx/files/apps/chrome
+sed "s|$container_loader_root/|$device_app_root/lib/|g" \
+    "$pixbuf_cache_dir/loaders.cache.stage" > "$pixbuf_cache_dir/loaders.cache"
+rm "$pixbuf_cache_dir/loaders.cache.stage"
+
 {
     printf 'chrome_version=%s\nchrome_sha256=%s\n' "$version" "$chrome_sha256"
     printf 'dependency_lock_sha256='
     sha256sum "$lock_file" | cut -d' ' -f1
     printf 'runtime_modules=%s\n' "${runtime_modules[*]}"
     (cd "$output_dir" && find app/opt/google/chrome app/lib \
-        app/share/glib-2.0/schemas \
+        app/share/glib-2.0/schemas app/share/mime app/share/icons \
         -type f -exec sha256sum {} + | sort -k2)
 } > "$output_dir/BUILD-INFO"
 echo "$output_dir"

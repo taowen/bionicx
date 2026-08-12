@@ -61,7 +61,8 @@ parser.add_argument(
 parser.add_argument("--json", type=Path)
 args = parser.parse_args()
 
-entries = [path.resolve() for path in args.entry]
+entry_arguments = list(args.entry)
+entries = [path.resolve() for path in entry_arguments]
 roots = [path.resolve() for path in args.search_root]
 excluded_copy_roots = [path.resolve() for path in args.exclude_copy_root]
 for path in entries:
@@ -83,7 +84,12 @@ for root in roots:
 queue = deque(entries)
 seen: dict[Path, dict[str, object]] = {}
 missing: dict[str, list[str]] = {}
-copy_names: dict[Path, set[str]] = {path: {path.name} for path in entries}
+copy_names: dict[Path, set[str]] = {}
+for argument, path in zip(entry_arguments, entries):
+    # An explicit runtime-loaded entry may be a SONAME symlink. Preserve the
+    # requested basename: resolving it before recording the copy name would
+    # leave dlopen("libfoo.so.N") with only libfoo.so.N.x.y on the device.
+    copy_names.setdefault(path, set()).add(argument.name)
 while queue:
     owner = queue.popleft().resolve()
     if owner in seen:
