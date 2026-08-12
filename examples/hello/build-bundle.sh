@@ -20,7 +20,7 @@ podman run --rm --network host \
 
 # Winlator supplies the audited Android path/syscall compatibility closure and
 # X11 libraries. BionicX replaces its loader/libc/libm with a reproducible build
-# of the same glibc 2.39 recipe so owner-death robust mutexes retain their
+# of the Android-compatible glibc 2.41 recipe so owner-death robust mutexes retain their
 # process-private semantics even though Android seccomp blocks set_robust_list.
 rootfs_tzst="${BIONICX_ROOTFS_TZST:-}"
 if [[ -z "$rootfs_tzst" ]]; then
@@ -53,7 +53,7 @@ done
 # WPS Spreadsheets loads libXtst through libetmain. Winlator's compact rootfs
 # does not carry it, so take the reproducible ARM64 Debian library from the
 # same content-addressed builder used for every glibc/X11 probe. Its required
-# libc symbol floor is GLIBC_2.17 and is satisfied by our pinned glibc 2.39.
+# libc symbol floor is GLIBC_2.17 and is satisfied by our pinned glibc 2.41.
 podman run --rm --userns=keep-id \
     --volume "$repo_dir:/work:Z" --workdir /work \
     "$builder_image" sh -c \

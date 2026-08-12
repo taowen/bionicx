@@ -1,0 +1,25 @@
+device=01408BH601027129
+profile=runtime-probe
+execution=untraced ordinary-app-uid
+BXTEST PASS runtime-identity glibc=2.41 pid=6526 page=4096
+BXTEST PASS pthread-create-join
+BXTEST PASS pthread-robust-mutex isolated-exit=0
+BXTEST PASS fork-wait
+BXTEST PASS eventfd-epoll
+BXTEST PASS timerfd-poll
+BXTEST PASS signalfd
+BXTEST PASS memfd-shared-mmap
+BXTEST PASS mprotect
+BXTEST PASS unix-scm-rights
+BXTEST PASS unix-filesystem-socket
+BXTEST PASS tcp-loopback connect
+BXTEST PASS inotify
+BXTEST PASS procfs
+BXTEST PASS dlopen-libm
+BXTEST PASS getrandom
+BXTEST PASS unnamed-semaphore
+BXTEST PASS locale-utf8
+BXTEST PASS prctl-name
+BXTEST PASS x11-window-text
+BXSUMMARY runtime passed=20 failed=0
+runtime-probe exited with 0

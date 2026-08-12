@@ -73,7 +73,7 @@ the parent repository pins the exact fork commit used by every build.
 `tools/build-gladio.sh` builds its `libGL.so.1` for controlled probes and real
 application bundles such as Chrome, so profiles do not rely on a manually
 staged renderer client.
-`tools/build-android-glibc.sh` also produces a content-addressed glibc 2.39
+`tools/build-android-glibc.sh` also produces a content-addressed glibc 2.41
 loader/libc/libm set from pinned GNU and termux-pacman sources. The probe bundle
 builder installs this set over the Winlator-derived X11 dependency closure so
 Android-blocked `set_robust_list` retains process-private owner-death recovery.

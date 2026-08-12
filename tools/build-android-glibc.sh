@@ -3,9 +3,9 @@ set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cache_dir="$repo_dir/build/cache"
-glibc_version=2.39
-glibc_sha256=f77bd47cf8170c57365ae7bf86696c118adb3b120d3259c64c502d3dc1e2d926
-package_commit=e2ffc0bb462177386b44ec66e30e6e939d846871
+glibc_version=2.41
+glibc_sha256=a5a26b22f545d6b7d7b3dd828e11e428f24f4fac43c934fb071b6a7d0828e901
+package_commit=0bd35594050d283eda7b23a3d9cfa28fd11c0b15
 source_prefix=/data/data/com.winlator/files/rootfs
 target_prefix=/data/data/io.taowen.bx/files/rootfs
 jobs="${BIONICX_GLIBC_JOBS:-8}"
@@ -14,8 +14,7 @@ mkdir -p "$cache_dir"
 definition_hash="$({
     printf '%s\n' "$glibc_version" "$glibc_sha256" "$package_commit"
     sha256sum "$repo_dir/tools/container/Containerfile.glibc-arm64" \
-        "$repo_dir/runtime/glibc/2.39/zz-bionicx-robust-fallback.patch" \
-        "$repo_dir/runtime/glibc/2.39/post-prepare-gcc14.patch" \
+        "$repo_dir/runtime/glibc/2.41/zz-bionicx-robust-fallback.patch" \
         "$0" | cut -d ' ' -f1
 } | sha256sum | cut -c1-16)"
 result_dir="$cache_dir/android-glibc-$definition_hash"
@@ -70,14 +69,17 @@ for patch_file in "$temporary/package"/*.patch; do
     apply_source_patch "$patch_file"
 done
 apply_source_patch \
-    "$repo_dir/runtime/glibc/2.39/zz-bionicx-robust-fallback.patch"
+    "$repo_dir/runtime/glibc/2.41/zz-bionicx-robust-fallback.patch"
 
 linux_dir="$temporary/source/sysdeps/unix/sysv/linux"
 cp "$temporary/package"/shm{at,ctl,dt,get}.c \
-    "$temporary/package"/mprotect.c \
-    "$temporary/package"/syscall.c \
-    "$temporary/package"/fake-syscall.h \
-    "$temporary/package"/shmem-android.h "$linux_dir/"
+    "$temporary/package"/mprotect.c "$temporary/package"/syscall.c \
+    "$temporary/package"/fakesyscall*.h \
+    "$temporary/package"/fake_epoll_pwait2.c \
+    "$temporary/package"/setfs{u,g}id.c "$linux_dir/"
+cp "$temporary/package"/shmem-android.{c,h} \
+    "$temporary/source/sysvipc/"
+cp "$temporary/package/syslog.c" "$temporary/source/misc/"
 mv "$linux_dir/aarch64/clone3.S" "$linux_dir/aarch64/clone3.S.disabled"
 mv "$linux_dir/aarch64/syscall.S" "$linux_dir/aarch64/syscallS.S"
 
@@ -94,9 +96,27 @@ while read -r syscall_name; do
         "$linux_dir/aarch64/arch-syscall.h" >> "$disabled_header" || true
     sed -i "/#define __NR_${syscall_name} /d" \
         "$linux_dir/aarch64/arch-syscall.h"
-done < "$temporary/package/disabled-syscalls"
-patch -d "$temporary/source" -p1 --forward --batch < \
-    "$repo_dir/runtime/glibc/2.39/post-prepare-gcc14.patch"
+done < <(jq -r '.[] | .[]' "$temporary/package/fakesyscall.json")
+{
+    printf '\n#define DISABLED_SYSCALL_WITH_FAKESYSCALL \\\n'
+    while IFS= read -r fake; do
+        need_return=false
+        while IFS= read -r syscall_name; do
+            if grep -q "#define __NR_${syscall_name} " "$disabled_header"; then
+                printf '\tcase __NR_%s: \\\n' "$syscall_name"
+                need_return=true
+            elif [[ "$syscall_name" =~ ^[0-9]+$ ]]; then
+                printf '\tcase %s: \\\n' "$syscall_name"
+                need_return=true
+            fi
+        done < <(jq -r --arg fake "$fake" '.[$fake][]' \
+            "$temporary/package/fakesyscall.json")
+        if [[ "$need_return" == true ]]; then
+            printf '\t\treturn %s; \\\n' "$fake"
+        fi
+    done < <(jq -r 'keys[]' "$temporary/package/fakesyscall.json")
+} >> "$disabled_header"
+sed -i '$ s| \\$||' "$disabled_header"
 
 printf '%s\n' \
     "slibdir=$source_prefix/lib" \

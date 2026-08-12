@@ -55,9 +55,11 @@ domain, app seccomp filter, page size, and Android filesystem. In particular:
 - SysV IPC may be blocked for app UIDs.
 - Unmodified Debian glibc 2.41 calls AArch64 `set_robust_list` (syscall 99)
   during startup and receives `SIGSYS` under the tested Android 14 app seccomp
-  policy. The reproducible hello bundle therefore uses the pinned
-  Android-compatible Winlator glibc 2.39 runtime. BionicX does not hide this
-  requirement with long-lived ptrace syscall emulation.
+  policy. BionicX therefore builds an Android-compatible glibc 2.41 from pinned
+  GNU and termux-pacman sources. Its process-private robust-mutex owner-death
+  fallback is retained and regression-tested; process-shared and PI robust
+  mutexes remain unsupported without kernel registration. BionicX does not
+  hide this requirement with long-lived ptrace syscall emulation.
 - `/bin/sh`, `/tmp`, `/proc` details, D-Bus, systemd, and desktop portals may
   differ or be absent.
 - Executing extracted app-data files currently relies on the experimental APK's
