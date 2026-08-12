@@ -9,7 +9,7 @@ Covered operations:
 - display setup and extension enumeration;
 - top-level and child window creation, mapping, query-tree and translation;
 - atom creation plus the `only_if_exists`/`None` contract, WM properties and
-  an exact UTF-8 property round trip;
+  an exact UTF-8 property round trip plus property-name enumeration;
 - GC, Pixmap rendering, `CopyArea`, both PolyPoint coordinate modes, and tiled
   window-background pixmaps used by `ClearArea`;
 - a custom cursor and CLIPBOARD selection ownership;

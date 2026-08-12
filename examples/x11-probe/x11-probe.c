@@ -181,6 +181,23 @@ int main(int argc, char **argv) {
     if (property) XFree(property);
 
     before = x_errors;
+    int property_count = 0;
+    Atom *property_names = XListProperties(display, window, &property_count);
+    bool found_probe_property = false;
+    for (int i = 0; i < property_count; ++i) {
+        if (property_names[i] == probe_property) found_probe_property = true;
+    }
+    if (property_names) XFree(property_names);
+    XSync(display, False);
+    bool list_properties_ok = x_errors == before && found_probe_property;
+    char list_properties_detail[80];
+    snprintf(list_properties_detail, sizeof(list_properties_detail),
+             "count=%d probe-atom=%d", property_count,
+             found_probe_property ? 1 : 0);
+    result("list-properties", list_properties_ok, list_properties_detail);
+    RECORD(list_properties_ok);
+
+    before = x_errors;
     Pixmap pixmap = XCreatePixmap(display, window, 160, 100,
                                   (unsigned)DefaultDepth(display, screen));
     GC gc = XCreateGC(display, window, 0, NULL);

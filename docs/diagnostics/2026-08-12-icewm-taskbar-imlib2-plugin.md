@@ -64,3 +64,8 @@ monitors. BionicX now implements both `CoordModeOrigin` and
 `BadValue`. The controlled client reads back exact `0x20c060` pixels for both
 modes and the core suite passes 20/20. A fresh real-IceWM run emits no opcode
 64 fallback while retaining its 3/3 lifecycle result.
+
+The remaining opcode 21 was core `ListProperties`. BionicX now snapshots a
+window's property atom IDs into the correctly sized reply. The controlled
+client enumerates five names and finds its exact private atom, raising the core
+suite to 21/21. Real IceWM continues to pass 3/3 and no longer emits opcode 21.
