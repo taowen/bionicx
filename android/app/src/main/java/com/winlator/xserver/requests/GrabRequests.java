@@ -1,5 +1,7 @@
 package com.winlator.xserver.requests;
 
+import android.util.Log;
+
 import static com.winlator.xserver.XClientRequestHandler.RESPONSE_CODE_SUCCESS;
 
 import com.winlator.xconnector.XInputStream;
@@ -8,15 +10,18 @@ import com.winlator.xconnector.XStreamLock;
 import com.winlator.core.Bitmask;
 import com.winlator.xserver.Window;
 import com.winlator.xserver.XClient;
+import com.winlator.xserver.Cursor;
 import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.errors.BadAccess;
 import com.winlator.xserver.errors.BadValue;
+import com.winlator.xserver.errors.BadCursor;
 import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
 
 public abstract class GrabRequests {
+    private static final String TAG = "WinlatorXGrab";
     private enum Status {SUCCESS, ALREADY_GRABBED, INVALID_TIME, NOT_VIEWABLE, FROZEN}
 
     public static void grabPointer(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
@@ -38,7 +43,16 @@ public abstract class GrabRequests {
         if (window == null) throw new BadWindow(windowId);
 
         Bitmask eventMask = new Bitmask(inputStream.readShort());
-        inputStream.skip(14);
+        int pointerMode = inputStream.readByte() & 0xff;
+        int keyboardMode = inputStream.readByte() & 0xff;
+        int confineTo = inputStream.readInt();
+        int cursorId = inputStream.readInt();
+        int timestamp = inputStream.readInt();
+        Cursor cursor = cursorId == 0 ? null
+                : client.xServer.cursorManager.getCursor(cursorId);
+        if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
+        if (pointerMode != 1 || keyboardMode != 1 || confineTo != 0
+                || timestamp != 0) throw new BadImplementation();
 
         Status status;
         if (client.xServer.grabManager.getWindow() != null && client.xServer.grabManager.getClient() != client) {
@@ -49,7 +63,8 @@ public abstract class GrabRequests {
         }
         else {
             status = Status.SUCCESS;
-            client.xServer.grabManager.activatePointerGrab(window, ownerEvents, eventMask, client);
+            client.xServer.grabManager.activatePointerGrab(window, ownerEvents,
+                    eventMask, client, cursor);
         }
 
         try (XStreamLock lock = outputStream.lock()) {
@@ -77,17 +92,25 @@ public abstract class GrabRequests {
         int pointerMode = inputStream.readByte() & 0xff;
         int keyboardMode = inputStream.readByte() & 0xff;
         int confineTo = inputStream.readInt();
-        int cursor = inputStream.readInt();
+        int cursorId = inputStream.readInt();
         int button = inputStream.readByte() & 0xff;
         inputStream.skip(1);
         int modifiers = inputStream.readShort() & 0xffff;
         if ((eventMask.getBits() & ~0x7ffc) != 0)
             throw new BadValue(eventMask.getBits());
         if ((modifiers & ~0x80ff) != 0) throw new BadValue(modifiers);
-        if (pointerMode != 1 || keyboardMode != 1 || confineTo != 0
-                || cursor != 0) throw new BadImplementation();
+        Cursor cursor = cursorId == 0 ? null
+                : client.xServer.cursorManager.getCursor(cursorId);
+        if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
+        if (pointerMode != 1 || keyboardMode != 1 || confineTo != 0) {
+            Log.w(TAG, "unsupported GrabButton modes pointer=" + pointerMode
+                    + " keyboard=" + keyboardMode
+                    + " confineTo=" + Integer.toUnsignedString(confineTo)
+                    + " cursor=" + Integer.toUnsignedString(cursorId));
+            throw new BadImplementation();
+        }
         if (!client.xServer.grabManager.addPassiveButtonGrab(window, button,
-                modifiers, ownerEvents, eventMask, client))
+                modifiers, ownerEvents, eventMask, client, cursor))
             throw new BadAccess();
     }
 

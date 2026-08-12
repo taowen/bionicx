@@ -12,6 +12,7 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
     private boolean ownerEvents;
     private boolean releaseWithButtons;
     private EventListener eventListener;
+    private Cursor pointerGrabCursor;
     private Window keyboardWindow;
     private XClient keyboardClient;
     private boolean keyboardOwnerEvents;
@@ -61,6 +62,10 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         return eventListener;
     }
 
+    public Cursor getPointerGrabCursor() {
+        return pointerGrabCursor;
+    }
+
     public XClient getClient() {
         return eventListener != null ? eventListener.client : null;
     }
@@ -82,6 +87,7 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
             xServer.inputDeviceManager.sendEnterLeaveNotify(window, xServer.inputDeviceManager.getPointWindow(), PointerWindowEvent.Mode.UNGRAB);
             window = null;
             eventListener = null;
+            pointerGrabCursor = null;
         }
     }
 
@@ -89,7 +95,10 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         if (getClient() == client) deactivatePointerGrab();
     }
 
-    private void activatePointerGrab(Window window, EventListener eventListener, boolean ownerEvents, boolean releaseWithButtons) {
+    private void activatePointerGrab(Window window, EventListener eventListener,
+                                     boolean ownerEvents,
+                                     boolean releaseWithButtons,
+                                     Cursor cursor) {
         if (this.window == null) {
             xServer.inputDeviceManager.sendEnterLeaveNotify(xServer.inputDeviceManager.getPointWindow(), window, PointerWindowEvent.Mode.GRAB);
         }
@@ -97,15 +106,21 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         this.releaseWithButtons = releaseWithButtons;
         this.ownerEvents = ownerEvents;
         this.eventListener = eventListener;
+        this.pointerGrabCursor = cursor;
     }
 
-    public void activatePointerGrab(Window window, boolean ownerEvents, Bitmask eventMask, XClient client) {
-        activatePointerGrab(window, new EventListener(client, eventMask), ownerEvents, false);
+    public void activatePointerGrab(Window window, boolean ownerEvents,
+                                    Bitmask eventMask, XClient client,
+                                    Cursor cursor) {
+        activatePointerGrab(window, new EventListener(client, eventMask),
+                ownerEvents, false, cursor);
     }
 
     public void activatePointerGrab(Window window) {
         EventListener eventListener = window.getButtonPressListener();
-        activatePointerGrab(window, eventListener, eventListener.isInterestedIn(Event.OWNER_GRAB_BUTTON), true);
+        activatePointerGrab(window, eventListener,
+                eventListener.isInterestedIn(Event.OWNER_GRAB_BUTTON), true,
+                null);
     }
 
     private static class PassiveButtonGrab {
@@ -115,22 +130,25 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         final boolean ownerEvents;
         final Bitmask eventMask;
         final XClient client;
+        final Cursor cursor;
 
         PassiveButtonGrab(Window window, int button, int modifiers,
                           boolean ownerEvents, Bitmask eventMask,
-                          XClient client) {
+                          XClient client, Cursor cursor) {
             this.window = window;
             this.button = button;
             this.modifiers = modifiers;
             this.ownerEvents = ownerEvents;
             this.eventMask = eventMask;
             this.client = client;
+            this.cursor = cursor;
         }
     }
 
     public boolean addPassiveButtonGrab(Window window, int button,
                                         int modifiers, boolean ownerEvents,
-                                        Bitmask eventMask, XClient client) {
+                                        Bitmask eventMask, XClient client,
+                                        Cursor cursor) {
         for (PassiveButtonGrab grab : passiveButtonGrabs) {
             if (grab.window == window && grab.client != client
                     && overlaps(grab.button, button, 0)
@@ -138,7 +156,7 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         }
         removePassiveButtonGrabs(window, button, modifiers, client);
         passiveButtonGrabs.add(new PassiveButtonGrab(window, button, modifiers,
-                ownerEvents, eventMask, client));
+                ownerEvents, eventMask, client, cursor));
         return true;
     }
 
@@ -166,7 +184,7 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
                         || grab.modifiers == (modifiers & 0xff))) {
                     activatePointerGrab(grab.window,
                             new EventListener(grab.client, grab.eventMask),
-                            grab.ownerEvents, true);
+                            grab.ownerEvents, true, grab.cursor);
                     return true;
                 }
             }

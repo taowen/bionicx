@@ -7,6 +7,7 @@ import com.winlator.xserver.Cursor;
 import com.winlator.xserver.Pixmap;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.errors.BadIdChoice;
+import com.winlator.xserver.errors.BadFont;
 import com.winlator.xserver.errors.BadMatch;
 import com.winlator.xserver.errors.BadPixmap;
 import com.winlator.xserver.errors.XRequestError;
@@ -14,6 +15,10 @@ import com.winlator.xserver.errors.XRequestError;
 import java.io.IOException;
 
 public abstract class CursorRequests {
+    private static int color(int red, int green, int blue) {
+        return 0xff000000 | ((red >>> 8) << 16) | ((green >>> 8) << 8)
+                | (blue >>> 8);
+    }
     public static void createCursor(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
         int cursorId = inputStream.readInt();
         int sourcePixmapId = inputStream.readInt();
@@ -49,6 +54,32 @@ public abstract class CursorRequests {
 
     public static void freeCursor(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
         client.xServer.cursorManager.freeCursor(inputStream.readInt());
+    }
+
+    public static void createGlyphCursor(XClient client,
+                                         XInputStream inputStream,
+                                         XOutputStream outputStream)
+            throws XRequestError {
+        int cursorId = inputStream.readInt();
+        int sourceFont = inputStream.readInt();
+        int maskFont = inputStream.readInt();
+        inputStream.skip(4); // source and mask character
+        int foreRed = inputStream.readShort() & 0xffff;
+        int foreGreen = inputStream.readShort() & 0xffff;
+        int foreBlue = inputStream.readShort() & 0xffff;
+        int backRed = inputStream.readShort() & 0xffff;
+        int backGreen = inputStream.readShort() & 0xffff;
+        int backBlue = inputStream.readShort() & 0xffff;
+        if (!client.isValidResourceId(cursorId))
+            throw new BadIdChoice(cursorId);
+        if (!client.hasOpenFont(sourceFont)) throw new BadFont(sourceFont);
+        if (maskFont != 0 && !client.hasOpenFont(maskFont))
+            throw new BadFont(maskFont);
+        Cursor cursor = client.xServer.cursorManager.createGlyphCursor(cursorId,
+                color(foreRed, foreGreen, foreBlue),
+                color(backRed, backGreen, backBlue));
+        if (cursor == null) throw new BadIdChoice(cursorId);
+        client.registerAsOwnerOfResource(cursor);
     }
 
     public static void getPointerMapping(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {

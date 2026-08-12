@@ -1,4 +1,5 @@
 #include <X11/Xlib.h>
+#include <X11/cursorfont.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -115,9 +116,13 @@ int main(int argc, char **argv) {
     drain(grabber);
     drain(peer);
 
+    Cursor grab_cursor = XCreateFontCursor(grabber, XC_crosshair);
+    XSync(grabber, False);
+    bool glyph_cursor_ok = grab_cursor != None && x_errors == 0;
+
     XGrabButton(grabber, AnyButton, AnyModifier, root, False,
             ButtonPressMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync,
-            None, None);
+            None, grab_cursor);
     XSync(grabber, False);
     expect_bad_access = true;
     XGrabButton(peer, AnyButton, AnyModifier,
@@ -154,20 +159,23 @@ int main(int argc, char **argv) {
 
     printf("BXTEST %s passive-button-grab route=%d\n",
             passive_route_ok ? "PASS" : "FAIL", passive_route_ok);
+    printf("BXTEST %s glyph-cursor-grab resource=%lu\n",
+            glyph_cursor_ok ? "PASS" : "FAIL", grab_cursor);
     printf("BXTEST %s passive-button-contention bad-access=%d\n",
             contention_ok ? "PASS" : "FAIL", expected_bad_access);
     printf("BXTEST %s passive-button-owner-events normal-route=%d\n",
             owner_events_ok ? "PASS" : "FAIL", owner_events_ok);
     printf("BXTEST %s passive-button-ungrab normal-route=%d\n",
             ungrab_route_ok ? "PASS" : "FAIL", ungrab_route_ok);
-    bool passed = passive_route_ok && contention_ok && owner_events_ok
+    bool passed = glyph_cursor_ok && passive_route_ok && contention_ok && owner_events_ok
             && ungrab_route_ok && x_errors == 0;
-    printf("BXSUMMARY pointer-grab-x11 passed=%d/4 xerrors=%d\n",
-            passed ? 4 : 0, x_errors);
+    printf("BXSUMMARY pointer-grab-x11 passed=%d/5 xerrors=%d\n",
+            passed ? 5 : 0, x_errors);
     fflush(stdout);
     sleep((unsigned)(duration > 0 && duration <= 60 ? duration : 4));
 
     XDestroyWindow(peer, peer_window);
+    XFreeCursor(grabber, grab_cursor);
     XDestroyWindow(grabber, grabber_window);
     XCloseDisplay(peer);
     XCloseDisplay(grabber);

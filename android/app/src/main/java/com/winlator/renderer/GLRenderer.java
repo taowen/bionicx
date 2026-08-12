@@ -257,7 +257,10 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
         try (XLock lock = xServer.lock(XServer.Lockable.DRAWABLE_MANAGER)) {
             Window pointWindow = xServer.inputDeviceManager.getPointWindow();
-            Cursor cursor = pointWindow != null ? pointWindow.attributes.getCursor() : null;
+            Cursor cursor = xServer.grabManager.getPointerGrabCursor();
+            if (cursor == null)
+                cursor = pointWindow != null
+                        ? pointWindow.attributes.getCursor() : null;
             short x = xServer.pointer.getClampedX();
             short y = xServer.pointer.getClampedY();
 

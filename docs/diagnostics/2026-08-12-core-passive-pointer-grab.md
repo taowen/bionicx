@@ -16,18 +16,26 @@ grabs now send only through the grab listener, ButtonRelease uses its actual
 event-selection bit, and the event `state` field contains modifier/button state
 rather than pointer-motion selection bits.
 
+Cursor-font `OpenFont`/`CreateGlyphCursor` resources can now be attached to an
+active or passive pointer grab, and the renderer uses the grab cursor while the
+grab is active. The current cursor-font raster is an intentionally visible
+crosshair fallback; exact standard cursor glyph shapes remain future work.
+
 The controlled AArch64 glibc/libX11 probe opens independent grabber and peer
 connections and drives three physical Android taps:
 
 ```text
 BXTEST PASS passive-button-grab route=1
+BXTEST PASS glyph-cursor-grab resource=4194307
 BXTEST PASS passive-button-contention bad-access=1
 BXTEST PASS passive-button-owner-events normal-route=1
 BXTEST PASS passive-button-ungrab normal-route=1
-BXSUMMARY pointer-grab-x11 passed=4/4 xerrors=0
+BXSUMMARY pointer-grab-x11 passed=5/5 xerrors=0
 ```
 
-Core X11 remains 21/21, keyboard grabs remain 9/9, and a fresh ordinary-app-UID
-IceWM run remains 3/3 with no unsupported opcode 28 or 29. Synchronous modes and
-non-None cursor/confine overrides are rejected until their complete semantics
-exist.
+Core X11 remains 22/22, keyboard grabs remain 9/9, and a fresh ordinary-app-UID
+IceWM run remains 3/3 with no unsupported opcodes. Parameter diagnostics show
+its remaining four opcode-28 errors are `GrabModeSync` pointer registrations
+(`pointer=0 keyboard=1 confineTo=0 cursor=0`), not cursor overrides.
+Synchronous modes and non-None confinement remain rejected until their complete
+semantics exist.

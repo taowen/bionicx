@@ -250,6 +250,10 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
         return openFonts.remove(id);
     }
 
+    public boolean hasOpenFont(int id) {
+        return openFonts.contains(id);
+    }
+
     public boolean changeSaveSet(Window window, boolean insert) {
         if (window.originClient == this) return false;
         if (insert) {

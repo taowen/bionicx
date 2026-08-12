@@ -43,5 +43,5 @@ wait_log "pointer-grab-x11-probe exited with 0"
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(READY|EVENT|TEST|SUMMARY|ERROR)|pointer-grab-x11-probe exited with')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY pointer-grab-x11 passed=4/4 xerrors=0" <<<"$result"
+grep -Fq "BXSUMMARY pointer-grab-x11 passed=5/5 xerrors=0" <<<"$result"
 grep -Fq "pointer-grab-x11-probe exited with 0" <<<"$result"

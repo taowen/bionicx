@@ -1,6 +1,9 @@
 package com.winlator.xserver;
 
 import android.util.SparseArray;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 
 import java.nio.IntBuffer;
 
@@ -20,6 +23,28 @@ public class CursorManager extends XResourceManager {
         if (cursors.indexOfKey(id) >= 0) return null;
         Drawable drawable = drawableManager.createDrawable(0, sourcePixmap.drawable.width, sourcePixmap.drawable.height, sourcePixmap.drawable.visual);
         Cursor cursor = new Cursor(id, x, y, drawable, sourcePixmap.drawable, maskPixmap != null ? maskPixmap.drawable : null);
+        cursors.put(id, cursor);
+        triggerOnCreateResourceListener(cursor);
+        return cursor;
+    }
+
+    public Cursor createGlyphCursor(int id, int foreground, int background) {
+        if (cursors.indexOfKey(id) >= 0) return null;
+        Bitmap bitmap = Bitmap.createBitmap(17, 17, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        Paint outline = new Paint();
+        outline.setColor(background);
+        outline.setStrokeWidth(5.0f);
+        canvas.drawLine(8, 1, 8, 15, outline);
+        canvas.drawLine(1, 8, 15, 8, outline);
+        Paint stroke = new Paint();
+        stroke.setColor(foreground);
+        stroke.setStrokeWidth(2.0f);
+        canvas.drawLine(8, 1, 8, 15, stroke);
+        canvas.drawLine(1, 8, 15, 8, stroke);
+        Drawable drawable = Drawable.fromBitmap(bitmap);
+        bitmap.recycle();
+        Cursor cursor = new Cursor(id, 8, 8, drawable, drawable, null);
         cursors.put(id, cursor);
         triggerOnCreateResourceListener(cursor);
         return cursor;
