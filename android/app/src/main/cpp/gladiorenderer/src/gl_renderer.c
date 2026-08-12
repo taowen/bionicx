@@ -797,11 +797,8 @@ int GLRenderer_getParamsv(GLRenderer* renderer, GLenum pname, GLenum type, void*
             break;
         case GL_MAJOR_VERSION:
         case GL_MINOR_VERSION:
-            if (params) {
-                int version[2];
-                sscanf(GL_STRING_VERSION, "%d.%d", &version[0], &version[1]);
-                *(GLint*)params = version[pname - GL_MAJOR_VERSION];
-            }
+            if (params) *(GLint*)params = pname == GL_MAJOR_VERSION
+                    ? GL_VERSION_MAJOR : GL_VERSION_MINOR;
             break;
         case GL_LINE_SMOOTH:
         case GL_LINE_STIPPLE:

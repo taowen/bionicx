@@ -430,6 +430,10 @@ extern void gd_handle_glVertexPointer(GLContext* context);
 extern void gd_handle_glViewport(GLContext* context);
 extern void gd_handle_glWaitSync(GLContext* context);
 extern void gd_handle_glWindowPos3f(GLContext* context);
+extern void gd_handle_glBindTransformFeedback(GLContext* context);
+extern void gd_handle_glDeleteTransformFeedbacks(GLContext* context);
+extern void gd_handle_glGenTransformFeedbacks(GLContext* context);
+extern void gd_handle_glIsTransformFeedback(GLContext* context);
 
 extern HandleRequestFunc getHandleRequestFunc(short requestCode);
 

@@ -9,8 +9,8 @@ case "$output_dir/" in
     *) echo "output must be inside the repository: $output_dir" >&2; exit 2 ;;
 esac
 
-gladio_commit="116c0d14dedbea3bd057f98f1db138bb1efe225e"
-gladio_sha256="d275a1e745d2d9388fe37061c379f5872820057a5b43f8bbc34d63c6c70c7024"
+gladio_commit="90ac071f78b5ef9f4ba802d50c92bfcf068076ec"
+gladio_sha256="70ae6ac71aca3d36099fcb0e7cda574095d12e3d500aad12b4c6502b6d5fa2ea"
 archive="$repo_dir/build/downloads/gladio-$gladio_commit.tar.gz"
 source_dir="$output_dir/gladio-source"
 
@@ -18,34 +18,13 @@ source_dir="$output_dir/gladio-source"
 mkdir -p "$(dirname "$archive")" "$output_dir/app/lib"
 if [[ ! -f "$archive" ]]; then
     curl -L --fail --show-error \
-        "https://github.com/brunodev85/gladio/archive/$gladio_commit.tar.gz" \
+        "https://github.com/taowen/gladio/archive/$gladio_commit.tar.gz" \
         -o "$archive"
 fi
 echo "$gladio_sha256  $archive" | sha256sum --check --status
 rm -rf "$source_dir"
 mkdir -p "$source_dir"
 tar -xzf "$archive" --strip-components=1 -C "$source_dir"
-# The pinned archive mixes CRLF and LF files; normalize only the extracted
-# build tree so the audited patch applies identically on every host.
-sed -i 's/\r$//' "$source_dir/include/gl_context.h" \
-    "$source_dir/include/gladio.h" "$source_dir/src/glx_calls.c" \
-    "$source_dir/src/main.c"
-patch -d "$source_dir" -p1 < \
-    "$repo_dir/examples/glx-probe/gladio-dynamic-glx-opcode.patch"
-patch -d "$source_dir" -p1 < \
-    "$repo_dir/examples/glx-probe/gladio-glx-discovery.patch"
-patch -d "$source_dir" -p1 < \
-    "$repo_dir/examples/glx-probe/gladio-pbuffer.patch"
-patch -d "$source_dir" -p1 < \
-    "$repo_dir/examples/glx-probe/gladio-gl-proc-address.patch"
-patch -d "$source_dir" -p1 < \
-    "$repo_dir/examples/glx-probe/gladio-gl-capabilities.patch"
-
-# Gladio 1.0 hard-codes Winlator's private X11 path. Keep the protocol intact
-# while targeting BionicX's equal-length Android package name.
-sed -i 's|/data/data/com\.winlator/|/data/data/io.taowen.bx/|' \
-    "$source_dir/include/gladio.h"
-
 container_output="/work/${output_dir#"$repo_dir"/}"
 builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
 podman run --rm --network host --userns=keep-id \

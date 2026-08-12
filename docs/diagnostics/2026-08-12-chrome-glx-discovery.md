@@ -26,6 +26,18 @@ the glibc client and Android renderer sides now forward these queries to the
 Qualcomm GLES driver. Gladio also reports its actual backend as
 `OpenGL ES 3.2 Gladio`, rather than claiming desktop GL 3.3.
 
+ANGLE still rejected GLES 3 because Gladio parsed the leading text of that
+version string as integers and hard-coded every required renderbuffer format
+to zero multisample counts. Numeric major/minor queries now use explicit 3.2
+constants, while internal-format sample queries are forwarded to the host
+driver. Chrome then reached a missing `glGenTransformFeedbacks` dispatch slot;
+the fork and Android renderer now implement the complete transform-feedback
+object lifecycle and the GLES 3 texture-target state slots.
+
+These client changes now live as ordinary source in the
+[BionicX Gladio fork](https://github.com/taowen/gladio/tree/bionicx), pinned by
+commit and archive hash. The former downstream patch stack has been removed.
+
 ## Diagnostic efficiency
 
 `bionicx-exec --diagnose-signals` now follows fork, vfork, and clone children.
@@ -37,20 +49,23 @@ recorded in `evidence/diagnose-child-signal.log`.
 
 ## Controlled verification
 
-On x300 `01408BH601027129`, the host-GLX probe passes 17/17 checks:
+On x300 `01408BH601027129`, the host-GLX probe passes 20/20 checks from a clean
+download and build of the pinned fork:
 
 ```text
 BXTEST PASS glx-gl-proc-address OpenGL ES 3.2 Gladio
+BXTEST PASS host-gl-numeric-version version=3.2
 BXTEST PASS host-gl-shader-precision range=127..127 precision=23
 BXTEST PASS host-gl-integer64 maxElementIndex=2147483647
 BXTEST PASS host-gl-indexed-integer maxComputeWorkGroupsX=65535
+BXTEST PASS host-gl-required-format-msaa formats=9 minimumMaxSamples=4
+BXTEST PASS host-gl-transform-feedback-object id=1
 BXTEST PASS host-gl-identity vendor=Qualcomm renderer=Gladio version=OpenGL ES 3.2 Gladio
-BXSUMMARY host-glx passed=17 failed=0
+BXSUMMARY host-glx passed=20 failed=0
 ```
 
-Chrome/ANGLE now completes native capability enumeration without crashing or
-logging an unimplemented Gladio call. Its remaining host-GPU blocker is that
-ANGLE's aggregate maximum supported ES version is still below 3, causing
-Chrome to reject the generated EGL config while ES fallback is disabled. The
-normal Chrome smoke profile therefore keeps software rendering until that
-capability matrix is complete.
+Chrome/ANGLE now passes the GLES 3 capability gate and the transform-feedback
+startup call. The next isolated GPU-process blocker is a Chromium
+`ScopedFDCloseTraits` fatal check because closing FD 9 returns `EBADF`. The
+normal Chrome smoke profile therefore keeps `--disable-gpu` while ownership of
+that descriptor is traced. It continues to retain the required `--no-sandbox`.

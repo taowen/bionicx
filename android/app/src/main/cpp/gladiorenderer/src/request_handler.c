@@ -3329,6 +3329,35 @@ void gd_handle_glWindowPos3f(GLContext* context) {
     GLRenderer_setRasterPos(currentRenderer, false, x, y, z, 1.0f);
 }
 
+void gd_handle_glBindTransformFeedback(GLContext* context) {
+    GLenum target = ArrayBuffer_getInt(&context->inputBuffer);
+    GLuint id = ArrayBuffer_getInt(&context->inputBuffer);
+    glBindTransformFeedback(target, id);
+}
+
+void gd_handle_glDeleteTransformFeedbacks(GLContext* context) {
+    GLsizei count = ArrayBuffer_getInt(&context->inputBuffer);
+    GLuint ids[count];
+    for (GLsizei i = 0; i < count; i++)
+        ids[i] = ArrayBuffer_getInt(&context->inputBuffer);
+    glDeleteTransformFeedbacks(count, ids);
+}
+
+void gd_handle_glGenTransformFeedbacks(GLContext* context) {
+    GLsizei count = ArrayBuffer_getInt(&context->inputBuffer);
+    GLuint ids[count];
+    glGenTransformFeedbacks(count, ids);
+    gl_send(context->clientRing, REQUEST_CODE_GL_GEN_TRANSFORM_FEEDBACKS,
+            ids, count * sizeof(GLuint));
+}
+
+void gd_handle_glIsTransformFeedback(GLContext* context) {
+    GLuint id = ArrayBuffer_getInt(&context->inputBuffer);
+    GLboolean result = glIsTransformFeedback(id);
+    gl_send(context->clientRing, REQUEST_CODE_GL_IS_TRANSFORM_FEEDBACK,
+            &result, sizeof(result));
+}
+
 HandleRequestFunc handleRequestFuncs[] = {
     gd_handle_glAccum,
     gd_handle_glActiveTexture,
@@ -3760,6 +3789,10 @@ HandleRequestFunc handleRequestFuncs[] = {
     gd_handle_glViewport,
     gd_handle_glWaitSync,
     gd_handle_glWindowPos3f,
+    gd_handle_glBindTransformFeedback,
+    gd_handle_glDeleteTransformFeedbacks,
+    gd_handle_glGenTransformFeedbacks,
+    gd_handle_glIsTransformFeedback,
 };
 
 HandleRequestFunc getHandleRequestFunc(short requestCode) {

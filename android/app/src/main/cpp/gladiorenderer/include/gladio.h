@@ -14,6 +14,8 @@
 #define PIXEL_READ_CACHE_SKIP_FRAMES 3
 #define X11_SERVER_PATH "/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0"
 
+#define GL_VERSION_MAJOR 3
+#define GL_VERSION_MINOR 2
 #define GL_STRING_VERSION "OpenGL ES 3.2 Gladio"
 #define GL_STRING_RENDERER "Gladio"
 #define GL_STRING_SHADING_LANGUAGE_VERSION "OpenGL ES GLSL ES 3.20"
@@ -26,7 +28,7 @@
 
 #define MAX_LIGHTS 4
 #define MAX_TEXCOORDS 8
-#define MAX_TEXTURE_TARGETS 4
+#define MAX_TEXTURE_TARGETS 7
 #define MAX_FRAMEBUFFER_TARGETS 3
 #define MAX_BUFFER_TARGETS 6
 #define MAX_ARB_PROGRAM_TARGETS 2
@@ -279,6 +281,12 @@ static inline uint8_t indexOfGLTarget(GLenum target) {
         case GL_TEXTURE_2D_ARRAY:
         case GL_TEXTURE_1D_ARRAY:
             return 3;
+        case GL_TEXTURE_2D_MULTISAMPLE:
+            return 4;
+        case GL_TEXTURE_CUBE_MAP_ARRAY:
+            return 5;
+        case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+            return 6;
         case GL_UNIFORM_BUFFER:
             return 4;
         case GL_TEXTURE_BUFFER:

@@ -14,6 +14,8 @@ extern void glGetShaderPrecisionFormat(GLenum shader_type,
         GLenum precision_type, GLint *range, GLint *precision);
 extern void glGetInteger64v(GLenum pname, GLint64 *data);
 extern void glGetIntegeri_v(GLenum target, GLuint index, GLint *data);
+extern void glGetInternalformativ(GLenum target, GLenum internalformat,
+        GLenum pname, GLsizei count, GLint *params);
 
 static void result(const char *name, bool passed, const char *detail) {
     printf("BXTEST %s %s %s\n", passed ? "PASS" : "FAIL", name, detail);
@@ -234,6 +236,15 @@ int main(void) {
            proc_version ? proc_version : "glGetString unavailable");
     proc_address_ok ? passed++ : failed++;
 
+    GLint gl_major = 0;
+    GLint gl_minor = 0;
+    glGetIntegerv(GL_MAJOR_VERSION, &gl_major);
+    glGetIntegerv(GL_MINOR_VERSION, &gl_minor);
+    bool numeric_version_ok = gl_major == 3 && gl_minor == 2;
+    snprintf(details, sizeof(details), "version=%d.%d", gl_major, gl_minor);
+    result("host-gl-numeric-version", numeric_version_ok, details);
+    numeric_version_ok ? passed++ : failed++;
+
     GLint precision_range[2] = {0};
     GLint precision_bits = 0;
     glGetShaderPrecisionFormat(GL_VERTEX_SHADER, GL_HIGH_FLOAT,
@@ -261,6 +272,76 @@ int main(void) {
              max_compute_count);
     result("host-gl-indexed-integer", indexed_integer_ok, details);
     indexed_integer_ok ? passed++ : failed++;
+
+    const GLenum required_msaa_formats[] = {
+        GL_RGBA8, GL_RGB8, GL_RGB565, GL_RGBA4, GL_RGB5_A1,
+        GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH24_STENCIL8,
+        GL_STENCIL_INDEX8,
+    };
+    GLint minimum_max_samples = 0x7fffffff;
+    bool required_msaa_ok = true;
+    for (size_t i = 0; i < sizeof(required_msaa_formats)
+            / sizeof(required_msaa_formats[0]); i++) {
+        GLint count = 0;
+        GLint samples[32] = {0};
+        glGetInternalformativ(GL_RENDERBUFFER, required_msaa_formats[i],
+                             GL_NUM_SAMPLE_COUNTS, 1, &count);
+        if (count < 1 || count > (GLint)(sizeof(samples) / sizeof(samples[0]))) {
+            required_msaa_ok = false;
+            minimum_max_samples = 0;
+            continue;
+        }
+        glGetInternalformativ(GL_RENDERBUFFER, required_msaa_formats[i],
+                             GL_SAMPLES, count, samples);
+        GLint maximum = 0;
+        for (GLint j = 0; j < count; j++) {
+            if (samples[j] > maximum) maximum = samples[j];
+        }
+        if (maximum < 4) required_msaa_ok = false;
+        if (maximum < minimum_max_samples) minimum_max_samples = maximum;
+    }
+    snprintf(details, sizeof(details), "formats=%zu minimumMaxSamples=%d",
+             sizeof(required_msaa_formats) / sizeof(required_msaa_formats[0]),
+             minimum_max_samples);
+    result("host-gl-required-format-msaa", required_msaa_ok, details);
+    required_msaa_ok ? passed++ : failed++;
+
+    typedef void (*GenTransformFeedbacksProc)(GLsizei, GLuint *);
+    typedef void (*BindTransformFeedbackProc)(GLenum, GLuint);
+    typedef void (*DeleteTransformFeedbacksProc)(GLsizei, const GLuint *);
+    typedef GLboolean (*IsTransformFeedbackProc)(GLuint);
+    GenTransformFeedbacksProc gen_transform_feedbacks =
+            (GenTransformFeedbacksProc)glXGetProcAddress(
+                    (const GLubyte *)"glGenTransformFeedbacks");
+    BindTransformFeedbackProc bind_transform_feedback =
+            (BindTransformFeedbackProc)glXGetProcAddress(
+                    (const GLubyte *)"glBindTransformFeedback");
+    DeleteTransformFeedbacksProc delete_transform_feedbacks =
+            (DeleteTransformFeedbacksProc)glXGetProcAddress(
+                    (const GLubyte *)"glDeleteTransformFeedbacks");
+    IsTransformFeedbackProc is_transform_feedback =
+            (IsTransformFeedbackProc)glXGetProcAddress(
+                    (const GLubyte *)"glIsTransformFeedback");
+    GLuint transform_feedback = 0;
+    bool transform_feedback_ok = gen_transform_feedbacks
+            && bind_transform_feedback && delete_transform_feedbacks
+            && is_transform_feedback;
+    if (transform_feedback_ok) {
+        gen_transform_feedbacks(1, &transform_feedback);
+        bool initially_unbound = transform_feedback != 0
+                && !is_transform_feedback(transform_feedback);
+        bind_transform_feedback(GL_TRANSFORM_FEEDBACK, transform_feedback);
+        bool valid_after_bind = is_transform_feedback(transform_feedback);
+        bind_transform_feedback(GL_TRANSFORM_FEEDBACK, 0);
+        delete_transform_feedbacks(1, &transform_feedback);
+        transform_feedback_ok = initially_unbound && valid_after_bind
+                && !is_transform_feedback(transform_feedback)
+                && glGetError() == GL_NO_ERROR;
+    }
+    snprintf(details, sizeof(details), "id=%u", transform_feedback);
+    result("host-gl-transform-feedback-object", transform_feedback_ok,
+           details);
+    transform_feedback_ok ? passed++ : failed++;
 
     const char *vendor = (const char *)glGetString(GL_VENDOR);
     const char *renderer = (const char *)glGetString(GL_RENDERER);

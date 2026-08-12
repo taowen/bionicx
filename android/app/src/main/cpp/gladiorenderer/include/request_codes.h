@@ -19,7 +19,7 @@
 #define REQUEST_CODE_GL_DSA_RESTORE_BOUND_RENDERBUFFER 21
 
 #define REQUEST_CODE_GL_CALL_START 100
-#define REQUEST_CODE_GL_CALL_COUNT 430
+#define REQUEST_CODE_GL_CALL_COUNT 434
 
 #define REQUEST_CODE_GL_ACCUM 100
 #define REQUEST_CODE_GL_ACTIVE_TEXTURE 101
@@ -451,6 +451,10 @@
 #define REQUEST_CODE_GL_VIEWPORT 527
 #define REQUEST_CODE_GL_WAIT_SYNC 528
 #define REQUEST_CODE_GL_WINDOW_POS3F 529
+#define REQUEST_CODE_GL_BIND_TRANSFORM_FEEDBACK 530
+#define REQUEST_CODE_GL_DELETE_TRANSFORM_FEEDBACKS 531
+#define REQUEST_CODE_GL_GEN_TRANSFORM_FEEDBACKS 532
+#define REQUEST_CODE_GL_IS_TRANSFORM_FEEDBACK 533
 
 #if DEBUG_MODE
 static const char* requestCodeStrings[] = {
@@ -884,6 +888,10 @@ static const char* requestCodeStrings[] = {
     "glViewport",
     "glWaitSync",
     "glWindowPos3f",
+    "glBindTransformFeedback",
+    "glDeleteTransformFeedbacks",
+    "glGenTransformFeedbacks",
+    "glIsTransformFeedback",
 };
 
 static inline const char* requestCodeToString(short requestCode) {

@@ -124,6 +124,13 @@ void GLFormats_queryInternalformat(GLenum target, GLenum internalformat, GLenum 
     }
 
     if (targetFormat) {
+        /* Multisample support is driver- and format-specific.  ANGLE uses
+         * these two queries to decide whether the backend can expose GLES 3,
+         * so forwarding the host EGL context's real values is essential. */
+        if (pname == GL_NUM_SAMPLE_COUNTS || pname == GL_SAMPLES) {
+            glGetInternalformativ(target, internalformat, pname, count, params);
+            return;
+        }
         switch (pname) {
             case GL_VERTEX_TEXTURE:
             case GL_FRAGMENT_TEXTURE:
@@ -177,10 +184,6 @@ void GLFormats_queryInternalformat(GLenum target, GLenum internalformat, GLenum 
                 break;
             case GL_INTERNALFORMAT_STENCIL_TYPE:
                 result = targetFormat->stencilSize > 0 ? GL_UNSIGNED_NORMALIZED : 0;
-                break;
-            case GL_NUM_SAMPLE_COUNTS:
-            case GL_SAMPLES:
-                result = 0;
                 break;
             default:
                 println("gladio:queryInternalformat: unimplemented pname %x", pname);

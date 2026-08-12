@@ -29,6 +29,7 @@
     ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
+      "GLADIO_X11_SOCKET": "/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0",
       "HOME": "${HOME}",
       "TMPDIR": "${TMP}",
       "XDG_RUNTIME_DIR": "${TMP}/runtime",
