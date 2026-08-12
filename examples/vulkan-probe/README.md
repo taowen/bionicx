@@ -11,8 +11,9 @@ real X window through Xlib, binds both surface APIs to its XID, then creates a
 logical device and swapchain, imports the window's
 `AHardwareBuffer`, uploads interleaved vertices, indices and a fragment tint
 through mapped host-visible Vulkan memory, binds the uniform through a real
-descriptor set, builds SPIR-V shaders and a graphics pipeline, then records an
-indexed render pass with a red triangle over a green background,
+descriptor set, stages and samples a Vulkan texture through a combined image
+sampler, builds SPIR-V shaders and a graphics pipeline, then records an indexed
+render pass with a red triangle over a green background,
 presents it through a semaphore without a prior queue idle, then checks
 the final pixels in an Android compositor screenshot.
 
