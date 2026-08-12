@@ -22,6 +22,20 @@ static void pipelineCreateThread(void* param) {
         VkGraphicsPipelineCreateInfo* createInfos = pipelineCreateRequest->pipelineInfos;
 
         for (int i = 0; i < pipelineCreateRequest->pipelineCount; i++) {
+            bool hasTessellationStages = false;
+            for (uint32_t stage = 0; stage < createInfos[i].stageCount; stage++) {
+                VkShaderStageFlagBits stageType =
+                        createInfos[i].pStages[stage].stage;
+                if (stageType == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT
+                        || stageType
+                                == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) {
+                    hasTessellationStages = true;
+                    break;
+                }
+            }
+            if (!hasTessellationStages)
+                createInfos[i].pTessellationState = NULL;
+
             ShaderInspector_inspectShaderStages(pipelineCreateRequest->shaderInspector, pipelineCreateRequest->device, (VkPipelineShaderStageCreateInfo*)createInfos[i].pStages, createInfos[i].stageCount, createInfos[i].pVertexInputState);
         }
 

@@ -1,0 +1,10 @@
+device=01408BH601027129
+profile=chrome-vulkan
+arguments=--no-sandbox --use-gl=angle --use-angle=vulkan --disable-features=SkiaGraphite
+pre-fix-client=graphics[0] sType=28 stages=0x1 tess=non-null tessSType=0
+pre-fix-server=graphics[0] sType=28 stages=0x1 tess=non-null tessSType=0
+pre-fix-driver=Unknown tessellation state create type: 0
+post-fix-unknown-tessellation=0
+post-fix-fatal-gpu=0
+post-fix-process=io.taowen.bx alive
+post-fix-process=google-chrome alive
