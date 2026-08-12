@@ -1,0 +1,18 @@
+BXTEST PASS gtk-dlopen glibc=2.39
+BXTEST PASS gtk-version >=3.20
+request error seq=67 major=3 minor=0 code=3 data=0
+request error seq=68 major=14 minor=0 code=9 data=0
+request error seq=78 major=149 minor=59 code=17 data=0
+unimplemented request=XInputExtension major=149 minor=59 error=17
+request error seq=107 major=148 minor=21 code=17 data=0
+unimplemented request=XKEYBOARD major=148 minor=21 error=17
+BXTEST PASS gtk-init DISPLAY connected
+BXTEST PASS pixbuf-formats count=2 png=1
+BXTEST PASS pixbuf-png /data/user/0/io.taowen.bx/files/apps/chrome/share/icons/Adwaita/16x16/places/user-home.png
+BXTEST PASS pixbuf-explicit-png type=png
+BXTEST PASS gtk-window 640x360
+BXTEST PASS gtk-file-chooser GtkFileChooserDialog
+request error seq=3580 major=149 minor=40 code=17 data=0
+unimplemented request=XInputExtension major=149 minor=40 error=17
+BXSUMMARY gtk3 passed=8/8 failed=0
+chrome exited with 0

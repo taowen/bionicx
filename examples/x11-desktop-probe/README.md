@@ -22,9 +22,13 @@ MIT-SHM
 is reported as an optional capability because BionicX deliberately withholds
 it until a safe shared-memory backend exists.
 
-The server currently provides stateful Render 0.1 support. The probe's strict
-summary is the capability ledger for the remaining desktop extensions. The
-probe currently has eight strict checks.
+The server currently provides stateful Render support for ARGB32 and A8
+pictures, picture clips and filters, solid fills, linear gradients, and the
+Clear, Src, Over, In, OutReverse and Add Porter-Duff operations exercised by
+Cairo. The Render check reads pixels back and requires exact A8 intermediate
+results (`In + Add = 0x80`, then `OutReverse = 0x60`); merely accepting the
+requests does not pass. The probe's strict summary is the capability ledger
+for the remaining desktop extensions. It currently has eight strict checks.
 
 ```sh
 examples/x11-desktop-probe/build-bundle.sh

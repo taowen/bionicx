@@ -97,6 +97,24 @@ public class Drawable extends XResource {
         if (depth == 1) {
             drawBitmap(width, height, data, this.data);
         }
+        else if (depth == 8) {
+            int sourceStride = (totalWidth + 3) & ~3;
+            synchronized (renderLock) {
+                for (int row = 0; row < height; row++) {
+                    int targetY = dstY + row;
+                    if (targetY < 0 || targetY >= this.height) continue;
+                    for (int column = 0; column < width; column++) {
+                        int targetX = dstX + column;
+                        if (targetX < 0 || targetX >= this.width) continue;
+                        int alpha = Byte.toUnsignedInt(data.get(
+                                (srcY + row) * sourceStride + srcX + column));
+                        this.data.putInt((targetY * getStride() + targetX) * 4,
+                                alpha);
+                    }
+                }
+                this.data.rewind();
+            }
+        }
         else if (depth == 24 || depth == 32) {
             dstX = (short)Mathf.clamp(dstX, 0, this.width-1);
             dstY = (short)Mathf.clamp(dstY, 0, this.height-1);
@@ -199,6 +217,198 @@ public class Drawable extends XResource {
             data.rewind();
         }
         forceUpdate();
+    }
+
+    /** Applies a constant straight-alpha ARGB color with the Render Over op. */
+    public void blendSolidRect(int x, int y, int width, int height,
+                               int sourceColor) {
+        if (width <= 0 || height <= 0) return;
+        int[] colors = new int[width * height];
+        java.util.Arrays.fill(colors, sourceColor);
+        blendArgbPixels(x, y, width, height, colors, null, 0, 0, 3);
+    }
+
+    /** Applies a solid source through an A8 drawable with the Render Over op. */
+    public void blendSolidMask(int maskX, int maskY, int dstX, int dstY,
+                               int width, int height, Drawable mask,
+                               int sourceColor) {
+        if (data == null || mask == null || mask.data == null || visual == null
+                || visual.depth != 32) return;
+        int sourceAlpha = (sourceColor >>> 24) & 0xff;
+        int stride = getStride();
+        int maskStride = mask.getStride();
+        synchronized (renderLock) {
+            for (int row = 0; row < height; row++) {
+                int targetY = dstY + row;
+                int sourceY = maskY + row;
+                if (targetY < 0 || targetY >= this.height
+                        || sourceY < 0 || sourceY >= mask.height) continue;
+                for (int column = 0; column < width; column++) {
+                    int targetX = dstX + column;
+                    int sourceX = maskX + column;
+                    if (targetX < 0 || targetX >= this.width
+                            || sourceX < 0 || sourceX >= mask.width) continue;
+                    int maskPixel = mask.data.getInt(
+                            (sourceY * maskStride + sourceX) * 4);
+                    int maskAlpha = mask.visual != null
+                            && mask.visual.depth == 32
+                            ? (maskPixel >>> 24) & 0xff : maskPixel & 0xff;
+                    int alpha = (maskAlpha * sourceAlpha + 127) / 255;
+                    if (alpha == 0) continue;
+                    int offset = (targetY * stride + targetX) * 4;
+                    int destination = data.getInt(offset);
+                    int inverse = 255 - alpha;
+                    int red = (((sourceColor >>> 16) & 0xff) * alpha
+                            + ((destination >>> 16) & 0xff) * inverse + 127) / 255;
+                    int green = (((sourceColor >>> 8) & 0xff) * alpha
+                            + ((destination >>> 8) & 0xff) * inverse + 127) / 255;
+                    int blue = ((sourceColor & 0xff) * alpha
+                            + (destination & 0xff) * inverse + 127) / 255;
+                    int destinationAlpha = (destination >>> 24) & 0xff;
+                    int resultAlpha = alpha
+                            + (destinationAlpha * inverse + 127) / 255;
+                    data.putInt(offset, (resultAlpha << 24) | (red << 16)
+                            | (green << 8) | blue);
+                }
+            }
+            data.rewind();
+        }
+        forceUpdate();
+    }
+
+    public int getPixelArgb(int x, int y) {
+        if (data == null || x < 0 || y < 0 || x >= width || y >= height)
+            return 0;
+        return data.getInt((y * getStride() + x) * 4);
+    }
+
+    /** Applies per-pixel straight-alpha colors, optionally through a mask. */
+    public void blendArgbPixels(int dstX, int dstY, int width, int height,
+                                int[] sourceColors, Drawable mask,
+                                int maskX, int maskY, int operation) {
+        if (data == null || visual == null
+                || (visual.depth != 8 && visual.depth != 32)) return;
+        int stride = getStride();
+        int maskStride = mask != null ? mask.getStride() : 0;
+        synchronized (renderLock) {
+            for (int row = 0; row < height; row++) {
+                int targetY = dstY + row;
+                if (targetY < 0 || targetY >= this.height) continue;
+                for (int column = 0; column < width; column++) {
+                    int targetX = dstX + column;
+                    if (targetX < 0 || targetX >= this.width) continue;
+                    int source = sourceColors[row * width + column];
+                    int alpha = (source >>> 24) & 0xff;
+                    if (mask != null) {
+                        int sourceX = maskX + column;
+                        int sourceY = maskY + row;
+                        if (sourceX < 0 || sourceY < 0 || sourceX >= mask.width
+                                || sourceY >= mask.height) continue;
+                        int maskPixel = mask.data.getInt(
+                                (sourceY * maskStride + sourceX) * 4);
+                        int maskAlpha = mask.visual != null
+                                && mask.visual.depth == 32
+                                ? (maskPixel >>> 24) & 0xff : maskPixel & 0xff;
+                        alpha = (alpha * maskAlpha + 127) / 255;
+                    }
+                    int offset = (targetY * stride + targetX) * 4;
+                    int destination = data.getInt(offset);
+                    if (visual.depth == 8) {
+                        int destinationAlpha = destination & 0xff;
+                        int resultAlpha;
+                        if (operation == 1) resultAlpha = alpha;
+                        else if (operation == 3)
+                            resultAlpha = alpha + (destinationAlpha
+                                    * (255 - alpha) + 127) / 255;
+                        else if (operation == 5)
+                            resultAlpha = (alpha * destinationAlpha + 127) / 255;
+                        else if (operation == 8)
+                            resultAlpha = (destinationAlpha * (255 - alpha)
+                                    + 127) / 255;
+                        else if (operation == 12)
+                            resultAlpha = Math.min(255, alpha + destinationAlpha);
+                        else continue;
+                        data.putInt(offset, resultAlpha);
+                        continue;
+                    }
+                    if (operation == 1) {
+                        data.putInt(offset, alpha == 0 ? 0
+                                : (alpha << 24) | (source & 0x00ffffff));
+                        continue;
+                    }
+                    if (operation == 5) {
+                        int destinationAlpha = (destination >>> 24) & 0xff;
+                        int resultAlpha = (alpha * destinationAlpha + 127) / 255;
+                        data.putInt(offset, resultAlpha == 0 ? 0
+                                : (resultAlpha << 24)
+                                  | (source & 0x00ffffff));
+                        continue;
+                    }
+                    if (operation == 8) {
+                        int destinationAlpha = (destination >>> 24) & 0xff;
+                        int resultAlpha = (destinationAlpha * (255 - alpha)
+                                + 127) / 255;
+                        data.putInt(offset, resultAlpha == 0 ? 0
+                                : (resultAlpha << 24)
+                                  | (destination & 0x00ffffff));
+                        continue;
+                    }
+                    if (operation == 12) {
+                        int destinationAlpha = (destination >>> 24) & 0xff;
+                        int resultAlpha = Math.min(255,
+                                alpha + destinationAlpha);
+                        int red = addStraightChannel((source >>> 16) & 0xff,
+                                alpha, (destination >>> 16) & 0xff,
+                                destinationAlpha, resultAlpha);
+                        int green = addStraightChannel((source >>> 8) & 0xff,
+                                alpha, (destination >>> 8) & 0xff,
+                                destinationAlpha, resultAlpha);
+                        int blue = addStraightChannel(source & 0xff, alpha,
+                                destination & 0xff, destinationAlpha,
+                                resultAlpha);
+                        data.putInt(offset, (resultAlpha << 24) | (red << 16)
+                                | (green << 8) | blue);
+                        continue;
+                    }
+                    if (alpha == 0) continue;
+                    int inverse = 255 - alpha;
+                    int destinationAlpha = (destination >>> 24) & 0xff;
+                    int resultAlpha = alpha
+                            + (destinationAlpha * inverse + 127) / 255;
+                    int red = overStraightChannel((source >>> 16) & 0xff,
+                            alpha, (destination >>> 16) & 0xff,
+                            destinationAlpha, inverse, resultAlpha);
+                    int green = overStraightChannel((source >>> 8) & 0xff,
+                            alpha, (destination >>> 8) & 0xff,
+                            destinationAlpha, inverse, resultAlpha);
+                    int blue = overStraightChannel(source & 0xff, alpha,
+                            destination & 0xff, destinationAlpha, inverse,
+                            resultAlpha);
+                    data.putInt(offset, (resultAlpha << 24) | (red << 16)
+                            | (green << 8) | blue);
+                }
+            }
+            data.rewind();
+        }
+        forceUpdate();
+    }
+
+    private static int addStraightChannel(int source, int sourceAlpha,
+            int destination, int destinationAlpha, int resultAlpha) {
+        if (resultAlpha == 0) return 0;
+        int premultiplied = Math.min(255 * 255,
+                source * sourceAlpha + destination * destinationAlpha);
+        return Math.min(255, (premultiplied + resultAlpha / 2) / resultAlpha);
+    }
+
+    private static int overStraightChannel(int source, int sourceAlpha,
+            int destination, int destinationAlpha, int inverseSourceAlpha,
+            int resultAlpha) {
+        if (resultAlpha == 0) return 0;
+        int destinationContribution = (destination * destinationAlpha
+                * inverseSourceAlpha + 127) / 255;
+        int premultiplied = source * sourceAlpha + destinationContribution;
+        return Math.min(255, (premultiplied + resultAlpha / 2) / resultAlpha);
     }
 
     public void drawLines(int color, int lineWidth, short... points) {

@@ -453,6 +453,12 @@ public class XClientRequestHandler implements RequestHandler {
             }
         }
         catch (XRequestError e) {
+            Log.w(TAG, "request error seq="
+                    + (client.getSequenceNumber() & 0xffff)
+                    + " major=" + (opcode & 0xff)
+                    + " minor=" + (requestData & 0xff)
+                    + " code=" + (e.getCode() & 0xff)
+                    + " data=" + Integer.toUnsignedString(e.getData()));
             if (e instanceof BadImplementation) {
                 Extension extension = client.xServer.getExtension(opcode);
                 String requestName = extension != null ? extension.getName() : "core";

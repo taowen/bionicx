@@ -76,28 +76,176 @@ static void probe_render(Display *display, Window window) {
         return;
     }
     int before = x_errors;
+    unsigned long in_add_pixel = 0;
+    unsigned long out_reverse_pixel = 0;
     bool ok = XRenderQueryVersion(display, &major, &minor) != 0;
     XRenderPictFormat *format = XRenderFindVisualFormat(
         display, DefaultVisual(display, DefaultScreen(display)));
     XRenderPictFormat *a8 = XRenderFindStandardFormat(display, PictStandardA8);
     Picture picture = format ? XRenderCreatePicture(display, window, format, 0, NULL) : 0;
+    Pixmap a8_pixmap = a8 ? XCreatePixmap(display, window, 8, 8, 8) : 0;
+    Picture a8_picture = a8_pixmap
+            ? XRenderCreatePicture(display, a8_pixmap, a8, 0, NULL) : 0;
     if (picture) {
-        XRenderColor color = {.red = 0x1800, .green = 0xb800,
-                              .blue = 0xf000, .alpha = 0xffff};
-        XRenderFillRectangle(display, PictOpSrc, picture, &color, 24, 84, 300, 92);
+        XRenderColor background = {.red = 0, .green = 0,
+                                   .blue = 0xffff, .alpha = 0xffff};
+        XRenderColor overlay = {.red = 0xffff, .green = 0,
+                                .blue = 0, .alpha = 0x8000};
+        XRenderFillRectangle(display, PictOpSrc, picture, &background,
+                             24, 84, 300, 92);
+        XRenderFillRectangle(display, PictOpOver, picture, &overlay,
+                             24, 84, 300, 92);
+        XRenderFillRectangle(display, PictOpSrc, picture, &background,
+                             330, 84, 24, 24);
+        XRenderFillRectangle(display, PictOpClear, picture, &overlay,
+                             330, 84, 24, 24);
+        XRenderFillRectangle(display, PictOpSrc, picture, &background,
+                             420, 84, 8, 8);
+        XRectangle clip = {.x = 420, .y = 84, .width = 4, .height = 8};
+        XRenderSetPictureClipRectangles(display, picture, 0, 0, &clip, 1);
+        XRenderColor opaque_red = {.red = 0xffff, .alpha = 0xffff};
+        XRenderFillRectangle(display, PictOpSrc, picture, &opaque_red,
+                             420, 84, 8, 8);
+        XRenderPictureAttributes attributes = {.repeat = True,
+                                                .clip_mask = None};
+        XRenderChangePicture(display, picture, CPRepeat | CPClipMask,
+                             &attributes);
+        if (a8_picture) {
+            XRenderColor half_mask = {.alpha = 0x8000};
+            XRenderFillRectangle(display, PictOpSrc, a8_picture,
+                                 &half_mask, 0, 0, 8, 8);
+            XRenderFillRectangle(display, PictOpIn, a8_picture,
+                                 &half_mask, 0, 0, 8, 8);
+            XRenderColor quarter_mask = {.alpha = 0x4000};
+            Picture quarter = XRenderCreateSolidFill(display, &quarter_mask);
+            XRenderComposite(display, PictOpAdd, quarter, None, a8_picture,
+                             0, 0, 0, 0, 0, 0, 8, 8);
+            XImage *in_add_image = XGetImage(display, a8_pixmap, 2, 2, 1, 1,
+                                             AllPlanes, ZPixmap);
+            in_add_pixel = in_add_image ? XGetPixel(in_add_image, 0, 0) : 0;
+            if (in_add_image) XDestroyImage(in_add_image);
+            XRenderComposite(display, PictOpOutReverse, quarter, None,
+                             a8_picture, 0, 0, 0, 0, 0, 0, 8, 8);
+            XImage *out_reverse_image = XGetImage(
+                    display, a8_pixmap, 2, 2, 1, 1, AllPlanes, ZPixmap);
+            out_reverse_pixel = out_reverse_image
+                    ? XGetPixel(out_reverse_image, 0, 0) : 0;
+            if (out_reverse_image) XDestroyImage(out_reverse_image);
+            XRenderFreePicture(display, quarter);
+            XRenderFillRectangle(display, PictOpSrc, a8_picture,
+                                 &half_mask, 0, 0, 8, 8);
+            XRenderSetPictureFilter(display, a8_picture, FilterNearest,
+                                    NULL, 0);
+            Picture solid = XRenderCreateSolidFill(display, &overlay);
+            XRenderFillRectangle(display, PictOpSrc, picture, &background,
+                                 380, 84, 8, 8);
+            XRenderComposite(display, PictOpOver, solid, a8_picture, picture,
+                             0, 0, 0, 0, 380, 84, 8, 8);
+            XRenderFreePicture(display, solid);
+        }
+        XLinearGradient linear = {
+            .p1 = {.x = XDoubleToFixed(460.0), .y = XDoubleToFixed(84.0)},
+            .p2 = {.x = XDoubleToFixed(468.0), .y = XDoubleToFixed(84.0)}
+        };
+        XFixed stops[] = {XDoubleToFixed(0.0), XDoubleToFixed(1.0)};
+        XRenderColor gradient_colors[] = {
+            {.red = 0xffff, .alpha = 0xffff},
+            {.blue = 0xffff, .alpha = 0xffff}
+        };
+        Picture gradient = XRenderCreateLinearGradient(
+                display, &linear, stops, gradient_colors, 2);
+        XRenderComposite(display, PictOpOver, gradient, None, picture,
+                         460, 84, 0, 0, 460, 84, 8, 8);
+        XRenderComposite(display, PictOpSrc, gradient, None, picture,
+                         460, 84, 0, 0, 490, 84, 8, 8);
+        XRenderFreePicture(display, gradient);
         XRenderFreePicture(display, picture);
     }
+    XImage *a8_image = a8_pixmap
+            ? XGetImage(display, a8_pixmap, 2, 2, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    unsigned long a8_pixel = a8_image ? XGetPixel(a8_image, 0, 0) : 0;
+    if (a8_picture) XRenderFreePicture(display, a8_picture);
+    if (a8_pixmap) XFreePixmap(display, a8_pixmap);
     ok = ok && format && a8 && a8->depth == 8 && a8->direct.alphaMask == 0xff
-         && picture && sync_without_error(display, before);
+         && a8_image && a8_pixel >= 0x7f && a8_pixel <= 0x81
+         && in_add_pixel >= 0x7f && in_add_pixel <= 0x81
+         && out_reverse_pixel >= 0x5f && out_reverse_pixel <= 0x61
+         && picture && a8_picture && sync_without_error(display, before);
+    if (a8_image) XDestroyImage(a8_image);
     XImage *image = ok ? XGetImage(display, window, 100, 120, 1, 1,
                                    AllPlanes, ZPixmap) : NULL;
-    ok = ok && image && XGetPixel(image, 0, 0) != 0;
+    unsigned long pixel = image ? XGetPixel(image, 0, 0) : 0;
+    XImage *clear_image = ok ? XGetImage(display, window, 334, 88, 1, 1,
+                                         AllPlanes, ZPixmap) : NULL;
+    unsigned long clear_pixel = clear_image
+            ? XGetPixel(clear_image, 0, 0) : ~0UL;
+    XImage *mask_image = ok ? XGetImage(display, window, 382, 86, 1, 1,
+                                        AllPlanes, ZPixmap) : NULL;
+    unsigned long mask_pixel = mask_image
+            ? XGetPixel(mask_image, 0, 0) : 0;
+    XImage *clip_inside_image = ok
+            ? XGetImage(display, window, 421, 86, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    XImage *clip_outside_image = ok
+            ? XGetImage(display, window, 426, 86, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    unsigned long clip_inside = clip_inside_image
+            ? XGetPixel(clip_inside_image, 0, 0) : 0;
+    unsigned long clip_outside = clip_outside_image
+            ? XGetPixel(clip_outside_image, 0, 0) : 0;
+    XImage *gradient_left_image = ok
+            ? XGetImage(display, window, 460, 86, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    XImage *gradient_right_image = ok
+            ? XGetImage(display, window, 467, 86, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    unsigned long gradient_left = gradient_left_image
+            ? XGetPixel(gradient_left_image, 0, 0) : 0;
+    unsigned long gradient_right = gradient_right_image
+            ? XGetPixel(gradient_right_image, 0, 0) : 0;
+    XImage *source_image = ok
+            ? XGetImage(display, window, 490, 86, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    unsigned long source_pixel = source_image
+            ? XGetPixel(source_image, 0, 0) : 0;
+    int red = (pixel >> 16) & 0xff;
+    int green = (pixel >> 8) & 0xff;
+    int blue = pixel & 0xff;
+    ok = ok && image && red >= 0x7f && red <= 0x81 && green == 0
+         && blue >= 0x7e && blue <= 0x80;
     if (image) XDestroyImage(image);
-    char detail[128];
+    ok = ok && clear_image && (clear_pixel & 0xffffff) == 0;
+    if (clear_image) XDestroyImage(clear_image);
+    int mask_red = (mask_pixel >> 16) & 0xff;
+    int mask_blue = mask_pixel & 0xff;
+    ok = ok && mask_image && mask_red >= 0x3f && mask_red <= 0x41
+         && mask_blue >= 0xbe && mask_blue <= 0xc0;
+    if (mask_image) XDestroyImage(mask_image);
+    ok = ok && clip_inside_image && clip_outside_image
+         && (clip_inside & 0xffffff) == 0xff0000
+         && (clip_outside & 0xffffff) == 0x0000ff;
+    if (clip_inside_image) XDestroyImage(clip_inside_image);
+    if (clip_outside_image) XDestroyImage(clip_outside_image);
+    ok = ok && gradient_left_image && gradient_right_image
+         && ((gradient_left >> 16) & 0xff) > (gradient_left & 0xff)
+         && (gradient_right & 0xff) > ((gradient_right >> 16) & 0xff);
+    if (gradient_left_image) XDestroyImage(gradient_left_image);
+    if (gradient_right_image) XDestroyImage(gradient_right_image);
+    ok = ok && source_image && ((source_pixel >> 16) & 0xff)
+         > (source_pixel & 0xff);
+    if (source_image) XDestroyImage(source_image);
+    char detail[256];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d event=%d error=%d a8=%d alpha-mask=0x%x",
+             "version=%d.%d event=%d error=%d a8=%d a8-picture=%d alpha-mask=0x%x in-add=0x%02lx out-reverse=0x%02lx over=0x%06lx clear=0x%lx mask-over=0x%06lx clip=0x%06lx/0x%06lx gradient=0x%06lx/0x%06lx src=0x%06lx",
              major, minor, event_base, error_base, a8 != NULL,
-             a8 ? a8->direct.alphaMask : 0);
+             a8_picture != 0, a8 ? a8->direct.alphaMask : 0,
+             in_add_pixel & 0xff, out_reverse_pixel & 0xff,
+             pixel & 0xffffff, clear_pixel,
+             mask_pixel & 0xffffff,
+             clip_inside & 0xffffff, clip_outside & 0xffffff,
+             gradient_left & 0xffffff, gradient_right & 0xffffff,
+             source_pixel & 0xffffff);
     result("xrender", ok, detail);
 }
 

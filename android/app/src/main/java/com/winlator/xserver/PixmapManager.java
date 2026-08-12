@@ -11,10 +11,15 @@ public class PixmapManager extends XResourceManager {
 
     public PixmapManager() {
         visual = new Visual(IDGenerator.generate(), true, 32, 24, 0xff0000, 0x00ff00, 0x0000ff);
-        supportedVisuals = new Visual[]{visual, new Visual(IDGenerator.generate(), false, 1, 1, 0, 0, 0)};
+        supportedVisuals = new Visual[]{
+            visual,
+            new Visual(IDGenerator.generate(), false, 8, 8, 0, 0, 0),
+            new Visual(IDGenerator.generate(), false, 1, 1, 0, 0, 0)
+        };
 
         supportedPixmapFormats = new PixmapFormat[] {
             new PixmapFormat(1, 1, 32),
+            new PixmapFormat(8, 8, 32),
             new PixmapFormat(24, 32, 32),
             new PixmapFormat(32, 32, 32)
         };
