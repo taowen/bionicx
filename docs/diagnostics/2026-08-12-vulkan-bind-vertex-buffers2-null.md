@@ -37,3 +37,20 @@ BXTEST PASS host-vulkan-compositor pixels=174537 bounds=0,0-639,359 triangle=557
 See `evidence/vulkan-bind2-null-before.png`,
 `evidence/vulkan-bind2-null-after.png`, and
 `evidence/vulkan-bind2-null.log`.
+
+## Chrome regression
+
+The ordinary untraced Chrome Vulkan profile was then relaunched with its
+required `--no-sandbox` argument. It remained alive, rendered the complete
+1920x1080 browser frame with no black regions, accepted Android-injected
+address-bar input, rendered its network error page, and opened `chrome://gpu`.
+That page reports hardware-accelerated Canvas, compositing, rasterization,
+WebGL and WebGPU. Its active GPU is:
+
+```
+ANGLE (Qualcomm, Vulkan 1.3.128 (Vortek (Adreno (TM) 750 ...)))
+```
+
+See `evidence/chrome-vulkan-bind2-fixed.png`,
+`evidence/chrome-vulkan-gpu-bind2-fixed.png`, and
+`evidence/chrome-vulkan-bind2-fixed.log`.

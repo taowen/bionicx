@@ -1,0 +1,15 @@
+device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
+profile=profiles/chrome-vulkan.json sandbox-argument=--no-sandbox
+chrome-version=151.0.7922.108
+processes-after-navigation:
+u0_a194 io.taowen.bx alive
+u0_a194 google-chrome alive
+fatal-signal-count=0
+gpu-process-exited-count=0
+interaction=Android input selected address bar and opened chrome://gpu
+chrome://gpu Canvas=Hardware accelerated
+chrome://gpu Compositing=Hardware accelerated
+chrome://gpu Rasterization=Hardware accelerated
+chrome://gpu WebGL=Hardware accelerated
+chrome://gpu WebGPU=Hardware accelerated
+chrome://gpu GPU0=ANGLE Qualcomm Vulkan 1.3.128 Vortek Adreno(TM)750
