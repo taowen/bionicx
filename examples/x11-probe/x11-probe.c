@@ -103,6 +103,22 @@ int main(int argc, char **argv) {
         printf("BXINFO extension %s\n", extensions[index]);
     if (extensions) XFreeExtensionList(extensions);
 
+    int before = x_errors;
+    Atom absent_atom = XInternAtom(display,
+                                   "BIONICX_ONLY_IF_EXISTS_PROBE", True);
+    Atom created_atom = XInternAtom(display,
+                                    "BIONICX_ONLY_IF_EXISTS_PROBE", False);
+    Atom existing_atom = XInternAtom(display,
+                                     "BIONICX_ONLY_IF_EXISTS_PROBE", True);
+    XSync(display, False);
+    bool intern_atom_ok = x_errors == before && absent_atom == None &&
+                          created_atom != None && existing_atom == created_atom;
+    snprintf(detail, sizeof(detail), "absent=%lu created=%lu existing=%lu",
+             absent_atom, created_atom, existing_atom);
+    result("intern-atom-only-if-exists", intern_atom_ok,
+           intern_atom_ok ? detail : last_x_error);
+    RECORD(intern_atom_ok);
+
     int screen = DefaultScreen(display);
     Window root = RootWindow(display, screen);
     int width = DisplayWidth(display, screen);
@@ -127,7 +143,7 @@ int main(int argc, char **argv) {
     Atom clipboard = XInternAtom(display, "CLIPBOARD", False);
     Atom probe_property = XInternAtom(display, "BIONICX_TEST_PROPERTY", False);
     XSetWMProtocols(display, window, &wm_delete, 1);
-    int before = x_errors;
+    before = x_errors;
     XMapWindow(display, window);
     RECORD(sync_step(display, "window-create-map", before));
 

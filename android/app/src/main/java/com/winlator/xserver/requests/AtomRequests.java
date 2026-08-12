@@ -19,7 +19,9 @@ public abstract class AtomRequests {
         inputStream.skip(2);
         String name = inputStream.readString8(length);
         int id = onlyIfExists ? Atom.getId(name) : Atom.internAtom(name);
-        if (id < 0) throw new BadAtom(id);
+        // InternAtom never raises BadAtom.  The core protocol represents a
+        // failed only-if-exists lookup with the special atom None (zero).
+        if (id < 0) id = 0;
 
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);

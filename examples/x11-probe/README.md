@@ -8,7 +8,8 @@ Covered operations:
 
 - display setup and extension enumeration;
 - top-level and child window creation, mapping, query-tree and translation;
-- atoms, WM properties and an exact UTF-8 property round trip;
+- atom creation plus the `only_if_exists`/`None` contract, WM properties and
+  an exact UTF-8 property round trip;
 - GC, Pixmap rendering and `CopyArea`;
 - a custom cursor and CLIPBOARD selection ownership;
 - synthetic ClientMessage delivery and real Android key/touch events;

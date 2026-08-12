@@ -1,0 +1,20 @@
+device=01408BH601027129
+runtime=ordinary app UID; proot=unused
+BXTEST PASS display-connect glibc=2.39 vendor=Elbrus Technologies, LLC protocol=11.0 screens=1
+BXTEST PASS list-extensions count=10
+BXTEST PASS intern-atom-only-if-exists absent=0 created=76 existing=76
+BXTEST PASS window-create-map
+BXTEST PASS input-focus
+BXTEST PASS property-roundtrip UTF8_STRING
+BXTEST PASS pixmap-gc-copy pixel=0x3264c8
+BXTEST PASS poly-text8 foreground-pixels=473
+BXTEST PASS window-tree children=1
+BXTEST PASS input-only-geometry class=2 geometry=40x30+3+4 border=0 depth=0
+BXTEST PASS translate-coordinates root=220,160
+BXTEST PASS cursor-create-define
+BXTEST PASS selection-owner CLIPBOARD
+BXTEST PASS client-message-send
+BXTEST PASS client-message-receive WM_DELETE_WINDOW
+BXTEST PASS modifier-event-state lower=1 shift-press=1 underscore=1 shift-release=1 releases=7
+BXSUMMARY passed=16 failed=0 observational_input=yes
+x11-probe exited with 0
