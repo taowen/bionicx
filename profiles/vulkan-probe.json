@@ -1,0 +1,25 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "vulkan-probe",
+  "name": "Host Vulkan probe",
+  "display": {"dpi": 144, "socket": "filesystem"},
+  "hostServices": ["vulkan"],
+  "compatibility": [],
+  "launch": {
+    "mode": "loader",
+    "executable": "${APP}/bin/vulkan-probe",
+    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
+    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
+    "workingDirectory": "${APP}",
+    "arguments": [],
+    "environment": {
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LD_LIBRARY_PATH": "${APP}/lib:${RUNTIME}/usr/lib",
+      "VK_ICD_FILENAMES": "${APP}/share/vulkan/icd.d/vortek_icd.json",
+      "VORTEK_SERVER_PATH": "${RUNTIME}/tmp/.vortek/V0",
+      "LANG": "C"
+    }
+  }
+}

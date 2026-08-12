@@ -22,6 +22,11 @@
       "uniqueItems": true,
       "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$"}
     },
+    "hostServices": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["vulkan"]}
+    },
     "launch": {
       "type": "object",
       "additionalProperties": false,

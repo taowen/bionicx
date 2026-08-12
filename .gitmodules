@@ -2,3 +2,7 @@
 	path = third_party/gladio
 	url = https://github.com/taowen/gladio.git
 	branch = bionicx
+[submodule "third_party/vortek"]
+	path = third_party/vortek
+	url = https://github.com/taowen/vortek.git
+	branch = bionicx

@@ -10,7 +10,6 @@ android/app/src/main/jniLibs/
 android/app/src/main/cpp/libadrenotools/
 android/app/src/main/cpp/midihandler/
 android/app/src/main/cpp/virglrenderer/
-android/app/src/main/cpp/vortekrenderer/
 evidence/wps-open-dialog.png
 evidence/wps-writer.png
 android/app/src/main/assets/bionicx/bin/*

@@ -20,6 +20,7 @@ RUN dpkg --add-architecture arm64 \
         libxtst-dev:arm64 \
         libxft-dev:arm64 \
         libxkbcommon-x11-dev:arm64 \
+        libvulkan-dev:arm64 \
         fonts-liberation \
         make \
         patch \

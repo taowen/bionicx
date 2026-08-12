@@ -37,6 +37,7 @@ public final class AppProfile {
     public final List<String> arguments;
     public final Map<String, String> environment;
     public final List<String> compatibility;
+    public final List<String> hostServices;
 
     private AppProfile(JSONObject root) throws JSONException {
         int schema = root.getInt("schemaVersion");
@@ -72,6 +73,11 @@ public final class AppProfile {
 
         arguments = stringList(launch.optJSONArray("arguments"));
         compatibility = stringList(root.optJSONArray("compatibility"));
+        hostServices = stringList(root.optJSONArray("hostServices"));
+        for (String service : hostServices) {
+            if (!service.equals("vulkan"))
+                throw new JSONException("unsupported host service: " + service);
+        }
         environment = new LinkedHashMap<>();
         JSONObject env = launch.optJSONObject("environment");
         if (env != null) {

@@ -19,6 +19,7 @@ import com.winlator.xconnector.UnixSocketConfig;
 import com.winlator.xenvironment.RootFS;
 import com.winlator.xenvironment.XEnvironment;
 import com.winlator.xenvironment.components.XServerComponent;
+import com.winlator.xenvironment.components.VortekRendererComponent;
 import com.winlator.xserver.ScreenInfo;
 import com.winlator.xserver.XServer;
 
@@ -88,6 +89,15 @@ public final class BionicXActivity extends Activity {
                         UnixSocketConfig.XSERVER_PATH);
         environment = new XEnvironment(this, rootFS);
         environment.addComponent(new XServerComponent(xServer, socket));
+        if (profile.hostServices.contains("vulkan")) {
+            UnixSocketConfig vortekSocket = UnixSocketConfig.create(
+                    rootFS.getRootDir().getAbsolutePath(),
+                    UnixSocketConfig.VORTEK_SERVER_PATH);
+            environment.addComponent(new VortekRendererComponent(
+                    this, xServer, vortekSocket,
+                    new VortekRendererComponent.Options()));
+            Log.i(TAG, "enabled Vulkan host service at " + vortekSocket.path);
+        }
         environment.startEnvironmentComponents();
     }
 
