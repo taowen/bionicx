@@ -132,6 +132,36 @@ int main(void) {
            physical_device != VK_NULL_HANDLE && properties.deviceName[0],
            details);
 
+    uint32_t device_extension_count = 0;
+    status = vkEnumerateDeviceExtensionProperties(
+            physical_device, NULL, &device_extension_count, NULL);
+    VkExtensionProperties *device_extensions_available = calloc(
+            device_extension_count, sizeof(*device_extensions_available));
+    uint32_t returned_device_extension_count = device_extension_count;
+    if (status == VK_SUCCESS && returned_device_extension_count > 0) {
+        status = vkEnumerateDeviceExtensionProperties(
+                physical_device, NULL, &returned_device_extension_count,
+                device_extensions_available);
+    }
+    bool has_swapchain = false;
+    bool has_fragment_shading_rate = false;
+    for (uint32_t i = 0; i < returned_device_extension_count; ++i) {
+        has_swapchain |= strcmp(device_extensions_available[i].extensionName,
+                                VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0;
+        has_fragment_shading_rate |= strcmp(
+                device_extensions_available[i].extensionName,
+                VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME) == 0;
+    }
+    snprintf(details, sizeof(details),
+             "status=%d returned=%u swapchain=%u fragmentShadingRate=%u",
+             status, returned_device_extension_count, has_swapchain,
+             has_fragment_shading_rate);
+    result("host-vulkan-device-extension-honesty",
+           status == VK_SUCCESS && has_swapchain
+                   && !has_fragment_shading_rate,
+           details);
+    free(device_extensions_available);
+
     uint32_t queue_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(
             physical_device, &queue_count, NULL);

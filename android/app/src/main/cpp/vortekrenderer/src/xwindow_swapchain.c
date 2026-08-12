@@ -110,7 +110,7 @@ VkSurfaceFormatKHR* getSurfaceFormats(uint32_t* formatCount) {
     return surfaceFormats;
 }
 
-XWindowSwapchain* XWindowSwapchain_create(VkDevice device, uint32_t graphicsQueueIndex, VkSwapchainCreateInfoKHR* swapchainInfo, JMethods* jmethods, int windowId) {
+XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphicsQueue, VkSwapchainCreateInfoKHR* swapchainInfo, JMethods* jmethods, int windowId) {
     XWindowSwapchain* swapchain = calloc(1, sizeof(XWindowSwapchain));
     swapchain->windowId = windowId;
     swapchain->imageCount = swapchainInfo->minImageCount;
@@ -126,7 +126,7 @@ XWindowSwapchain* XWindowSwapchain_create(VkDevice device, uint32_t graphicsQueu
         if (result != VK_SUCCESS) goto error;
     }
 
-    vulkanWrapper.vkGetDeviceQueue(device, graphicsQueueIndex, 0, &swapchain->queue);
+    swapchain->queue = graphicsQueue;
     return swapchain;
 
 error:

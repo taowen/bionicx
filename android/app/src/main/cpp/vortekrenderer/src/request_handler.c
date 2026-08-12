@@ -248,6 +248,8 @@ void vt_handle_vkGetDeviceQueue(VkContext* context) {
 
     VkQueue queue;
     vulkanWrapper.vkGetDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
+    if (queueFamilyIndex == context->graphicsQueueIndex && queueIndex == 0)
+        context->graphicsQueue = queue;
 
     VT_SERIALIZE_CMD(VkQueue, queue);
     vt_send(context->clientRing, VK_SUCCESS, outputBuffer, bufferSize);
@@ -2033,7 +2035,9 @@ void vt_handle_vkCreateSwapchainKHR(VkContext* context) {
 
     XWindowSwapchain* swapchain = NULL;
     if (createInfo.imageExtent.width == windowSize.width && createInfo.imageExtent.height == windowSize.height) {
-        swapchain = XWindowSwapchain_create(device, context->graphicsQueueIndex, &createInfo, &context->jmethods, windowId);
+        swapchain = XWindowSwapchain_create(device, context->graphicsQueue,
+                                            &createInfo, &context->jmethods,
+                                            windowId);
         if (!swapchain) result = VK_ERROR_INITIALIZATION_FAILED;
     }
     else result = VK_ERROR_SURFACE_LOST_KHR;
@@ -2607,6 +2611,9 @@ void vt_handle_vkGetDeviceQueue2(VkContext* context) {
 
     VkQueue queue;
     vulkanWrapper.vkGetDeviceQueue2(device, &queueInfo, &queue);
+    if (queueInfo.queueFamilyIndex == context->graphicsQueueIndex
+            && queueInfo.queueIndex == 0)
+        context->graphicsQueue = queue;
 
     VT_SERIALIZE_CMD(VkQueue, queue);
     vt_send(context->clientRing, VK_SUCCESS, outputBuffer, bufferSize);

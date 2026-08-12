@@ -34,6 +34,7 @@ typedef struct VkContext {
     VkResult status;
 
     int graphicsQueueIndex;
+    VkQueue graphicsQueue;
 
     TextureDecoder* textureDecoder;
     ShaderInspector* shaderInspector;
