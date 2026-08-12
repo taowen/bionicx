@@ -369,6 +369,14 @@ public class XClientRequestHandler implements RequestHandler {
                             DrawRequests.copyArea(client, inputStream, outputStream);
                         }
                         break;
+                    case ClientOpcodes.POLY_POINT:
+                        try (XLock lock = client.xServer.lock(
+                                XServer.Lockable.DRAWABLE_MANAGER,
+                                XServer.Lockable.GRAPHIC_CONTEXT_MANAGER)) {
+                            DrawRequests.polyPoint(client, inputStream,
+                                    outputStream);
+                        }
+                        break;
                     case ClientOpcodes.POLY_LINE:
                         try (XLock lock = client.xServer.lock(XServer.Lockable.DRAWABLE_MANAGER, XServer.Lockable.GRAPHIC_CONTEXT_MANAGER)) {
                             DrawRequests.polyLine(client, inputStream, outputStream);

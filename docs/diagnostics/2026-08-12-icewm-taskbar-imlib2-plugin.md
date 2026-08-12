@@ -57,3 +57,10 @@ The core probe reads back the exact `0x3264c8` tile pixel and passes 19/19.
 After this change, visual inspection shows the IceWM start icon, workspace and
 task buttons, and monitor widgets across the bottom panel. Text placement and
 managed-window decorations are still incomplete and remain separate targets.
+
+IceWM also issued fourteen core `PolyPoint` requests while drawing its panel
+monitors. BionicX now implements both `CoordModeOrigin` and
+`CoordModePrevious`, applies GC rectangle clips, and reports invalid modes as
+`BadValue`. The controlled client reads back exact `0x20c060` pixels for both
+modes and the core suite passes 20/20. A fresh real-IceWM run emits no opcode
+64 fallback while retaining its 3/3 lifecycle result.

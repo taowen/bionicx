@@ -11,6 +11,7 @@ import com.winlator.xserver.Window;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.errors.BadDrawable;
 import com.winlator.xserver.errors.BadGraphicsContext;
+import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.BadMatch;
 import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
@@ -179,6 +180,56 @@ public abstract class DrawRequests {
         if (coordinateMode == CoordinateMode.ORIGIN && graphicsContext.getLineWidth() > 0) {
             drawable.drawLines(graphicsContext.getForeground(), graphicsContext.getLineWidth(), points);
         }
+    }
+
+    public static void polyPoint(XClient client, XInputStream inputStream,
+                                 XOutputStream outputStream)
+            throws XRequestError {
+        int mode = client.getRequestData();
+        if (mode < 0 || mode >= CoordinateMode.values().length)
+            throw new BadValue(mode);
+        CoordinateMode coordinateMode = CoordinateMode.values()[mode];
+        int drawableId = inputStream.readInt();
+        int gcId = inputStream.readInt();
+        Drawable drawable = client.xServer.drawableManager
+                .getDrawable(drawableId);
+        if (drawable == null) throw new BadDrawable(drawableId);
+        GraphicsContext graphicsContext = client.xServer.graphicsContextManager
+                .getGraphicsContext(gcId);
+        if (graphicsContext == null) throw new BadGraphicsContext(gcId);
+
+        int remaining = client.getRemainingRequestLength();
+        int x = 0;
+        int y = 0;
+        while (remaining >= 4) {
+            int requestX = inputStream.readShort();
+            int requestY = inputStream.readShort();
+            if (coordinateMode == CoordinateMode.PREVIOUS) {
+                x += requestX;
+                y += requestY;
+            }
+            else {
+                x = requestX;
+                y = requestY;
+            }
+            boolean visible = graphicsContext.getClipRectangles() == null;
+            if (!visible) {
+                for (GraphicsContext.ClipRectangle clip
+                        : graphicsContext.getClipRectangles()) {
+                    int left = graphicsContext.getClipXOrigin() + clip.x;
+                    int top = graphicsContext.getClipYOrigin() + clip.y;
+                    if (x >= left && y >= top && x < left + clip.width
+                            && y < top + clip.height) {
+                        visible = true;
+                        break;
+                    }
+                }
+            }
+            if (visible) drawable.fillRect(x, y, 1, 1,
+                    graphicsContext.getForeground());
+            remaining -= 4;
+        }
+        if (remaining > 0) inputStream.skip(remaining);
     }
 
     public static void polyFillRectangle(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {

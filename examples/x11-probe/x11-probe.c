@@ -240,6 +240,30 @@ int main(int argc, char **argv) {
     RECORD(copy_clip_ok);
 
     before = x_errors;
+    XSetForeground(display, gc, 0x000000);
+    XFillRectangle(display, window, gc, 340, 160, 24, 24);
+    XSetForeground(display, gc, 0x20c060);
+    XPoint origin_points[] = {{342, 162}, {345, 165}};
+    XPoint previous_points[] = {{350, 170}, {3, 2}};
+    XDrawPoints(display, window, gc, origin_points, 2, CoordModeOrigin);
+    XDrawPoints(display, window, gc, previous_points, 2, CoordModePrevious);
+    XImage *origin_point_image = XGetImage(display, window, 345, 165, 1, 1,
+                                           AllPlanes, ZPixmap);
+    XImage *previous_point_image = XGetImage(display, window, 353, 172, 1, 1,
+                                             AllPlanes, ZPixmap);
+    XSync(display, False);
+    bool poly_point_ok = x_errors == before && origin_point_image &&
+            previous_point_image &&
+            (XGetPixel(origin_point_image, 0, 0) & 0xffffff) == 0x20c060 &&
+            (XGetPixel(previous_point_image, 0, 0) & 0xffffff) == 0x20c060;
+    if (origin_point_image) XDestroyImage(origin_point_image);
+    if (previous_point_image) XDestroyImage(previous_point_image);
+    result("poly-point", poly_point_ok,
+           poly_point_ok ? "origin=0x20c060 previous=0x20c060"
+                         : "point readback mismatch");
+    RECORD(poly_point_ok);
+
+    before = x_errors;
     XSetForeground(display, gc, WhitePixel(display, screen));
     XDrawString(display, window, gc, 32, 42, "BionicX PolyText8", 17);
     XImage *text_image = XGetImage(display, window, 28, 20, 220, 30,

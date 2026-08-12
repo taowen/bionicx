@@ -10,8 +10,8 @@ Covered operations:
 - top-level and child window creation, mapping, query-tree and translation;
 - atom creation plus the `only_if_exists`/`None` contract, WM properties and
   an exact UTF-8 property round trip;
-- GC, Pixmap rendering, `CopyArea`, and tiled window-background pixmaps used
-  by `ClearArea`;
+- GC, Pixmap rendering, `CopyArea`, both PolyPoint coordinate modes, and tiled
+  window-background pixmaps used by `ClearArea`;
 - a custom cursor and CLIPBOARD selection ownership;
 - synthetic ClientMessage delivery and real Android key/touch events;
 - strict core modifier-state semantics for lower-case, Shift press/release and
