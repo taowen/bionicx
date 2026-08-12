@@ -41,6 +41,8 @@ public class GLXExtension extends Extension {
         System.loadLibrary("gladiorenderer");
     }
 
+    public static native void setRendererEGLContext();
+
     public GLXExtension(XServer xServer, byte majorOpcode) {
         super(xServer, majorOpcode);
     }

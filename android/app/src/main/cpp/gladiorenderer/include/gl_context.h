@@ -34,6 +34,7 @@ typedef struct GLContext {
 } GLContext;
 
 extern GLContext* createGLContext(JNIEnv* env, jobject obj, int clientFd);
+extern void setRendererEGLContext(EGLContext context);
 extern void destroyGLContext(JNIEnv* env, GLContext* context);
 extern GLXContext* createGLXContext(int contextId, GLXContext* sharedContext);
 extern void destroyGLXContext(GLXContext* glxContext);

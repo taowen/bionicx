@@ -1,6 +1,11 @@
 #include "gl_context.h"
 #include "shader_converter.h"
 
+JNIEXPORT void JNICALL
+Java_com_winlator_xserver_extensions_GLXExtension_setRendererEGLContext(JNIEnv *env, jclass cls) {
+    setRendererEGLContext(eglGetCurrentContext());
+}
+
 JNIEXPORT jlong JNICALL
 Java_com_winlator_xserver_extensions_GLXExtension_createGLContext(JNIEnv *env, jobject obj,
                                                                   jint clientFd) {

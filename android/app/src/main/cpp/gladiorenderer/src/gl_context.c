@@ -3,8 +3,34 @@
 #include "gl_dsa.h"
 #include "sysvshared_memory.h"
 #include "request_handler.h"
+#include <errno.h>
+#include <time.h>
 
-extern EGLContext globalEGLContext;
+static EGLContext rendererEGLContext = EGL_NO_CONTEXT;
+static pthread_mutex_t renderer_context_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t renderer_context_ready = PTHREAD_COND_INITIALIZER;
+
+void setRendererEGLContext(EGLContext context) {
+    pthread_mutex_lock(&renderer_context_mutex);
+    rendererEGLContext = context;
+    pthread_cond_broadcast(&renderer_context_ready);
+    pthread_mutex_unlock(&renderer_context_mutex);
+}
+
+static EGLContext waitForRendererEGLContext() {
+    struct timespec deadline;
+    clock_gettime(CLOCK_REALTIME, &deadline);
+    deadline.tv_sec += 5;
+
+    pthread_mutex_lock(&renderer_context_mutex);
+    while (rendererEGLContext == EGL_NO_CONTEXT) {
+        if (pthread_cond_timedwait(&renderer_context_ready, &renderer_context_mutex,
+                                  &deadline) == ETIMEDOUT) break;
+    }
+    EGLContext context = rendererEGLContext;
+    pthread_mutex_unlock(&renderer_context_mutex);
+    return context;
+}
 
 pthread_mutex_t glx_context_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -317,7 +343,12 @@ GLXContext* createGLXContext(int contextId, GLXContext* sharedContext) {
     success = eglChooseConfig(eglDisplay, confAttribList, &eglConfig, 1, &numConfigs);
     if (!success || numConfigs != 1) return NULL;
 
-    EGLContext eglContext = eglCreateContext(eglDisplay, eglConfig, sharedContext ? sharedContext->eglContext : globalEGLContext, ctxAttribList);
+    EGLContext shareContext = sharedContext
+            ? sharedContext->eglContext
+            : waitForRendererEGLContext();
+    if (shareContext == EGL_NO_CONTEXT) return NULL;
+    EGLContext eglContext = eglCreateContext(eglDisplay, eglConfig, shareContext, ctxAttribList);
+    if (eglContext == EGL_NO_CONTEXT) return NULL;
 
     GLXContext* context = calloc(1, sizeof(GLXContext));
     context->eglContext = eglContext;

@@ -29,6 +29,7 @@ import com.winlator.xserver.WindowAttributes;
 import com.winlator.xserver.WindowManager;
 import com.winlator.xserver.XLock;
 import com.winlator.xserver.XServer;
+import com.winlator.xserver.extensions.GLXExtension;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -82,6 +83,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GPUHelper.setGlobalEGLContext();
+        GLXExtension.setRendererEGLContext();
 
         GLES20.glFrontFace(GLES20.GL_CCW);
         GLES20.glDisable(GLES20.GL_CULL_FACE);

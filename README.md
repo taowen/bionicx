@@ -54,6 +54,7 @@ ANDROID_SERIAL=<serial> examples/hello/install-and-run.sh
 ANDROID_SERIAL=<serial> examples/font-xft-probe/install-and-run.sh
 ANDROID_SERIAL=<serial> examples/clipboard-x11-probe/install-and-run.sh
 ANDROID_SERIAL=<serial> examples/keyboard-grab-x11-probe/install-and-run.sh
+ANDROID_SERIAL=<serial> examples/glx-probe/install-and-run.sh
 ```
 
 `tools/build.sh` does not download or bundle WPS. It builds the Bionic

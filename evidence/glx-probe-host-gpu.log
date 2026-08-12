@@ -1,0 +1,10 @@
+08-12 10:46:35.178 I BionicX: BXTEST PASS glx-display connected
+08-12 10:46:35.178 I BionicX: BXTEST PASS glx-visual RGBA double-buffered
+08-12 10:46:35.201 I AdrenoGLES-0: Driver Path : /vendor/lib64/egl/libGLESv2_adreno.so
+08-12 10:46:35.247 I BionicX: BXTEST PASS glx-context current
+08-12 10:46:35.247 I BionicX: BXTEST PASS host-gl-identity vendor=Qualcomm renderer=Gladio version=3.3
+08-12 10:46:35.253 I BionicX: BXTEST PASS host-gl-pixels center=242,26,13,255 corner=13,38,191,255
+08-12 10:46:35.254 I BionicX: BXTEST PASS glx-present glError=0x0
+BXTEST PASS host-gl-compositor blue=(13, 38, 191) red=(242, 26, 13) outside=(0, 0, 0) size=1920x1080
+08-12 10:46:42.292 I BionicX: BXSUMMARY host-glx passed=6 failed=0
+08-12 10:46:42.293 I BionicX: glx-probe exited with 0

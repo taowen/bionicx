@@ -1,0 +1,26 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "glx-probe",
+  "name": "Host GPU GLX probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "compatibility": [],
+  "launch": {
+    "mode": "loader",
+    "executable": "${APP}/bin/glx-probe",
+    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
+    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
+    "workingDirectory": "${APP}",
+    "arguments": [],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LD_LIBRARY_PATH": "${APP}/lib:${RUNTIME}/usr/lib",
+      "LANG": "C"
+    }
+  }
+}
