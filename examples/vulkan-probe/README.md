@@ -9,7 +9,9 @@ The probe verifies loader and instance discovery, physical-device identity,
 queue families, device memory, and both Xlib and XCB WSI paths. It creates a
 real X window through Xlib, binds both surface APIs to its XID, then creates a
 logical device and swapchain, imports the window's
-`AHardwareBuffer`, records and submits a Vulkan clear, presents it, then checks
+`AHardwareBuffer`, builds real SPIR-V vertex/fragment shaders and a graphics
+pipeline, records a render pass with a red triangle over a green background,
+presents it through a semaphore without a prior queue idle, then checks
 the final pixels in an Android compositor screenshot.
 
 ```sh

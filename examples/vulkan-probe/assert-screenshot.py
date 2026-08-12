@@ -78,6 +78,7 @@ def main() -> int:
         raise ValueError(f"screenshot too small: {width}x{height}")
 
     matching = []
+    triangle = []
     for y, row in enumerate(rows):
         for x in range(width):
             offset = x * channels
@@ -86,6 +87,9 @@ def main() -> int:
                     and 45 <= blue <= 85
                     and green - red >= 140 and green - blue >= 100):
                 matching.append((x, y))
+            if (205 <= red <= 245 and 5 <= green <= 40 and 0 <= blue <= 30
+                    and red - green >= 175 and red - blue >= 190):
+                triangle.append((x, y))
 
     if matching:
         left = min(point[0] for point in matching)
@@ -94,11 +98,23 @@ def main() -> int:
         bottom = max(point[1] for point in matching)
     else:
         left = top = right = bottom = -1
-    passed = (len(matching) > 200_000
-              and right - left > 600 and bottom - top > 340)
+    if triangle:
+        triangle_left = min(point[0] for point in triangle)
+        triangle_top = min(point[1] for point in triangle)
+        triangle_right = max(point[0] for point in triangle)
+        triangle_bottom = max(point[1] for point in triangle)
+    else:
+        triangle_left = triangle_top = triangle_right = triangle_bottom = -1
+    passed = (len(matching) > 150_000
+              and right - left > 600 and bottom - top > 340
+              and len(triangle) > 30_000
+              and triangle_right - triangle_left > 400
+              and triangle_bottom - triangle_top > 200)
     state = "PASS" if passed else "FAIL"
     print(f"BXTEST {state} host-vulkan-compositor pixels={len(matching)} "
-          f"bounds={left},{top}-{right},{bottom} size={width}x{height}")
+          f"bounds={left},{top}-{right},{bottom} triangle={len(triangle)} "
+          f"triangleBounds={triangle_left},{triangle_top}-"
+          f"{triangle_right},{triangle_bottom} size={width}x{height}")
     return 0 if passed else 1
 
 

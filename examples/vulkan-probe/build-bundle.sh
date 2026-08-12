@@ -10,8 +10,15 @@ case "$output_dir/" in
 esac
 
 "$repo_dir/examples/hello/build-bundle.sh" "$output_dir"
-mkdir -p "$output_dir/app/lib" "$output_dir/app/share/vulkan/icd.d"
+mkdir -p "$output_dir/app/lib" "$output_dir/app/share/vulkan/icd.d" \
+    "$output_dir/app/share/vulkan-probe"
 "$repo_dir/tools/build-vortek.sh" "$output_dir/app/lib"
+glslangValidator -V -S vert \
+    "$repo_dir/examples/vulkan-probe/triangle.vert" \
+    -o "$output_dir/app/share/vulkan-probe/triangle.vert.spv" >/dev/null
+glslangValidator -V -S frag \
+    "$repo_dir/examples/vulkan-probe/triangle.frag" \
+    -o "$output_dir/app/share/vulkan-probe/triangle.frag.spv" >/dev/null
 
 container_output="/work/${output_dir#"$repo_dir"/}"
 builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
