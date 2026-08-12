@@ -54,5 +54,5 @@ wait_log "glx-probe exited with 0"
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(TEST|SUMMARY)|glx-probe exited with')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY host-glx passed=24 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY host-glx passed=25 failed=0" <<<"$result"
 grep -Fq "glx-probe exited with 0" <<<"$result"

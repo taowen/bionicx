@@ -1100,8 +1100,17 @@ static char* replaceReservedWords(ShaderObject* shader, char* line) {
 
             if (len > 3 && name[0] == 'g' && name[1] == 'l' && name[2] == '_') {
                 for (j = 0; j < ARRAY_SIZE(reservedBuiltinWords); j++) {
-                    if ((reservedBuiltinWords[j].shaderType == GL_NONE || reservedBuiltinWords[j].shaderType == shader->type) && cstartswith(reservedBuiltinWords[j].name, name)) {
-                        if (len < strlen(reservedBuiltinWords[j].name)) i = nameStart + strlen(reservedBuiltinWords[j].name);
+                    size_t reservedLength = strlen(reservedBuiltinWords[j].name);
+                    bool exact = len == (int)reservedLength
+                            && strncmp(reservedBuiltinWords[j].name, name,
+                                       reservedLength) == 0;
+                    bool indexedPrefix = strcmp(reservedBuiltinWords[j].name,
+                                                "gl_MultiTexCoord") == 0
+                            && len > (int)reservedLength
+                            && strncmp(reservedBuiltinWords[j].name, name,
+                                       reservedLength) == 0
+                            && isdigit(name[reservedLength]);
+                    if ((reservedBuiltinWords[j].shaderType == GL_NONE || reservedBuiltinWords[j].shaderType == shader->type) && (exact || indexedPrefix)) {
                         if (reservedBuiltinWords[j].replace) {
                             replace = strdup(reservedBuiltinWords[j].replace);
                         }
@@ -1233,8 +1242,11 @@ static void iterateShaderSource(ShaderObject* shader, char* code, int size) {
             extractShaderDataTypes(&shader->code, newLine);
             newLine = replaceReservedWords(shader, newLine);
 
-            newLine = implicitConvertFunctionParams(&shader->code, newLine);
-            if (shader->code.flags & FLAG_HAS_OPERATORS) newLine = implicitConvertIntToFloat(&shader->code, newLine);
+            if (shader->code.version < 130) {
+                newLine = implicitConvertFunctionParams(&shader->code, newLine);
+                if (shader->code.flags & FLAG_HAS_OPERATORS)
+                    newLine = implicitConvertIntToFloat(&shader->code, newLine);
+            }
             if (shader->code.flags & FLAG_SHADER_EXTENSIONS) newLine = replaceShaderExtensions(newLine);
 
             removeVariablesOutOfScope(&shader->code);
@@ -1616,6 +1628,24 @@ void ShaderConverter_detachShader(GLuint programId, GLuint shaderId) {
     GLX_CONTEXT_UNLOCK();
 }
 
+static void logShaderSourceLine(const char* source, const char* infoLog) {
+    const char* marker = strstr(infoLog, "0:");
+    if (!marker) return;
+    char* end = NULL;
+    long target = strtol(marker + 2, &end, 10);
+    if (end == marker + 2 || target < 1) return;
+
+    const char* line = source;
+    for (long number = 1; number < target && *line; number++) {
+        const char* newline = strchr(line, '\n');
+        if (!newline) return;
+        line = newline + 1;
+    }
+    const char* newline = strchr(line, '\n');
+    int length = newline ? (int)(newline - line) : (int)strlen(line);
+    println("gladio: shader source line %ld: %.*s", target, length, line);
+}
+
 static void compileShaderObject(ShaderProgram* program, ShaderObject* shader) {
     ArrayBuffer shaderSource = {0};
     ShaderConverter_getShaderSource(shader, &shaderSource);
@@ -1626,11 +1656,23 @@ static void compileShaderObject(ShaderProgram* program, ShaderObject* shader) {
 
     glShaderSource(shader->id, 1, (const GLchar* const*)&shaderSource.buffer, NULL);
     glCompileShader(shader->id);
-    ArrayBuffer_free(&shaderSource);
 
     GLint compileStatus;
     glGetShaderiv(shader->id, GL_COMPILE_STATUS, &compileStatus);
     shader->compileStatus = compileStatus ? COMPILE_STATUS_SUCCESS : COMPILE_STATUS_ERROR;
+
+    if (!compileStatus) {
+        GLint infoLength = 0;
+        glGetShaderiv(shader->id, GL_INFO_LOG_LENGTH, &infoLength);
+        if (infoLength < 1) infoLength = 1;
+        GLchar* infoLog = calloc((size_t)infoLength + 1, 1);
+        glGetShaderInfoLog(shader->id, infoLength, NULL, infoLog);
+        println("gladio: shader %u compile failed: %s", shader->id,
+                infoLog[0] ? infoLog : "driver returned no info log");
+        logShaderSourceLine(shaderSource.buffer, infoLog);
+        free(infoLog);
+    }
+    ArrayBuffer_free(&shaderSource);
 
 #if IS_DEBUG_ENABLED(DEBUG_MODE_SHADER_INFO)
     if (!compileStatus) {
@@ -1690,10 +1732,20 @@ static void mergeSeparateShaders(ShaderProgram* program, ShaderObject* mainShade
 static void linkShaderProgram(ShaderProgram* program) {
     glLinkProgram(program->id);
 
-#if IS_DEBUG_ENABLED(DEBUG_MODE_SHADER_INFO)
-    GLint linkStatus;
+    GLint linkStatus = GL_FALSE;
     glGetProgramiv(program->id, GL_LINK_STATUS, &linkStatus);
+    if (!linkStatus) {
+        GLint infoLength = 0;
+        glGetProgramiv(program->id, GL_INFO_LOG_LENGTH, &infoLength);
+        if (infoLength < 1) infoLength = 1;
+        GLchar* infoLog = calloc((size_t)infoLength + 1, 1);
+        glGetProgramInfoLog(program->id, infoLength, NULL, infoLog);
+        println("gladio: program %u link failed: %s", program->id,
+                infoLog[0] ? infoLog : "driver returned no info log");
+        free(infoLog);
+    }
 
+#if IS_DEBUG_ENABLED(DEBUG_MODE_SHADER_INFO)
     if (!linkStatus) {
         GLchar infoLog[512];
         glGetProgramInfoLog(program->id, 512, NULL, infoLog);

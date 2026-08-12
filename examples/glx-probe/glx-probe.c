@@ -490,6 +490,53 @@ int main(void) {
     glDeleteShader(fragment_shader);
     glDeleteShader(vertex_shader);
 
+    const char *modern_vertex_source =
+            "#version 300 es\n"
+            "void main()\n"
+            "{\n"
+            "    int position;\n"
+            "    position = gl_VertexID & 1;\n"
+            "    gl_Position = vec4(float(position), 0.0, 0.0, 1.0);\n"
+            "}\n";
+    const char *modern_fragment_source =
+            "#version 300 es\n"
+            "precision mediump float;\n"
+            "out vec4 color;\n"
+            "void main()\n"
+            "{\n"
+            "    int channel;\n"
+            "    channel = 1;\n"
+            "    color = vec4(float(channel), 0.0, 0.0, 1.0);\n"
+            "}\n";
+    GLuint modern_vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint modern_fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(modern_vertex_shader, 1, &modern_vertex_source, NULL);
+    glShaderSource(modern_fragment_shader, 1, &modern_fragment_source, NULL);
+    glCompileShader(modern_vertex_shader);
+    glCompileShader(modern_fragment_shader);
+    GLuint modern_program = glCreateProgram();
+    glAttachShader(modern_program, modern_vertex_shader);
+    glAttachShader(modern_program, modern_fragment_shader);
+    glLinkProgram(modern_program);
+    GLint modern_vertex_compiled = GL_FALSE;
+    GLint modern_fragment_compiled = GL_FALSE;
+    GLint modern_linked = GL_FALSE;
+    glGetShaderiv(modern_vertex_shader, GL_COMPILE_STATUS,
+                  &modern_vertex_compiled);
+    glGetShaderiv(modern_fragment_shader, GL_COMPILE_STATUS,
+                  &modern_fragment_compiled);
+    glGetProgramiv(modern_program, GL_LINK_STATUS, &modern_linked);
+    bool modern_shader_ok = modern_vertex_compiled == GL_TRUE
+            && modern_fragment_compiled == GL_TRUE
+            && modern_linked == GL_TRUE && glGetError() == GL_NO_ERROR;
+    snprintf(details, sizeof(details), "vertex=%d fragment=%d linked=%d",
+             modern_vertex_compiled, modern_fragment_compiled, modern_linked);
+    result("host-gl-modern-integer-shader", modern_shader_ok, details);
+    modern_shader_ok ? passed++ : failed++;
+    glDeleteProgram(modern_program);
+    glDeleteShader(modern_fragment_shader);
+    glDeleteShader(modern_vertex_shader);
+
     const char *vendor = (const char *)glGetString(GL_VENDOR);
     const char *renderer = (const char *)glGetString(GL_RENDERER);
     const char *version = (const char *)glGetString(GL_VERSION);

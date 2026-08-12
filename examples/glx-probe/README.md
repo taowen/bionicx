@@ -13,6 +13,8 @@ It also covers FBConfig visual metadata, pbuffers, ordinary `gl*` entry points
 returned from `glXGetProcAddress`, shader precision, and indexed/64-bit
 capability queries used by real GL loaders. The string and numeric OpenGL ES
 versions are checked independently so loader-visible metadata cannot drift.
+Its modern GLSL test preserves integer assignment targets and the standard
+`gl_VertexID` built-in while translating an OpenGL ES 3 shader pair.
 Required GLES 3 renderbuffer formats must also expose the host driver's real
 multisample counts; ANGLE rejects GLES 3 if any non-integer required format
 cannot provide at least 4x MSAA.

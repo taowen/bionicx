@@ -35,6 +35,5 @@ BXTEST PASS host-gl-compositor blue=(13, 38, 191) red=(242, 26, 13) outside=(0, 
 Chrome was then launched with ANGLE OpenGL, Skia Graphite disabled, and the
 required `--no-sandbox`. Its log contains neither the former
 `unimplemented call glVertexAttribIPointer` nor a `libGL.so.1` load failure.
-ANGLE proceeds into repeated complex Skia program links. Those links currently
-fail without a driver info log, which is the next bounded OpenGL diagnostic;
-it is downstream of integer vertex attribute setup.
+ANGLE proceeds into repeated complex Skia program links. Their root cause and
+fix are recorded in `2026-08-12-chrome-modern-glsl.md`.
