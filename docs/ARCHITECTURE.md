@@ -76,6 +76,21 @@ The X server reports a configurable symmetric DPI. WPS uses 144 DPI on the
 1920x1080 test device; the former fixed 254 DPI made Qt dialogs larger than the
 root window.
 
+### Host GPU presentation
+
+The Winlator-derived renderer deliberately has two presentation paths:
+
+- core X11 and XRender draw into a CPU-backed `Drawable`; the GL thread uploads
+  its dirty texture while holding the drawable's render lock;
+- DRI3/Present and native GL renderers use `GPUImage`, backed by Android
+  `AHardwareBuffer` and imported into the host GLES context as `EGLImageKHR`.
+
+The second path lets Mesa/GL wrappers render through the device GPU without a
+CPU readback. BionicX will validate it with a controlled real glibc OpenGL/DRI3
+client before enabling it as the Chrome/WPS GPU acceptance path. CPU rendering
+remains a required fallback and is tested independently, so a direct-rendering
+failure cannot be masked by toolkit screenshots.
+
 ## 5. Compatibility modules
 
 Compatibility belongs at observable ABI boundaries and is opt-in. The WPS

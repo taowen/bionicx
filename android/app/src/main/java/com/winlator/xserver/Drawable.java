@@ -152,21 +152,27 @@ public class Drawable extends XResource {
 
     public void copyArea(short srcX, short srcY, short dstX, short dstY, short width, short height, Drawable drawable, GraphicsContext.Function gcFunction) {
         if (this.data == null || drawable.data == null) return;
+        synchronized (renderLock) {
+            dstX = (short)Mathf.clamp(dstX, 0, this.width-1);
+            dstY = (short)Mathf.clamp(dstY, 0, this.height-1);
+            if ((dstX + width) > this.width)
+                width = (short)(this.width - dstX);
+            if ((dstY + height) > this.height)
+                height = (short)(this.height - dstY);
 
-        dstX = (short)Mathf.clamp(dstX, 0, this.width-1);
-        dstY = (short)Mathf.clamp(dstY, 0, this.height-1);
-        if ((dstX + width) > this.width) width = (short)(this.width - dstX);
-        if ((dstY + height) > this.height) height = (short)(this.height - dstY);
+            if (gcFunction == GraphicsContext.Function.COPY) {
+                copyArea(srcX, srcY, dstX, dstY, width, height,
+                        drawable.getStride(), this.getStride(), drawable.data,
+                        this.data);
+            }
+            else copyAreaOp(srcX, srcY, dstX, dstY, width, height,
+                    drawable.getStride(), this.getStride(), drawable.data,
+                    this.data, gcFunction.ordinal());
 
-        if (gcFunction == GraphicsContext.Function.COPY) {
-            copyArea(srcX, srcY, dstX, dstY, width, height, drawable.getStride(), this.getStride(), drawable.data, this.data);
+            this.data.rewind();
+            drawable.data.rewind();
+            forceUpdate();
         }
-        else copyAreaOp(srcX, srcY, dstX, dstY, width, height, drawable.getStride(), this.getStride(), drawable.data, this.data, gcFunction.ordinal());
-
-        this.data.rewind();
-        drawable.data.rewind();
-
-        forceUpdate();
     }
 
     public void fillColor(int color) {
@@ -175,14 +181,17 @@ public class Drawable extends XResource {
 
     public void fillRect(int x, int y, int width, int height, int color) {
         if (this.data == null) return;
-        x = (short)Mathf.clamp(x, 0, this.width-1);
-        y = (short)Mathf.clamp(y, 0, this.height-1);
-        if ((x + width) > this.width) width = (short)((this.width - x));
-        if ((y + height) > this.height) height = (short)((this.height - y));
+        synchronized (renderLock) {
+            x = (short)Mathf.clamp(x, 0, this.width-1);
+            y = (short)Mathf.clamp(y, 0, this.height-1);
+            if ((x + width) > this.width) width = (short)((this.width - x));
+            if ((y + height) > this.height) height = (short)((this.height - y));
 
-        fillRect((short)x, (short)y, (short)width, (short)height, color, this.getStride(), this.data);
-        this.data.rewind();
-        forceUpdate();
+            fillRect((short)x, (short)y, (short)width, (short)height, color,
+                    this.getStride(), this.data);
+            this.data.rewind();
+            forceUpdate();
+        }
     }
 
     /** Blends an unpacked 8-bit alpha glyph mask over this 32-bit drawable. */
@@ -215,8 +224,8 @@ public class Drawable extends XResource {
                 }
             }
             data.rewind();
+            forceUpdate();
         }
-        forceUpdate();
     }
 
     /** Applies a constant straight-alpha ARGB color with the Render Over op. */
@@ -272,8 +281,8 @@ public class Drawable extends XResource {
                 }
             }
             data.rewind();
+            forceUpdate();
         }
-        forceUpdate();
     }
 
     public int getPixelArgb(int x, int y) {
@@ -389,8 +398,8 @@ public class Drawable extends XResource {
                 }
             }
             data.rewind();
+            forceUpdate();
         }
-        forceUpdate();
     }
 
     private static int addStraightChannel(int source, int sourceAlpha,
