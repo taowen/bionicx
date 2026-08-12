@@ -284,6 +284,50 @@ static void report_address_mapping(pid_t child, const char *name,
     fclose(maps);
 }
 
+static int peek_tracee_word(pid_t child, uint64_t address, uint64_t *value) {
+    errno = 0;
+    long word = ptrace(PTRACE_PEEKDATA, child,
+                       (void *)(uintptr_t)address, NULL);
+    if (word == -1 && errno != 0) return -1;
+    *value = (uint64_t)(unsigned long)word;
+    return 0;
+}
+
+static void report_frame_chain(pid_t child, uint64_t frame_pointer,
+                               uint64_t stack_pointer) {
+    /* AArch64 frame records contain the previous x29 and saved x30. Keep the
+     * walk deliberately bounded and monotonic so corrupt application stacks
+     * cannot turn diagnostic mode into another hang. */
+    for (unsigned int frame = 0; frame < 32; frame++) {
+        if ((frame_pointer & 15) != 0 || frame_pointer < stack_pointer ||
+                frame_pointer - stack_pointer > 16 * 1024 * 1024) {
+            break;
+        }
+        uint64_t previous = 0;
+        uint64_t return_address = 0;
+        if (peek_tracee_word(child, frame_pointer, &previous) != 0 ||
+                peek_tracee_word(child, frame_pointer + sizeof(uint64_t),
+                                  &return_address) != 0) {
+            break;
+        }
+        /* Strip pointer-authentication metadata for map lookup while retaining
+         * the exact saved value above. Android arm64 currently exposes a
+         * 39-bit userspace VA; PAC may occupy bits inside the wider 48-bit
+         * architectural address field, so a generic top-byte mask is not
+         * sufficient on the x300. */
+        uint64_t mapped_return = return_address & UINT64_C(0x0000007fffffffff);
+        char label[32];
+        snprintf(label, sizeof(label), "frame-%02u", frame);
+        fprintf(stderr,
+                "bionicx-exec: %s fp=0x%" PRIx64 " lr=0x%" PRIx64 "\n",
+                label, frame_pointer, return_address);
+        report_address_mapping(child, label, mapped_return);
+        if (previous <= frame_pointer || previous - frame_pointer > 1024 * 1024)
+            break;
+        frame_pointer = previous;
+    }
+}
+
 static void report_fatal_signal(pid_t child, int signal_number) {
     struct user_pt_regs regs;
     struct iovec io = {.iov_base = &regs, .iov_len = sizeof(regs)};
@@ -302,15 +346,18 @@ static void report_fatal_signal(pid_t child, int signal_number) {
             "bionicx-exec: registers x0=0x%" PRIx64 " x1=0x%" PRIx64
             " x2=0x%" PRIx64 " x3=0x%" PRIx64 " x4=0x%" PRIx64
             " x5=0x%" PRIx64 " x6=0x%" PRIx64 " x7=0x%" PRIx64
-            " sp=0x%" PRIx64 "\n",
+            " fp=0x%" PRIx64 " sp=0x%" PRIx64 "\n",
             (uint64_t)regs.regs[0], (uint64_t)regs.regs[1],
             (uint64_t)regs.regs[2], (uint64_t)regs.regs[3],
             (uint64_t)regs.regs[4], (uint64_t)regs.regs[5],
             (uint64_t)regs.regs[6], (uint64_t)regs.regs[7],
+            (uint64_t)regs.regs[29],
             (uint64_t)regs.sp);
     report_address_mapping(child, "pc", (uint64_t)regs.pc);
     report_address_mapping(child, "lr", (uint64_t)regs.regs[30]);
     report_address_mapping(child, "fault", (uint64_t)(uintptr_t)info.si_addr);
+    report_frame_chain(child, (uint64_t)regs.regs[29],
+                       (uint64_t)regs.sp);
     fflush(stderr);
 }
 

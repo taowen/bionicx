@@ -6,7 +6,6 @@ import com.winlator.core.CursorLocker;
 import com.winlator.renderer.GLRenderer;
 import com.winlator.winhandler.WinHandler;
 import com.winlator.xserver.extensions.BigReqExtension;
-import com.winlator.xserver.extensions.DRI3Extension;
 import com.winlator.xserver.extensions.Extension;
 import com.winlator.xserver.extensions.GLXExtension;
 import com.winlator.xserver.extensions.PresentExtension;
@@ -229,7 +228,11 @@ public class XServer {
             // Do not advertise MIT-SHM unless a SysV shared-memory backend is
             // installed. Real glibc Qt clients otherwise call shmget() after
             // QueryVersion and crash before they can fall back to XPutImage.
-            new DRI3Extension(this, opcode--),
+            // DRI3 Open must return an authenticated DRM descriptor through
+            // SCM_RIGHTS. The inherited handler cannot do that on Android and
+            // replying without an fd makes real clients consume invalid
+            // ancillary data. Do not advertise DRI3 until that contract is
+            // implemented; Gladio's host-GLES path does not depend on it.
             new PresentExtension(this, opcode--),
             // The bundled SYNC handler implements only fence opcodes (14+),
             // not the legacy counters Qt creates with opcode 2. Advertising

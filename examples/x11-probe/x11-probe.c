@@ -99,8 +99,15 @@ int main(int argc, char **argv) {
     result("list-extensions", extensions_ok,
            extensions_ok ? detail : "server returned no advertised extensions");
     RECORD(extensions_ok);
-    for (int index = 0; index < extension_count; ++index)
+    bool has_dri3 = false;
+    for (int index = 0; index < extension_count; ++index) {
         printf("BXINFO extension %s\n", extensions[index]);
+        if (strcmp(extensions[index], "DRI3") == 0) has_dri3 = true;
+    }
+    result("extension-capability-honesty", !has_dri3,
+           has_dri3 ? "incomplete DRI3 advertised"
+                    : "DRI3 hidden until Open can return a DRM fd");
+    RECORD(!has_dri3);
     if (extensions) XFreeExtensionList(extensions);
 
     int before = x_errors;
