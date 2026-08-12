@@ -47,6 +47,53 @@ static uint32_t *read_spirv(const char *path, size_t *size) {
     return words;
 }
 
+static VkResult upload_buffer(
+        VkDevice device, const VkPhysicalDeviceMemoryProperties *memory,
+        VkBufferUsageFlags usage, const void *data, size_t size,
+        VkBuffer *buffer, VkDeviceMemory *device_memory) {
+    VkBufferCreateInfo buffer_info = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = size,
+        .usage = usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
+    VkResult status = vkCreateBuffer(device, &buffer_info, NULL, buffer);
+    if (status != VK_SUCCESS) return status;
+
+    VkMemoryRequirements requirements = {0};
+    vkGetBufferMemoryRequirements(device, *buffer, &requirements);
+    uint32_t memory_type = UINT32_MAX;
+    VkMemoryPropertyFlags required = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    for (uint32_t i = 0; i < memory->memoryTypeCount; i++) {
+        if ((requirements.memoryTypeBits & (1u << i))
+                && (memory->memoryTypes[i].propertyFlags & required)
+                        == required) {
+            memory_type = i;
+            break;
+        }
+    }
+    if (memory_type == UINT32_MAX) return VK_ERROR_FEATURE_NOT_PRESENT;
+
+    VkMemoryAllocateInfo allocation = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = requirements.size,
+        .memoryTypeIndex = memory_type,
+    };
+    status = vkAllocateMemory(device, &allocation, NULL, device_memory);
+    if (status != VK_SUCCESS) return status;
+    status = vkBindBufferMemory(device, *buffer, *device_memory, 0);
+    if (status != VK_SUCCESS) return status;
+
+    void *mapping = NULL;
+    status = vkMapMemory(device, *device_memory, 0, size, 0, &mapping);
+    if (status == VK_SUCCESS) {
+        memcpy(mapping, data, size);
+        vkUnmapMemory(device, *device_memory);
+    }
+    return status;
+}
+
 int main(void) {
     uint32_t loader_version = VK_API_VERSION_1_0;
     VkResult status = vkEnumerateInstanceVersion(&loader_version);
@@ -625,8 +672,98 @@ int main(void) {
                    && vertex_map_status == VK_SUCCESS,
            details);
 
+    const uint16_t indices[3] = {0, 1, 2};
+    const float tint[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    VkBuffer index_buffer = VK_NULL_HANDLE;
+    VkDeviceMemory index_memory = VK_NULL_HANDLE;
+    VkResult index_upload_status = upload_buffer(
+            device, &memory, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            indices, sizeof(indices), &index_buffer, &index_memory);
+    VkBuffer uniform_buffer = VK_NULL_HANDLE;
+    VkDeviceMemory uniform_memory = VK_NULL_HANDLE;
+    VkResult uniform_upload_status = upload_buffer(
+            device, &memory, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            tint, sizeof(tint), &uniform_buffer, &uniform_memory);
+    snprintf(details, sizeof(details),
+             "index=%d indexBytes=%zu uniform=%d uniformBytes=%zu",
+             index_upload_status, sizeof(indices), uniform_upload_status,
+             sizeof(tint));
+    result("host-vulkan-index-uniform-upload",
+           index_upload_status == VK_SUCCESS
+                   && uniform_upload_status == VK_SUCCESS,
+           details);
+
+    VkDescriptorSetLayoutBinding descriptor_binding = {
+        .binding = 0,
+        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount = 1,
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+    };
+    VkDescriptorSetLayoutCreateInfo descriptor_layout_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = 1,
+        .pBindings = &descriptor_binding,
+    };
+    VkDescriptorSetLayout descriptor_layout = VK_NULL_HANDLE;
+    VkResult descriptor_layout_status = vkCreateDescriptorSetLayout(
+            device, &descriptor_layout_info, NULL, &descriptor_layout);
+    VkDescriptorPoolSize descriptor_pool_size = {
+        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount = 1,
+    };
+    VkDescriptorPoolCreateInfo descriptor_pool_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .maxSets = 1,
+        .poolSizeCount = 1,
+        .pPoolSizes = &descriptor_pool_size,
+    };
+    VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
+    VkResult descriptor_pool_status = descriptor_layout_status == VK_SUCCESS
+            ? vkCreateDescriptorPool(device, &descriptor_pool_info, NULL,
+                                     &descriptor_pool)
+            : descriptor_layout_status;
+    VkDescriptorSetAllocateInfo descriptor_allocate_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = descriptor_pool,
+        .descriptorSetCount = 1,
+        .pSetLayouts = &descriptor_layout,
+    };
+    VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
+    VkResult descriptor_allocate_status = descriptor_pool_status == VK_SUCCESS
+            ? vkAllocateDescriptorSets(device, &descriptor_allocate_info,
+                                       &descriptor_set)
+            : descriptor_pool_status;
+    VkDescriptorBufferInfo uniform_descriptor = {
+        .buffer = uniform_buffer,
+        .offset = 0,
+        .range = sizeof(tint),
+    };
+    VkWriteDescriptorSet descriptor_write = {
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet = descriptor_set,
+        .dstBinding = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .pBufferInfo = &uniform_descriptor,
+    };
+    if (descriptor_allocate_status == VK_SUCCESS)
+        vkUpdateDescriptorSets(device, 1, &descriptor_write, 0, NULL);
+    snprintf(details, sizeof(details), "layout=%d pool=%d allocate=%d set=%s",
+             descriptor_layout_status, descriptor_pool_status,
+             descriptor_allocate_status,
+             descriptor_set != VK_NULL_HANDLE ? "valid" : "null");
+    result("host-vulkan-uniform-descriptor",
+           descriptor_layout_status == VK_SUCCESS
+                   && descriptor_pool_status == VK_SUCCESS
+                   && descriptor_allocate_status == VK_SUCCESS
+                   && descriptor_set != VK_NULL_HANDLE,
+           details);
+
     VkPipelineLayoutCreateInfo layout_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = descriptor_layout != VK_NULL_HANDLE ? 1u : 0u,
+        .pSetLayouts = descriptor_layout != VK_NULL_HANDLE
+                ? &descriptor_layout : NULL,
     };
     VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
     VkResult layout_status = vkCreatePipelineLayout(
@@ -788,7 +925,9 @@ int main(void) {
     if (command_buffer != VK_NULL_HANDLE
             && image_index < returned_image_count
             && pipeline_status == VK_SUCCESS
-            && framebuffer_status == VK_SUCCESS) {
+            && framebuffer_status == VK_SUCCESS
+            && index_upload_status == VK_SUCCESS
+            && descriptor_allocate_status == VK_SUCCESS) {
         VkCommandBufferBeginInfo begin_info = {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
@@ -809,10 +948,16 @@ int main(void) {
                              VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           pipeline);
+        vkCmdBindDescriptorSets(command_buffer,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                pipeline_layout, 0, 1, &descriptor_set,
+                                0, NULL);
         VkDeviceSize vertex_offset = 0;
         vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer,
                                &vertex_offset);
-        vkCmdDraw(command_buffer, 3, 1, 0, 0);
+        vkCmdBindIndexBuffer(command_buffer, index_buffer, 0,
+                             VK_INDEX_TYPE_UINT16);
+        vkCmdDrawIndexed(command_buffer, 3, 1, 0, 0, 0);
         vkCmdEndRenderPass(command_buffer);
         if (record_status == VK_SUCCESS)
             record_status = vkEndCommandBuffer(command_buffer);
@@ -820,8 +965,8 @@ int main(void) {
     snprintf(details, sizeof(details),
              "status=%d background=26,191,64 triangle=230,20,10",
              record_status);
-    result("host-vulkan-record-triangle", record_status == VK_SUCCESS,
-           details);
+    result("host-vulkan-record-indexed-descriptor",
+           record_status == VK_SUCCESS, details);
 
     VkSemaphore present_semaphore = VK_NULL_HANDLE;
     VkSemaphoreCreateInfo semaphore_create_info = {
@@ -894,6 +1039,10 @@ int main(void) {
         vkDestroyPipeline(device, pipeline, NULL);
     if (pipeline_layout != VK_NULL_HANDLE)
         vkDestroyPipelineLayout(device, pipeline_layout, NULL);
+    if (descriptor_pool != VK_NULL_HANDLE)
+        vkDestroyDescriptorPool(device, descriptor_pool, NULL);
+    if (descriptor_layout != VK_NULL_HANDLE)
+        vkDestroyDescriptorSetLayout(device, descriptor_layout, NULL);
     if (vertex_module != VK_NULL_HANDLE)
         vkDestroyShaderModule(device, vertex_module, NULL);
     if (fragment_module != VK_NULL_HANDLE)
@@ -908,6 +1057,14 @@ int main(void) {
         vkDestroyBuffer(device, vertex_buffer, NULL);
     if (vertex_memory != VK_NULL_HANDLE)
         vkFreeMemory(device, vertex_memory, NULL);
+    if (index_buffer != VK_NULL_HANDLE)
+        vkDestroyBuffer(device, index_buffer, NULL);
+    if (index_memory != VK_NULL_HANDLE)
+        vkFreeMemory(device, index_memory, NULL);
+    if (uniform_buffer != VK_NULL_HANDLE)
+        vkDestroyBuffer(device, uniform_buffer, NULL);
+    if (uniform_memory != VK_NULL_HANDLE)
+        vkFreeMemory(device, uniform_memory, NULL);
     free(swapchain_images);
     if (swapchain != VK_NULL_HANDLE)
         vkDestroySwapchainKHR(device, swapchain, NULL);
