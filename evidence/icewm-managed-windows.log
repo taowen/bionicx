@@ -1,0 +1,9 @@
+device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
+icewm=Debian-trixie-arm64-3.7.4-1
+BXTEST PASS icewm-manager-start
+BXICEWM client title=BionicX Workspace A mapped=1 configured=1 focused=0 size=620x310
+BXICEWM client title=BionicX Workspace B mapped=1 configured=1 focused=0 size=620x310
+BXTEST PASS icewm-two-clients first=1 second=1
+BXSUMMARY icewm passed=2 failed=0
+icewm-probe exited with 0
+regression: BXSUMMARY x11-probe passed=18 failed=0 observational_input=yes

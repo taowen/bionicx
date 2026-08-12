@@ -1,0 +1,17 @@
+# Keep the first integration milestone focused on reparenting and multiple
+# managed clients. IceWM 3.7.4's taskbar exercises additional server paths
+# which remain a deliberate follow-up.
+ShowTaskBar=0
+TaskBarAtTop=0
+TaskBarAutoHide=0
+TaskBarShowStartMenu=1
+TaskBarShowWindowListMenu=1
+TaskBarShowWorkspaces=1
+TaskBarShowClock=1
+TaskBarShowTray=1
+WorkspaceNames="Desktop 1", "Desktop 2"
+DesktopBackgroundColor="rgb:18/24/38"
+MenuMouseTracking=1
+ClickToFocus=1
+OpaqueMove=1
+OpaqueResize=1

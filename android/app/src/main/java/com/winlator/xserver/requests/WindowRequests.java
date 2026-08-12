@@ -24,6 +24,7 @@ import com.winlator.xserver.errors.XRequestError;
 import com.winlator.xserver.events.CreateNotify;
 import com.winlator.xserver.events.Event;
 import com.winlator.xserver.events.RawEvent;
+import com.winlator.xserver.events.ReparentNotify;
 
 import java.io.IOException;
 import java.util.List;
@@ -122,7 +123,8 @@ public abstract class WindowRequests {
     public static void reparentWindow(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
         int windowId = inputStream.readInt();
         int parentId = inputStream.readInt();
-        inputStream.skip(4);
+        short x = inputStream.readShort();
+        short y = inputStream.readShort();
 
         Window window = client.xServer.windowManager.getWindow(windowId);
         if (window == null) throw new BadWindow(windowId);
@@ -130,21 +132,36 @@ public abstract class WindowRequests {
         Window parent = client.xServer.windowManager.getWindow(parentId);
         if (parent == null) throw new BadWindow(parentId);
 
-        client.xServer.windowManager.reparentWindow(window, parent);
+        Window oldParent = window.getParent();
+        client.xServer.windowManager.reparentWindow(window, parent, x, y);
+        boolean overrideRedirect = window.attributes.isOverrideRedirect();
+        window.sendEvent(Event.STRUCTURE_NOTIFY,
+                new ReparentNotify(window, window, parent, x, y,
+                        overrideRedirect));
+        if (oldParent != null) {
+            oldParent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
+                    new ReparentNotify(oldParent, window, parent, x, y,
+                            overrideRedirect));
+        }
+        if (parent != oldParent) {
+            parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
+                    new ReparentNotify(parent, window, parent, x, y,
+                            overrideRedirect));
+        }
     }
 
     public static void mapWindow(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
         int windowId = inputStream.readInt();
         Window window = client.xServer.windowManager.getWindow(windowId);
         if (window == null) throw new BadWindow(windowId);
-        client.xServer.windowManager.mapWindow(window);
+        client.xServer.windowManager.mapWindow(window, client);
     }
 
     public static void mapSubWindows(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
         int windowId = inputStream.readInt();
         Window window = client.xServer.windowManager.getWindow(windowId);
         if (window == null) throw new BadWindow(windowId);
-        client.xServer.windowManager.mapSubWindows(window);
+        client.xServer.windowManager.mapSubWindows(window, client);
     }
 
     public static void unmapWindow(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
@@ -384,7 +401,8 @@ public abstract class WindowRequests {
         if (window == null) throw new BadWindow(windowId);
         Bitmask valueMask = new Bitmask(inputStream.readShort());
         inputStream.skip(2);
-        if (!valueMask.isEmpty()) client.xServer.windowManager.configureWindow(window, valueMask, inputStream);
+        if (!valueMask.isEmpty()) client.xServer.windowManager.configureWindow(
+                window, valueMask, inputStream, client);
     }
 
     public static void getGeometry(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {

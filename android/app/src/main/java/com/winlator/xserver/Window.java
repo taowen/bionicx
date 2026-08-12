@@ -346,6 +346,14 @@ public class Window extends XResource {
         return false;
     }
 
+    public boolean hasEventListenerForOtherClient(int eventId, XClient client) {
+        for (EventListener eventListener : eventListeners) {
+            if (eventListener.client != client
+                    && eventListener.isInterestedIn(eventId)) return true;
+        }
+        return false;
+    }
+
     public boolean hasEventListenerFor(Bitmask mask) {
         for (EventListener eventListener : eventListeners) {
             if (eventListener.isInterestedIn(mask)) return true;

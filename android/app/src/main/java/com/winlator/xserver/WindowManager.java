@@ -98,10 +98,12 @@ public class WindowManager extends XResourceManager {
         parent.removeChild(window);
     }
 
-    public void mapWindow(Window window) {
+    public void mapWindow(Window window, XClient requestingClient) {
         if (!window.attributes.isMapped()) {
             Window parent = window.getParent();
-            if (!parent.hasEventListenerFor(Event.SUBSTRUCTURE_REDIRECT) || window.attributes.isOverrideRedirect()) {
+            if (!parent.hasEventListenerForOtherClient(
+                    Event.SUBSTRUCTURE_REDIRECT, requestingClient)
+                    || window.attributes.isOverrideRedirect()) {
                 window.attributes.setMapped(true);
                 window.sendEvent(Event.STRUCTURE_NOTIFY, new MapNotify(window, window));
                 parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY, new MapNotify(parent, window));
@@ -123,9 +125,10 @@ public class WindowManager extends XResourceManager {
         }
     }
 
-    public void mapSubWindows(Window window) {
-        for (Window child : window.getChildren()) mapSubWindows(child);
-        mapWindow(window);
+    public void mapSubWindows(Window window, XClient requestingClient) {
+        for (Window child : window.getChildren())
+            mapSubWindows(child, requestingClient);
+        mapWindow(window, requestingClient);
     }
 
     public Window getFocusedWindow() {
@@ -239,7 +242,9 @@ public class WindowManager extends XResourceManager {
         triggerOnChangeWindowZOrder(window);
     }
 
-    public void configureWindow(Window window, Bitmask valueMask, XInputStream inputStream) throws XRequestError {
+    public void configureWindow(Window window, Bitmask valueMask,
+            XInputStream inputStream, XClient requestingClient)
+            throws XRequestError {
         short x = window.getX();
         short y = window.getY();
         short width = window.getWidth();
@@ -279,7 +284,9 @@ public class WindowManager extends XResourceManager {
 
         Window parent = window.getParent();
         boolean overrideRedirect = window.attributes.isOverrideRedirect();
-        if (!parent.hasEventListenerFor(Event.SUBSTRUCTURE_REDIRECT) || overrideRedirect) {
+        if (!parent.hasEventListenerForOtherClient(
+                Event.SUBSTRUCTURE_REDIRECT, requestingClient)
+                || overrideRedirect) {
             changeWindowGeometry(window, x, y, width, height);
 
             window.setBorderWidth(borderWidth);
@@ -292,10 +299,14 @@ public class WindowManager extends XResourceManager {
         else parent.sendEvent(Event.SUBSTRUCTURE_REDIRECT, new ConfigureRequest(parent, window, window.previousSibling(), x, y, width, height, borderWidth, stackMode, valueMask));
     }
 
-    public void reparentWindow(Window window, Window newParent) {
+    public void reparentWindow(Window window, Window newParent, short x, short y) {
         Window oldParent = window.getParent();
         if (oldParent != null) oldParent.removeChild(window);
         newParent.addChild(window);
+        boolean moved = window.getX() != x || window.getY() != y;
+        window.setX(x);
+        window.setY(y);
+        if (moved) triggerOnUpdateWindowGeometry(window, false);
     }
 
     public Window findPointWindow(short rootX, short rootY) {
