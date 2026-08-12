@@ -1,6 +1,7 @@
 package com.winlator.xserver;
 
 import androidx.collection.ArrayMap;
+import androidx.collection.ArraySet;
 
 import com.winlator.core.Bitmask;
 import com.winlator.core.Callback;
@@ -27,6 +28,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
             new ArrayMap<>();
     private final ArrayMap<Window, Integer> randrEventMasks = new ArrayMap<>();
     private final ArrayList<XResource> resources = new ArrayList<>();
+    private final ArraySet<Integer> openFonts = new ArraySet<>();
     private final ArrayList<Callback<XClient>> onDestroyListeners = new ArrayList<>();
 
     public XClient(long nativePtr, int fd, XServer xServer) {
@@ -101,6 +103,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
             }
             xiEventMasks.clear();
             randrEventMasks.clear();
+            openFonts.clear();
 
             xServer.windowManager.removeOnResourceLifecycleListener(this);
             xServer.pixmapManager.removeOnResourceLifecycleListener(this);
@@ -233,6 +236,14 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
 
     public boolean isValidResourceId(int id) {
         return xServer.resourceIDs.isInInterval(id, resourceIDBase);
+    }
+
+    public boolean openFont(int id) {
+        return openFonts.add(id);
+    }
+
+    public boolean closeFont(int id) {
+        return openFonts.remove(id);
     }
 
     public void addOnDestroyListener(Callback<XClient> onDestroyListener) {

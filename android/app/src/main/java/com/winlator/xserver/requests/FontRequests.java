@@ -6,17 +6,32 @@ import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.xserver.XClient;
+import com.winlator.xserver.errors.BadFont;
+import com.winlator.xserver.errors.BadIdChoice;
 import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
 
 public abstract class FontRequests {
     public static void openFont(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
-        inputStream.skip(4);
+        int fontId = inputStream.readInt();
+        if (!client.isValidResourceId(fontId) || !client.openFont(fontId))
+            throw new BadIdChoice(fontId);
         int length = inputStream.readShort();
         inputStream.skip(2);
         String name = inputStream.readString8(length);
-        if (!name.equals("cursor")) throw new UnsupportedOperationException("OpenFont supports only name: cursor.");
+        if (!name.equals("cursor")) {
+            client.closeFont(fontId);
+            throw new UnsupportedOperationException(
+                    "OpenFont supports only name: cursor.");
+        }
+    }
+
+    public static void closeFont(XClient client, XInputStream inputStream,
+                                 XOutputStream outputStream)
+            throws XRequestError {
+        int fontId = inputStream.readInt();
+        if (!client.closeFont(fontId)) throw new BadFont(fontId);
     }
 
     public static void listFonts(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {

@@ -198,6 +198,17 @@ int main(int argc, char **argv) {
     RECORD(list_properties_ok);
 
     before = x_errors;
+    Font cursor_font = XLoadFont(display, "cursor");
+    XSync(display, False);
+    bool font_open_ok = x_errors == before && cursor_font != None;
+    if (cursor_font != None) XUnloadFont(display, cursor_font);
+    XSync(display, False);
+    bool font_lifecycle_ok = font_open_ok && x_errors == before;
+    result("font-open-close", font_lifecycle_ok,
+           font_lifecycle_ok ? "cursor resource released" : last_x_error);
+    RECORD(font_lifecycle_ok);
+
+    before = x_errors;
     Pixmap pixmap = XCreatePixmap(display, window, 160, 100,
                                   (unsigned)DefaultDepth(display, screen));
     GC gc = XCreateGC(display, window, 0, NULL);

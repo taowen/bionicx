@@ -356,6 +356,10 @@ public class XClientRequestHandler implements RequestHandler {
                     case ClientOpcodes.OPEN_FONT:
                         FontRequests.openFont(client, inputStream, outputStream);
                         break;
+                    case ClientOpcodes.CLOSE_FONT:
+                        FontRequests.closeFont(client, inputStream,
+                                outputStream);
+                        break;
                     case ClientOpcodes.LIST_FONTS:
                         FontRequests.listFonts(client, inputStream, outputStream);
                         break;

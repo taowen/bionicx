@@ -39,6 +39,7 @@ public abstract class ClientOpcodes {
     public static final byte SET_INPUT_FOCUS = 42;
     public static final byte GET_INPUT_FOCUS = 43;
     public static final byte OPEN_FONT = 45;
+    public static final byte CLOSE_FONT = 46;
     public static final byte LIST_FONTS = 49;
     public static final byte CREATE_PIXMAP = 53;
     public static final byte FREE_PIXMAP = 54;
