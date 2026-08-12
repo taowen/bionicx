@@ -39,6 +39,16 @@ extern void glFramebufferTexture2D(GLenum target, GLenum attachment,
         GLenum textarget, GLuint texture, GLint level);
 extern GLenum glCheckFramebufferStatus(GLenum target);
 extern void glDeleteFramebuffers(GLsizei n, const GLuint *framebuffers);
+extern void glGenBuffers(GLsizei n, GLuint *buffers);
+extern void glBindBuffer(GLenum target, GLuint buffer);
+extern void glBufferData(GLenum target, GLsizeiptr size, const void *data,
+        GLenum usage);
+extern void glDeleteBuffers(GLsizei n, const GLuint *buffers);
+extern void glVertexAttribIPointer(GLuint index, GLint size, GLenum type,
+        GLsizei stride, const void *pointer);
+extern void glEnableVertexAttribArray(GLuint index);
+extern void glDisableVertexAttribArray(GLuint index);
+extern void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params);
 
 static void result(const char *name, bool passed, const char *detail) {
     printf("BXTEST %s %s %s\n", passed ? "PASS" : "FAIL", name, detail);
@@ -304,6 +314,40 @@ int main(void) {
              max_compute_count);
     result("host-gl-indexed-integer", indexed_integer_ok, details);
     indexed_integer_ok ? passed++ : failed++;
+
+    while (glGetError() != GL_NO_ERROR) {}
+    const GLint integer_vertices[] = {1, 2, 3, 4};
+    GLuint integer_vertex_buffer = 0;
+    glGenBuffers(1, &integer_vertex_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, integer_vertex_buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(integer_vertices), integer_vertices,
+                 GL_STATIC_DRAW);
+    glVertexAttribIPointer(7, 2, GL_INT, 0, NULL);
+    glEnableVertexAttribArray(7);
+    GLint attrib_integer = GL_FALSE;
+    GLint attrib_size = 0;
+    GLint attrib_type = 0;
+    GLint attrib_buffer = 0;
+    glGetVertexAttribiv(7, GL_VERTEX_ATTRIB_ARRAY_INTEGER, &attrib_integer);
+    glGetVertexAttribiv(7, GL_VERTEX_ATTRIB_ARRAY_SIZE, &attrib_size);
+    glGetVertexAttribiv(7, GL_VERTEX_ATTRIB_ARRAY_TYPE, &attrib_type);
+    glGetVertexAttribiv(7, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING,
+                        &attrib_buffer);
+    GLenum integer_attrib_error = glGetError();
+    bool integer_attrib_ok = integer_vertex_buffer != 0
+            && attrib_integer == GL_TRUE && attrib_size == 2
+            && attrib_type == GL_INT
+            && attrib_buffer == (GLint)integer_vertex_buffer
+            && integer_attrib_error == GL_NO_ERROR;
+    snprintf(details, sizeof(details),
+             "id=%u integer=%d size=%d type=0x%x buffer=%d glError=0x%x",
+             integer_vertex_buffer, attrib_integer, attrib_size, attrib_type,
+             attrib_buffer, integer_attrib_error);
+    result("host-gl-integer-vertex-attrib", integer_attrib_ok, details);
+    integer_attrib_ok ? passed++ : failed++;
+    glDisableVertexAttribArray(7);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDeleteBuffers(1, &integer_vertex_buffer);
 
     const GLenum required_msaa_formats[] = {
         GL_RGBA8, GL_RGB8, GL_RGB565, GL_RGBA4, GL_RGB5_A1,

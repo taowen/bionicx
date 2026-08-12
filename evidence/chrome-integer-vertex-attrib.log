@@ -1,0 +1,16 @@
+BionicX host GPU verification on x300 01408BH601027129
+Date: 2026-08-12
+Gladio submodule: 087443ef5208c2e0799dfec6ea09b3c59aea0940
+
+BXTEST PASS host-gl-integer-vertex-attrib id=14 integer=1 size=2 type=0x1404 buffer=14 glError=0x0
+BXSUMMARY host-glx passed=24 failed=0
+BXTEST PASS host-gl-compositor blue=(13, 38, 191) red=(242, 26, 13) outside=(0, 0, 0) size=1920x1080
+
+Chrome diagnostic profile retained --no-sandbox and selected ANGLE OpenGL.
+Occurrences in build/chrome-integer-attrib-with-gladio.log:
+  unimplemented call glVertexAttribIPointer: 0
+  Could not dlopen libGL.so.1: 0
+
+Next observed blocker:
+  ProgramGL.cpp:836 (checkLinkStatus): Program link or binary loading failed with no info log.
+  gpu/command_buffer/service/shared_context_state.cc:227 Skia shader compilation error (was cached = 0)

@@ -157,6 +157,7 @@ done
 for checksum in "$library_root"/*.chk; do
     cp "$checksum" "$output_dir/app/lib/"
 done
+"$repo_dir/tools/build-gladio.sh" "$output_dir/app/lib"
 
 # The ARM64 query tool must inspect the ARM64 plugins themselves. Run it in a
 # native-architecture build container, then rewrite its build-stage paths to

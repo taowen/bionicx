@@ -546,7 +546,15 @@ bool readUnboundVertexArrays(GLContext* context, GLenum drawMode, int drawCount,
                 GLRenderer_enableVertexAttribute(currentRenderer, location);
             }
 
-            glVertexAttribPointer(location, size, vertexAttrib->type, vertexAttrib->normalized, vertexAttrib->stride, pointer);
+            if (vertexAttrib->integer) {
+                glVertexAttribIPointer(location, size, vertexAttrib->type,
+                                       vertexAttrib->stride, pointer);
+            }
+            else {
+                glVertexAttribPointer(location, size, vertexAttrib->type,
+                                      vertexAttrib->normalized,
+                                      vertexAttrib->stride, pointer);
+            }
             if (oldArrayBuffer) glBindBuffer(GL_ARRAY_BUFFER, oldArrayBuffer->id);
         }
         else if (clientState->vao->attribs[i].state == VERTEX_ATTRIB_LEGACY_ENABLED) {

@@ -43,7 +43,8 @@ it into a second program, and verifies that the restored program is linked.
 
 These client changes now live as ordinary source in the
 [BionicX Gladio fork](https://github.com/taowen/gladio/tree/bionicx), pinned by
-commit and archive hash. The former downstream patch stack has been removed.
+the `third_party/gladio` Git submodule. The former downstream patch stack and
+generated source archive have been removed.
 
 ## Diagnostic efficiency
 

@@ -1,0 +1,4 @@
+[submodule "third_party/gladio"]
+	path = third_party/gladio
+	url = https://github.com/taowen/gladio.git
+	branch = bionicx

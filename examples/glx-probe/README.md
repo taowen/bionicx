@@ -1,7 +1,8 @@
 # Host GPU GLX probe
 
-This genuine AArch64 glibc/X11 client links the pinned
-[BionicX Gladio fork](https://github.com/taowen/gladio/tree/bionicx). It creates
+This genuine AArch64 glibc/X11 client links the
+[BionicX Gladio fork](https://github.com/taowen/gladio/tree/bionicx), pinned as
+the `third_party/gladio` Git submodule. It creates
 a real GLX context, asks the host GLES driver for its
 identity, draws a fixed-function triangle, reads center/background pixels back
 from the GPU, and swaps the drawable into the embedded X server window.

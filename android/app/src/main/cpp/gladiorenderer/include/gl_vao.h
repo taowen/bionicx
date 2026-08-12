@@ -16,6 +16,7 @@
 typedef struct GLVertexAttrib {
 #ifdef GL_SERVER
     bool normalized;
+    bool integer;
     int type;
     GLuint boundArrayBuffer;
     int size;
@@ -66,6 +67,7 @@ typedef struct GLVertexArrayObject {
         GLVertexArrayObject_setAttribState(clientState, arrayIdx, VERTEX_ATTRIB_LEGACY_ENABLED, false); \
         clientState->vao->attribs[arrayIdx].size = size; \
         clientState->vao->attribs[arrayIdx].type = type; \
+        clientState->vao->attribs[arrayIdx].integer = false; \
         clientState->vao->attribs[arrayIdx].normalized = type != GL_FLOAT && type != GL_HALF_FLOAT && clientState->program; \
         clientState->vao->attribs[arrayIdx].stride = stride > 0 || clientState->program ? stride : (size * sizeofGLType(type)); \
     } \

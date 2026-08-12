@@ -1745,7 +1745,12 @@ void gd_handle_glGetVertexAttribfv(GLContext* context) {
 }
 
 void gd_handle_glGetVertexAttribiv(GLContext* context) {
-    println(MSG_DEBUG_UNIMPLEMENTED_FUNC, "glGetVertexAttribiv");
+    GLuint index = ArrayBuffer_getInt(&context->inputBuffer);
+    GLenum pname = ArrayBuffer_getInt(&context->inputBuffer);
+    GLint value = 0;
+    glGetVertexAttribiv(index, pname, &value);
+    gl_send(context->clientRing, REQUEST_CODE_GL_GET_VERTEX_ATTRIBIV,
+            &value, sizeof(value));
 }
 
 void gd_handle_glHint(GLContext* context) {
@@ -3290,7 +3295,31 @@ void gd_handle_glVertexAttribI4usv(GLContext* context) {
 }
 
 void gd_handle_glVertexAttribIPointer(GLContext* context) {
-    println(MSG_DEBUG_UNIMPLEMENTED_FUNC, "glVertexAttribIPointer");
+    GLuint index = ArrayBuffer_getInt(&context->inputBuffer);
+    GLint size = ArrayBuffer_getInt(&context->inputBuffer);
+    GLenum type = ArrayBuffer_getInt(&context->inputBuffer);
+    GLsizei stride = ArrayBuffer_getInt(&context->inputBuffer);
+    uint64_t pointer = ArrayBuffer_getInt(&context->inputBuffer);
+
+    GLClientState* clientState = &currentRenderer->clientState;
+    if (index < VERTEX_ATTRIB_COUNT) {
+        GLVertexAttrib* vertexAttrib = &clientState->vao->attribs[index];
+        vertexAttrib->type = type;
+        vertexAttrib->size = size;
+        vertexAttrib->normalized = false;
+        vertexAttrib->integer = true;
+        vertexAttrib->stride = stride;
+        vertexAttrib->pointer = NULL;
+        if (!GLBuffer_getBound(GL_ARRAY_BUFFER)) {
+            vertexAttrib->boundArrayBuffer = 0;
+            GLVertexArrayObject_setAttribState(clientState, index,
+                                               VERTEX_ATTRIB_ENABLED, false);
+            return;
+        }
+        GLVertexArrayObject_setAttribState(clientState, index,
+                                           VERTEX_ATTRIB_DISABLED, true);
+    }
+    glVertexAttribIPointer(index, size, type, stride, (const void*)pointer);
 }
 
 void gd_handle_glVertexAttribPointer(GLContext* context) {
@@ -3308,6 +3337,7 @@ void gd_handle_glVertexAttribPointer(GLContext* context) {
             vertexAttrib->type = type;
             vertexAttrib->size = size;
             vertexAttrib->normalized = normalized;
+            vertexAttrib->integer = false;
             vertexAttrib->stride = stride;
             vertexAttrib->pointer = size == GL_BGRA ? (void*)pointer : NULL;
             vertexAttrib->boundArrayBuffer = 0;
@@ -3327,6 +3357,7 @@ void gd_handle_glVertexAttribPointer(GLContext* context) {
         vertexAttrib->type = type;
         vertexAttrib->size = size;
         vertexAttrib->normalized = normalized;
+        vertexAttrib->integer = false;
         vertexAttrib->stride = stride;
         vertexAttrib->pointer = (void*)pointer;
         vertexAttrib->boundArrayBuffer = GLBuffer_getBound(GL_ARRAY_BUFFER)->id;
