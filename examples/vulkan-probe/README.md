@@ -13,7 +13,9 @@ logical device and swapchain, imports the window's
 through mapped host-visible Vulkan memory, binds the uniform through a real
 descriptor set, stages and samples a Vulkan texture through a combined image
 sampler, builds SPIR-V shaders and a graphics pipeline, then records an indexed
-render pass with a red triangle over a green background,
+render pass with a red triangle over a green background. Vertex binding uses
+Vulkan 1.3 `vkCmdBindVertexBuffers2` with its optional size and stride arrays
+set to `NULL`, so the RPC bridge must preserve pointer presence exactly. It
 presents it through a semaphore without a prior queue idle, then checks
 the final pixels in an Android compositor screenshot.
 

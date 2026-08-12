@@ -1127,8 +1127,8 @@ int main(void) {
                                 pipeline_layout, 0, 1, &descriptor_set,
                                 0, NULL);
         VkDeviceSize vertex_offset = 0;
-        vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer,
-                               &vertex_offset);
+        vkCmdBindVertexBuffers2(command_buffer, 0, 1, &vertex_buffer,
+                               &vertex_offset, NULL, NULL);
         vkCmdBindIndexBuffer(command_buffer, index_buffer, 0,
                              VK_INDEX_TYPE_UINT16);
         vkCmdDrawIndexed(command_buffer, 3, 1, 0, 0, 0);
@@ -1139,7 +1139,7 @@ int main(void) {
     snprintf(details, sizeof(details),
              "status=%d background=26,191,64 triangle=230,20,10",
              record_status);
-    result("host-vulkan-record-indexed-descriptor",
+    result("host-vulkan-record-bind2-indexed-descriptor",
            record_status == VK_SUCCESS, details);
 
     VkSemaphore present_semaphore = VK_NULL_HANDLE;

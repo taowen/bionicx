@@ -2985,6 +2985,45 @@ void vt_handle_vkCmdSetScissorWithCount(VkContext* context) {
     vulkanWrapper.vkCmdSetScissorWithCount(commandBuffer, scissorCount, scissors);
 }
 
+static bool vt_vkCmdBindVertexBuffers2OptionalArrays(
+        const VkContext* context, bool* hasSizes, bool* hasStrides) {
+    const unsigned char* input = (const unsigned char*)context->inputBuffer;
+    size_t inputSize = (size_t)context->inputBufferSize;
+    size_t offset = 0;
+
+#define SKIP_BIND2_BYTES(byteCount) do { \
+        size_t skip = (size_t)(byteCount); \
+        if (skip > inputSize - offset) return false; \
+        offset += skip; \
+    } while (0)
+#define READ_BIND2_COUNT(count) do { \
+        if (sizeof(int) > inputSize - offset) return false; \
+        memcpy(&(count), input + offset, sizeof(int)); \
+        offset += sizeof(int); \
+        if ((count) < 0) return false; \
+    } while (0)
+
+    if (inputSize < 1) return false;
+    bool hasCommandBuffer = input[offset++] != 0;
+    if (hasCommandBuffer) SKIP_BIND2_BYTES(sizeof(uint64_t));
+    SKIP_BIND2_BYTES(sizeof(uint32_t) * 2);
+
+    int count;
+    READ_BIND2_COUNT(count); /* pBuffers */
+    SKIP_BIND2_BYTES((size_t)count * sizeof(uint64_t));
+    READ_BIND2_COUNT(count); /* pOffsets */
+    SKIP_BIND2_BYTES((size_t)count * sizeof(VkDeviceSize));
+    READ_BIND2_COUNT(count); /* pSizes */
+    *hasSizes = count > 0;
+    SKIP_BIND2_BYTES((size_t)count * sizeof(VkDeviceSize));
+    READ_BIND2_COUNT(count); /* pStrides */
+    *hasStrides = count > 0;
+    return true;
+
+#undef READ_BIND2_COUNT
+#undef SKIP_BIND2_BYTES
+}
+
 void vt_handle_vkCmdBindVertexBuffers2(VkContext* context) {
     uint64_t commandBufferId;
     uint32_t firstBinding;
@@ -2999,7 +3038,13 @@ void vt_handle_vkCmdBindVertexBuffers2(VkContext* context) {
     VkDeviceSize strides[bindingCount];
     vt_unserialize_vkCmdBindVertexBuffers2(VK_NULL_HANDLE, NULL, NULL, buffers, offsets, sizes, strides, context->inputBuffer, &context->memoryPool);
 
-    vulkanWrapper.vkCmdBindVertexBuffers2(commandBuffer, firstBinding, bindingCount, buffers, offsets, sizes, strides);
+    bool hasSizes = false;
+    bool hasStrides = false;
+    vt_vkCmdBindVertexBuffers2OptionalArrays(context, &hasSizes, &hasStrides);
+    VkDeviceSize* optionalSizes = hasSizes ? sizes : NULL;
+    VkDeviceSize* optionalStrides = hasStrides ? strides : NULL;
+    vulkanWrapper.vkCmdBindVertexBuffers2(commandBuffer, firstBinding,
+            bindingCount, buffers, offsets, optionalSizes, optionalStrides);
 }
 
 void vt_handle_vkCmdSetDepthTestEnable(VkContext* context) {

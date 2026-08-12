@@ -1,0 +1,10 @@
+device=01408BH601027129 ordinary-app-uid=io.taowen.bx
+before:
+BXTEST PASS host-vulkan-record-bind2-indexed-descriptor status=0 background=26,191,64 triangle=230,20,10
+BXSUMMARY host-vulkan passed=35 failed=0
+BXTEST FAIL host-vulkan-compositor pixels=0 bounds=-1,-1--1,-1 triangle=0 triangleBounds=-1,-1--1,-1 size=1920x1080
+after:
+BXTEST PASS host-vulkan-record-bind2-indexed-descriptor status=0 background=26,191,64 triangle=230,20,10
+BXSUMMARY host-vulkan passed=35 failed=0
+BXTEST PASS host-vulkan-compositor pixels=174537 bounds=0,0-639,359 triangle=55756 triangleBounds=90,51-549,291 size=1920x1080
+vulkan-probe exited with 0
