@@ -66,6 +66,45 @@ public abstract class GrabRequests {
         client.xServer.grabManager.deactivatePointerGrab();
     }
 
+    public static void grabButton(XClient client, XInputStream inputStream,
+                                  XOutputStream outputStream)
+            throws XRequestError {
+        boolean ownerEvents = client.getRequestData() == 1;
+        int windowId = inputStream.readInt();
+        Window window = client.xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        Bitmask eventMask = new Bitmask(inputStream.readShort() & 0xffff);
+        int pointerMode = inputStream.readByte() & 0xff;
+        int keyboardMode = inputStream.readByte() & 0xff;
+        int confineTo = inputStream.readInt();
+        int cursor = inputStream.readInt();
+        int button = inputStream.readByte() & 0xff;
+        inputStream.skip(1);
+        int modifiers = inputStream.readShort() & 0xffff;
+        if ((eventMask.getBits() & ~0x7ffc) != 0)
+            throw new BadValue(eventMask.getBits());
+        if ((modifiers & ~0x80ff) != 0) throw new BadValue(modifiers);
+        if (pointerMode != 1 || keyboardMode != 1 || confineTo != 0
+                || cursor != 0) throw new BadImplementation();
+        if (!client.xServer.grabManager.addPassiveButtonGrab(window, button,
+                modifiers, ownerEvents, eventMask, client))
+            throw new BadAccess();
+    }
+
+    public static void ungrabButton(XClient client, XInputStream inputStream,
+                                    XOutputStream outputStream)
+            throws XRequestError {
+        int button = client.getRequestData() & 0xff;
+        int windowId = inputStream.readInt();
+        Window window = client.xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        int modifiers = inputStream.readShort() & 0xffff;
+        inputStream.skip(2);
+        if ((modifiers & ~0x80ff) != 0) throw new BadValue(modifiers);
+        client.xServer.grabManager.removePassiveButtonGrabs(window, button,
+                modifiers, client);
+    }
+
     public static void grabKeyboard(XClient client, XInputStream inputStream,
                                     XOutputStream outputStream)
             throws IOException, XRequestError {

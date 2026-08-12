@@ -1,0 +1,14 @@
+device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
+BXEVENT pointer source=wanted type=press window=0x4 button=1 state=0x0 wanted=0x4
+BXEVENT pointer source=wanted type=release window=0x4 button=1 state=0x100 wanted=0x4
+BXEVENT pointer source=wanted type=press window=0x400001 button=1 state=0x0 wanted=0x400001
+BXEVENT pointer source=wanted type=release window=0x400001 button=1 state=0x100 wanted=0x400001
+BXEVENT pointer source=wanted type=press window=0x800001 button=1 state=0x0 wanted=0x800001
+BXEVENT pointer source=wanted type=release window=0x800001 button=1 state=0x100 wanted=0x800001
+BXTEST PASS passive-button-grab route=1
+BXTEST PASS passive-button-contention bad-access=1
+BXTEST PASS passive-button-owner-events normal-route=1
+BXTEST PASS passive-button-ungrab normal-route=1
+BXSUMMARY pointer-grab-x11 passed=4/4 xerrors=0
+pointer-grab-x11-probe exited with 0
+real-icewm: opcodes 28/29 count=0; BXSUMMARY icewm passed=3 failed=0

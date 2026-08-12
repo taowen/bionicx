@@ -200,8 +200,10 @@ public class XServer {
 
     public void removeClient(XClient client) {
         try (XLock lock = lock(Lockable.INPUT_DEVICE)) {
+            grabManager.deactivatePointerGrab(client);
             grabManager.deactivateKeyboardGrab(client);
             grabManager.removePassiveKeyGrabs(client);
+            grabManager.removePassiveButtonGrabs(client);
         }
         synchronized (clients) {
             clients.remove(client);

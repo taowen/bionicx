@@ -17,6 +17,8 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
     private boolean keyboardOwnerEvents;
     private int passiveActivationKey = -1;
     private final ArrayList<PassiveKeyGrab> passiveKeyGrabs = new ArrayList<>();
+    private final ArrayList<PassiveButtonGrab> passiveButtonGrabs =
+            new ArrayList<>();
     private final XServer xServer;
 
     public GrabManager(XServer xServer) {
@@ -38,6 +40,8 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         if (!(resource instanceof Window)) return;
         Window freedWindow = (Window)resource;
         passiveKeyGrabs.removeIf(grab -> grab.window == freedWindow);
+        passiveButtonGrabs.removeIf(grab -> grab.window == freedWindow);
+        if (window == freedWindow) deactivatePointerGrab();
         if (keyboardWindow == freedWindow) deactivateKeyboardGrab();
     }
 
@@ -81,6 +85,10 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         }
     }
 
+    public void deactivatePointerGrab(XClient client) {
+        if (getClient() == client) deactivatePointerGrab();
+    }
+
     private void activatePointerGrab(Window window, EventListener eventListener, boolean ownerEvents, boolean releaseWithButtons) {
         if (this.window == null) {
             xServer.inputDeviceManager.sendEnterLeaveNotify(xServer.inputDeviceManager.getPointWindow(), window, PointerWindowEvent.Mode.GRAB);
@@ -98,6 +106,73 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
     public void activatePointerGrab(Window window) {
         EventListener eventListener = window.getButtonPressListener();
         activatePointerGrab(window, eventListener, eventListener.isInterestedIn(Event.OWNER_GRAB_BUTTON), true);
+    }
+
+    private static class PassiveButtonGrab {
+        final Window window;
+        final int button;
+        final int modifiers;
+        final boolean ownerEvents;
+        final Bitmask eventMask;
+        final XClient client;
+
+        PassiveButtonGrab(Window window, int button, int modifiers,
+                          boolean ownerEvents, Bitmask eventMask,
+                          XClient client) {
+            this.window = window;
+            this.button = button;
+            this.modifiers = modifiers;
+            this.ownerEvents = ownerEvents;
+            this.eventMask = eventMask;
+            this.client = client;
+        }
+    }
+
+    public boolean addPassiveButtonGrab(Window window, int button,
+                                        int modifiers, boolean ownerEvents,
+                                        Bitmask eventMask, XClient client) {
+        for (PassiveButtonGrab grab : passiveButtonGrabs) {
+            if (grab.window == window && grab.client != client
+                    && overlaps(grab.button, button, 0)
+                    && overlaps(grab.modifiers, modifiers, 0x8000)) return false;
+        }
+        removePassiveButtonGrabs(window, button, modifiers, client);
+        passiveButtonGrabs.add(new PassiveButtonGrab(window, button, modifiers,
+                ownerEvents, eventMask, client));
+        return true;
+    }
+
+    public void removePassiveButtonGrabs(Window window, int button,
+                                         int modifiers, XClient client) {
+        passiveButtonGrabs.removeIf(grab -> grab.client == client
+                && grab.window == window
+                && (button == 0 || grab.button == button)
+                && (modifiers == 0x8000 || grab.modifiers == modifiers));
+    }
+
+    public void removePassiveButtonGrabs(XClient client) {
+        passiveButtonGrabs.removeIf(grab -> grab.client == client);
+    }
+
+    public boolean activatePassiveButtonGrab(Window pointWindow, byte button,
+                                             int modifiers) {
+        if (window != null) return false;
+        Window candidate = pointWindow;
+        while (candidate != null) {
+            for (PassiveButtonGrab grab : passiveButtonGrabs) {
+                if (grab.window == candidate
+                        && (grab.button == 0 || grab.button == (button & 0xff))
+                        && (grab.modifiers == 0x8000
+                        || grab.modifiers == (modifiers & 0xff))) {
+                    activatePointerGrab(grab.window,
+                            new EventListener(grab.client, grab.eventMask),
+                            grab.ownerEvents, true);
+                    return true;
+                }
+            }
+            candidate = candidate.getParent();
+        }
+        return false;
     }
 
     public void activateKeyboardGrab(Window window, boolean ownerEvents,

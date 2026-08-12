@@ -16,6 +16,10 @@
 - Core asynchronous passive `GrabKey`/`UngrabKey`, including exact or wildcard
   modifier matching, ancestor activation, automatic release, conflict checks,
   and client/window cleanup.
+- Core asynchronous passive `GrabButton`/`UngrabButton`, including exact or
+  wildcard button/modifier matching, ancestor activation, owner-events routing,
+  automatic release, conflict checks, and client/window cleanup. Synchronous
+  pointer mode and non-None confine/cursor overrides remain explicit errors.
 
 ## What an application bundle must supply
 
