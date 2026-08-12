@@ -31,6 +31,10 @@
 - Core window-manager save sets: insert/delete validation and disconnect-time
   rescue reparenting preserve foreign client windows, mapping and screen
   coordinates when manager-owned frames are destroyed.
+- Core `MapSubwindows` maps direct children without implicitly mapping the
+  target or deeper descendants. Newly viewable mapped subtrees receive initial
+  `Expose` and `VisibilityNotify(Unobscured)` events; dynamic partial/full
+  obscurity tracking during later stacking changes remains pending.
 
 ## What an application bundle must supply
 

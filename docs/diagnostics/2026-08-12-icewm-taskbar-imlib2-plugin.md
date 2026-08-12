@@ -56,7 +56,8 @@ validated same-depth pixmaps, background pixels and ParentRelative state;
 The core probe reads back the exact `0x3264c8` tile pixel and passes 19/19.
 After this change, visual inspection shows the IceWM start icon, workspace and
 task buttons, and monitor widgets across the bottom panel. Text placement and
-managed-window decorations are still incomplete and remain separate targets.
+managed-window decorations were completed later by the initial visibility
+work recorded in `2026-08-12-core-visibility-notify.md`.
 
 IceWM also issued fourteen core `PolyPoint` requests while drawing its panel
 monitors. BionicX now implements both `CoordModeOrigin` and

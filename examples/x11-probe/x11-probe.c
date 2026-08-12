@@ -359,6 +359,79 @@ int main(int argc, char **argv) {
            input_geometry_ok ? detail : last_x_error);
     RECORD(input_geometry_ok);
 
+    while (XPending(display)) {
+        XEvent ignored;
+        XNextEvent(display, &ignored);
+    }
+    before = x_errors;
+    Window map_parent = XCreateSimpleWindow(display, window, 400, 160,
+            120, 80, 0, 0, 0x202020);
+    Window map_child = XCreateSimpleWindow(display, map_parent, 4, 4,
+            80, 50, 0, 0, 0x408060);
+    Window map_grandchild = XCreateSimpleWindow(display, map_child, 2, 2,
+            30, 20, 0, 0, 0x804060);
+    XSelectInput(display, map_child, ExposureMask | VisibilityChangeMask);
+    XSelectInput(display, map_grandchild, ExposureMask);
+    XMapSubwindows(display, map_parent);
+    XSync(display, False);
+    XWindowAttributes parent_before_map = {0};
+    XWindowAttributes child_before_map = {0};
+    XWindowAttributes grandchild_before_map = {0};
+    XGetWindowAttributes(display, map_parent, &parent_before_map);
+    XGetWindowAttributes(display, map_child, &child_before_map);
+    XGetWindowAttributes(display, map_grandchild, &grandchild_before_map);
+    bool premature_expose = false;
+    bool premature_visibility = false;
+    while (XPending(display)) {
+        XEvent event;
+        XNextEvent(display, &event);
+        if (event.type == Expose && (event.xexpose.window == map_child
+                || event.xexpose.window == map_grandchild))
+            premature_expose = true;
+        if (event.type == VisibilityNotify
+                && event.xvisibility.window == map_child)
+            premature_visibility = true;
+    }
+    XMapWindow(display, map_parent);
+    XSync(display, False);
+    XWindowAttributes child_after_map = {0};
+    XWindowAttributes grandchild_after_map = {0};
+    XGetWindowAttributes(display, map_child, &child_after_map);
+    XGetWindowAttributes(display, map_grandchild, &grandchild_after_map);
+    bool child_exposed = false;
+    bool child_visible = false;
+    bool grandchild_exposed = false;
+    while (XPending(display)) {
+        XEvent event;
+        XNextEvent(display, &event);
+        if (event.type == Expose && event.xexpose.window == map_child)
+            child_exposed = true;
+        if (event.type == VisibilityNotify
+                && event.xvisibility.window == map_child
+                && event.xvisibility.state == VisibilityUnobscured)
+            child_visible = true;
+        if (event.type == Expose && event.xexpose.window == map_grandchild)
+            grandchild_exposed = true;
+    }
+    bool map_subwindows_ok = x_errors == before
+            && parent_before_map.map_state == IsUnmapped
+            && child_before_map.map_state == IsUnviewable
+            && grandchild_before_map.map_state == IsUnmapped
+            && !premature_expose && !premature_visibility
+            && child_after_map.map_state == IsViewable
+            && grandchild_after_map.map_state == IsUnmapped
+            && child_exposed && child_visible && !grandchild_exposed;
+    snprintf(detail, sizeof(detail),
+             "before=%d/%d/%d premature=%d/%d after=%d/%d expose=%d/%d visible=%d",
+             parent_before_map.map_state, child_before_map.map_state,
+             grandchild_before_map.map_state, premature_expose,
+             premature_visibility,
+             child_after_map.map_state, grandchild_after_map.map_state,
+             child_exposed, grandchild_exposed, child_visible);
+    result("map-subwindows-exposure", map_subwindows_ok, detail);
+    RECORD(map_subwindows_ok);
+    XDestroyWindow(display, map_parent);
+
     int translated_x = 0;
     int translated_y = 0;
     Window translated_child = None;

@@ -79,6 +79,12 @@ int main(void) {
     };
     pid_t first = launch(client, first_arguments);
     pid_t second = launch(client, second_arguments);
+    sleep_milliseconds(1500);
+    char* tree_arguments[] = {client, "--dump-tree", NULL};
+    pid_t tree = launch(client, tree_arguments);
+    int tree_ok = tree > 0 && wait_success(tree);
+    printf("BXTEST %s icewm-window-tree\n", tree_ok ? "PASS" : "FAIL");
+    fflush(stdout);
     int first_ok = first > 0 && wait_success(first);
     int second_ok = second > 0 && wait_success(second);
     kill(wm, SIGTERM);
@@ -86,9 +92,9 @@ int main(void) {
 
     printf("BXTEST %s icewm-two-clients first=%d second=%d\n",
            first_ok && second_ok ? "PASS" : "FAIL", first_ok, second_ok);
-    int passed = 1 + taskbar_ok + (first_ok && second_ok);
-    int failed = 3 - passed;
+    int passed = 1 + taskbar_ok + tree_ok + (first_ok && second_ok);
+    int failed = 4 - passed;
     printf("BXSUMMARY icewm passed=%d failed=%d\n", passed, failed);
     fflush(stdout);
-    return taskbar_ok && first_ok && second_ok ? 0 : 5;
+    return taskbar_ok && tree_ok && first_ok && second_ok ? 0 : 5;
 }

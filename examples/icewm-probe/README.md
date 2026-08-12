@@ -5,6 +5,10 @@ glibc X11 window manager. IceWM selects `SubstructureRedirect` on the root
 window, reparents two independently connected glibc clients into managed
 frames, configures them and maps them.
 
+The probe recursively inspects the live hierarchy and reads back the server-side
+pixels for both title bars and close buttons. This catches cases where frame
+geometry exists but missing visibility events leave its decorations black.
+
 The probe also enables IceWM's taskbar and verifies its mapped, screen-width
 `TaskBar` window in the real X11 hierarchy. The bundle explicitly declares the
 Imlib2 PNG and XPM plugins as runtime-loaded ELF entry points, so their own

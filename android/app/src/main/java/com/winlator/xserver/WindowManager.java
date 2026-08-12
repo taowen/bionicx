@@ -17,6 +17,7 @@ import com.winlator.xserver.events.MapNotify;
 import com.winlator.xserver.events.MapRequest;
 import com.winlator.xserver.events.ResizeRequest;
 import com.winlator.xserver.events.UnmapNotify;
+import com.winlator.xserver.events.VisibilityNotify;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,11 +108,22 @@ public class WindowManager extends XResourceManager {
                 window.attributes.setMapped(true);
                 window.sendEvent(Event.STRUCTURE_NOTIFY, new MapNotify(window, window));
                 parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY, new MapNotify(parent, window));
-                window.sendEvent(Event.EXPOSURE, new Expose(window));
+                exposeNewlyViewableSubtree(window);
                 triggerOnMapWindow(window);
             }
             else parent.sendEvent(Event.SUBSTRUCTURE_REDIRECT, new MapRequest(parent, window));
         }
+    }
+
+    private void exposeNewlyViewableSubtree(Window window) {
+        if (window.getMapState() != Window.MapState.VIEWABLE) return;
+        if (window.isInputOutput()) {
+            window.sendEvent(Event.EXPOSURE, new Expose(window));
+            window.sendEvent(Event.VISIBILITY_CHANGE, new VisibilityNotify(
+                    window, VisibilityNotify.State.UNOBSCURED));
+        }
+        for (Window child : window.getChildren())
+            exposeNewlyViewableSubtree(child);
     }
 
     public void unmapWindow(Window window) {
@@ -126,9 +138,8 @@ public class WindowManager extends XResourceManager {
     }
 
     public void mapSubWindows(Window window, XClient requestingClient) {
-        for (Window child : window.getChildren())
-            mapSubWindows(child, requestingClient);
-        mapWindow(window, requestingClient);
+        for (Window child : new ArrayList<>(window.getChildren()))
+            mapWindow(child, requestingClient);
     }
 
     public Window getFocusedWindow() {
