@@ -17,6 +17,7 @@
 #define GL_VERSION_MAJOR 3
 #define GL_VERSION_MINOR 2
 #define GL_STRING_VERSION "OpenGL ES 3.2 Gladio"
+#define GL_STRING_VENDOR "BionicX Gladio"
 #define GL_STRING_RENDERER "Gladio"
 #define GL_STRING_SHADING_LANGUAGE_VERSION "OpenGL ES GLSL ES 3.20"
 

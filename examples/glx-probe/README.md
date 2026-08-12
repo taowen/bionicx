@@ -17,6 +17,10 @@ multisample counts; ANGLE rejects GLES 3 if any non-integer required format
 cannot provide at least 4x MSAA.
 The probe also resolves and exercises the complete transform-feedback object
 lifecycle required when a loader accepts the advertised GLES 3 version.
+It requires the Chromium-recognized BGRA texture extension name and verifies
+that a `GL_BGRA` texture is a complete framebuffer color attachment with
+correct host-GPU clear/readback channel ordering. This is the backing format
+used by Chromium's Linux GPU raster tiles.
 Finally, a real linked GLSL program is exported with `glGetProgramBinary`,
 restored into a second program with `glProgramBinary`, and checked for a
 successful link. Chromium uses this path for its ANGLE program cache.

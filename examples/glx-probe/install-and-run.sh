@@ -21,7 +21,7 @@ install=("$repo_dir/tools/install-profile.sh"
 
 wait_log() {
     local pattern="$1"
-    for _ in $(seq 1 100); do
+    for _ in $(seq 1 300); do
         if "${adb[@]}" logcat -d -v brief | grep -Fq "$pattern"; then return 0; fi
         sleep 0.1
     done
@@ -54,5 +54,5 @@ wait_log "glx-probe exited with 0"
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(TEST|SUMMARY)|glx-probe exited with')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY host-glx passed=21 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY host-glx passed=23 failed=0" <<<"$result"
 grep -Fq "glx-probe exited with 0" <<<"$result"

@@ -1607,7 +1607,10 @@ void gd_handle_glGetString(GLContext* context) {
             string = getGLExtensions(NULL);
             break;
         case GL_VENDOR:
-            string = (const char*)glGetString(name);
+            // Gladio is the client-visible driver. Passing through the host
+            // vendor makes upper layers apply native-driver workarounds to a
+            // translation layer with different format semantics.
+            string = GL_STRING_VENDOR;
             break;
         case GL_RENDERER:
             string = GL_STRING_RENDERER;

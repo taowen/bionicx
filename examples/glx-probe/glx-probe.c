@@ -33,6 +33,12 @@ extern void glGetProgramInfoLog(GLuint program, GLsizei buf_size,
         GLsizei *length, GLchar *info_log);
 extern void glDeleteProgram(GLuint program);
 extern void glDeleteShader(GLuint shader);
+extern void glGenFramebuffers(GLsizei n, GLuint *framebuffers);
+extern void glBindFramebuffer(GLenum target, GLuint framebuffer);
+extern void glFramebufferTexture2D(GLenum target, GLenum attachment,
+        GLenum textarget, GLuint texture, GLint level);
+extern GLenum glCheckFramebufferStatus(GLenum target);
+extern void glDeleteFramebuffers(GLsizei n, const GLuint *framebuffers);
 
 static void result(const char *name, bool passed, const char *detail) {
     printf("BXTEST %s %s %s\n", passed ? "PASS" : "FAIL", name, detail);
@@ -253,6 +259,15 @@ int main(void) {
            proc_version ? proc_version : "glGetString unavailable");
     proc_address_ok ? passed++ : failed++;
 
+    const char *gl_extensions = (const char *)glGetString(GL_EXTENSIONS);
+    bool bgra_extension_ok = gl_extensions
+            && strstr(gl_extensions,
+                      "GL_EXT_texture_format_BGRA8888") != NULL;
+    result("host-gl-bgra-texture-extension", bgra_extension_ok,
+           bgra_extension_ok ? "GL_EXT_texture_format_BGRA8888"
+                             : "extension unavailable");
+    bgra_extension_ok ? passed++ : failed++;
+
     GLint gl_major = 0;
     GLint gl_minor = 0;
     glGetIntegerv(GL_MAJOR_VERSION, &gl_major);
@@ -438,9 +453,49 @@ int main(void) {
              vendor ? vendor : "-", renderer ? renderer : "-",
              version ? version : "-");
     bool identity_ok = vendor != NULL && renderer != NULL && version != NULL
+            && strstr(vendor, "Gladio") != NULL
+            && strstr(renderer, "Gladio") != NULL
             && strstr(version, "OpenGL ES 3.") != NULL;
     result("host-gl-identity", identity_ok, details);
     identity_ok ? passed++ : failed++;
+
+    while (glGetError() != GL_NO_ERROR) {}
+    GLuint bgra_texture = 0;
+    GLuint bgra_framebuffer = 0;
+    glGenTextures(1, &bgra_texture);
+    glBindTexture(GL_TEXTURE_2D, bgra_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_BGRA, 8, 8, 0, GL_BGRA,
+                 GL_UNSIGNED_BYTE, NULL);
+    glGenFramebuffers(1, &bgra_framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, bgra_framebuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, bgra_texture, 0);
+    GLenum bgra_framebuffer_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    glViewport(0, 0, 8, 8);
+    glClearColor(0.125f, 0.5f, 0.875f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glFinish();
+    unsigned char bgra_pixel[4] = {0};
+    glReadPixels(4, 4, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, bgra_pixel);
+    GLenum bgra_error = glGetError();
+    bool bgra_render_target_ok =
+            bgra_framebuffer_status == GL_FRAMEBUFFER_COMPLETE
+            && bgra_error == GL_NO_ERROR
+            && bgra_pixel[0] >= 25 && bgra_pixel[0] <= 40
+            && bgra_pixel[1] >= 120 && bgra_pixel[1] <= 136
+            && bgra_pixel[2] >= 215 && bgra_pixel[2] <= 232
+            && bgra_pixel[3] == 255;
+    snprintf(details, sizeof(details),
+             "status=0x%x pixel=%u,%u,%u,%u glError=0x%x",
+             bgra_framebuffer_status, bgra_pixel[0], bgra_pixel[1],
+             bgra_pixel[2], bgra_pixel[3], bgra_error);
+    result("host-gl-bgra-render-target", bgra_render_target_ok, details);
+    bgra_render_target_ok ? passed++ : failed++;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDeleteFramebuffers(1, &bgra_framebuffer);
+    glDeleteTextures(1, &bgra_texture);
 
     glViewport(0, 0, width, height);
     glClearColor(0.05f, 0.15f, 0.75f, 1.0f);
@@ -490,7 +545,7 @@ int main(void) {
         }
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
-        if (now.tv_sec - start.tv_sec >= 8) break;
+        if (now.tv_sec - start.tv_sec >= 20) break;
         struct timespec delay = {.tv_nsec = 10 * 1000 * 1000};
         nanosleep(&delay, NULL);
     }
