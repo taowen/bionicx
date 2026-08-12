@@ -24,7 +24,7 @@ applications. Acceptance requires an untraced launch under the ordinary
 Android app UID plus an application-specific workflow: a real file operation,
 save/reopen, or opening and navigating images respectively.
 
-The current integration status is intentionally explicit: Ristretto passes
-its two-image workflow; Mousepad opens the bundled note and Thunar opens its
-grabbed File menu, while edit/save and file-operation completion remain active
-diagnostic targets. See `docs/diagnostics/2026-08-13-trixie-xfce-apps.md`.
+All three workflows pass on x300: Thunar creates and displays a real directory,
+Mousepad edits, saves and cold-reopens a document, and Ristretto decodes and
+navigates two PNG images. See
+`docs/diagnostics/2026-08-13-trixie-xfce-apps.md`.
