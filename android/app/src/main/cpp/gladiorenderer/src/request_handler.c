@@ -1489,6 +1489,38 @@ void gd_handle_glGetProgramiv(GLContext* context) {
     gl_send(context->clientRing, REQUEST_CODE_GL_GET_PROGRAMIV, &params, sizeof(GLint));
 }
 
+void gd_handle_glGetProgramBinary(GLContext* context) {
+    GLuint program = ArrayBuffer_getInt(&context->inputBuffer);
+    GLsizei bufSize = ArrayBuffer_getInt(&context->inputBuffer);
+    GLsizei length = 0;
+    GLenum binaryFormat = 0;
+
+    ArrayBuffer_rewind(&context->outputBuffer);
+    ArrayBuffer_putInt(&context->outputBuffer, 0);
+    ArrayBuffer_putInt(&context->outputBuffer, 0);
+    if (bufSize > 0) {
+        ENSURE_ARRAY_CAPACITY(2 * sizeof(GLint) + bufSize,
+                              context->outputBuffer.capacity,
+                              context->outputBuffer.buffer, 1);
+        glGetProgramBinary(program, bufSize, &length, &binaryFormat,
+                           context->outputBuffer.buffer + 2 * sizeof(GLint));
+        ArrayBuffer_rewind(&context->outputBuffer);
+        ArrayBuffer_putInt(&context->outputBuffer, length);
+        ArrayBuffer_putInt(&context->outputBuffer, binaryFormat);
+        context->outputBuffer.size += length;
+    }
+    gl_send(context->clientRing, REQUEST_CODE_GL_GET_PROGRAM_BINARY,
+            context->outputBuffer.buffer, context->outputBuffer.size);
+}
+
+void gd_handle_glProgramBinary(GLContext* context) {
+    GLuint program = ArrayBuffer_getInt(&context->inputBuffer);
+    GLenum binaryFormat = ArrayBuffer_getInt(&context->inputBuffer);
+    GLsizei length = ArrayBuffer_getInt(&context->inputBuffer);
+    const void* binary = ArrayBuffer_getBytes(&context->inputBuffer, length);
+    glProgramBinary(program, binaryFormat, binary, length);
+}
+
 void gd_handle_glGetQueryObjectuiv(GLContext* context) {
     GLuint id = ArrayBuffer_getInt(&context->inputBuffer);
     GLenum pname = ArrayBuffer_getInt(&context->inputBuffer);
@@ -3793,6 +3825,8 @@ HandleRequestFunc handleRequestFuncs[] = {
     gd_handle_glDeleteTransformFeedbacks,
     gd_handle_glGenTransformFeedbacks,
     gd_handle_glIsTransformFeedback,
+    gd_handle_glGetProgramBinary,
+    gd_handle_glProgramBinary,
 };
 
 HandleRequestFunc getHandleRequestFunc(short requestCode) {

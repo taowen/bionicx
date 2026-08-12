@@ -9,8 +9,8 @@ case "$output_dir/" in
     *) echo "output must be inside the repository: $output_dir" >&2; exit 2 ;;
 esac
 
-gladio_commit="90ac071f78b5ef9f4ba802d50c92bfcf068076ec"
-gladio_sha256="70ae6ac71aca3d36099fcb0e7cda574095d12e3d500aad12b4c6502b6d5fa2ea"
+gladio_commit="9bfbcf2c3b2d588887f2fa1cf6c791abd00b1d67"
+gladio_sha256="8113d2314f53d20fdf1e56e17595360e4926c4fbc762a36238f9e877efede58e"
 archive="$repo_dir/build/downloads/gladio-$gladio_commit.tar.gz"
 source_dir="$output_dir/gladio-source"
 

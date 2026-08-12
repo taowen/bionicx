@@ -19,7 +19,7 @@
 #define REQUEST_CODE_GL_DSA_RESTORE_BOUND_RENDERBUFFER 21
 
 #define REQUEST_CODE_GL_CALL_START 100
-#define REQUEST_CODE_GL_CALL_COUNT 434
+#define REQUEST_CODE_GL_CALL_COUNT 436
 
 #define REQUEST_CODE_GL_ACCUM 100
 #define REQUEST_CODE_GL_ACTIVE_TEXTURE 101
@@ -455,6 +455,8 @@
 #define REQUEST_CODE_GL_DELETE_TRANSFORM_FEEDBACKS 531
 #define REQUEST_CODE_GL_GEN_TRANSFORM_FEEDBACKS 532
 #define REQUEST_CODE_GL_IS_TRANSFORM_FEEDBACK 533
+#define REQUEST_CODE_GL_GET_PROGRAM_BINARY 534
+#define REQUEST_CODE_GL_PROGRAM_BINARY 535
 
 #if DEBUG_MODE
 static const char* requestCodeStrings[] = {
@@ -892,6 +894,8 @@ static const char* requestCodeStrings[] = {
     "glDeleteTransformFeedbacks",
     "glGenTransformFeedbacks",
     "glIsTransformFeedback",
+    "glGetProgramBinary",
+    "glProgramBinary",
 };
 
 static inline const char* requestCodeToString(short requestCode) {

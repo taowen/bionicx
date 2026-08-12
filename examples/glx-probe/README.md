@@ -17,6 +17,9 @@ multisample counts; ANGLE rejects GLES 3 if any non-integer required format
 cannot provide at least 4x MSAA.
 The probe also resolves and exercises the complete transform-feedback object
 lifecycle required when a loader accepts the advertised GLES 3 version.
+Finally, a real linked GLSL program is exported with `glGetProgramBinary`,
+restored into a second program with `glProgramBinary`, and checked for a
+successful link. Chromium uses this path for its ANGLE program cache.
 
 Gladio exercises Winlator's host-GLES command path. It is distinct from the
 zero-copy DRI3/Present `AHardwareBuffer` path, which needs a separate controlled

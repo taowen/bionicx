@@ -1825,6 +1825,7 @@ void ShaderConverter_getProgramiv(GLuint target, GLenum pname, GLint* params) {
         case GL_DELETE_STATUS:
         case GL_INFO_LOG_LENGTH:
         case GL_LINK_STATUS:
+        case GL_PROGRAM_BINARY_LENGTH:
         case GL_PROGRAM_BINARY_RETRIEVABLE_HINT:
         case GL_TRANSFORM_FEEDBACK_BUFFER_MODE:
         case GL_TRANSFORM_FEEDBACK_VARYINGS:

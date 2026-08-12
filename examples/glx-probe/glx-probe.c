@@ -16,6 +16,23 @@ extern void glGetInteger64v(GLenum pname, GLint64 *data);
 extern void glGetIntegeri_v(GLenum target, GLuint index, GLint *data);
 extern void glGetInternalformativ(GLenum target, GLenum internalformat,
         GLenum pname, GLsizei count, GLint *params);
+extern void glGetProgramBinary(GLuint program, GLsizei buf_size,
+        GLsizei *length, GLenum *binary_format, void *binary);
+extern void glProgramBinary(GLuint program, GLenum binary_format,
+        const void *binary, GLsizei length);
+extern GLuint glCreateShader(GLenum shader_type);
+extern GLuint glCreateProgram(void);
+extern void glShaderSource(GLuint shader, GLsizei count,
+        const GLchar *const *source, const GLint *length);
+extern void glCompileShader(GLuint shader);
+extern void glGetShaderiv(GLuint shader, GLenum pname, GLint *params);
+extern void glAttachShader(GLuint program, GLuint shader);
+extern void glLinkProgram(GLuint program);
+extern void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
+extern void glGetProgramInfoLog(GLuint program, GLsizei buf_size,
+        GLsizei *length, GLchar *info_log);
+extern void glDeleteProgram(GLuint program);
+extern void glDeleteShader(GLuint shader);
 
 static void result(const char *name, bool passed, const char *detail) {
     printf("BXTEST %s %s %s\n", passed ? "PASS" : "FAIL", name, detail);
@@ -342,6 +359,77 @@ int main(void) {
     result("host-gl-transform-feedback-object", transform_feedback_ok,
            details);
     transform_feedback_ok ? passed++ : failed++;
+
+    const char *vertex_source =
+            "#version 120\n"
+            "attribute vec4 position;\n"
+            "void main()\n"
+            "{\n"
+            "    gl_Position = position;\n"
+            "}\n";
+    const char *fragment_source =
+            "#version 120\n"
+            "void main()\n"
+            "{\n"
+            "    gl_FragColor = vec4(1.0);\n"
+            "}\n";
+    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(vertex_shader, 1, &vertex_source, NULL);
+    glShaderSource(fragment_shader, 1, &fragment_source, NULL);
+    glCompileShader(vertex_shader);
+    glCompileShader(fragment_shader);
+    GLint vertex_compiled = GL_FALSE;
+    GLint fragment_compiled = GL_FALSE;
+    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &vertex_compiled);
+    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &fragment_compiled);
+    GLuint source_program = glCreateProgram();
+    glAttachShader(source_program, vertex_shader);
+    glAttachShader(source_program, fragment_shader);
+    glLinkProgram(source_program);
+    GLint source_linked = GL_FALSE;
+    GLint binary_length = 0;
+    glGetProgramiv(source_program, GL_LINK_STATUS, &source_linked);
+    glGetProgramiv(source_program, GL_PROGRAM_BINARY_LENGTH, &binary_length);
+    if (source_linked != GL_TRUE) {
+        GLchar link_log[512] = {0};
+        GLsizei link_log_length = 0;
+        glGetProgramInfoLog(source_program, sizeof(link_log) - 1,
+                            &link_log_length, link_log);
+        printf("BXINFO program-link-log %.*s\n", link_log_length, link_log);
+    }
+    void *program_binary = binary_length > 0
+            ? malloc((size_t)binary_length) : NULL;
+    GLsizei received_binary_length = 0;
+    GLenum binary_format = 0;
+    if (program_binary) {
+        glGetProgramBinary(source_program, binary_length,
+                           &received_binary_length, &binary_format,
+                           program_binary);
+    }
+    GLuint restored_program = glCreateProgram();
+    if (received_binary_length > 0) {
+        glProgramBinary(restored_program, binary_format, program_binary,
+                        received_binary_length);
+    }
+    GLint restored_linked = GL_FALSE;
+    glGetProgramiv(restored_program, GL_LINK_STATUS, &restored_linked);
+    bool program_binary_ok = vertex_compiled == GL_TRUE
+            && fragment_compiled == GL_TRUE && source_linked == GL_TRUE
+            && received_binary_length > 0
+            && received_binary_length <= binary_length && binary_format != 0
+            && restored_linked == GL_TRUE && glGetError() == GL_NO_ERROR;
+    snprintf(details, sizeof(details),
+             "sourceLinked=%d length=%d received=%d format=0x%x restored=%d",
+             source_linked, binary_length, received_binary_length,
+             binary_format, restored_linked);
+    result("host-gl-program-binary-roundtrip", program_binary_ok, details);
+    program_binary_ok ? passed++ : failed++;
+    free(program_binary);
+    glDeleteProgram(restored_program);
+    glDeleteProgram(source_program);
+    glDeleteShader(fragment_shader);
+    glDeleteShader(vertex_shader);
 
     const char *vendor = (const char *)glGetString(GL_VENDOR);
     const char *renderer = (const char *)glGetString(GL_RENDERER);

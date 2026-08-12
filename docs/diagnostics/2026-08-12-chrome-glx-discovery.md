@@ -34,6 +34,13 @@ driver. Chrome then reached a missing `glGenTransformFeedbacks` dispatch slot;
 the fork and Android renderer now implement the complete transform-feedback
 object lifecycle and the GLES 3 texture-target state slots.
 
+After the DRI3 ownership correction, Chrome reached its ANGLE program cache
+and exposed `GL_PROGRAM_BINARY_LENGTH`, `glGetProgramBinary`, and
+`glProgramBinary`.  Gladio now forwards the binary APIs and the renderer
+forwards the length query to the Qualcomm driver.  The controlled probe links a
+real GLSL program, exports a 1559-byte Adreno binary in format `0x8740`, imports
+it into a second program, and verifies that the restored program is linked.
+
 These client changes now live as ordinary source in the
 [BionicX Gladio fork](https://github.com/taowen/gladio/tree/bionicx), pinned by
 commit and archive hash. The former downstream patch stack has been removed.
@@ -49,7 +56,7 @@ recorded in `evidence/diagnose-child-signal.log`.
 
 ## Controlled verification
 
-On x300 `01408BH601027129`, the host-GLX probe passes 20/20 checks from a clean
+On x300 `01408BH601027129`, the host-GLX probe passes 21/21 checks from a clean
 download and build of the pinned fork:
 
 ```text
@@ -60,8 +67,9 @@ BXTEST PASS host-gl-integer64 maxElementIndex=2147483647
 BXTEST PASS host-gl-indexed-integer maxComputeWorkGroupsX=65535
 BXTEST PASS host-gl-required-format-msaa formats=9 minimumMaxSamples=4
 BXTEST PASS host-gl-transform-feedback-object id=1
+BXTEST PASS host-gl-program-binary-roundtrip sourceLinked=1 length=1559 received=1559 format=0x8740 restored=1
 BXTEST PASS host-gl-identity vendor=Qualcomm renderer=Gladio version=OpenGL ES 3.2 Gladio
-BXSUMMARY host-glx passed=20 failed=0
+BXSUMMARY host-glx passed=21 failed=0
 ```
 
 Chrome/ANGLE now passes the GLES 3 capability gate and the transform-feedback
