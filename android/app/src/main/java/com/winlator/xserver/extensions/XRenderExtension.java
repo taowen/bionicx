@@ -71,6 +71,7 @@ public class XRenderExtension extends Extension {
         private static final byte ADD_GLYPHS = 20;
         private static final byte FREE_GLYPHS = 22;
         private static final byte COMPOSITE_GLYPHS_8 = 23;
+        private static final byte COMPOSITE_GLYPHS_16 = 24;
         private static final byte FILL_RECTANGLES = 26;
         private static final byte SET_PICTURE_FILTER = 30;
         private static final byte CREATE_SOLID_FILL = 33;
@@ -820,7 +821,8 @@ public class XRenderExtension extends Extension {
         }
     }
 
-    private void compositeGlyphs8(XClient client, XInputStream inputStream)
+    private void compositeGlyphs(XClient client, XInputStream inputStream,
+                                 int glyphIdBytes)
             throws XRequestError {
         int operation = inputStream.readUnsignedByte();
         inputStream.skip(3);
@@ -856,9 +858,11 @@ public class XRenderExtension extends Extension {
             }
             penX += deltaX;
             penY += deltaY;
-            for (int i = 0; i < length && remaining > 0; i++) {
-                int id = inputStream.readUnsignedByte();
-                remaining--;
+            for (int i = 0; i < length && remaining >= glyphIdBytes; i++) {
+                int id = glyphIdBytes == 1
+                        ? inputStream.readUnsignedByte()
+                        : inputStream.readUnsignedShort();
+                remaining -= glyphIdBytes;
                 Glyph glyph = set.glyphs.get(id);
                 if (glyph != null) {
                     int glyphX = penX - glyph.x;
@@ -883,7 +887,7 @@ public class XRenderExtension extends Extension {
                     penY += glyph.yOff;
                 }
             }
-            int padding = (-length) & 3;
+            int padding = (-(length * glyphIdBytes)) & 3;
             if (padding > remaining) break;
             inputStream.skip(padding);
             remaining -= padding;
@@ -993,7 +997,10 @@ public class XRenderExtension extends Extension {
                 freeGlyphs(client, inputStream);
                 break;
             case ClientOpcodes.COMPOSITE_GLYPHS_8:
-                compositeGlyphs8(client, inputStream);
+                compositeGlyphs(client, inputStream, 1);
+                break;
+            case ClientOpcodes.COMPOSITE_GLYPHS_16:
+                compositeGlyphs(client, inputStream, 2);
                 break;
             case ClientOpcodes.SET_PICTURE_FILTER:
                 setPictureFilter(client, inputStream);

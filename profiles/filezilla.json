@@ -1,28 +1,26 @@
 {
   "$schema": "../schemas/profile.schema.json",
   "schemaVersion": 1,
-  "id": "inkscape",
-  "name": "Inkscape (Debian trixie ARM64)",
+  "id": "filezilla",
+  "name": "FileZilla (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
   "compatibility": ["android-seccomp", "android-dns", "android-tmp"],
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
     "libraryPath": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
-    "executable": "${RUNTIME}/usr/bin/inkscape",
+    "executable": "${RUNTIME}/usr/bin/filezilla",
     "workingDirectory": "${HOME}",
-    "arguments": ["${APP}/fixtures/bionicx-artwork.svg"],
+    "arguments": [],
     "environment": {
       "DISPLAY": "${DISPLAY}", "HOME": "${HOME}", "TMPDIR": "${CACHE}",
       "XDG_RUNTIME_DIR": "${TMP}/runtime", "XDG_CONFIG_HOME": "${HOME}/.config",
       "XDG_CACHE_HOME": "${HOME}/.cache", "XDG_DATA_HOME": "${HOME}/.local/share",
       "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
       "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts", "FONTCONFIG_FILE": "fonts.conf",
-      "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
-      "GSETTINGS_BACKEND": "memory",
-      "INKSCAPE_DATADIR": "${RUNTIME}/usr/share",
       "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
       "DBUS_SESSION_BUS_ADDRESS": "disabled:", "NO_AT_BRIDGE": "1",
+      "BIONICX_ROOTFS": "${RUNTIME}",
       "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin", "LANG": "C.UTF-8"
     }
   }

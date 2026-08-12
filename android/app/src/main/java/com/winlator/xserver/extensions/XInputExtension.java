@@ -52,11 +52,13 @@ public class XInputExtension extends Extension {
         private static final byte GET_EXTENSION_VERSION = 1;
         private static final byte XI_QUERY_POINTER = 40;
         private static final byte XI_CHANGE_CURSOR = 42;
+        private static final byte XI_GET_CLIENT_POINTER = 45;
         private static final byte XI_SELECT_EVENTS = 46;
         private static final byte XI_QUERY_VERSION = 47;
         private static final byte XI_QUERY_DEVICE = 48;
         private static final byte XI_GRAB_DEVICE = 51;
         private static final byte XI_UNGRAB_DEVICE = 52;
+        private static final byte XI_GET_PROPERTY = 59;
         private static final byte XI_GET_SELECTED_EVENTS = 60;
     }
 
@@ -111,6 +113,24 @@ public class XInputExtension extends Extension {
                 : xServer.cursorManager.getCursor(cursorId);
         if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
         window.attributes.setCursor(cursor);
+    }
+
+    private void getClientPointer(XClient client, XInputStream inputStream,
+                                  XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        if (windowId != 0 && xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeByte((byte)1); // client pointer is set
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort((short)MASTER_POINTER_ID);
+            outputStream.writePad(20);
+        }
     }
 
     public XInputExtension(XServer xServer, byte majorOpcode) {
@@ -405,6 +425,32 @@ public class XInputExtension extends Extension {
         }
     }
 
+    private void getProperty(XClient client, XInputStream inputStream,
+                             XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceId = inputStream.readUnsignedShort();
+        inputStream.skip(2); // delete flag and padding
+        inputStream.readInt(); // property atom
+        inputStream.readInt(); // requested type atom
+        inputStream.readInt(); // long offset
+        inputStream.readInt(); // long length
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID)
+            throw new BadValue(deviceId);
+        // The synthetic master devices expose no XI properties. None/format 0
+        // is the protocol's successful empty-property result.
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.XI_GET_PROPERTY);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(0); // property type: None
+            outputStream.writeInt(0); // bytes after
+            outputStream.writeInt(0); // item count
+            outputStream.writeByte((byte)0); // format
+            outputStream.writePad(11);
+        }
+    }
+
     private void grabDevice(XClient client, XInputStream inputStream,
                             XOutputStream outputStream)
             throws IOException, XRequestError {
@@ -510,6 +556,9 @@ public class XInputExtension extends Extension {
             case ClientOpcodes.XI_CHANGE_CURSOR:
                 changeCursor(client, inputStream);
                 break;
+            case ClientOpcodes.XI_GET_CLIENT_POINTER:
+                getClientPointer(client, inputStream, outputStream);
+                break;
             case ClientOpcodes.XI_SELECT_EVENTS:
                 selectEvents(client, inputStream);
                 break;
@@ -524,6 +573,9 @@ public class XInputExtension extends Extension {
                 break;
             case ClientOpcodes.XI_UNGRAB_DEVICE:
                 ungrabDevice(client, inputStream);
+                break;
+            case ClientOpcodes.XI_GET_PROPERTY:
+                getProperty(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.XI_GET_SELECTED_EVENTS:
                 getSelectedEvents(client, inputStream, outputStream);

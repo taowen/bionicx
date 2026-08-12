@@ -140,6 +140,14 @@ public class WindowManager extends XResourceManager {
             parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY, new UnmapNotify(parent, window));
             if (window == focusedWindow) revertFocus();
             triggerOnUnmapWindow(window);
+            // Unmapping an obscuring window makes portions of its siblings
+            // visible.  Clients without backing-store must receive Expose so
+            // they repaint those regions (dialogs managed by a WM exercise
+            // this path heavily).  A full-window exposure is conservative
+            // but protocol-correct and keeps the compositor stateless.
+            for (Window sibling : parent.getChildren()) {
+                if (sibling != window) exposeNewlyViewableSubtree(sibling);
+            }
         }
     }
 

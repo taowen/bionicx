@@ -1,0 +1,4 @@
+# Deterministic UI state for the Android integration workflow.  The welcome
+# dialog is a separate transient X11 window and would obscure the document
+# under a server without a complete desktop window manager.
+(show-welcome-dialog no)

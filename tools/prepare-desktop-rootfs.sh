@@ -17,6 +17,7 @@ inputs=(
     "$repo_dir/tools/build-gladio.sh"
     "$repo_dir/tools/check-glibc-symbol-floor.py"
     "$repo_dir/tools/install-trixie-desktop-rootfs.sh"
+    "$repo_dir/tools/relocate-shebangs.py"
 )
 while IFS= read -r path; do inputs+=("$path"); done < <(
     find "$repo_dir/runtime/glibc/2.41" -maxdepth 1 -type f | sort

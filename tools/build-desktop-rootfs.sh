@@ -140,6 +140,12 @@ while IFS= read -r -d '' executable; do
 done < <(find "$output_dir/rootfs" -type f -perm /111 -print0)
 printf 'patched %d executable ELF interpreters\n' "$patched_interpreters"
 
+# The Android kernel resolves script interpreters before the glibc loader or
+# LD_PRELOAD can run.  Relocate packaged FHS shebangs for the same reason as
+# PT_INTERP; this covers /usr/bin/env-based Python plug-ins and shell helpers.
+"$repo_dir/tools/relocate-shebangs.py" "$output_dir/rootfs" \
+    --device-root /data/data/io.taowen.bx/files/rootfs
+
 # DT_RPATH/DT_RUNPATH entries from Debian packages are FHS paths too.  The
 # dynamic loader cannot resolve an entry such as /usr/lib/.../vlc without a
 # mount namespace, even though the package and its private libraries are both

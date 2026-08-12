@@ -69,6 +69,7 @@ public class XKeyboardExtension extends Extension {
         private static final byte GET_INDICATOR_STATE = 12;
         private static final byte GET_INDICATOR_MAP = 13;
         private static final byte GET_NAMES = 17;
+        private static final byte PER_CLIENT_FLAGS = 21;
         private static final byte GET_KBD_BY_NAME = 23;
         private static final byte GET_DEVICE_INFO = 24;
     }
@@ -575,6 +576,34 @@ public class XKeyboardExtension extends Extension {
         }
     }
 
+    private void perClientFlags(XClient client, XInputStream inputStream,
+                                XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        int change = inputStream.readInt();
+        int value = inputStream.readInt();
+        int controlsToChange = inputStream.readInt();
+        int autoControls = inputStream.readInt();
+        int autoControlValues = inputStream.readInt();
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100)
+            throw new BadValue(deviceSpec);
+        // There are no mutable per-client server features yet. Report the
+        // requested flag values as disabled, while retaining the standard
+        // reply shape expected by libxkbcommon/GTK.
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)CORE_KEYBOARD_ID);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(0); // supported flags
+            outputStream.writeInt(0); // current flags
+            outputStream.writeInt(0); // automatic controls
+            outputStream.writeInt(0); // automatic control values
+            outputStream.writePad(8);
+        }
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -606,6 +635,9 @@ public class XKeyboardExtension extends Extension {
                 break;
             case ClientOpcodes.GET_NAMES:
                 getNames(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.PER_CLIENT_FLAGS:
+                perClientFlags(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.GET_KBD_BY_NAME:
                 getKeyboardByName(client, inputStream, outputStream);

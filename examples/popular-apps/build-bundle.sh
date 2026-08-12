@@ -22,7 +22,9 @@ python3 "$repo_dir/examples/popular-apps/build-y4m-fixture.py" \
     "$output_dir/app/fixtures/bionicx-motion-audio.avi"
 "$repo_dir/tools/prepare-desktop-rootfs.sh" "$output_dir"
 
-for required in usr/bin/gimp usr/bin/inkscape usr/bin/vlc; do
+for required in \
+        usr/bin/filezilla usr/bin/geany usr/bin/gimp usr/bin/inkscape \
+        usr/lib/thunderbird/thunderbird usr/bin/vlc; do
     [[ -x "$output_dir/rootfs/$required" ]] || {
         echo "missing package-installed $required" >&2
         exit 1
@@ -31,7 +33,7 @@ done
 "$repo_dir/tools/check-glibc-symbol-floor.py" \
     "$output_dir/rootfs/usr/bin" --maximum 2.41
 {
-    for package in gimp inkscape vlc; do
+    for package in filezilla geany gimp inkscape thunderbird vlc; do
         printf '%s_package=%s\n' "$package" \
             "$(awk -F '\t' -v name="$package" \
                 '$1 == name || $1 == name ":arm64" {print $2}' \

@@ -1,7 +1,9 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,18 +13,108 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-/* Redirect Linux /tmp paths into a short app-private Android directory. */
+/* Redirect Linux FHS paths into app-private Android directories. */
 static const char *redirect_path(const char *path, char buffer[PATH_MAX]) {
     const char *target = getenv("BIONICX_TMPDIR");
-    if (path == NULL || target == NULL || target[0] != '/' ||
-            (strcmp(path, "/tmp") != 0 && strncmp(path, "/tmp/", 5) != 0))
+    const char *suffix = NULL;
+    if (path == NULL) return NULL;
+    if (target != NULL && target[0] == '/' &&
+            (strcmp(path, "/tmp") == 0 || strncmp(path, "/tmp/", 5) == 0)) {
+        suffix = path + 4;
+    } else if (strcmp(path, "/usr") == 0 || strncmp(path, "/usr/", 5) == 0 ||
+            strcmp(path, "/etc") == 0 || strncmp(path, "/etc/", 5) == 0 ||
+            strcmp(path, "/var") == 0 || strncmp(path, "/var/", 5) == 0) {
+        target = getenv("BIONICX_ROOTFS");
+        if (target == NULL || target[0] != '/') return path;
+        suffix = path;
+    } else {
         return path;
-    int count = snprintf(buffer, PATH_MAX, "%s%s", target, path + 4);
+    }
+    int count = snprintf(buffer, PATH_MAX, "%s%s", target, suffix);
     if (count < 0 || count >= PATH_MAX) {
         errno = ENAMETOOLONG;
         return NULL;
     }
     return buffer;
+}
+
+static mode_t optional_mode(int flags, va_list arguments) {
+    return (flags & O_CREAT) || ((flags & O_TMPFILE) == O_TMPFILE)
+            ? (mode_t)va_arg(arguments, int) : 0;
+}
+
+int open(const char *path, int flags, ...) {
+    static int (*next)(const char *, int, ...);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "open");
+    va_list arguments;
+    va_start(arguments, flags);
+    mode_t mode = optional_mode(flags, arguments);
+    va_end(arguments);
+    char buffer[PATH_MAX];
+    const char *actual = redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    return (flags & O_CREAT) || ((flags & O_TMPFILE) == O_TMPFILE)
+            ? next(actual, flags, mode) : next(actual, flags);
+}
+
+int open64(const char *path, int flags, ...) {
+    static int (*next)(const char *, int, ...);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "open64");
+    va_list arguments;
+    va_start(arguments, flags);
+    mode_t mode = optional_mode(flags, arguments);
+    va_end(arguments);
+    char buffer[PATH_MAX];
+    const char *actual = redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    return (flags & O_CREAT) || ((flags & O_TMPFILE) == O_TMPFILE)
+            ? next(actual, flags, mode) : next(actual, flags);
+}
+
+int openat(int directory, const char *path, int flags, ...) {
+    static int (*next)(int, const char *, int, ...);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "openat");
+    va_list arguments;
+    va_start(arguments, flags);
+    mode_t mode = optional_mode(flags, arguments);
+    va_end(arguments);
+    char buffer[PATH_MAX];
+    const char *actual = redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    return (flags & O_CREAT) || ((flags & O_TMPFILE) == O_TMPFILE)
+            ? next(directory, actual, flags, mode)
+            : next(directory, actual, flags);
+}
+
+int openat64(int directory, const char *path, int flags, ...) {
+    static int (*next)(int, const char *, int, ...);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "openat64");
+    va_list arguments;
+    va_start(arguments, flags);
+    mode_t mode = optional_mode(flags, arguments);
+    va_end(arguments);
+    char buffer[PATH_MAX];
+    const char *actual = redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    return (flags & O_CREAT) || ((flags & O_TMPFILE) == O_TMPFILE)
+            ? next(directory, actual, flags, mode)
+            : next(directory, actual, flags);
+}
+
+FILE *fopen(const char *path, const char *mode) {
+    static FILE *(*next)(const char *, const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "fopen");
+    char buffer[PATH_MAX];
+    const char *actual = redirect_path(path, buffer);
+    return actual != NULL ? next(actual, mode) : NULL;
+}
+
+FILE *fopen64(const char *path, const char *mode) {
+    static FILE *(*next)(const char *, const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "fopen64");
+    char buffer[PATH_MAX];
+    const char *actual = redirect_path(path, buffer);
+    return actual != NULL ? next(actual, mode) : NULL;
 }
 
 int access(const char *path, int mode) {

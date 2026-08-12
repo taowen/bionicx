@@ -13,6 +13,12 @@ find "$output_dir" -mindepth 1 -delete 2>/dev/null || true
 mkdir -p "$output_dir/app/fixtures"
 cp "$repo_dir/examples/productivity-apps/fixtures/bionicx-page.html" \
     "$output_dir/app/fixtures/"
+cp "$repo_dir/examples/productivity-apps/fixtures/bionicx-artwork.svg" \
+    "$output_dir/app/fixtures/"
+cp "$repo_dir/examples/productivity-apps/fixtures/gimprc" \
+    "$output_dir/app/fixtures/"
+python3 "$repo_dir/examples/productivity-apps/build-image-fixture.py" \
+    "$output_dir/app/fixtures/bionicx-image.ppm"
 python3 "$repo_dir/examples/productivity-apps/build-odt-fixture.py" \
     "$output_dir/app/fixtures/bionicx-writer.odt"
 python3 "$repo_dir/examples/wps/build-pdf-fixture.py" \
@@ -22,7 +28,9 @@ python3 "$repo_dir/examples/wps/build-pdf-fixture.py" \
 for required in \
         usr/lib/firefox-esr/firefox-esr \
         usr/lib/libreoffice/program/soffice.bin \
-        usr/bin/evince; do
+        usr/bin/evince \
+        usr/bin/gimp-3.0 \
+        usr/bin/inkscape; do
     [[ -x "$output_dir/rootfs/$required" ]] || {
         echo "missing package-installed $required" >&2
         exit 1
@@ -31,7 +39,7 @@ done
 "$repo_dir/tools/check-glibc-symbol-floor.py" \
     "$output_dir/rootfs/usr/bin" --maximum 2.41
 {
-    for package in firefox-esr libreoffice-writer evince; do
+    for package in firefox-esr libreoffice-writer evince gimp inkscape; do
         printf '%s_package=%s\n' "${package//-/_}" \
             "$(awk -F '\t' -v name="$package" \
                 '$1 == name || $1 == name ":arm64" {print $2}' \

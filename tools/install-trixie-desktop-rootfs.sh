@@ -36,8 +36,8 @@ cp /tmp/*.deb /var/cache/apt/archives/
 # explicit package-level workarounds rather than copying individual libraries.
 apt-get install -y --no-install-recommends \
     bsdextrautils icewm libxkbcommon-x11-0 libxslt1.1 \
-    evince firefox-esr gimp inkscape libreoffice-writer \
-    mousepad ristretto strace thunar vlc xterm \
+    evince filezilla firefox-esr geany gimp inkscape libreoffice-writer \
+    mousepad ristretto strace thunderbird thunar vlc xterm \
     /tmp/google-chrome.deb /tmp/wps-office.deb
 dpkg --audit
 

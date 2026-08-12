@@ -14,6 +14,7 @@ import com.winlator.xserver.Window;
 import com.winlator.xserver.Atom;
 import com.winlator.xserver.SelectionManager;
 import com.winlator.xserver.events.XFixesSelectionNotify;
+import com.winlator.xserver.errors.BadCursor;
 import com.winlator.xserver.errors.BadAtom;
 import com.winlator.xserver.errors.BadIdChoice;
 import com.winlator.xserver.errors.BadImplementation;
@@ -45,6 +46,7 @@ public class XFixesExtension extends Extension {
         private static final byte DESTROY_REGION = 10;
         private static final byte FETCH_REGION = 19;
         private static final byte SET_WINDOW_SHAPE_REGION = 21;
+        private static final byte SET_CURSOR_NAME = 23;
     }
 
     private static final class Rectangle {
@@ -301,6 +303,18 @@ public class XFixesExtension extends Extension {
         xServer.inputDeviceManager.updatePointWindow();
     }
 
+    private void setCursorName(XInputStream inputStream) throws XRequestError {
+        int cursorId = inputStream.readInt();
+        int nameLength = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        if (xServer.cursorManager.getCursor(cursorId) == null)
+            throw new BadCursor(cursorId);
+        inputStream.skip(nameLength);
+        inputStream.skip((-nameLength) & 3);
+        // Cursor names are descriptive metadata. The Android compositor uses
+        // the cursor resource's pixels and does not need to retain the name.
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -323,6 +337,9 @@ public class XFixesExtension extends Extension {
                 break;
             case ClientOpcodes.SET_WINDOW_SHAPE_REGION:
                 setWindowShapeRegion(inputStream);
+                break;
+            case ClientOpcodes.SET_CURSOR_NAME:
+                setCursorName(inputStream);
                 break;
             default:
                 throw new BadImplementation();
