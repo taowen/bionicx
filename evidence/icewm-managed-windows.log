@@ -10,7 +10,7 @@ BXTEST PASS icewm-window-tree
 BXTEST PASS icewm-two-clients first=1 second=1
 BXSUMMARY icewm passed=4 failed=0
 icewm-probe exited with 0
-regression: BXSUMMARY x11-probe passed=23 failed=0 observational_input=yes
+regression: BXSUMMARY x11-probe passed=24 failed=0 observational_input=yes
 visual: themed taskbar, workspace/task controls, two title bars and all window buttons visible
 unsupported-opcodes: none (opcodes 6,21,28,29,33,34,36,37,46,64 eliminated)
 request-errors: none; synchronous GrabButton registrations accepted

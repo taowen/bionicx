@@ -35,6 +35,9 @@
   target or deeper descendants. Newly viewable mapped subtrees receive initial
   `Expose` and `VisibilityNotify(Unobscured)` events; dynamic partial/full
   obscurity tracking during later stacking changes remains pending.
+- `CreateWindow(CopyFromParent)` resolves and retains the inherited class, so
+  `GetWindowAttributes` reports `InputOutput` or `InputOnly`, never the
+  request-only class-zero sentinel.
 
 ## What an application bundle must supply
 

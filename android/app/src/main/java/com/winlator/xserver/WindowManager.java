@@ -201,7 +201,9 @@ public class WindowManager extends XResourceManager {
         }
 
         final Window window = new Window(id, drawable, x, y, width, height, client);
-        window.attributes.setWindowClass(windowClass);
+        window.attributes.setWindowClass(isInputOutput
+                ? WindowAttributes.WindowClass.INPUT_OUTPUT
+                : WindowAttributes.WindowClass.INPUT_ONLY);
         if (drawable != null) drawable.setOnDrawListener(() -> triggerOnUpdateWindowContent(window));
         windows.put(id, window);
         parent.addChild(window);

@@ -155,6 +155,19 @@ int main(int argc, char **argv) {
     RECORD(sync_step(display, "window-create-map", before));
 
     before = x_errors;
+    XWindowAttributes inherited_class_attributes = {0};
+    Status inherited_class_status = XGetWindowAttributes(
+            display, window, &inherited_class_attributes);
+    XSync(display, False);
+    bool inherited_class_ok = x_errors == before && inherited_class_status
+            && inherited_class_attributes.class == InputOutput;
+    snprintf(detail, sizeof(detail), "class=%d expected=%d",
+             inherited_class_attributes.class, InputOutput);
+    result("copy-from-parent-class", inherited_class_ok,
+           inherited_class_ok ? detail : last_x_error);
+    RECORD(inherited_class_ok);
+
+    before = x_errors;
     XSetInputFocus(display, window, RevertToParent, CurrentTime);
     RECORD(sync_step(display, "input-focus", before));
 
