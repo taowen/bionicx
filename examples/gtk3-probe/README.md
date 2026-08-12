@@ -13,6 +13,10 @@ It tests PNG twice: once through automatic file-format detection and once by
 constructing a loader explicitly with type `png`. This distinguishes signature
 matching failures from failures in the PNG decoder itself.
 
+It also resolves a real `sans-serif` face through Pango/Fontconfig and maps a
+GTK label before opening the file chooser. This separates missing font data
+from an XRender or window-composition defect when text is absent on screen.
+
 ```sh
 examples/gtk3-probe/build.sh
 ```

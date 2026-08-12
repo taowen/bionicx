@@ -11,7 +11,12 @@
 typedef void GtkWidget;
 typedef void GtkWindow;
 typedef void GtkDialog;
+typedef void GtkContainer;
 typedef void GdkPixbufLoader;
+typedef void PangoFontMap;
+typedef void PangoContext;
+typedef void PangoFontDescription;
+typedef void PangoFont;
 typedef struct ListNode {
     void *data;
     struct ListNode *next;
@@ -87,6 +92,8 @@ int main(int argc, char **argv) {
     const char *(*gtk_check_version)(unsigned, unsigned, unsigned) = NULL;
     int (*gtk_init_check)(int *, char ***) = NULL;
     GtkWidget *(*gtk_window_new)(int) = NULL;
+    GtkWidget *(*gtk_label_new)(const char *) = NULL;
+    void (*gtk_container_add)(GtkContainer *, GtkWidget *) = NULL;
     void (*gtk_window_set_title)(GtkWindow *, const char *) = NULL;
     void (*gtk_window_set_default_size)(GtkWindow *, int, int) = NULL;
     GtkWidget *(*gtk_file_chooser_dialog_new)(const char *, GtkWindow *, int,
@@ -107,10 +114,23 @@ int main(int argc, char **argv) {
     int (*gdk_pixbuf_loader_close)(GdkPixbufLoader *, GlibError **) = NULL;
     void (*g_object_unref)(void *) = NULL;
     void (*g_error_free)(GlibError *) = NULL;
+    PangoFontMap *(*pango_cairo_font_map_get_default)(void) = NULL;
+    PangoContext *(*pango_font_map_create_context)(PangoFontMap *) = NULL;
+    PangoFontDescription *(*pango_font_description_from_string)(
+            const char *) = NULL;
+    void (*pango_font_description_free)(PangoFontDescription *) = NULL;
+    PangoFont *(*pango_font_map_load_font)(PangoFontMap *, PangoContext *,
+                                           const PangoFontDescription *) = NULL;
+    PangoFontDescription *(*pango_font_describe)(PangoFont *) = NULL;
+    char *(*pango_font_description_to_string)(
+            const PangoFontDescription *) = NULL;
+    void (*g_free)(void *) = NULL;
 
     LOAD(gtk_check_version);
     LOAD(gtk_init_check);
     LOAD(gtk_window_new);
+    LOAD(gtk_label_new);
+    LOAD(gtk_container_add);
     LOAD(gtk_window_set_title);
     LOAD(gtk_window_set_default_size);
     LOAD(gtk_file_chooser_dialog_new);
@@ -128,6 +148,14 @@ int main(int argc, char **argv) {
     LOAD(gdk_pixbuf_loader_close);
     LOAD(g_object_unref);
     LOAD(g_error_free);
+    LOAD(pango_cairo_font_map_get_default);
+    LOAD(pango_font_map_create_context);
+    LOAD(pango_font_description_from_string);
+    LOAD(pango_font_description_free);
+    LOAD(pango_font_map_load_font);
+    LOAD(pango_font_describe);
+    LOAD(pango_font_description_to_string);
+    LOAD(g_free);
 
     const char *version_error = gtk_check_version(3, 20, 0);
     bool version_ok = version_error == NULL;
@@ -140,9 +168,32 @@ int main(int argc, char **argv) {
     RECORD(init_ok);
     if (!init_ok) {
         dlclose(gtk);
-        printf("BXSUMMARY gtk3 passed=%d/8 failed=%d\n", passed, failed + 5);
+        printf("BXSUMMARY gtk3 passed=%d/10 failed=%d\n", passed, failed + 7);
         return 1;
     }
+
+    PangoFontMap *font_map = pango_cairo_font_map_get_default();
+    PangoContext *font_context = font_map != NULL
+            ? pango_font_map_create_context(font_map) : NULL;
+    PangoFontDescription *requested_font =
+            pango_font_description_from_string("sans-serif 14");
+    PangoFont *font = font_map != NULL && font_context != NULL
+            && requested_font != NULL
+            ? pango_font_map_load_font(font_map, font_context, requested_font)
+            : NULL;
+    PangoFontDescription *matched_font = font != NULL
+            ? pango_font_describe(font) : NULL;
+    char *matched_font_name = matched_font != NULL
+            ? pango_font_description_to_string(matched_font) : NULL;
+    bool font_ok = font != NULL && matched_font_name != NULL;
+    result("pango-font", font_ok,
+           font_ok ? matched_font_name : "sans-serif unavailable");
+    RECORD(font_ok);
+    if (matched_font_name != NULL) g_free(matched_font_name);
+    if (matched_font != NULL) pango_font_description_free(matched_font);
+    if (font != NULL) g_object_unref(font);
+    if (requested_font != NULL) pango_font_description_free(requested_font);
+    if (font_context != NULL) g_object_unref(font_context);
 
     ListNode *formats = gdk_pixbuf_get_formats();
     int format_count = 0;
@@ -191,14 +242,22 @@ int main(int argc, char **argv) {
     free(png_bytes);
 
     GtkWidget *window = gtk_window_new(0);
+    GtkWidget *label = window != NULL
+            ? gtk_label_new("BionicX GTK3 text rendering") : NULL;
     bool window_ok = window != NULL;
     if (window_ok) {
         gtk_window_set_title((GtkWindow *)window, "BionicX GTK3 probe");
         gtk_window_set_default_size((GtkWindow *)window, 640, 360);
+        if (label != NULL)
+            gtk_container_add((GtkContainer *)window, label);
         gtk_widget_show_all(window);
     }
     result("gtk-window", window_ok, window_ok ? "640x360" : "null");
     RECORD(window_ok);
+    bool label_ok = label != NULL;
+    result("gtk-label", label_ok,
+           label_ok ? "BionicX GTK3 text rendering" : "null");
+    RECORD(label_ok);
 
     GtkWidget *dialog = gtk_file_chooser_dialog_new(
             "BionicX GTK Save", (GtkWindow *)window, 1, NULL);
@@ -229,6 +288,6 @@ int main(int argc, char **argv) {
     if (window != NULL) gtk_widget_destroy(window);
     while (gtk_events_pending()) gtk_main_iteration_do(0);
     dlclose(gtk);
-    printf("BXSUMMARY gtk3 passed=%d/8 failed=%d\n", passed, failed);
+    printf("BXSUMMARY gtk3 passed=%d/10 failed=%d\n", passed, failed);
     return failed == 0 ? 0 : 1;
 }
