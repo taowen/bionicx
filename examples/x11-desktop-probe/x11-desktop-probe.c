@@ -80,6 +80,8 @@ static void probe_render(Display *display, Window window) {
     unsigned long in_add_pixel = 0;
     unsigned long out_reverse_pixel = 0;
     unsigned long create_repeat_pixel = 0;
+    unsigned long pixmap_clip_inside = 0;
+    unsigned long pixmap_clip_outside = 0;
     bool ok = XRenderQueryVersion(display, &major, &minor) != 0;
     XRenderPictFormat *format = XRenderFindVisualFormat(
         display, DefaultVisual(display, DefaultScreen(display)));
@@ -178,6 +180,38 @@ static void probe_render(Display *display, Window window) {
         if (repeat_image) XDestroyImage(repeat_image);
         XRenderFreePicture(display, repeat_picture);
         XFreePixmap(display, repeat_pixmap);
+
+        Pixmap clip_pixmap = XCreatePixmap(display, window, 8, 8, 1);
+        GC clip_gc = XCreateGC(display, clip_pixmap, 0, NULL);
+        XSetForeground(display, clip_gc, 0);
+        XFillRectangle(display, clip_pixmap, clip_gc, 0, 0, 8, 8);
+        XSetForeground(display, clip_gc, 1);
+        XFillRectangle(display, clip_pixmap, clip_gc, 0, 0, 4, 8);
+        XRenderFillRectangle(display, PictOpSrc, picture, &background,
+                             550, 84, 8, 8);
+        XRenderPictureAttributes clip_attributes = {
+            .clip_x_origin = 550,
+            .clip_y_origin = 84,
+            .clip_mask = clip_pixmap,
+        };
+        Picture pixmap_clip_picture = XRenderCreatePicture(display, window,
+                format, CPClipXOrigin | CPClipYOrigin | CPClipMask,
+                &clip_attributes);
+        XRenderFillRectangle(display, PictOpSrc, pixmap_clip_picture,
+                             &opaque_red, 550, 84, 8, 8);
+        XImage *pixmap_clip_inside_image = XGetImage(display, window,
+                551, 86, 1, 1, AllPlanes, ZPixmap);
+        XImage *pixmap_clip_outside_image = XGetImage(display, window,
+                556, 86, 1, 1, AllPlanes, ZPixmap);
+        pixmap_clip_inside = pixmap_clip_inside_image
+                ? XGetPixel(pixmap_clip_inside_image, 0, 0) : 0;
+        pixmap_clip_outside = pixmap_clip_outside_image
+                ? XGetPixel(pixmap_clip_outside_image, 0, 0) : 0;
+        if (pixmap_clip_inside_image) XDestroyImage(pixmap_clip_inside_image);
+        if (pixmap_clip_outside_image) XDestroyImage(pixmap_clip_outside_image);
+        XRenderFreePicture(display, pixmap_clip_picture);
+        XFreeGC(display, clip_gc);
+        XFreePixmap(display, clip_pixmap);
         XRenderFreePicture(display, picture);
     }
     XImage *a8_image = a8_pixmap
@@ -255,15 +289,18 @@ static void probe_render(Display *display, Window window) {
     ok = ok && source_image && ((source_pixel >> 16) & 0xff)
          > (source_pixel & 0xff);
     if (source_image) XDestroyImage(source_image);
-    char detail[256];
+    ok = ok && (pixmap_clip_inside & 0xffffff) == 0xff0000
+         && (pixmap_clip_outside & 0xffffff) == 0x0000ff;
+    char detail[320];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d event=%d error=%d a8=%d a8-picture=%d alpha-mask=0x%x in-add=0x%02lx out-reverse=0x%02lx create-repeat=0x%06lx over=0x%06lx clear=0x%lx mask-over=0x%06lx clip=0x%06lx/0x%06lx gradient=0x%06lx/0x%06lx src=0x%06lx",
+             "version=%d.%d event=%d error=%d a8=%d a8-picture=%d alpha-mask=0x%x in-add=0x%02lx out-reverse=0x%02lx create-repeat=0x%06lx over=0x%06lx clear=0x%lx mask-over=0x%06lx clip=0x%06lx/0x%06lx pixmap-clip=0x%06lx/0x%06lx gradient=0x%06lx/0x%06lx src=0x%06lx",
              major, minor, event_base, error_base, a8 != NULL,
              a8_picture != 0, a8 ? a8->direct.alphaMask : 0,
              in_add_pixel & 0xff, out_reverse_pixel & 0xff,
              create_repeat_pixel & 0xffffff, pixel & 0xffffff, clear_pixel,
              mask_pixel & 0xffffff,
              clip_inside & 0xffffff, clip_outside & 0xffffff,
+             pixmap_clip_inside & 0xffffff, pixmap_clip_outside & 0xffffff,
              gradient_left & 0xffffff, gradient_right & 0xffffff,
              source_pixel & 0xffffff);
     result("xrender", ok, detail);

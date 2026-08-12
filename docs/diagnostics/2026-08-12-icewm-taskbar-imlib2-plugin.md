@@ -38,3 +38,12 @@ The core X11 suite remains green at 18/18. Visual inspection confirms the panel
 background at the bottom of the Android surface, but its child controls and
 text are not yet completely painted. This milestone therefore proves plugin
 closure and panel window lifecycle, not a finished desktop shell.
+
+The next diagnosis found fourteen Render minor 4 failures. IceWM supplied a
+nonzero 1-bit `CPClipMask` while creating pictures for themed assets. BionicX
+now retains that pixmap and clip origin, validates its depth, applies it during
+fill/composite/glyph operations, and clears it when rectangle clips replace the
+mask. The controlled Render probe verifies an 8x8 mask by reading back a red
+inside pixel and unchanged blue outside pixel. IceWM no longer emits any Render
+`BadImplementation` errors. The still-incomplete visual panel is consequently
+a separate nested-window composition issue rather than this Render request.

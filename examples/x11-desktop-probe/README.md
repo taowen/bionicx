@@ -25,7 +25,8 @@ is reported as an optional capability because BionicX deliberately withholds
 it until a safe shared-memory backend exists.
 
 The server currently provides stateful Render support for ARGB32 and A8
-pictures, picture clips and filters, solid fills, linear gradients, and the
+pictures, rectangle and 1-bit pixmap picture clips with clip origins, filters,
+solid fills, linear gradients, and the
 Clear, Src, Over, In, OutReverse and Add Porter-Duff operations exercised by
 Cairo. The Render check reads pixels back and requires exact A8 intermediate
 results (`In + Add = 0x80`, then `OutReverse = 0x60`); merely accepting the

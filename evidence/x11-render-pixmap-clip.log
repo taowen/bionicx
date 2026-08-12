@@ -1,0 +1,4 @@
+device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
+BXTEST PASS xrender version=0.1 a8=1 a8-picture=1 pixmap-clip=0xff0000/0x0000ff
+BXSUMMARY desktop-x11 passed=9 failed=0 xerrors=0
+icewm-render-create-picture-badimplementation=0

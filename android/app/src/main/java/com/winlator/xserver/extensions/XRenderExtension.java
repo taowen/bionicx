@@ -3,6 +3,7 @@ package com.winlator.xserver.extensions;
 import static com.winlator.xserver.XClientRequestHandler.RESPONSE_CODE_SUCCESS;
 
 import android.util.SparseArray;
+import android.util.Log;
 
 import com.winlator.core.Callback;
 import com.winlator.xconnector.XInputStream;
@@ -17,6 +18,7 @@ import com.winlator.xserver.errors.BadDrawable;
 import com.winlator.xserver.errors.BadIdChoice;
 import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.errors.BadMatch;
+import com.winlator.xserver.errors.BadPixmap;
 import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.XRequestError;
 
@@ -85,6 +87,7 @@ public class XRenderExtension extends Extension {
         private int clipY;
         private boolean componentAlpha;
         private ArrayList<ClipRectangle> clipRectangles;
+        private Drawable clipMask;
 
         private Picture(int id, Drawable drawable, int format) {
             this(id, drawable, format, null, null);
@@ -306,12 +309,25 @@ public class XRenderExtension extends Extension {
                 if (value < 0 || value > 3) throw new BadValue(value);
                 picture.repeat = value;
             }
-            else if (bit == 1 && value != 0) throw new BadImplementation();
+            else if (bit == 1 && value != 0) {
+                Log.w("BionicXRender", "unsupported alpha-map picture="
+                        + Integer.toUnsignedString(value));
+                throw new BadImplementation();
+            }
             else if (bit == 4) picture.clipX = value;
             else if (bit == 5) picture.clipY = value;
             else if (bit == 6) {
-                if (value != 0) throw new BadImplementation();
                 picture.clipRectangles = null;
+                picture.clipMask = null;
+                if (value != 0) {
+                    com.winlator.xserver.Pixmap pixmap =
+                            xServer.pixmapManager.getPixmap(value);
+                    if (pixmap == null) throw new BadPixmap(value);
+                    if (pixmap.drawable.visual == null
+                            || pixmap.drawable.visual.depth != 1)
+                        throw new BadMatch();
+                    picture.clipMask = pixmap.drawable;
+                }
             }
             else if (bit == 12) picture.componentAlpha = value != 0;
         }
@@ -333,6 +349,7 @@ public class XRenderExtension extends Extension {
             remaining -= 8;
         }
         picture.clipRectangles = rectangles;
+        picture.clipMask = null;
     }
 
     private void registerPicture(XClient client, Picture picture)
@@ -606,24 +623,50 @@ public class XRenderExtension extends Extension {
 
     private ArrayList<ClipRectangle> clippedRectangles(Picture picture,
             int x, int y, int width, int height) {
-        ArrayList<ClipRectangle> result = new ArrayList<>();
-        if (width == 0 || height == 0) return result;
+        ArrayList<ClipRectangle> base = new ArrayList<>();
+        if (width == 0 || height == 0) return base;
         if (picture.clipRectangles == null) {
-            result.add(new ClipRectangle(x, y, width, height));
-            return result;
+            base.add(new ClipRectangle(x, y, width, height));
         }
-        for (ClipRectangle clip : picture.clipRectangles) {
-            int clipLeft = picture.clipX + clip.x;
-            int clipTop = picture.clipY + clip.y;
-            int left = Math.max(x, clipLeft);
-            int top = Math.max(y, clipTop);
-            int right = Math.min(x + width, clipLeft + clip.width);
-            int bottom = Math.min(y + height, clipTop + clip.height);
-            if (left < right && top < bottom)
-                result.add(new ClipRectangle(left, top, right - left,
-                        bottom - top));
+        else {
+            for (ClipRectangle clip : picture.clipRectangles) {
+                int clipLeft = picture.clipX + clip.x;
+                int clipTop = picture.clipY + clip.y;
+                int left = Math.max(x, clipLeft);
+                int top = Math.max(y, clipTop);
+                int right = Math.min(x + width, clipLeft + clip.width);
+                int bottom = Math.min(y + height, clipTop + clip.height);
+                if (left < right && top < bottom)
+                    base.add(new ClipRectangle(left, top, right - left,
+                            bottom - top));
+            }
         }
-        return result;
+        if (picture.clipMask == null) return base;
+
+        ArrayList<ClipRectangle> masked = new ArrayList<>();
+        Drawable mask = picture.clipMask;
+        for (ClipRectangle rectangle : base) {
+            for (int row = 0; row < rectangle.height; row++) {
+                int destinationY = rectangle.y + row;
+                int maskY = destinationY - picture.clipY;
+                int runStart = -1;
+                for (int column = 0; column <= rectangle.width; column++) {
+                    int destinationX = rectangle.x + column;
+                    int maskX = destinationX - picture.clipX;
+                    boolean visible = column < rectangle.width && maskX >= 0
+                            && maskY >= 0 && maskX < mask.width
+                            && maskY < mask.height
+                            && (mask.getPixelArgb(maskX, maskY) & 0xff) != 0;
+                    if (visible && runStart < 0) runStart = destinationX;
+                    else if (!visible && runStart >= 0) {
+                        masked.add(new ClipRectangle(runStart, destinationY,
+                                destinationX - runStart, 1));
+                        runStart = -1;
+                    }
+                }
+            }
+        }
+        return masked;
     }
 
     private void composite(XClient client, XInputStream inputStream)
@@ -719,9 +762,24 @@ public class XRenderExtension extends Extension {
                 remaining--;
                 Glyph glyph = set.glyphs.get(id);
                 if (glyph != null) {
-                    destination.drawable.blendAlphaMask(
-                            penX - glyph.x, penY - glyph.y,
-                            glyph.width, glyph.height, glyph.alpha, color);
+                    int glyphX = penX - glyph.x;
+                    int glyphY = penY - glyph.y;
+                    for (ClipRectangle rectangle : clippedRectangles(
+                            destination, glyphX, glyphY,
+                            glyph.width, glyph.height)) {
+                        byte[] alpha = new byte[rectangle.width
+                                * rectangle.height];
+                        int sourceX = rectangle.x - glyphX;
+                        int sourceY = rectangle.y - glyphY;
+                        for (int row = 0; row < rectangle.height; row++)
+                            System.arraycopy(glyph.alpha,
+                                    (sourceY + row) * glyph.width + sourceX,
+                                    alpha, row * rectangle.width,
+                                    rectangle.width);
+                        destination.drawable.blendAlphaMask(rectangle.x,
+                                rectangle.y, rectangle.width,
+                                rectangle.height, alpha, color);
+                    }
                     penX += glyph.xOff;
                     penY += glyph.yOff;
                 }
