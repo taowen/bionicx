@@ -120,6 +120,17 @@ public abstract class WindowRequests {
         for (Window child : window.getChildren()) client.xServer.windowManager.destroyWindow(child.id);
     }
 
+    public static void changeSaveSet(XClient client, XInputStream inputStream,
+                                     XOutputStream outputStream)
+            throws XRequestError {
+        int mode = client.getRequestData() & 0xff;
+        if (mode > 1) throw new BadValue(mode);
+        int windowId = inputStream.readInt();
+        Window window = client.xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        if (!client.changeSaveSet(window, mode == 0)) throw new BadMatch();
+    }
+
     public static void reparentWindow(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
         int windowId = inputStream.readInt();
         int parentId = inputStream.readInt();

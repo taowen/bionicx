@@ -23,6 +23,9 @@
 - Core `GrabServer`/`UngrabServer`: other connections, including new setup
   handshakes, are deferred while the owner continues; explicit ungrab and owner
   disconnect both drain buffered requests.
+- Core window-manager save sets: insert/delete validation and disconnect-time
+  rescue reparenting preserve foreign client windows, mapping and screen
+  coordinates when manager-owned frames are destroyed.
 
 ## What an application bundle must supply
 

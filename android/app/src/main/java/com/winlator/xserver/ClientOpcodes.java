@@ -6,6 +6,7 @@ public abstract class ClientOpcodes {
     public static final byte GET_WINDOW_ATTRIBUTES = 3;
     public static final byte DESTROY_WINDOW = 4;
     public static final byte DESTROY_SUB_WINDOWS = 5;
+    public static final byte CHANGE_SAVE_SET = 6;
     public static final byte REPARENT_WINDOW = 7;
     public static final byte MAP_WINDOW = 8;
     public static final byte MAP_SUB_WINDOWS = 9;

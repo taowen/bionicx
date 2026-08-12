@@ -9,6 +9,7 @@ import com.winlator.xconnector.ConnectedClient;
 import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xserver.events.Event;
+import com.winlator.xserver.events.ReparentNotify;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
     private final ArrayMap<Window, Integer> randrEventMasks = new ArrayMap<>();
     private final ArrayList<XResource> resources = new ArrayList<>();
     private final ArraySet<Integer> openFonts = new ArraySet<>();
+    private final ArrayList<Window> saveSet = new ArrayList<>();
     private final ArrayList<Callback<XClient>> onDestroyListeners = new ArrayList<>();
 
     public XClient(long nativePtr, int fd, XServer xServer) {
@@ -81,6 +83,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
 
     public void freeResources() {
         try (XLock lock = xServer.lockAll()) {
+            restoreSaveSet();
             while (!resources.isEmpty()) {
                 XResource resource = resources.remove(resources.size()-1);
                 if (resource instanceof Window) {
@@ -230,6 +233,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
             eventListeners.remove(resource);
             xiEventMasks.remove(resource);
             randrEventMasks.remove(resource);
+            saveSet.remove(resource);
         }
         resources.remove(resource);
     }
@@ -244,6 +248,46 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
 
     public boolean closeFont(int id) {
         return openFonts.remove(id);
+    }
+
+    public boolean changeSaveSet(Window window, boolean insert) {
+        if (window.originClient == this) return false;
+        if (insert) {
+            if (saveSet.contains(window)) return false;
+            saveSet.add(window);
+        }
+        else {
+            if (!saveSet.remove(window)) return false;
+        }
+        return true;
+    }
+
+    private void restoreSaveSet() {
+        for (Window window : new ArrayList<>(saveSet)) {
+            if (xServer.windowManager.getWindow(window.id) != window) continue;
+            short rootX = window.getRootX();
+            short rootY = window.getRootY();
+            Window oldParent = window.getParent();
+            Window parent = oldParent;
+            while (parent != null && parent.originClient == this)
+                parent = parent.getParent();
+            if (parent == null) parent = xServer.windowManager.rootWindow;
+            short x = (short)(rootX - parent.getRootX());
+            short y = (short)(rootY - parent.getRootY());
+            xServer.windowManager.reparentWindow(window, parent, x, y);
+            boolean overrideRedirect = window.attributes.isOverrideRedirect();
+            window.sendEvent(Event.STRUCTURE_NOTIFY,
+                    new ReparentNotify(window, window, parent, x, y,
+                            overrideRedirect));
+            if (oldParent != null) oldParent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
+                    new ReparentNotify(oldParent, window, parent, x, y,
+                            overrideRedirect));
+            parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
+                    new ReparentNotify(parent, window, parent, x, y,
+                            overrideRedirect));
+            xServer.windowManager.mapWindow(window, this);
+        }
+        saveSet.clear();
     }
 
     public void addOnDestroyListener(Callback<XClient> onDestroyListener) {
