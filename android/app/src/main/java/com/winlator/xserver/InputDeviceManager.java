@@ -245,6 +245,8 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
     public void onKeyPress(byte keycode, int keysym) {
         Window focusedWindow = xServer.windowManager.getFocusedWindow();
         if (focusedWindow == null) return;
+        xServer.grabManager.activatePassiveKeyGrab(focusedWindow, keycode,
+                xServer.keyboard.getModifiersMask().getBits());
         updatePointWindow();
         sendXiKeyEvent(XInputExtension.XI_KEY_PRESS, keycode);
 
@@ -302,8 +304,13 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
 
     @Override
     public void onKeyRelease(byte keycode) {
+        boolean allKeysReleased =
+                xServer.keyboard.willHaveNoPressedKeysAfterRelease(keycode);
         Window focusedWindow = xServer.windowManager.getFocusedWindow();
-        if (focusedWindow == null) return;
+        if (focusedWindow == null) {
+            xServer.grabManager.releasePassiveKeyGrab(allKeysReleased);
+            return;
+        }
         updatePointWindow();
         sendXiKeyEvent(XInputExtension.XI_KEY_RELEASE, keycode);
 
@@ -329,9 +336,15 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             eventWindow = grabWindow;
             child = grabWindow.isAncestorOf(focusedWindow) ? focusedWindow : null;
         }
-        else if (eventWindow == null) return;
+        else if (eventWindow == null) {
+            xServer.grabManager.releasePassiveKeyGrab(allKeysReleased);
+            return;
+        }
 
-        if (!eventWindow.attributes.isEnabled()) return;
+        if (!eventWindow.attributes.isEnabled()) {
+            xServer.grabManager.releasePassiveKeyGrab(allKeysReleased);
+            return;
+        }
 
         Bitmask keyButMask = getKeyButMask();
         short x = xServer.pointer.getX();
@@ -352,6 +365,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             eventWindow.sendEvent(Event.KEY_RELEASE, event, grabClient);
         }
         else eventWindow.sendEvent(Event.KEY_RELEASE, event);
+        xServer.grabManager.releasePassiveKeyGrab(allKeysReleased);
     }
 
     @Override

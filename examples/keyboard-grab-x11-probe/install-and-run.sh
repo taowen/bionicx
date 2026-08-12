@@ -34,6 +34,10 @@ wait_log "BXREADY keyboard-ungrab inject-b"
 "${adb[@]}" shell input keyevent 30
 wait_log "BXREADY keyboard-owner-events inject-c"
 "${adb[@]}" shell input keyevent 31
+wait_log "BXREADY passive-key-grab inject-d"
+"${adb[@]}" shell input keyevent 32
+wait_log "BXREADY passive-key-release inject-e"
+"${adb[@]}" shell input keyevent 33
 wait_log "BXSUMMARY keyboard-grab-x11"
 if [[ -n "${BIONICX_SCREENSHOT:-}" ]]; then
     "${adb[@]}" exec-out screencap -p > "$BIONICX_SCREENSHOT"
@@ -42,5 +46,5 @@ wait_log "keyboard-grab-x11-probe exited with 0"
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(READY|TEST|SUMMARY|ERROR)|keyboard-grab-x11-probe exited with')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY keyboard-grab-x11 passed=7/7 xerrors=0" <<<"$result"
+grep -Fq "BXSUMMARY keyboard-grab-x11 passed=9/9 xerrors=0" <<<"$result"
 grep -Fq "keyboard-grab-x11-probe exited with 0" <<<"$result"

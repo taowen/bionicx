@@ -9,6 +9,8 @@ import com.winlator.core.Bitmask;
 import com.winlator.xserver.Window;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.errors.BadImplementation;
+import com.winlator.xserver.errors.BadAccess;
+import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
 
@@ -113,5 +115,40 @@ public abstract class GrabRequests {
         if (client.xServer.grabManager.getKeyboardClient() == client) {
             client.xServer.grabManager.deactivateKeyboardGrab();
         }
+    }
+
+    public static void grabKey(XClient client, XInputStream inputStream,
+                               XOutputStream outputStream)
+            throws XRequestError {
+        boolean ownerEvents = client.getRequestData() == 1;
+        int windowId = inputStream.readInt();
+        Window window = client.xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        int modifiers = inputStream.readShort() & 0xffff;
+        int keycode = inputStream.readByte() & 0xff;
+        int pointerMode = inputStream.readByte() & 0xff;
+        int keyboardMode = inputStream.readByte() & 0xff;
+        inputStream.skip(3);
+        if ((keycode != 0 && keycode < 8) || (modifiers & ~0x80ff) != 0)
+            throw new BadValue(keycode != 0 && keycode < 8
+                    ? keycode : modifiers);
+        if (pointerMode != 1 || keyboardMode != 1)
+            throw new BadImplementation();
+        if (!client.xServer.grabManager.addPassiveKeyGrab(window, keycode,
+                modifiers, ownerEvents, client)) throw new BadAccess();
+    }
+
+    public static void ungrabKey(XClient client, XInputStream inputStream,
+                                 XOutputStream outputStream)
+            throws XRequestError {
+        int keycode = client.getRequestData() & 0xff;
+        int windowId = inputStream.readInt();
+        Window window = client.xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        int modifiers = inputStream.readShort() & 0xffff;
+        inputStream.skip(2);
+        if ((modifiers & ~0x80ff) != 0) throw new BadValue(modifiers);
+        client.xServer.grabManager.removePassiveKeyGrabs(window, keycode,
+                modifiers, client);
     }
 }

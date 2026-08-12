@@ -13,6 +13,9 @@
   modes still require `AllowEvents` freeze/thaw support and are rejected rather
   than reported as a false success; non-`CurrentTime` ordering is likewise
   rejected until the server has a timestamp model.
+- Core asynchronous passive `GrabKey`/`UngrabKey`, including exact or wildcard
+  modifier matching, ancestor activation, automatic release, conflict checks,
+  and client/window cleanup.
 
 ## What an application bundle must supply
 

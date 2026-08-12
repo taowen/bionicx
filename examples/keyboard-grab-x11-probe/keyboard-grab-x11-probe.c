@@ -180,9 +180,31 @@ int main(int argc, char **argv) {
         if (status == GrabSuccess) XUngrabKeyboard(peer, CurrentTime);
     }
 
+    Window root = RootWindow(grabber, DefaultScreen(grabber));
+    KeyCode d_keycode = XKeysymToKeycode(grabber, XK_d);
+    XGrabKey(grabber, d_keycode, AnyModifier, root, False,
+             GrabModeAsync, GrabModeAsync);
+    XSetInputFocus(peer, peer_window, RevertToParent, CurrentTime);
+    XSync(grabber, False);
+    XSync(peer, False);
+    drain(grabber);
+    drain(peer);
+    printf("BXREADY passive-key-grab inject-d\n");
+    fflush(stdout);
+    bool passive_route_ok = wait_for_key(grabber, root, peer, XK_d, 5.0);
+
+    drain(grabber);
+    drain(peer);
+    printf("BXREADY passive-key-release inject-e\n");
+    fflush(stdout);
+    bool passive_release_ok = wait_for_key(peer, peer_window, grabber, XK_e,
+                                            5.0);
+    XUngrabKey(grabber, d_keycode, AnyModifier, root);
+    XSync(grabber, False);
+
     bool functional = first_ok && contention_ok && hidden_ok
             && grabbed_route_ok && ungrabbed_route_ok && owner_events_ok
-            && disconnect_ok;
+            && disconnect_ok && passive_route_ok && passive_release_ok;
     label_window(grabber, grab_window, "GRABBER CONNECTION",
             functional ? "A rerouted here while peer had focus" : "keyboard grab test failed");
     label_window(peer, peer_window, "FOCUSED PEER CONNECTION",
@@ -204,9 +226,13 @@ int main(int argc, char **argv) {
             owner_events_ok ? "PASS" : "FAIL", owner_events_ok);
     printf("BXTEST %s keyboard-owner-disconnect cleanup=%d\n",
             disconnect_ok ? "PASS" : "FAIL", disconnect_ok);
+    printf("BXTEST %s passive-key-grab route=%d\n",
+            passive_route_ok ? "PASS" : "FAIL", passive_route_ok);
+    printf("BXTEST %s passive-key-grab auto-release=%d\n",
+            passive_release_ok ? "PASS" : "FAIL", passive_release_ok);
     bool passed = functional && x_errors == 0;
-    printf("BXSUMMARY keyboard-grab-x11 passed=%d/7 xerrors=%d\n",
-            passed ? 7 : 0, x_errors);
+    printf("BXSUMMARY keyboard-grab-x11 passed=%d/9 xerrors=%d\n",
+            passed ? 9 : 0, x_errors);
     fflush(stdout);
     sleep((unsigned)(duration > 0 && duration <= 60 ? duration : 6));
 

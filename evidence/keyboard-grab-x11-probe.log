@@ -1,6 +1,8 @@
 I/BionicX: BXREADY keyboard-grab inject-a
 I/BionicX: BXREADY keyboard-ungrab inject-b
 I/BionicX: BXREADY keyboard-owner-events inject-c
+I/BionicX: BXREADY passive-key-grab inject-d
+I/BionicX: BXREADY passive-key-release inject-e
 I/BionicX: BXTEST PASS keyboard-grab status=0
 I/BionicX: BXTEST PASS keyboard-contention status=1
 I/BionicX: BXTEST PASS keyboard-not-viewable status=3
@@ -8,5 +10,7 @@ I/BionicX: BXTEST PASS keyboard-grab-route exact=1
 I/BionicX: BXTEST PASS keyboard-ungrab-route exact=1
 I/BionicX: BXTEST PASS keyboard-owner-events normal-route=1
 I/BionicX: BXTEST PASS keyboard-owner-disconnect cleanup=1
-I/BionicX: BXSUMMARY keyboard-grab-x11 passed=7/7 xerrors=0
+I/BionicX: BXTEST PASS passive-key-grab route=1
+I/BionicX: BXTEST PASS passive-key-grab auto-release=1
+I/BionicX: BXSUMMARY keyboard-grab-x11 passed=9/9 xerrors=0
 I/BionicX: keyboard-grab-x11-probe exited with 0

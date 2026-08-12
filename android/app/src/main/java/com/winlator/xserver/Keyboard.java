@@ -64,6 +64,10 @@ public class Keyboard {
         return keysyms[index*KEYSYMS_PER_KEYCODE+0] == keysym || keysyms[index*KEYSYMS_PER_KEYCODE+1] == keysym;
     }
 
+    public boolean willHaveNoPressedKeysAfterRelease(byte keycode) {
+        return pressedKeys.size() == 1 && pressedKeys.contains(keycode);
+    }
+
     public void setKeyPress(byte keycode, int keysym) {
         if (isModifierSticky(keycode)) {
             if (pressedKeys.contains(keycode)) {

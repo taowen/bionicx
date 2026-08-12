@@ -68,3 +68,27 @@ Evidence is retained in `evidence/keyboard-grab-x11-probe.log`,
 `evidence/wps-keyboard-grab-menu.log`, and
 `evidence/wps-keyboard-grab-menu.png`, with the Escape result in
 `evidence/wps-keyboard-grab-escape.png`.
+
+## Passive desktop shortcuts
+
+IceWM subsequently exposed core opcodes 33/34 (`GrabKey`/`UngrabKey`) 198 times
+during startup. The server now retains passive grabs per client and window,
+matches exact keys plus `AnyKey` and exact modifiers plus `AnyModifier`, walks
+from the focused window through its ancestors, and converts a match into an
+active asynchronous grab. It releases only after the logical keyboard becomes
+empty and removes registrations on client disconnect or window destruction.
+Overlapping registrations owned by another client return `BadAccess`.
+
+The controlled probe installs an `AnyModifier` D grab on the root from one
+connection while a peer window has focus. D is delivered only to the grabber;
+after its release, E reaches the peer through normal focus routing:
+
+```text
+BXTEST PASS passive-key-grab route=1
+BXTEST PASS passive-key-grab auto-release=1
+BXSUMMARY keyboard-grab-x11 passed=9/9 xerrors=0
+```
+
+A fresh ordinary-app-UID IceWM run still passes 3/3 and emits neither opcode 33
+nor opcode 34 as unsupported. Passive synchronous modes remain outside this
+checkpoint because they require `AllowEvents` freeze/thaw semantics.
