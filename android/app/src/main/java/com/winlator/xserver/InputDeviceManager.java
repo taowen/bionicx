@@ -164,6 +164,12 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
 
         sendEvent(windowA, Event.LEAVE_WINDOW, new LeaveNotify(detailA, xServer.windowManager.rootWindow, windowA, null, xA, yA, localPointA[0], localPointA[1], keyButMask, mode, sameScreenAndFocus));
         sendEvent(windowB, Event.ENTER_WINDOW, new EnterNotify(detailB, xServer.windowManager.rootWindow, windowB, null, xB, yB, localPointB[0], localPointB[1], keyButMask, mode, sameScreenAndFocus));
+        getXInputExtension().sendCrossingEvent(XInputExtension.XI_LEAVE,
+                detailA.ordinal(), mode.ordinal(), windowA, xA, yA,
+                sameScreenAndFocus);
+        getXInputExtension().sendCrossingEvent(XInputExtension.XI_ENTER,
+                detailB.ordinal(), mode.ordinal(), windowB, xB, yB,
+                sameScreenAndFocus);
     }
 
     @Override
@@ -328,7 +334,12 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
 
     @Override
     public void onPointerMove(short x, short y) {
+        Window previousPointWindow = pointWindow;
         updatePointWindow();
+        if (previousPointWindow != pointWindow) {
+            sendEnterLeaveNotify(previousPointWindow, pointWindow,
+                    PointerWindowEvent.Mode.NORMAL);
+        }
         sendXiPointerEvent(XInputExtension.XI_MOTION, 0);
         if (xServer.grabManager.isPointerSynchronous()) {
             freezePointerMotion(x, y);

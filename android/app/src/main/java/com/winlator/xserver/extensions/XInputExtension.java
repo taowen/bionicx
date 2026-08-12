@@ -7,11 +7,11 @@ import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.core.Bitmask;
 import com.winlator.xserver.Cursor;
-import com.winlator.xserver.EventListener;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.Window;
 import com.winlator.xserver.events.Event;
+import com.winlator.xserver.events.XInputCrossingEvent;
 import com.winlator.xserver.events.XInputDeviceEvent;
 import com.winlator.xserver.errors.BadCursor;
 import com.winlator.xserver.errors.BadImplementation;
@@ -43,6 +43,10 @@ public class XInputExtension extends Extension {
     public static final int XI_BUTTON_PRESS = 4;
     public static final int XI_BUTTON_RELEASE = 5;
     public static final int XI_MOTION = 6;
+    public static final int XI_ENTER = 7;
+    public static final int XI_LEAVE = 8;
+    private byte[] pointerGrabMask;
+    private byte[] keyboardGrabMask;
 
     private static abstract class ClientOpcodes {
         private static final byte GET_EXTENSION_VERSION = 1;
@@ -132,27 +136,36 @@ public class XInputExtension extends Extension {
                                 Window sourceWindow, short rootX, short rootY) {
         if (sourceWindow == null) return;
         XClient grabbedClient = null;
-        if (deviceId == MASTER_POINTER_ID
-                && xServer.grabManager.getWindow() != null) {
-            grabbedClient = xServer.grabManager.getClient();
+        boolean deliveredToGrabbedClient = false;
+        Window grabWindow = deviceId == MASTER_POINTER_ID
+                ? xServer.grabManager.getWindow()
+                : xServer.grabManager.getKeyboardWindow();
+        byte[] grabMask = deviceId == MASTER_POINTER_ID
+                ? pointerGrabMask : keyboardGrabMask;
+        boolean ownerEvents = deviceId == MASTER_POINTER_ID
+                ? xServer.grabManager.isOwnerEvents()
+                : xServer.grabManager.isKeyboardOwnerEvents();
+        if (grabWindow != null) {
+            grabbedClient = deviceId == MASTER_POINTER_ID
+                    ? xServer.grabManager.getClient()
+                    : xServer.grabManager.getKeyboardClient();
             Window target = null;
-            if (grabbedClient != null && xServer.grabManager.isOwnerEvents()) {
+            if (grabbedClient != null && ownerEvents) {
                 target = selectedAncestor(grabbedClient, sourceWindow,
                         deviceId, eventType);
             }
-            EventListener listener = xServer.grabManager.getEventListener();
-            int coreEvent = coreEventMask(eventType);
-            if (target == null && grabbedClient != null && listener != null
-                    && coreEvent != 0 && listener.isInterestedIn(coreEvent)) {
-                target = xServer.grabManager.getWindow();
+            if (target == null && grabbedClient != null && grabMask != null
+                    && maskBit(grabMask, eventType)) {
+                target = grabWindow;
             }
             if (target != null && target.attributes.isEnabled()) {
                 sendDeviceEventToClient(grabbedClient, deviceId, eventType,
                         detail, sourceWindow, target, rootX, rootY);
+                deliveredToGrabbedClient = true;
             }
         }
         for (XClient client : xServer.getClientsSnapshot()) {
-            if (client == grabbedClient) continue;
+            if (client == grabbedClient && deliveredToGrabbedClient) continue;
             Window eventWindow = selectedAncestor(client, sourceWindow,
                     deviceId, eventType);
             if (eventWindow == null || !eventWindow.attributes.isEnabled()) continue;
@@ -171,24 +184,78 @@ public class XInputExtension extends Extension {
         return eventWindow;
     }
 
-    private static int coreEventMask(int eventType) {
-        if (eventType == XI_BUTTON_PRESS) return Event.BUTTON_PRESS;
-        if (eventType == XI_BUTTON_RELEASE) return Event.BUTTON_RELEASE;
-        if (eventType == XI_MOTION) return Event.POINTER_MOTION;
-        return 0;
-    }
-
     private void sendDeviceEventToClient(XClient client, int deviceId,
             int eventType, int detail, Window sourceWindow, Window eventWindow,
             short rootX, short rootY) {
         short[] local = eventWindow.rootPointToLocal(rootX, rootY);
         Window child = sourceWindow == eventWindow ? null : sourceWindow;
+        int buttonState = xiButtonState();
+        if (deviceId == MASTER_POINTER_ID && detail > 0
+                && detail <= POINTER_BUTTONS) {
+            if (eventType == XI_BUTTON_PRESS) buttonState &= ~(1 << detail);
+            else if (eventType == XI_BUTTON_RELEASE) buttonState |= 1 << detail;
+        }
         client.sendEvent(new XInputDeviceEvent(getMajorOpcode(), deviceId,
                 eventType, detail, xServer.windowManager.rootWindow,
                 eventWindow, child, rootX, rootY, local[0], local[1],
                 xServer.keyboard.getBaseModifiers(),
                 xServer.keyboard.getLockedModifiers(),
-                xServer.keyboard.getModifiersMask().getBits()));
+                xServer.keyboard.getModifiersMask().getBits(), buttonState));
+    }
+
+    public void sendCrossingEvent(int eventType, int detail, int mode,
+            Window sourceWindow, short rootX, short rootY, boolean focus) {
+        if (sourceWindow == null) return;
+        XClient grabbedClient = xServer.grabManager.getClient();
+        Window grabWindow = xServer.grabManager.getWindow();
+        boolean deliveredToGrabbedClient = false;
+        if (grabWindow != null && grabbedClient != null) {
+            Window target = null;
+            if (xServer.grabManager.isOwnerEvents()) {
+                target = selectedAncestor(grabbedClient, sourceWindow,
+                        MASTER_POINTER_ID, eventType);
+            }
+            if (target == null && pointerGrabMask != null
+                    && maskBit(pointerGrabMask, eventType)) target = grabWindow;
+            if (target != null && target.attributes.isEnabled()) {
+                sendCrossingEventToClient(grabbedClient, eventType, detail,
+                        mode, sourceWindow, target, rootX, rootY, focus);
+                deliveredToGrabbedClient = true;
+            }
+        }
+        for (XClient client : xServer.getClientsSnapshot()) {
+            if (client == grabbedClient && deliveredToGrabbedClient) continue;
+            Window eventWindow = selectedAncestor(client, sourceWindow,
+                    MASTER_POINTER_ID, eventType);
+            if (eventWindow == null || !eventWindow.attributes.isEnabled()) continue;
+            sendCrossingEventToClient(client, eventType, detail, mode,
+                    sourceWindow, eventWindow, rootX, rootY, focus);
+        }
+    }
+
+    private void sendCrossingEventToClient(XClient client, int eventType,
+            int detail, int mode, Window sourceWindow, Window eventWindow,
+            short rootX, short rootY, boolean focus) {
+        short[] local = eventWindow.rootPointToLocal(rootX, rootY);
+        int buttonState = xiButtonState();
+        client.sendEvent(new XInputCrossingEvent(getMajorOpcode(),
+                MASTER_POINTER_ID, eventType, detail, mode,
+                xServer.windowManager.rootWindow, eventWindow,
+                sourceWindow == eventWindow ? null : sourceWindow,
+                rootX, rootY, local[0], local[1], focus,
+                xServer.keyboard.getBaseModifiers(),
+                xServer.keyboard.getLockedModifiers(),
+                xServer.keyboard.getModifiersMask().getBits(), buttonState));
+    }
+
+    private int xiButtonState() {
+        int buttonState = 0;
+        int coreButtons = xServer.pointer.getButtonMask().getBits();
+        for (int button = 1; button <= POINTER_BUTTONS; button++) {
+            if ((coreButtons & (1 << (button + 7))) != 0)
+                buttonState |= 1 << button;
+        }
+        return buttonState;
     }
 
     private void getExtensionVersion(XClient client, XInputStream inputStream,
@@ -369,7 +436,6 @@ public class XInputExtension extends Extension {
         if (maskBit(xiMask, XI_BUTTON_PRESS)) coreMask |= Event.BUTTON_PRESS;
         if (maskBit(xiMask, XI_BUTTON_RELEASE)) coreMask |= Event.BUTTON_RELEASE;
         if (maskBit(xiMask, XI_MOTION)) coreMask |= Event.POINTER_MOTION;
-
         int status;
         boolean grabbedByOtherClient = deviceId == MASTER_POINTER_ID
                 ? xServer.grabManager.getWindow() != null
@@ -387,18 +453,21 @@ public class XInputExtension extends Extension {
             if (deviceId == MASTER_POINTER_ID) {
                 xServer.grabManager.activatePointerGrab(window, ownerEvents,
                         new Bitmask(coreMask), client, cursor);
+                pointerGrabMask = xiMask.clone();
             }
             else {
                 xServer.grabManager.activateKeyboardGrab(window, ownerEvents,
                         client);
+                keyboardGrabMask = xiMask.clone();
             }
         }
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
-            outputStream.writeByte((byte)status);
+            outputStream.writeByte(ClientOpcodes.XI_GRAB_DEVICE);
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(0);
-            outputStream.writePad(24);
+            outputStream.writeByte((byte)status);
+            outputStream.writePad(23);
         }
     }
 
@@ -415,10 +484,16 @@ public class XInputExtension extends Extension {
         if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID)
             throw new BadValue(deviceId);
         if (timestamp != 0) throw new BadImplementation();
-        if (deviceId == MASTER_POINTER_ID)
+        if (deviceId == MASTER_POINTER_ID) {
+            boolean owned = xServer.grabManager.getClient() == client;
             xServer.grabManager.deactivatePointerGrab(client);
-        else
+            if (owned) pointerGrabMask = null;
+        }
+        else {
+            boolean owned = xServer.grabManager.getKeyboardClient() == client;
             xServer.grabManager.deactivateKeyboardGrab(client);
+            if (owned) keyboardGrabMask = null;
+        }
     }
 
     @Override

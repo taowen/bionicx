@@ -1,0 +1,48 @@
+I/BionicX (25865): BXTEST PASS display-connect glibc=2.41 vendor=Elbrus Technologies, LLC protocol=11.0 screens=1
+I/BionicX (25865): BXTEST PASS list-extensions count=9
+I/BionicX (25865): BXTEST PASS extension-capability-honesty DRI3 hidden until Open can return a DRM fd
+I/BionicX (25865): BXTEST PASS intern-atom-only-if-exists absent=0 created=76 existing=76
+I/BionicX (25865): BXTEST PASS initial-pointer-root-focus focus=0x1 expected=0x1 revert=1
+I/BionicX (25865): BXTEST PASS window-create-map
+I/BionicX (25865): BXTEST PASS copy-from-parent-class class=1 expected=1
+I/BionicX (25865): BXTEST PASS input-focus
+I/BionicX (25865): BXTEST PASS input-focus-revert-policy window=0x400001 expected=0x400001 revert=1
+I/BionicX (25865): BXTEST PASS keyboard-mapping-levels width=2 q=0x71 Q=0x51 w=0x77 W=0x57
+I/BionicX (25865): BXTEST PASS property-roundtrip UTF8_STRING
+I/BionicX (25865): BXTEST PASS list-properties count=5 probe-atom=1
+I/BionicX (25865): BXTEST PASS font-open-close cursor resource released
+I/BionicX (25865): BXTEST PASS core-font-query width=8 ascent=11 descent=3
+I/BionicX (25865): BXTEST PASS core-font-text-extents width=56 direction=0
+I/BionicX (25865): BXTEST PASS core-font-list count=1
+I/BionicX (25865): BXTEST PASS truecolor-alloc-query pixel=0x12569a rgb=1212/5656/9a9a
+I/BionicX (25865): BXTEST PASS pixmap-gc-copy pixel=0x3264c8
+I/BionicX (25865): BXTEST PASS background-pixmap clear-pixel=0x3264c8
+I/BionicX (25865): BXTEST PASS copy-area-clip inside=0x2060c0 outside=0xa02020
+I/BionicX (25865): BXTEST PASS poly-point origin=0x20c060 previous=0x20c060
+I/BionicX (25865): BXTEST PASS poly-text8 foreground-pixels=473
+I/BionicX (25865): BXTEST PASS window-tree children=1
+I/BionicX (25865): BXTEST PASS input-only-geometry class=2 geometry=40x30+3+4 border=0 depth=0
+I/BionicX (25865): BXTEST PASS map-subwindows-exposure before=0/1/0 premature=0/0 after=2/0 expose=1/0 visible=1
+I/BionicX (25865): BXTEST PASS translate-coordinates root=220,160
+I/BionicX (25865): BXTEST PASS cursor-create-define
+I/BionicX (25865): BXTEST PASS cursor-recolor
+I/BionicX (25865): BXTEST PASS selection-owner CLIPBOARD
+I/BionicX (25865): BXTEST PASS client-message-send
+I/BionicX (25865): BXINPUT keycode=38 state=0x0 base=0x61 shifted=0x41
+I/BionicX (25865): BXINPUT release keycode=38 state=0x0
+I/BionicX (25865): BXINPUT keycode=56 state=0x0 base=0x62 shifted=0x42
+I/BionicX (25865): BXINPUT release keycode=56 state=0x0
+I/BionicX (25865): BXINPUT keycode=54 state=0x0 base=0x63 shifted=0x43
+I/BionicX (25865): BXINPUT release keycode=54 state=0x0
+I/BionicX (25865): BXINPUT keycode=50 state=0x0 base=0xffe1 shifted=0xffe1
+I/BionicX (25865): BXINPUT keycode=20 state=0x1 base=0x2d shifted=0x5f
+I/BionicX (25865): BXINPUT release keycode=50 state=0x1
+I/BionicX (25865): BXINPUT release keycode=20 state=0x0
+I/BionicX (25865): BXINPUT keycode=50 state=0x0 base=0xffe1 shifted=0xffe1
+I/BionicX (25865): BXINPUT keycode=38 state=0x1 base=0x61 shifted=0x41
+I/BionicX (25865): BXINPUT release keycode=50 state=0x1
+I/BionicX (25865): BXINPUT release keycode=38 state=0x0
+I/BionicX (25865): BXTEST PASS client-message-receive WM_DELETE_WINDOW
+I/BionicX (25865): BXTEST PASS modifier-event-state lower=1 shift-press=1 underscore=1 shift-release=1 releases=7
+I/BionicX (25865): BXSUMMARY passed=32 failed=0 observational_input=yes
+I/BionicX (25865): x11-probe exited with 0

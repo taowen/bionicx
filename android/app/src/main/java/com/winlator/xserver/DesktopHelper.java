@@ -41,7 +41,12 @@ public abstract class DesktopHelper {
 
     private static void setFocusedWindow(XServer xServer, Window window) {
         WinHandler winHandler = xServer.getWinHandler();
-        if (window.isApplicationWindow()) {
+        boolean focusableTopLevel = window.getParent()
+                == xServer.windowManager.rootWindow
+                && window.isInputOutput()
+                && !window.attributes.isOverrideRedirect()
+                && !window.getName().isEmpty();
+        if (window.isApplicationWindow() || focusableTopLevel) {
             boolean parentIsRoot = window.getParent() == xServer.windowManager.rootWindow;
             xServer.windowManager.setFocus(window, parentIsRoot ? WindowManager.FocusRevertTo.POINTER_ROOT : WindowManager.FocusRevertTo.PARENT);
 

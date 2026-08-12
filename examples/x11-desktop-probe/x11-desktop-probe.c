@@ -24,6 +24,9 @@ static int passed;
 static int x_errors;
 static int xkb_event_type = -1;
 static int xi_opcode = -1;
+static Window xi_peer = None;
+static bool xi_pointer_grabbed;
+static bool xi_keyboard_grabbed;
 
 static int handle_x_error(Display *display, XErrorEvent *event) {
     char text[128];
@@ -79,6 +82,7 @@ static void probe_render(Display *display, Window window) {
     int before = x_errors;
     unsigned long in_add_pixel = 0;
     unsigned long out_reverse_pixel = 0;
+    unsigned long saturate_pixel = 0;
     unsigned long create_repeat_pixel = 0;
     unsigned long pixmap_clip_inside = 0;
     unsigned long pixmap_clip_outside = 0;
@@ -136,6 +140,18 @@ static void probe_render(Display *display, Window window) {
                     ? XGetPixel(out_reverse_image, 0, 0) : 0;
             if (out_reverse_image) XDestroyImage(out_reverse_image);
             XRenderFreePicture(display, quarter);
+            XRenderColor three_quarter_mask = {.alpha = 0xc000};
+            XRenderFillRectangle(display, PictOpSrc, a8_picture,
+                                 &three_quarter_mask, 0, 0, 8, 8);
+            Picture half = XRenderCreateSolidFill(display, &half_mask);
+            XRenderComposite(display, PictOpSaturate, half, None, a8_picture,
+                             0, 0, 0, 0, 0, 0, 8, 8);
+            XImage *saturate_image = XGetImage(display, a8_pixmap, 2, 2,
+                                               1, 1, AllPlanes, ZPixmap);
+            saturate_pixel = saturate_image
+                    ? XGetPixel(saturate_image, 0, 0) : 0;
+            if (saturate_image) XDestroyImage(saturate_image);
+            XRenderFreePicture(display, half);
             XRenderFillRectangle(display, PictOpSrc, a8_picture,
                                  &half_mask, 0, 0, 8, 8);
             XRenderSetPictureFilter(display, a8_picture, FilterNearest,
@@ -224,6 +240,7 @@ static void probe_render(Display *display, Window window) {
          && a8_image && a8_pixel >= 0x7f && a8_pixel <= 0x81
          && in_add_pixel >= 0x7f && in_add_pixel <= 0x81
          && out_reverse_pixel >= 0x5f && out_reverse_pixel <= 0x61
+         && saturate_pixel >= 0xfe && saturate_pixel <= 0xff
          && (create_repeat_pixel & 0xffffff) == 0xff0000
          && picture && a8_picture && sync_without_error(display, before);
     if (a8_image) XDestroyImage(a8_image);
@@ -293,10 +310,11 @@ static void probe_render(Display *display, Window window) {
          && (pixmap_clip_outside & 0xffffff) == 0x0000ff;
     char detail[320];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d event=%d error=%d a8=%d a8-picture=%d alpha-mask=0x%x in-add=0x%02lx out-reverse=0x%02lx create-repeat=0x%06lx over=0x%06lx clear=0x%lx mask-over=0x%06lx clip=0x%06lx/0x%06lx pixmap-clip=0x%06lx/0x%06lx gradient=0x%06lx/0x%06lx src=0x%06lx",
+             "version=%d.%d event=%d error=%d a8=%d a8-picture=%d alpha-mask=0x%x in-add=0x%02lx out-reverse=0x%02lx saturate=0x%02lx create-repeat=0x%06lx over=0x%06lx clear=0x%lx mask-over=0x%06lx clip=0x%06lx/0x%06lx pixmap-clip=0x%06lx/0x%06lx gradient=0x%06lx/0x%06lx src=0x%06lx",
              major, minor, event_base, error_base, a8 != NULL,
              a8_picture != 0, a8 ? a8->direct.alphaMask : 0,
              in_add_pixel & 0xff, out_reverse_pixel & 0xff,
+             saturate_pixel & 0xff,
              create_repeat_pixel & 0xffffff, pixel & 0xffffff, clear_pixel,
              mask_pixel & 0xffffff,
              clip_inside & 0xffffff, clip_outside & 0xffffff,
@@ -492,12 +510,48 @@ static void probe_xinput2(Display *display, Window window) {
     XISetMask(selected_mask, XI_ButtonPress);
     XISetMask(selected_mask, XI_ButtonRelease);
     XISetMask(selected_mask, XI_Motion);
+    XISetMask(selected_mask, XI_Enter);
+    XISetMask(selected_mask, XI_Leave);
     XIEventMask selection = {
         .deviceid = XIAllMasterDevices,
         .mask_len = sizeof(selected_mask),
         .mask = selected_mask,
     };
     int select_status = XISelectEvents(display, window, &selection, 1);
+    int screen = DefaultScreen(display);
+    xi_peer = XCreateSimpleWindow(display, RootWindow(display, screen),
+            560, 120, 160, 160, 0, BlackPixel(display, screen), 0x00334d5c);
+    XStoreName(display, xi_peer, "BionicX XI2 crossing peer");
+    XSelectInput(display, xi_peer, ButtonPressMask | ButtonReleaseMask);
+    XMapWindow(display, xi_peer);
+    int peer_select_status = XISelectEvents(display, xi_peer, &selection, 1);
+
+    unsigned char pointer_grab_mask[XIMaskLen(XI_LASTEVENT)] = {0};
+    XISetMask(pointer_grab_mask, XI_ButtonPress);
+    XISetMask(pointer_grab_mask, XI_ButtonRelease);
+    XISetMask(pointer_grab_mask, XI_Motion);
+    XISetMask(pointer_grab_mask, XI_Enter);
+    XISetMask(pointer_grab_mask, XI_Leave);
+    XIEventMask pointer_grab = {
+        .deviceid = 2,
+        .mask_len = sizeof(pointer_grab_mask),
+        .mask = pointer_grab_mask,
+    };
+    int pointer_grab_status = XIGrabDevice(display, 2, window, CurrentTime,
+            None, XIGrabModeAsync, XIGrabModeAsync, True, &pointer_grab);
+    xi_pointer_grabbed = pointer_grab_status == GrabSuccess;
+
+    unsigned char keyboard_grab_mask[XIMaskLen(XI_LASTEVENT)] = {0};
+    XISetMask(keyboard_grab_mask, XI_KeyPress);
+    XISetMask(keyboard_grab_mask, XI_KeyRelease);
+    XIEventMask keyboard_grab = {
+        .deviceid = 3,
+        .mask_len = sizeof(keyboard_grab_mask),
+        .mask = keyboard_grab_mask,
+    };
+    int keyboard_grab_status = XIGrabDevice(display, 3, window, CurrentTime,
+            None, XIGrabModeAsync, XIGrabModeAsync, True, &keyboard_grab);
+    xi_keyboard_grabbed = keyboard_grab_status == GrabSuccess;
     int selected_count = 0;
     XIEventMask *selected = XIGetSelectedEvents(display, window, &selected_count);
     bool selected_ok = false;
@@ -507,23 +561,27 @@ static void probe_xinput2(Display *display, Window window) {
             && XIMaskIsSet(selected[i].mask, XI_KeyRelease)
             && XIMaskIsSet(selected[i].mask, XI_ButtonPress)
             && XIMaskIsSet(selected[i].mask, XI_ButtonRelease)
-            && XIMaskIsSet(selected[i].mask, XI_Motion)) {
+            && XIMaskIsSet(selected[i].mask, XI_Motion)
+            && XIMaskIsSet(selected[i].mask, XI_Enter)
+            && XIMaskIsSet(selected[i].mask, XI_Leave)) {
             selected_ok = true;
         }
     }
     ok = ok && devices && count >= 2 && master_pointer && master_keyboard
          && pointer_buttons && queried_pointer && pointer_root != None
-         && select_status == Success && selected_ok
+         && select_status == Success && peer_select_status == Success
+         && xi_pointer_grabbed && xi_keyboard_grabbed && selected_ok
          && sync_without_error(display, before);
     if (buttons.mask != NULL) XFree(buttons.mask);
     if (devices) XIFreeDeviceInfo(devices);
     if (selected) XFree(selected);
     char detail[128];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d devices=%d masters=%d/%d buttons=%d query=%d root=0x%lx selected=%d masks=%d",
+             "version=%d.%d devices=%d masters=%d/%d buttons=%d query=%d root=0x%lx selected=%d masks=%d grabs=%d/%d peer=0x%lx",
              major, minor, count, master_pointer, master_keyboard,
              pointer_buttons, queried_pointer, (unsigned long)pointer_root,
-             selected_ok, selected_count);
+             selected_ok, selected_count, xi_pointer_grabbed,
+             xi_keyboard_grabbed, (unsigned long)xi_peer);
     result("xinput2", ok, detail);
 }
 
@@ -701,6 +759,10 @@ int main(int argc, char **argv) {
     int xi_motion_events = 0;
     int xi_button_presses = 0;
     int xi_button_releases = 0;
+    int xi_enter_events = 0;
+    int xi_leave_events = 0;
+    bool xi_press_buttons_valid = false;
+    bool xi_release_buttons_valid = false;
     bool xi_wire_valid = true;
     xcb_connection_t *event_connection = XGetXCBConnection(display);
     XFlush(display);
@@ -712,24 +774,45 @@ int main(int argc, char **argv) {
             if ((raw_event->response_type & 0x7f) == XCB_GE_GENERIC
                     && wire[1] == xi_opcode) {
                 uint32_t length = 0, detail = 0, event_id = 0;
+                uint32_t button_state = 0;
                 uint16_t event_type = 0, device_id = 0, source_id = 0;
                 memcpy(&length, wire + 4, sizeof(length));
                 memcpy(&event_type, wire + 8, sizeof(event_type));
                 memcpy(&device_id, wire + 10, sizeof(device_id));
-                memcpy(&detail, wire + 16, sizeof(detail));
                 memcpy(&event_id, wire + 24, sizeof(event_id));
-                /* XCB inserts full_sequence at byte 32 in its in-memory event;
-                 * GenericEvent payload bytes after the first 32 are shifted by 4. */
-                memcpy(&source_id, wire + 56, sizeof(source_id));
-                bool valid = length == 12 && device_id == source_id
-                             && event_id == window
-                             && wire[52] == 0 && wire[53] == 0;
+                bool crossing = event_type == XI_Enter
+                                || event_type == XI_Leave;
+                if (crossing) {
+                    memcpy(&source_id, wire + 16, sizeof(source_id));
+                    detail = wire[19];
+                    memcpy(&button_state, wire + 76, sizeof(button_state));
+                }
+                else {
+                    memcpy(&detail, wire + 16, sizeof(detail));
+                    /* XCB inserts full_sequence at byte 32 in its in-memory
+                     * event; later GenericEvent payload bytes shift by 4. */
+                    memcpy(&source_id, wire + 56, sizeof(source_id));
+                    memcpy(&button_state, wire + 84, sizeof(button_state));
+                }
+                bool valid = device_id == source_id
+                             && (event_id == window || event_id == xi_peer)
+                             && ((crossing && length == 11
+                                  && wire[52] == 1 && wire[54] == 1)
+                                 || (!crossing && length == 13
+                                     && wire[52] == 1 && wire[53] == 0));
                 xi_wire_valid &= valid;
                 xi_motion_events += event_type == XI_Motion;
                 xi_button_presses += event_type == XI_ButtonPress && detail == 1;
                 xi_button_releases += event_type == XI_ButtonRelease && detail == 1;
-                printf("BXINPUT xi2 type=%u device=%u source=%u detail=%u length=%u valid=%d\n",
-                       event_type, device_id, source_id, detail, length, valid);
+                xi_enter_events += event_type == XI_Enter;
+                xi_leave_events += event_type == XI_Leave;
+                if (event_type == XI_ButtonPress && detail == 1)
+                    xi_press_buttons_valid |= (button_state & (1U << 1)) == 0;
+                if (event_type == XI_ButtonRelease && detail == 1)
+                    xi_release_buttons_valid |= (button_state & (1U << 1)) != 0;
+                printf("BXINPUT xi2 type=%u device=%u source=%u detail=%u length=%u buttons=0x%x valid=%d\n",
+                       event_type, device_id, source_id, detail, length,
+                       button_state, valid);
                 fflush(stdout);
             }
             else if ((raw_event->response_type & 0x7f) == xkb_event_type) {
@@ -777,16 +860,22 @@ int main(int argc, char **argv) {
     result("xfixes-input-shape", shaped_button_presses == 1, shape_detail);
     char xi_detail[128];
     snprintf(xi_detail, sizeof(xi_detail),
-             "motion=%d press=%d release=%d wire-valid=%d",
+             "motion=%d press=%d release=%d enter=%d leave=%d states=%d/%d wire-valid=%d",
              xi_motion_events, xi_button_presses, xi_button_releases,
-             xi_wire_valid);
+             xi_enter_events, xi_leave_events,
+             xi_press_buttons_valid, xi_release_buttons_valid, xi_wire_valid);
     result("xi2-device-events",
            xi_motion_events > 0 && xi_button_presses > 0
-               && xi_button_releases > 0 && xi_wire_valid,
+               && xi_button_releases > 0 && xi_wire_valid
+               && xi_enter_events > 0 && xi_leave_events > 0
+               && xi_press_buttons_valid && xi_release_buttons_valid,
            xi_detail);
     printf("BXSUMMARY desktop-x11 passed=%d failed=%d xerrors=%d\n",
            passed, checks - passed, x_errors);
     fflush(stdout);
+    if (xi_pointer_grabbed) XIUngrabDevice(display, 2, CurrentTime);
+    if (xi_keyboard_grabbed) XIUngrabDevice(display, 3, CurrentTime);
+    if (xi_peer != None) XDestroyWindow(display, xi_peer);
     XFreeGC(display, gc);
     XDestroyWindow(display, window);
     XCloseDisplay(display);
