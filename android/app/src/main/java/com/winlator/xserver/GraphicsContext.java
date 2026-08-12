@@ -1,5 +1,8 @@
 package com.winlator.xserver;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class GraphicsContext extends XResource {
     public static final int FLAG_FUNCTION = 1<<0;
     public static final int FLAG_PLANE_MASK = 1<<1;
@@ -33,6 +36,20 @@ public class GraphicsContext extends XResource {
     private int lineWidth = 1;
     private int planeMask = -1;
     private SubwindowMode subwindowMode = SubwindowMode.CLIP_BY_CHILDREN;
+    private int clipXOrigin;
+    private int clipYOrigin;
+    private ArrayList<ClipRectangle> clipRectangles;
+
+    public static final class ClipRectangle {
+        public final int x, y, width, height;
+
+        public ClipRectangle(int x, int y, int width, int height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+    }
 
     public GraphicsContext(int id, Drawable drawable) {
         super(id);
@@ -86,4 +103,14 @@ public class GraphicsContext extends XResource {
     public void setSubwindowMode(SubwindowMode subwindowMode) {
         this.subwindowMode = subwindowMode;
     }
+
+    public int getClipXOrigin() { return clipXOrigin; }
+    public int getClipYOrigin() { return clipYOrigin; }
+    public void setClipXOrigin(int value) { clipXOrigin = value; }
+    public void setClipYOrigin(int value) { clipYOrigin = value; }
+    public List<ClipRectangle> getClipRectangles() { return clipRectangles; }
+    public void setClipRectangles(ArrayList<ClipRectangle> rectangles) {
+        clipRectangles = rectangles;
+    }
+    public void clearClipMask() { clipRectangles = null; }
 }

@@ -195,6 +195,30 @@ int main(int argc, char **argv) {
     RECORD(drawing_ok);
 
     before = x_errors;
+    XSetForeground(display, gc, 0xa02020);
+    XFillRectangle(display, window, gc, 240, 160, 80, 60);
+    XSetForeground(display, gc, 0x2060c0);
+    XFillRectangle(display, pixmap, gc, 0, 0, 80, 60);
+    XRectangle copy_clip = {.x = 260, .y = 175, .width = 20, .height = 20};
+    XSetClipRectangles(display, gc, 0, 0, &copy_clip, 1, Unsorted);
+    XCopyArea(display, pixmap, window, gc, 0, 0, 80, 60, 240, 160);
+    XImage *clip_inside = XGetImage(display, window, 265, 180, 1, 1,
+                                    AllPlanes, ZPixmap);
+    XImage *clip_outside = XGetImage(display, window, 245, 165, 1, 1,
+                                     AllPlanes, ZPixmap);
+    XSetClipMask(display, gc, None);
+    XSync(display, False);
+    bool copy_clip_ok = x_errors == before && clip_inside && clip_outside
+            && (XGetPixel(clip_inside, 0, 0) & 0xffffff) == 0x2060c0
+            && (XGetPixel(clip_outside, 0, 0) & 0xffffff) == 0xa02020;
+    if (clip_inside) XDestroyImage(clip_inside);
+    if (clip_outside) XDestroyImage(clip_outside);
+    result("copy-area-clip", copy_clip_ok,
+           copy_clip_ok ? "inside=0x2060c0 outside=0xa02020"
+                        : "GC clip mismatch");
+    RECORD(copy_clip_ok);
+
+    before = x_errors;
     XSetForeground(display, gc, WhitePixel(display, screen));
     XDrawString(display, window, gc, 32, 42, "BionicX PolyText8", 17);
     XImage *text_image = XGetImage(display, window, 28, 20, 220, 30,

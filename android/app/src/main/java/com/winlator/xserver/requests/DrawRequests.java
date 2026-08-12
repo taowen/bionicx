@@ -136,7 +136,26 @@ public abstract class DrawRequests {
 
         if (srcDrawable.visual.depth != dstDrawable.visual.depth) throw new BadMatch();
 
-        dstDrawable.copyArea(srcX, srcY, dstX, dstY, width, height, srcDrawable, graphicsContext.getFunction());
+        synchronized (dstDrawable.renderLock) {
+            if (graphicsContext.getClipRectangles() == null) {
+                dstDrawable.copyArea(srcX, srcY, dstX, dstY, width, height,
+                        srcDrawable, graphicsContext.getFunction());
+            }
+            else for (GraphicsContext.ClipRectangle clip
+                    : graphicsContext.getClipRectangles()) {
+                int clipLeft = graphicsContext.getClipXOrigin() + clip.x;
+                int clipTop = graphicsContext.getClipYOrigin() + clip.y;
+                int left = Math.max(dstX, clipLeft);
+                int top = Math.max(dstY, clipTop);
+                int right = Math.min(dstX + width, clipLeft + clip.width);
+                int bottom = Math.min(dstY + height, clipTop + clip.height);
+                if (left >= right || top >= bottom) continue;
+                dstDrawable.copyArea((short)(srcX + left - dstX),
+                        (short)(srcY + top - dstY), (short)left, (short)top,
+                        (short)(right - left), (short)(bottom - top),
+                        srcDrawable, graphicsContext.getFunction());
+            }
+        }
     }
 
     public static void polyLine(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {

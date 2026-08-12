@@ -4,6 +4,8 @@ import android.util.SparseArray;
 
 import com.winlator.core.Bitmask;
 import com.winlator.xconnector.XInputStream;
+import com.winlator.xserver.errors.BadImplementation;
+import com.winlator.xserver.errors.XRequestError;
 
 public class GraphicsContextManager extends XResourceManager {
     private final SparseArray<GraphicsContext> graphicsContexts = new SparseArray<>();
@@ -25,7 +27,8 @@ public class GraphicsContextManager extends XResourceManager {
         graphicsContexts.remove(id);
     }
 
-    public void updateGraphicsContext(GraphicsContext graphicsContext, Bitmask valueMask, XInputStream inputStream) {
+    public void updateGraphicsContext(GraphicsContext graphicsContext,
+            Bitmask valueMask, XInputStream inputStream) throws XRequestError {
         for (int index : valueMask) {
             switch (index) {
                 case GraphicsContext.FLAG_FUNCTION:
@@ -46,6 +49,18 @@ public class GraphicsContextManager extends XResourceManager {
                 case GraphicsContext.FLAG_SUBWINDOW_MODE:
                     graphicsContext.setSubwindowMode(GraphicsContext.SubwindowMode.values()[inputStream.readInt()]);
                     break;
+                case GraphicsContext.FLAG_CLIP_X_ORIGIN:
+                    graphicsContext.setClipXOrigin(inputStream.readInt());
+                    break;
+                case GraphicsContext.FLAG_CLIP_Y_ORIGIN:
+                    graphicsContext.setClipYOrigin(inputStream.readInt());
+                    break;
+                case GraphicsContext.FLAG_CLIP_MASK:
+                    if (inputStream.readInt() == 0) {
+                        graphicsContext.clearClipMask();
+                    }
+                    else throw new BadImplementation();
+                    break;
                 case GraphicsContext.FLAG_LINE_STYLE:
                 case GraphicsContext.FLAG_CAP_STYLE:
                 case GraphicsContext.FLAG_JOIN_STYLE:
@@ -57,11 +72,8 @@ public class GraphicsContextManager extends XResourceManager {
                 case GraphicsContext.FLAG_TILE:
                 case GraphicsContext.FLAG_STIPPLE:
                 case GraphicsContext.FLAG_FONT:
-                case GraphicsContext.FLAG_CLIP_MASK:
                 case GraphicsContext.FLAG_TILE_STIPPLE_X_ORIGIN:
                 case GraphicsContext.FLAG_TILE_STIPPLE_Y_ORIGIN:
-                case GraphicsContext.FLAG_CLIP_X_ORIGIN:
-                case GraphicsContext.FLAG_CLIP_Y_ORIGIN:
                 case GraphicsContext.FLAG_DASH_OFFSET:
                     inputStream.skip(4);
                     break;

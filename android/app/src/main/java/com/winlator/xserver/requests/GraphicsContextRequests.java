@@ -11,6 +11,8 @@ import com.winlator.xserver.errors.BadGraphicsContext;
 import com.winlator.xserver.errors.BadIdChoice;
 import com.winlator.xserver.errors.XRequestError;
 
+import java.util.ArrayList;
+
 public abstract class GraphicsContextRequests {
     public static void createGC(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
         int gcId = inputStream.readInt();
@@ -39,5 +41,28 @@ public abstract class GraphicsContextRequests {
 
     public static void freeGC(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
         client.xServer.graphicsContextManager.freeGraphicsContext(inputStream.readInt());
+    }
+
+    public static void setClipRectangles(XClient client,
+            XInputStream inputStream, XOutputStream outputStream)
+            throws XRequestError {
+        int graphicsContextId = inputStream.readInt();
+        GraphicsContext graphicsContext = client.xServer.graphicsContextManager
+                .getGraphicsContext(graphicsContextId);
+        if (graphicsContext == null)
+            throw new BadGraphicsContext(graphicsContextId);
+        graphicsContext.setClipXOrigin(inputStream.readShort());
+        graphicsContext.setClipYOrigin(inputStream.readShort());
+        int remaining = client.getRemainingRequestLength();
+        if ((remaining & 7) != 0) throw new BadValue(remaining);
+        ArrayList<GraphicsContext.ClipRectangle> rectangles = new ArrayList<>();
+        while (remaining >= 8) {
+            rectangles.add(new GraphicsContext.ClipRectangle(
+                    inputStream.readShort(), inputStream.readShort(),
+                    inputStream.readUnsignedShort(),
+                    inputStream.readUnsignedShort()));
+            remaining -= 8;
+        }
+        graphicsContext.setClipRectangles(rectangles);
     }
 }

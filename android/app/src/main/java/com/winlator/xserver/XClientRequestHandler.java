@@ -348,7 +348,11 @@ public class XClientRequestHandler implements RequestHandler {
                         client.skipRequest();
                         break;
                     case ClientOpcodes.SET_CLIP_RECTANGLES:
-                        client.skipRequest();
+                        try (XLock lock = client.xServer.lock(
+                                XServer.Lockable.GRAPHIC_CONTEXT_MANAGER)) {
+                            GraphicsContextRequests.setClipRectangles(
+                                    client, inputStream, outputStream);
+                        }
                         break;
                     case ClientOpcodes.FREE_GC:
                         try (XLock lock = client.xServer.lock(XServer.Lockable.GRAPHIC_CONTEXT_MANAGER)) {
