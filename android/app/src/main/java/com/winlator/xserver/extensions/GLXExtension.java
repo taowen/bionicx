@@ -31,7 +31,8 @@ public class GLXExtension extends Extension {
     private static final byte DEFAULT_FBCONFIG_ID = 1;
     private final SparseArray<SparseLongArray> clientGLXContexts = new SparseArray<>();
     private final SparseArray<SparseLongArray> clientGLContexts = new SparseArray<>();
-    private final String glxExtensions = "GLX_ARB_create_context GLX_ARB_get_proc_address";
+    private final String glxExtensions = "GLX_ARB_create_context GLX_ARB_get_proc_address " +
+            "GLX_EXT_create_context_es_profile";
     private final Callback<XClient> onDestroyClientListener = (client) -> {
         destroyAllGLContexts(client.fd);
         destroyAllGLXContexts(client.fd);
@@ -53,6 +54,7 @@ public class GLXExtension extends Extension {
         private static final byte CREATE_CONTEXT = 3;
         private static final byte DESTROY_CONTEXT = 4;
         private static final byte QUERY_VERSION = 7;
+        private static final byte GET_VISUAL_CONFIGS = 14;
         private static final byte QUERY_EXTENSIONS_STRING = 18;
         private static final byte QUERY_SERVER_STRING = 19;
         private static final byte GET_FB_CONFIGS = 21;
@@ -161,6 +163,39 @@ public class GLXExtension extends Extension {
         }
     }
 
+    private void getVisualConfigs(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException {
+        inputStream.skip(4); // screen
+
+        // GLX 1.2 GetVisualConfigs starts with eighteen positional CARD32
+        // properties. Any later properties would be tag/value pairs, unlike
+        // the entirely tagged GetFBConfigs reply.
+        final int[] properties = new int[]{
+            xServer.pixmapManager.visual.id,
+            xServer.pixmapManager.visual.type.ordinal(),
+            1,  // RGBA
+            8, 8, 8, 8, // RGBA sizes
+            0, 0, 0, 0, // accumulation sizes
+            1,  // double-buffered
+            0,  // stereo
+            32, // buffer size
+            24, // depth size
+            8,  // stencil size
+            0,  // auxiliary buffers
+            0   // level
+        };
+
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(properties.length);
+            outputStream.writeInt(1); // visuals
+            outputStream.writeInt(properties.length);
+            outputStream.writePad(16);
+            for (int property : properties) outputStream.writeInt(property);
+        }
+    }
+
     private void queryExtensionsString(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
         inputStream.skip(4);
         int length = glxExtensions.length();
@@ -212,9 +247,12 @@ public class GLXExtension extends Extension {
         inputStream.skip(4);
 
         final int numFBConfigs = 1;
-        final int numProperties = 11;
         final int[] properties = new int[]{
             GLXEnums.GLX_FBCONFIG_ID, DEFAULT_FBCONFIG_ID,
+            GLXEnums.GLX_VISUAL_ID, xServer.pixmapManager.visual.id,
+            GLXEnums.GLX_X_RENDERABLE, 1,
+            GLXEnums.GLX_X_VISUAL_TYPE, GLXEnums.GLX_TRUE_COLOR,
+            GLXEnums.GLX_CONFIG_CAVEAT, GLXEnums.GLX_NONE,
             GLXEnums.GLX_RED_SIZE, 8,
             GLXEnums.GLX_GREEN_SIZE, 8,
             GLXEnums.GLX_BLUE_SIZE, 8,
@@ -223,9 +261,14 @@ public class GLXExtension extends Extension {
             GLXEnums.GLX_STENCIL_SIZE, 8,
             GLXEnums.GLX_BUFFER_SIZE, 32,
             GLXEnums.GLX_DOUBLEBUFFER, 1,
-            GLXEnums.GLX_DRAWABLE_TYPE, GLXEnums.GLX_WINDOW_BIT,
-            GLXEnums.GLX_RENDER_TYPE, GLXEnums.GLX_RGBA_BIT
+            GLXEnums.GLX_DRAWABLE_TYPE,
+                GLXEnums.GLX_WINDOW_BIT | GLXEnums.GLX_PBUFFER_BIT,
+            GLXEnums.GLX_RENDER_TYPE, GLXEnums.GLX_RGBA_BIT,
+            GLXEnums.GLX_MAX_PBUFFER_WIDTH, 4096,
+            GLXEnums.GLX_MAX_PBUFFER_HEIGHT, 4096,
+            GLXEnums.GLX_MAX_PBUFFER_PIXELS, 4096 * 4096
         };
+        final int numProperties = properties.length / 2;
 
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
@@ -295,6 +338,9 @@ public class GLXExtension extends Extension {
                 break;
             case ClientOpcodes.QUERY_VERSION:
                 queryVersion(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_VISUAL_CONFIGS:
+                getVisualConfigs(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.QUERY_EXTENSIONS_STRING:
                 queryExtensionsString(client, inputStream, outputStream);

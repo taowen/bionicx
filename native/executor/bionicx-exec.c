@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/ptrace.h>
 #include <sys/prctl.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
@@ -313,18 +314,59 @@ static void report_fatal_signal(pid_t child, int signal_number) {
     fflush(stderr);
 }
 
+static int is_handled_android_seccomp_probe(pid_t child) {
+    struct user_pt_regs regs;
+    struct iovec io = {.iov_base = &regs, .iov_len = sizeof(regs)};
+    memset(&regs, 0, sizeof(regs));
+    if (ptrace(PTRACE_GETREGSET, child, (void *)(long)NT_PRSTATUS, &io) != 0)
+        return 0;
+#ifdef SYS_landlock_create_ruleset
+    if (regs.regs[8] == SYS_landlock_create_ruleset) return 1;
+#endif
+#ifdef SYS_name_to_handle_at
+    if (regs.regs[8] == SYS_name_to_handle_at) return 1;
+#endif
+    return 0;
+}
+
 static int diagnose_signals(pid_t child) {
     int status;
+    if (ptrace(PTRACE_SETOPTIONS, child, NULL,
+               (void *)(long)(PTRACE_O_TRACEEXEC | PTRACE_O_TRACEFORK |
+                              PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE)) != 0)
+        return 19;
     if (ptrace(PTRACE_CONT, child, NULL, NULL) != 0) return 20;
     for (;;) {
-        if (waitpid(child, &status, 0) < 0) {
+        pid_t stopped = waitpid(-1, &status, __WALL);
+        if (stopped < 0) {
             if (errno == EINTR) continue;
             return 21;
         }
-        if (WIFEXITED(status)) return WEXITSTATUS(status);
-        if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
+        if (WIFEXITED(status)) {
+            if (stopped == child) return WEXITSTATUS(status);
+            continue;
+        }
+        if (WIFSIGNALED(status)) {
+            if (stopped == child) return 128 + WTERMSIG(status);
+            continue;
+        }
         if (!WIFSTOPPED(status)) continue;
         int signal_number = WSTOPSIG(status);
+        unsigned int ptrace_event = (unsigned int)status >> 16;
+        if (signal_number == SIGTRAP && ptrace_event != 0) {
+            if (ptrace(PTRACE_CONT, stopped, NULL, NULL) != 0) return 22;
+            continue;
+        }
+        /* The Android compatibility preload intentionally converts these
+         * optional, seccomp-trapped probes to ENOSYS. Let its SIGSYS handler
+         * run so signal diagnosis can reach a later, genuine application
+         * failure. Unknown SIGSYS remains fatal and fully reported. */
+        if (signal_number == SIGSYS &&
+                is_handled_android_seccomp_probe(stopped)) {
+            if (ptrace(PTRACE_CONT, stopped, NULL,
+                       (void *)(long)SIGSYS) != 0) return 22;
+            continue;
+        }
         /* Bootstrap single-step traps have already been consumed before this
          * loop. A later SIGTRAP is an application crash/breakpoint (Chromium
          * uses a deliberate trap for CHECK failures); suppressing it repeats
@@ -333,13 +375,15 @@ static int diagnose_signals(pid_t child) {
                 signal_number == SIGSEGV ||
                 signal_number == SIGBUS || signal_number == SIGILL ||
                 signal_number == SIGABRT) {
-            report_fatal_signal(child, signal_number);
-            ptrace(PTRACE_KILL, child, NULL, NULL);
-            waitpid(child, &status, 0);
+            fprintf(stderr, "bionicx-exec: fatal pid=%ld primary=%ld\n",
+                    (long)stopped, (long)child);
+            report_fatal_signal(stopped, signal_number);
+            kill(-child, SIGKILL);
+            ptrace(PTRACE_KILL, stopped, NULL, NULL);
             return 128 + signal_number;
         }
         int delivered = signal_number == SIGSTOP ? 0 : signal_number;
-        if (ptrace(PTRACE_CONT, child, NULL,
+        if (ptrace(PTRACE_CONT, stopped, NULL,
                    (void *)(long)delivered) != 0) return 22;
     }
 }

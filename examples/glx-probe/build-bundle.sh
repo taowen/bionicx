@@ -32,6 +32,14 @@ sed -i 's/\r$//' "$source_dir/include/gl_context.h" \
     "$source_dir/src/main.c"
 patch -d "$source_dir" -p1 < \
     "$repo_dir/examples/glx-probe/gladio-dynamic-glx-opcode.patch"
+patch -d "$source_dir" -p1 < \
+    "$repo_dir/examples/glx-probe/gladio-glx-discovery.patch"
+patch -d "$source_dir" -p1 < \
+    "$repo_dir/examples/glx-probe/gladio-pbuffer.patch"
+patch -d "$source_dir" -p1 < \
+    "$repo_dir/examples/glx-probe/gladio-gl-proc-address.patch"
+patch -d "$source_dir" -p1 < \
+    "$repo_dir/examples/glx-probe/gladio-gl-capabilities.patch"
 
 # Gladio 1.0 hard-codes Winlator's private X11 path. Keep the protocol intact
 # while targeting BionicX's equal-length Android package name.
@@ -51,7 +59,7 @@ podman run --rm --network host --userns=keep-id \
             "$source_dir/src/glx_calls.c" "$source_dir/src/arrays.c" \
             "$source_dir/src/ring_buffer.c" "$source_dir/src/gl_buffer.c" \
             "$source_dir/src/gl_vao.c" -Wl,-soname,libGL.so.1 \
-            -o "$app_dir/lib/libGL.so.1.7.0"
+            -o "$app_dir/lib/libGL.so.1.7.0" -ldl
         ln -sf libGL.so.1.7.0 "$app_dir/lib/libGL.so.1"
         ln -sf libGL.so.1.7.0 "$app_dir/lib/libGL.so"
         aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \

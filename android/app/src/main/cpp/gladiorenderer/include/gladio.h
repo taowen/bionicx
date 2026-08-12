@@ -14,9 +14,9 @@
 #define PIXEL_READ_CACHE_SKIP_FRAMES 3
 #define X11_SERVER_PATH "/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0"
 
-#define GL_STRING_VERSION "3.3"
+#define GL_STRING_VERSION "OpenGL ES 3.2 Gladio"
 #define GL_STRING_RENDERER "Gladio"
-#define GL_STRING_SHADING_LANGUAGE_VERSION "3.30"
+#define GL_STRING_SHADING_LANGUAGE_VERSION "OpenGL ES GLSL ES 3.20"
 
 #include "winlator.h"
 

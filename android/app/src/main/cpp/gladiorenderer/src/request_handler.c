@@ -1349,11 +1349,20 @@ void gd_handle_glGetInteger64i_v(GLContext* context) {
 }
 
 void gd_handle_glGetInteger64v(GLContext* context) {
-    println(MSG_DEBUG_UNIMPLEMENTED_FUNC, "glGetInteger64v");
+    GLenum pname = ArrayBuffer_getInt(&context->inputBuffer);
+    GLint64 value = 0;
+    glGetInteger64v(pname, &value);
+    gl_send(context->clientRing, REQUEST_CODE_GL_GET_INTEGER64V,
+            &value, sizeof(value));
 }
 
 void gd_handle_glGetIntegeri_v(GLContext* context) {
-    println(MSG_DEBUG_UNIMPLEMENTED_FUNC, "glGetIntegeri_v");
+    GLenum target = ArrayBuffer_getInt(&context->inputBuffer);
+    GLuint index = ArrayBuffer_getInt(&context->inputBuffer);
+    GLint value = 0;
+    glGetIntegeri_v(target, index, &value);
+    gl_send(context->clientRing, REQUEST_CODE_GL_GET_INTEGERI_V,
+            &value, sizeof(value));
 }
 
 void gd_handle_glGetIntegerv(GLContext* context) {
@@ -1532,7 +1541,13 @@ void gd_handle_glGetShaderInfoLog(GLContext* context) {
 }
 
 void gd_handle_glGetShaderPrecisionFormat(GLContext* context) {
-    println(MSG_DEBUG_UNIMPLEMENTED_FUNC, "glGetShaderPrecisionFormat");
+    GLenum shaderType = ArrayBuffer_getInt(&context->inputBuffer);
+    GLenum precisionType = ArrayBuffer_getInt(&context->inputBuffer);
+    GLint values[3] = {0};
+    glGetShaderPrecisionFormat(shaderType, precisionType, values,
+                               &values[2]);
+    gl_send(context->clientRing, REQUEST_CODE_GL_GET_SHADER_PRECISION_FORMAT,
+            values, sizeof(values));
 }
 
 void gd_handle_glGetShaderSource(GLContext* context) {

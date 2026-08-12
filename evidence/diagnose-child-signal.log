@@ -1,0 +1,12 @@
+Command (x300 01408BH601027129):
+
+  run-as io.taowen.bx files/bin/bionicx-exec --diagnose-signals --direct -- \
+    /system/bin/sh -c '/system/bin/sh -c "kill -SEGV $$"'
+
+The primary shell forks a child shell.  The diagnostic tracer follows it and
+attributes the fatal signal to the descendant instead of the primary process:
+
+bionicx-exec: fatal pid=2709 primary=2708
+bionicx-exec: signal=11 (Segmentation fault) code=-6 address=0xa94
+bionicx-exec: pc mapping=76ee184000-76ee242000 r-xp 00000000 00:1a 115 /apex/com.android.runtime/lib64/bionic/libc.so file-offset=0xae61c
+bionicx-exec: lr mapping=5aff684000-5aff6a9000 r-xp 00000000 00:1a 373 /system/bin/sh file-offset=0x28860

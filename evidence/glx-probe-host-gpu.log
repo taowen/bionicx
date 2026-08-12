@@ -1,10 +1,20 @@
-08-12 10:46:35.178 I BionicX: BXTEST PASS glx-display connected
-08-12 10:46:35.178 I BionicX: BXTEST PASS glx-visual RGBA double-buffered
-08-12 10:46:35.201 I AdrenoGLES-0: Driver Path : /vendor/lib64/egl/libGLESv2_adreno.so
-08-12 10:46:35.247 I BionicX: BXTEST PASS glx-context current
-08-12 10:46:35.247 I BionicX: BXTEST PASS host-gl-identity vendor=Qualcomm renderer=Gladio version=3.3
-08-12 10:46:35.253 I BionicX: BXTEST PASS host-gl-pixels center=242,26,13,255 corner=13,38,191,255
-08-12 10:46:35.254 I BionicX: BXTEST PASS glx-present glError=0x0
+08-12 12:42:52.087 I/BionicX: BXTEST PASS glx-display connected
+08-12 12:42:52.087 I/BionicX: BXTEST PASS glx-extension opcode=147 event=0 error=128
+08-12 12:42:52.088 I/BionicX: BXTEST PASS glx-version version=1.4
+08-12 12:42:52.088 I/BionicX: BXTEST PASS glx-visual-config-wire visuals=1 properties=18 visual=0x1 rgba=1 depth=24
+08-12 12:42:52.088 I/BionicX: BXTEST PASS glx-fbconfig-visual configs=1 visual=0x1 xRenderable=1
+08-12 12:42:52.088 I/BionicX: BXTEST PASS glx-es-profile-extension GLX_ARB_create_context GLX_ARB_get_proc_address GLX_EXT_create_context_es_profile
+08-12 12:42:52.091 I/BionicX: BXTEST PASS glx-pbuffer drawable=0x400001 size=7x5
+08-12 12:42:52.091 I/BionicX: BXTEST PASS glx-visual RGBA double-buffered
+08-12 12:42:52.091 I/BionicX: BXTEST PASS glx-visual-config-api rgba=1 double=1 red=8 depth=24 type=0x8002
+08-12 12:42:52.157 I/BionicX: BXTEST PASS glx-context current
+08-12 12:42:52.157 I/BionicX: BXTEST PASS glx-gl-proc-address OpenGL ES 3.2 Gladio
+08-12 12:42:52.157 I/BionicX: BXTEST PASS host-gl-shader-precision range=127..127 precision=23
+08-12 12:42:52.157 I/BionicX: BXTEST PASS host-gl-integer64 maxElementIndex=2147483647
+08-12 12:42:52.157 I/BionicX: BXTEST PASS host-gl-indexed-integer maxComputeWorkGroupsX=65535
+08-12 12:42:52.158 I/BionicX: BXTEST PASS host-gl-identity vendor=Qualcomm renderer=Gladio version=OpenGL ES 3.2 Gladio
+08-12 12:42:52.161 I/BionicX: BXTEST PASS host-gl-pixels center=242,26,13,255 corner=13,38,191,255
+08-12 12:42:52.162 I/BionicX: BXTEST PASS glx-present glError=0x0
 BXTEST PASS host-gl-compositor blue=(13, 38, 191) red=(242, 26, 13) outside=(0, 0, 0) size=1920x1080
-08-12 10:46:42.292 I BionicX: BXSUMMARY host-glx passed=6 failed=0
-08-12 10:46:42.293 I BionicX: glx-probe exited with 0
+08-12 12:42:59.301 I/BionicX: BXSUMMARY host-glx passed=17 failed=0
+08-12 12:42:59.302 I/BionicX: glx-probe exited with 0

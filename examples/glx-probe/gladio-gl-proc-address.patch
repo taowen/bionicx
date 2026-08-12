@@ -1,0 +1,29 @@
+diff --git a/src/glx_calls.c b/src/glx_calls.c
+--- a/src/glx_calls.c
++++ b/src/glx_calls.c
+@@ -1,5 +1,7 @@
++#define _GNU_SOURCE
+ #include "gladio.h"
+ #include "gl_context.h"
++#include <dlfcn.h>
+
+ #define MSG_DEBUG_UNIMPLEMENTED_GLXCALL "gladio: unimplemented call %s"
+ #define DEFAULT_FBCONFIG_ID 1
+@@ -326,6 +328,19 @@ __GLXextFuncPtr glXGetProcAddressARB(const GLubyte* procName) {
+     else if (strcmp(name, "glXWaitGL") == 0) return (__GLXextFuncPtr)glXWaitGL;
+     else if (strcmp(name, "glXWaitX") == 0) return (__GLXextFuncPtr)glXWaitX;
++    /* GLX loaders also use this API for ordinary OpenGL entry points. All
++     * Gladio gl* calls are exported by this DSO. Chrome loads libGL locally,
++     * so RTLD_DEFAULT alone cannot reliably see those exports. */
++    if (strncmp(name, "gl", 2) == 0) {
++        static void* selfHandle = NULL;
++        if (!selfHandle) {
++            Dl_info info;
++            if (dladdr((void*)glXGetProcAddressARB, &info) && info.dli_fname)
++                selfHandle = dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
++        }
++        return (__GLXextFuncPtr)dlsym(
++                selfHandle ? selfHandle : RTLD_DEFAULT, name);
++    }
+     return NULL;
+ }
