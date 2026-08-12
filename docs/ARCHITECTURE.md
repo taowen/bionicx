@@ -19,6 +19,21 @@ Application and runtime trees are separate so several applications can share
 one audited glibc closure while keeping their configuration and mutable home
 directories isolated from each other.
 
+Chrome, WPS and IceWM are installed together by ordinary `apt`/`dpkg` inside a
+pinned ARM64 Debian 13 (trixie) build container. This preserves package
+dependency semantics, maintainer-script output, multiarch paths, shared data
+and `/var/lib/dpkg`; it replaces the earlier model that inferred a flat set of
+ELF files separately for each application. After package configuration, `/opt`
+application payloads are split from the shared system image into profile trees.
+
+The Debian snapshot timestamp, base-image digest and external package hashes
+are immutable build inputs. The host keeps one content-addressed canonical
+system tree and uses hard links in inspectable bundles; `install-profile.sh`
+compares its content ID before transfer. Android does not run apt, systemd or
+package maintainer scripts. This is a deployed userspace layout, not a chroot:
+absolute FHS paths still require environment settings or narrow compatibility
+work in the executor.
+
 ## 2. ELF handoff
 
 `bionicx-exec` is an Android NDK/Bionic AArch64 executable. It supports:

@@ -12,10 +12,11 @@
     "argv0": "et",
     "environment": {
       "DISPLAY": "${DISPLAY}",
+      "GLADIO_X11_SOCKET": "/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0",
       "HOME": "${HOME}",
       "TMPDIR": "${TMP}",
       "XDG_RUNTIME_DIR": "${TMP}/runtime",
-      "GCONV_PATH": "${RUNTIME}/usr/lib/gconv",
+      "GCONV_PATH": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gconv",
       "FONTCONFIG_PATH": "${APP}/etc/fonts",
       "FONTCONFIG_FILE": "fonts.conf",
       "LANG": "C",
@@ -23,8 +24,8 @@
       "QT_X11_NO_MITSHM": "1",
       "QT_OPENGL": "software",
       "LIBGL_ALWAYS_SOFTWARE": "1",
-      "LD_LIBRARY_PATH": "${APP}/opt/kingsoft/wps-office/office6:${RUNTIME}/usr/lib",
-      "LD_PRELOAD": "${RUNTIME}/usr/lib/libfreetype.so.6"
+      "LD_LIBRARY_PATH": "${APP}/opt/kingsoft/wps-office/office6:${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
+      "LD_PRELOAD": "${RUNTIME}/usr/lib/aarch64-linux-gnu/libfreetype.so.6"
     }
   }
 }

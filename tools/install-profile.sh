@@ -43,8 +43,25 @@ if [[ -n "$app_root" ]]; then
 fi
 if [[ -n "$runtime_root" ]]; then
     [[ -d "$runtime_root" ]] || { echo "missing runtime root: $runtime_root" >&2; exit 1; }
-    tar -C "$runtime_root" -cf - . | \
-        "${adb[@]}" shell run-as "$package" tar -C files/rootfs -xf -
+    rootfs_id_file="$runtime_root/.bionicx-desktop-rootfs-id"
+    local_rootfs_id=""
+    remote_rootfs_id=""
+    if [[ -f "$rootfs_id_file" ]]; then
+        local_rootfs_id="$(tr -d '\r\n' < "$rootfs_id_file")"
+        remote_rootfs_id="$("${adb[@]}" shell run-as "$package" \
+            cat files/rootfs/.bionicx-desktop-rootfs-id 2>/dev/null | tr -d '\r\n' || true)"
+    fi
+    if [[ -n "$local_rootfs_id" && "$local_rootfs_id" == "$remote_rootfs_id" ]]; then
+        echo "reusing shared rootfs $local_rootfs_id"
+    else
+        # A rootfs is an immutable package image.  Remove the previous image
+        # before extraction so libraries deleted by a package transition
+        # cannot remain on LD_LIBRARY_PATH and mask an incomplete build.
+        "${adb[@]}" shell run-as "$package" find \
+            files/rootfs -mindepth 1 -delete >/dev/null
+        tar -C "$runtime_root" -cf - . | \
+            "${adb[@]}" shell run-as "$package" tar -C files/rootfs -xf -
+    fi
 fi
 
 temporary="/data/local/tmp/bionicx-profile-$$.json"

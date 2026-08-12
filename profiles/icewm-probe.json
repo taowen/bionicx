@@ -7,7 +7,7 @@
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
+    "libraryPath": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
     "executable": "${APP}/bin/icewm-session",
     "workingDirectory": "${APP}",
     "environment": {
@@ -18,11 +18,11 @@
       "LOCPATH": "${RUNTIME}/usr/lib/locale",
       "BIONICX_APP": "${APP}",
       "BIONICX_LOADER": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-      "BIONICX_LIBRARY_PATH": "${APP}/lib:${RUNTIME}/usr/lib",
+      "BIONICX_LIBRARY_PATH": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
       "ICEWM_PRIVCFG": "${APP}/share/icewm",
       "FONTCONFIG_PATH": "${APP}/etc/fonts",
       "FONTCONFIG_FILE": "fonts.conf",
-      "IMLIB2_LOADER_PATH": "${APP}/lib/imlib2/loaders"
+      "IMLIB2_LOADER_PATH": "${RUNTIME}/usr/lib/aarch64-linux-gnu/imlib2/loaders"
     }
   }
 }

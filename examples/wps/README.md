@@ -24,6 +24,21 @@ ${RUNTIME}/usr/lib/libc.so.6
 ${RUNTIME}/usr/share/X11/locale/locale.dir
 ```
 
+Build the package-installed Debian 13 desktop rootfs and the WPS application
+layer together with:
+
+```sh
+examples/wps/build-bundle.sh
+```
+
+The WPS package, Chrome and IceWM are configured by normal apt/dpkg in the
+pinned build environment. Android receives the immutable shared system tree
+and WPS `/opt` payload separately; it does not run apt. The package omits the
+postinst's `hexdump`, `libwpsmain`'s `libxslt.so.1`, and the bundled Qt xcb
+plugin's `libxkbcommon-x11.so.0` from its dependency metadata. The rootfs
+therefore records `bsdextrautils`, `libxslt1.1`, and `libxkbcommon-x11-0` as
+explicit package-level workarounds.
+
 WPS is the first example that needs a compatibility module. `wps-compat`
 implements the small, process-local SysV semaphore subset used by WPS because
 Android's app seccomp policy blocks the AArch64 SysV IPC syscalls. It also

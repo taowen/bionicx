@@ -87,6 +87,15 @@ The keyboard-grab probe uses three real Android-injected keys to verify
 cross-client `GrabKeyboard`, `UngrabKeyboard`, owner-events routing, contention,
 and disconnect cleanup.
 
+Chrome, WPS and IceWM consume one content-addressed Debian 13 (trixie) desktop
+rootfs. A pinned ARM64 Debian image installs all three with ordinary `apt` and
+`dpkg`, including maintainer scripts, triggers, package data and the dpkg
+database. The Debian archive snapshot, OCI digest and proprietary application
+package hashes are fixed inputs. Application `/opt` payloads are split into
+profile-private trees after installation; Android never runs apt. Host bundles
+hard-link the canonical system tree, and the device installer skips transfer
+when its content ID is already installed.
+
 ## Add an application
 
 1. Put the application beneath `files/apps/<profile-id>` and a compatible
