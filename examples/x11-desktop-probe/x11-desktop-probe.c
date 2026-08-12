@@ -78,6 +78,7 @@ static void probe_render(Display *display, Window window) {
     int before = x_errors;
     unsigned long in_add_pixel = 0;
     unsigned long out_reverse_pixel = 0;
+    unsigned long create_repeat_pixel = 0;
     bool ok = XRenderQueryVersion(display, &major, &minor) != 0;
     XRenderPictFormat *format = XRenderFindVisualFormat(
         display, DefaultVisual(display, DefaultScreen(display)));
@@ -159,6 +160,23 @@ static void probe_render(Display *display, Window window) {
         XRenderComposite(display, PictOpSrc, gradient, None, picture,
                          460, 84, 0, 0, 490, 84, 8, 8);
         XRenderFreePicture(display, gradient);
+        Pixmap repeat_pixmap = XCreatePixmap(
+                display, window, 1, 1,
+                DefaultDepth(display, DefaultScreen(display)));
+        XRenderPictureAttributes repeat_attributes = {.repeat = RepeatNormal};
+        Picture repeat_picture = XRenderCreatePicture(
+                display, repeat_pixmap, format, CPRepeat, &repeat_attributes);
+        XRenderFillRectangle(display, PictOpSrc, repeat_picture, &opaque_red,
+                             0, 0, 1, 1);
+        XRenderComposite(display, PictOpSrc, repeat_picture, None, picture,
+                         0, 0, 0, 0, 520, 84, 8, 8);
+        XImage *repeat_image = XGetImage(display, window, 526, 86, 1, 1,
+                                         AllPlanes, ZPixmap);
+        create_repeat_pixel = repeat_image
+                ? XGetPixel(repeat_image, 0, 0) : 0;
+        if (repeat_image) XDestroyImage(repeat_image);
+        XRenderFreePicture(display, repeat_picture);
+        XFreePixmap(display, repeat_pixmap);
         XRenderFreePicture(display, picture);
     }
     XImage *a8_image = a8_pixmap
@@ -171,6 +189,7 @@ static void probe_render(Display *display, Window window) {
          && a8_image && a8_pixel >= 0x7f && a8_pixel <= 0x81
          && in_add_pixel >= 0x7f && in_add_pixel <= 0x81
          && out_reverse_pixel >= 0x5f && out_reverse_pixel <= 0x61
+         && (create_repeat_pixel & 0xffffff) == 0xff0000
          && picture && a8_picture && sync_without_error(display, before);
     if (a8_image) XDestroyImage(a8_image);
     XImage *image = ok ? XGetImage(display, window, 100, 120, 1, 1,
@@ -237,11 +256,11 @@ static void probe_render(Display *display, Window window) {
     if (source_image) XDestroyImage(source_image);
     char detail[256];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d event=%d error=%d a8=%d a8-picture=%d alpha-mask=0x%x in-add=0x%02lx out-reverse=0x%02lx over=0x%06lx clear=0x%lx mask-over=0x%06lx clip=0x%06lx/0x%06lx gradient=0x%06lx/0x%06lx src=0x%06lx",
+             "version=%d.%d event=%d error=%d a8=%d a8-picture=%d alpha-mask=0x%x in-add=0x%02lx out-reverse=0x%02lx create-repeat=0x%06lx over=0x%06lx clear=0x%lx mask-over=0x%06lx clip=0x%06lx/0x%06lx gradient=0x%06lx/0x%06lx src=0x%06lx",
              major, minor, event_base, error_base, a8 != NULL,
              a8_picture != 0, a8 ? a8->direct.alphaMask : 0,
              in_add_pixel & 0xff, out_reverse_pixel & 0xff,
-             pixel & 0xffffff, clear_pixel,
+             create_repeat_pixel & 0xffffff, pixel & 0xffffff, clear_pixel,
              mask_pixel & 0xffffff,
              clip_inside & 0xffffff, clip_outside & 0xffffff,
              gradient_left & 0xffffff, gradient_right & 0xffffff,

@@ -83,6 +83,7 @@ public class XRenderExtension extends Extension {
         private int repeat;
         private int clipX;
         private int clipY;
+        private boolean componentAlpha;
         private ArrayList<ClipRectangle> clipRectangles;
 
         private Picture(int id, Drawable drawable, int format) {
@@ -217,8 +218,8 @@ public class XRenderExtension extends Extension {
 
             writeDirectFormat(outputStream, argb32Format, 32,
                     16, 0xff, 8, 0xff, 0, 0xff, 24, 0xff);
-            // Xft and Cairo use an alpha-only Render format for glyph sets and
-            // intermediate mask Pixmaps.
+            // Xft uses an alpha-only Render format for glyph sets. It need not
+            // correspond to a screen depth or a core-protocol Pixmap format.
             writeDirectFormat(outputStream, a8Format, 8,
                     0, 0, 0, 0, 0, 0, 0, 0xff);
             writeDirectFormat(outputStream, a1Format, 1,
@@ -256,27 +257,15 @@ public class XRenderExtension extends Extension {
         int format = inputStream.readInt();
         int valueMask = inputStream.readInt();
 
-        if (!client.isValidResourceId(pictureId)) throw new BadIdChoice(pictureId);
         Drawable drawable = xServer.drawableManager.getDrawable(drawableId);
         if (drawable == null) throw new BadDrawable(drawableId);
         if (format != argb32Format && format != a8Format && format != a1Format)
             throw new BadValue(format);
         if (!formatMatchesDrawable(format, drawable)) throw new BadMatch();
 
-        synchronized (pictures) {
-            if (pictures.indexOfKey(pictureId) >= 0) throw new BadIdChoice(pictureId);
-            pictures.put(pictureId, new Picture(pictureId, drawable, format));
-            ArrayList<Integer> owned = clientPictures.get(client);
-            if (owned == null) {
-                owned = new ArrayList<>();
-                clientPictures.put(client, owned);
-                client.addOnDestroyListener(onClientDestroy);
-            }
-            owned.add(pictureId);
-        }
-
-        int valueCount = Integer.bitCount(valueMask);
-        if (valueCount > 0) inputStream.skip(valueCount * 4);
+        Picture picture = new Picture(pictureId, drawable, format);
+        applyPictureAttributes(picture, valueMask, inputStream);
+        registerPicture(client, picture);
     }
 
     private void freePicture(XClient client, XInputStream inputStream)
@@ -303,19 +292,29 @@ public class XRenderExtension extends Extension {
             throws XRequestError {
         Picture picture = requirePicture(inputStream.readInt());
         int valueMask = inputStream.readInt();
+        applyPictureAttributes(picture, valueMask, inputStream);
+    }
+
+    private void applyPictureAttributes(Picture picture, int valueMask,
+                                        XInputStream inputStream)
+            throws XRequestError {
+        if ((valueMask & ~0x1fff) != 0) throw new BadValue(valueMask);
         for (int bit = 0; bit < 13; bit++) {
             if ((valueMask & (1 << bit)) == 0) continue;
             int value = inputStream.readInt();
-            if (bit == 0) picture.repeat = value;
+            if (bit == 0) {
+                if (value < 0 || value > 3) throw new BadValue(value);
+                picture.repeat = value;
+            }
+            else if (bit == 1 && value != 0) throw new BadImplementation();
             else if (bit == 4) picture.clipX = value;
             else if (bit == 5) picture.clipY = value;
             else if (bit == 6) {
                 if (value != 0) throw new BadImplementation();
                 picture.clipRectangles = null;
             }
+            else if (bit == 12) picture.componentAlpha = value != 0;
         }
-        int remaining = client.getRemainingRequestLength();
-        if (remaining > 0) inputStream.skip(remaining);
     }
 
     private void setPictureClipRectangles(XClient client,
