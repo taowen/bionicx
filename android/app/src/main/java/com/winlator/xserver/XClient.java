@@ -175,6 +175,20 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
         return result;
     }
 
+    public boolean isXiEventSelected(Window window, int deviceId, int eventType) {
+        ArrayMap<Integer, byte[]> masks = xiEventMasks.get(window);
+        if (masks == null) return false;
+        return xiMaskContains(masks.get(0), eventType)
+                || xiMaskContains(masks.get(1), eventType)
+                || xiMaskContains(masks.get(deviceId), eventType);
+    }
+
+    private static boolean xiMaskContains(byte[] mask, int eventType) {
+        int index = eventType >> 3;
+        return mask != null && index < mask.length
+                && (mask[index] & (1 << (eventType & 7))) != 0;
+    }
+
     public void setRandrEventMask(Window window, int eventMask) {
         if (eventMask == 0) randrEventMasks.remove(window);
         else randrEventMasks.put(window, eventMask);

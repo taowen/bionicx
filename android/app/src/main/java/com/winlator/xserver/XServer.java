@@ -208,6 +208,12 @@ public class XServer {
         }
     }
 
+    public XClient[] getClientsSnapshot() {
+        synchronized (clients) {
+            return clients.toArray(new XClient[0]);
+        }
+    }
+
     public void sendXkbStateNotify(com.winlator.xserver.events.XkbStateNotify event) {
         synchronized (clients) {
             for (XClient client : clients) {

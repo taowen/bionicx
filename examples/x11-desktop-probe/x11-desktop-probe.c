@@ -23,6 +23,7 @@ static int checks;
 static int passed;
 static int x_errors;
 static int xkb_event_type = -1;
+static int xi_opcode = -1;
 
 static int handle_x_error(Display *display, XErrorEvent *event) {
     char text[128];
@@ -416,18 +417,38 @@ static void probe_xinput2(Display *display, Window window) {
         result("xinput2", false, "extension-missing");
         return;
     }
+    xi_opcode = opcode;
     int before = x_errors;
     int major = 2, minor = 0;
     bool ok = XIQueryVersion(display, &major, &minor) == Success;
     int count = 0;
     XIDeviceInfo *devices = XIQueryDevice(display, XIAllDevices, &count);
     bool master_pointer = false, master_keyboard = false;
+    bool pointer_buttons = false;
     for (int i = 0; devices && i < count; i++) {
         master_pointer |= devices[i].use == XIMasterPointer
                           && devices[i].attachment != devices[i].deviceid;
         master_keyboard |= devices[i].use == XIMasterKeyboard
                            && devices[i].attachment != devices[i].deviceid;
+        if (devices[i].use == XIMasterPointer) {
+            for (int j = 0; j < devices[i].num_classes; j++) {
+                XIAnyClassInfo *class = devices[i].classes[j];
+                if (class->type == XIButtonClass
+                        && ((XIButtonClassInfo *)class)->num_buttons >= 7) {
+                    pointer_buttons = true;
+                }
+            }
+        }
     }
+    Window pointer_root = None, pointer_child = None;
+    double root_x = 0, root_y = 0, window_x = 0, window_y = 0;
+    XIButtonState buttons = {0};
+    XIModifierState modifiers = {0};
+    XIGroupState group = {0};
+    bool queried_pointer = XIQueryPointer(
+        display, 2, window, &pointer_root, &pointer_child,
+        &root_x, &root_y, &window_x, &window_y,
+        &buttons, &modifiers, &group) != 0;
     unsigned char selected_mask[XIMaskLen(XI_LASTEVENT)] = {0};
     XISetMask(selected_mask, XI_KeyPress);
     XISetMask(selected_mask, XI_KeyRelease);
@@ -454,14 +475,17 @@ static void probe_xinput2(Display *display, Window window) {
         }
     }
     ok = ok && devices && count >= 2 && master_pointer && master_keyboard
+         && pointer_buttons && queried_pointer && pointer_root != None
          && select_status == Success && selected_ok
          && sync_without_error(display, before);
+    if (buttons.mask != NULL) XFree(buttons.mask);
     if (devices) XIFreeDeviceInfo(devices);
     if (selected) XFree(selected);
     char detail[128];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d devices=%d masters=%d/%d selected=%d masks=%d",
+             "version=%d.%d devices=%d masters=%d/%d buttons=%d query=%d root=0x%lx selected=%d masks=%d",
              major, minor, count, master_pointer, master_keyboard,
+             pointer_buttons, queried_pointer, (unsigned long)pointer_root,
              selected_ok, selected_count);
     result("xinput2", ok, detail);
 }
@@ -637,13 +661,41 @@ int main(int argc, char **argv) {
     bool saw_shift_set = false;
     bool saw_shift_clear = false;
     int shaped_button_presses = 0;
+    int xi_motion_events = 0;
+    int xi_button_presses = 0;
+    int xi_button_releases = 0;
+    bool xi_wire_valid = true;
     xcb_connection_t *event_connection = XGetXCBConnection(display);
     XFlush(display);
     XSetEventQueueOwner(display, XCBOwnsEventQueue);
     while (true) {
         xcb_generic_event_t *raw_event;
         while ((raw_event = xcb_poll_for_event(event_connection)) != NULL) {
-            if ((raw_event->response_type & 0x7f) == xkb_event_type) {
+            const unsigned char *wire = (const unsigned char *)raw_event;
+            if ((raw_event->response_type & 0x7f) == XCB_GE_GENERIC
+                    && wire[1] == xi_opcode) {
+                uint32_t length = 0, detail = 0, event_id = 0;
+                uint16_t event_type = 0, device_id = 0, source_id = 0;
+                memcpy(&length, wire + 4, sizeof(length));
+                memcpy(&event_type, wire + 8, sizeof(event_type));
+                memcpy(&device_id, wire + 10, sizeof(device_id));
+                memcpy(&detail, wire + 16, sizeof(detail));
+                memcpy(&event_id, wire + 24, sizeof(event_id));
+                /* XCB inserts full_sequence at byte 32 in its in-memory event;
+                 * GenericEvent payload bytes after the first 32 are shifted by 4. */
+                memcpy(&source_id, wire + 56, sizeof(source_id));
+                bool valid = length == 12 && device_id == source_id
+                             && event_id == window
+                             && wire[52] == 0 && wire[53] == 0;
+                xi_wire_valid &= valid;
+                xi_motion_events += event_type == XI_Motion;
+                xi_button_presses += event_type == XI_ButtonPress && detail == 1;
+                xi_button_releases += event_type == XI_ButtonRelease && detail == 1;
+                printf("BXINPUT xi2 type=%u device=%u source=%u detail=%u length=%u valid=%d\n",
+                       event_type, device_id, source_id, detail, length, valid);
+                fflush(stdout);
+            }
+            else if ((raw_event->response_type & 0x7f) == xkb_event_type) {
                 xcb_xkb_state_notify_event_t *state_event =
                     (xcb_xkb_state_notify_event_t *)raw_event;
                 if (state_event->xkbType == XCB_XKB_STATE_NOTIFY &&
@@ -686,6 +738,15 @@ int main(int argc, char **argv) {
     snprintf(shape_detail, sizeof(shape_detail), "inside-presses=%d expected=1",
              shaped_button_presses);
     result("xfixes-input-shape", shaped_button_presses == 1, shape_detail);
+    char xi_detail[128];
+    snprintf(xi_detail, sizeof(xi_detail),
+             "motion=%d press=%d release=%d wire-valid=%d",
+             xi_motion_events, xi_button_presses, xi_button_releases,
+             xi_wire_valid);
+    result("xi2-device-events",
+           xi_motion_events > 0 && xi_button_presses > 0
+               && xi_button_releases > 0 && xi_wire_valid,
+           xi_detail);
     printf("BXSUMMARY desktop-x11 passed=%d failed=%d xerrors=%d\n",
            passed, checks - passed, x_errors);
     fflush(stdout);

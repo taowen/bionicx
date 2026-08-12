@@ -3,7 +3,9 @@
 This genuine AArch64 glibc client links the desktop X11 libraries used by
 Chromium and Qt applications. It performs both version negotiation and one
 stateful request sequence for Render, XFixes, RandR, XInput2 and XKB. Its XI2
-sequence selects master input events on a window and reads the masks back. Its
+sequence verifies the master pointer's ButtonClass, calls XIQueryPointer,
+selects master input events on a window, reads the masks back, and decodes real
+motion/button GenericEvents injected from Android. Its
 RandR sequence cross-checks the single output, CRTC, mode, physical size,
 primary output and an absent output property, and selects all 1.3 event masks.
 The XKB
@@ -28,7 +30,7 @@ Clear, Src, Over, In, OutReverse and Add Porter-Duff operations exercised by
 Cairo. The Render check reads pixels back and requires exact A8 intermediate
 results (`In + Add = 0x80`, then `OutReverse = 0x60`); merely accepting the
 requests does not pass. The probe's strict summary is the capability ledger
-for the remaining desktop extensions. It currently has eight strict checks.
+for the remaining desktop extensions. It currently has nine strict checks.
 
 ```sh
 examples/x11-desktop-probe/build-bundle.sh

@@ -15,6 +15,7 @@ import com.winlator.xserver.events.MappingNotify;
 import com.winlator.xserver.events.MotionNotify;
 import com.winlator.xserver.events.PointerWindowEvent;
 import com.winlator.xserver.events.XkbStateNotify;
+import com.winlator.xserver.extensions.XInputExtension;
 
 public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyboard.OnKeyboardListener, WindowManager.OnWindowModificationListener, XResourceManager.OnResourceLifecycleListener {
     private static final byte MOUSE_WHEEL_DELTA = 120;
@@ -145,6 +146,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
 
     @Override
     public void onPointerButtonPress(Pointer.Button button) {
+        sendXiPointerEvent(XInputExtension.XI_BUTTON_PRESS, button.code());
         if (xServer.isRelativeMouseMovement()) {
             WinHandler winHandler = xServer.getWinHandler();
             int wheelDelta = button == Pointer.Button.BUTTON_SCROLL_UP ? MOUSE_WHEEL_DELTA : (button == Pointer.Button.BUTTON_SCROLL_DOWN ? -MOUSE_WHEEL_DELTA : 0);
@@ -180,6 +182,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
 
     @Override
     public void onPointerButtonRelease(Pointer.Button button) {
+        sendXiPointerEvent(XInputExtension.XI_BUTTON_RELEASE, button.code());
         if (xServer.isRelativeMouseMovement()) {
             WinHandler winHandler = xServer.getWinHandler();
             winHandler.mouseEvent(MouseEventFlags.getFlagFor(button, false), 0, 0, 0);
@@ -217,6 +220,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
     @Override
     public void onPointerMove(short x, short y) {
         updatePointWindow();
+        sendXiPointerEvent(XInputExtension.XI_MOTION, 0);
         Bitmask eventMask = createPointerEventMask();
         Window grabWindow = xServer.grabManager.getWindow();
         Window window = grabWindow == null || xServer.grabManager.isOwnerEvents() ? pointWindow.getAncestorWithEventMask(eventMask) : null;
@@ -242,6 +246,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
         Window focusedWindow = xServer.windowManager.getFocusedWindow();
         if (focusedWindow == null) return;
         updatePointWindow();
+        sendXiKeyEvent(XInputExtension.XI_KEY_PRESS, keycode);
 
         Window eventWindow = null;
         Window child = null;
@@ -300,6 +305,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
         Window focusedWindow = xServer.windowManager.getFocusedWindow();
         if (focusedWindow == null) return;
         updatePointWindow();
+        sendXiKeyEvent(XInputExtension.XI_KEY_RELEASE, keycode);
 
         Window eventWindow = null;
         Window child = null;
@@ -382,6 +388,22 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             }
         }
         return eventMask;
+    }
+
+    private XInputExtension getXInputExtension() {
+        return (XInputExtension)xServer.getExtensionByName("XInputExtension");
+    }
+
+    private void sendXiPointerEvent(int eventType, int detail) {
+        updatePointWindow();
+        getXInputExtension().sendDeviceEvent(2, eventType, detail, pointWindow,
+                xServer.pointer.getX(), xServer.pointer.getY());
+    }
+
+    private void sendXiKeyEvent(int eventType, byte keycode) {
+        Window focusedWindow = xServer.windowManager.getFocusedWindow();
+        getXInputExtension().sendDeviceEvent(3, eventType, keycode & 0xff,
+                focusedWindow, xServer.pointer.getX(), xServer.pointer.getY());
     }
 
     public Bitmask getKeyButMask() {
