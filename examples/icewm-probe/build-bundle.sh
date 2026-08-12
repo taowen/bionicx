@@ -67,14 +67,21 @@ cp "$repo_dir/examples/icewm-probe/preferences" \
     "$repo_dir/examples/icewm-probe/menu" "$output_dir/app/share/icewm/"
 cp "$repo_dir/examples/icewm-probe/fonts.conf" \
     "$output_dir/app/etc/fonts/fonts.conf"
-cp "$stage/extracted/usr/lib/aarch64-linux-gnu/imlib2/loaders/xpm.so" \
-    "$output_dir/app/lib/imlib2/loaders/"
+for loader in png xpm; do
+    loader_path="$stage/extracted/usr/lib/aarch64-linux-gnu/imlib2/loaders/$loader.so"
+    [[ -f "$loader_path" ]] || {
+        echo "missing declared Imlib2 $loader loader: $loader_path" >&2
+        exit 1
+    }
+    cp "$loader_path" "$output_dir/app/lib/imlib2/loaders/"
+done
 
 library_root="$stage/extracted/usr/lib/aarch64-linux-gnu"
 "$repo_dir/tools/resolve-elf-deps.py" \
     --entry "$output_dir/app/bin/icewm" \
     --entry "$output_dir/app/bin/icewm-window" \
     --entry "$output_dir/app/bin/icewm-session" \
+    --entry "$output_dir/app/lib/imlib2/loaders/png.so" \
     --entry "$output_dir/app/lib/imlib2/loaders/xpm.so" \
     --search-root "$output_dir/rootfs/usr/lib" \
     --search-root "$library_root" \

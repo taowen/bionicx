@@ -1,7 +1,5 @@
-# Keep the first integration milestone focused on reparenting and multiple
-# managed clients. IceWM 3.7.4's taskbar exercises additional server paths
-# which remain a deliberate follow-up.
-ShowTaskBar=0
+# Exercise a real desktop panel in addition to reparented application windows.
+ShowTaskBar=1
 TaskBarAtTop=0
 TaskBarAutoHide=0
 TaskBarShowStartMenu=1

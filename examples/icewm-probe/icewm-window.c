@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +28,69 @@ static void paint(Display* display, Window window, GC gc, int width,
     XFlush(display);
 }
 
+static int find_mapped_dock(Display* display, Window window, Atom type_atom,
+                            Atom dock_atom, int depth) {
+    if (depth > 8) return 0;
+    Atom actual_type = None;
+    int actual_format = 0;
+    unsigned long item_count = 0;
+    unsigned long bytes_after = 0;
+    unsigned char* value = NULL;
+    XWindowAttributes attributes;
+    int have_attributes = XGetWindowAttributes(display, window, &attributes);
+    if (have_attributes && attributes.map_state == IsViewable && depth > 0) {
+        char* name = NULL;
+        XFetchName(display, window, &name);
+        int named_taskbar = name != NULL && strcmp(name, "TaskBar") == 0 &&
+                attributes.width >= DisplayWidth(display, DefaultScreen(display)) / 2 &&
+                attributes.height > 0 && attributes.height <= 128;
+        if (named_taskbar)
+            printf("BXICEWM taskbar window=0x%lx geometry=%dx%d+%d+%d\n",
+                   window, attributes.width, attributes.height,
+                   attributes.x, attributes.y);
+        if (name != NULL) XFree(name);
+        if (named_taskbar) return 1;
+    }
+    if (have_attributes && attributes.map_state == IsViewable &&
+            XGetWindowProperty(display, window, type_atom, 0, 16, False,
+                XA_ATOM, &actual_type, &actual_format, &item_count,
+                &bytes_after, &value) == Success) {
+        Atom* atoms = (Atom*)value;
+        for (unsigned long index = 0; index < item_count; ++index) {
+            if (atoms[index] == dock_atom) {
+                printf("BXICEWM taskbar window=0x%lx geometry=%dx%d+%d+%d\n",
+                       window, attributes.width, attributes.height,
+                       attributes.x, attributes.y);
+                XFree(value);
+                return 1;
+            }
+        }
+    }
+    if (value != NULL) XFree(value);
+
+    Window root = None;
+    Window parent = None;
+    Window* children = NULL;
+    unsigned int child_count = 0;
+    if (!XQueryTree(display, window, &root, &parent, &children, &child_count))
+        return 0;
+    int found = 0;
+    for (unsigned int index = 0; index < child_count && !found; ++index)
+        found = find_mapped_dock(display, children[index], type_atom,
+                                 dock_atom, depth + 1);
+    if (children != NULL) XFree(children);
+    return found;
+}
+
+static int check_taskbar(Display* display) {
+    Atom type_atom = XInternAtom(display, "_NET_WM_WINDOW_TYPE", True);
+    Atom dock_atom = XInternAtom(display, "_NET_WM_WINDOW_TYPE_DOCK", True);
+    if (type_atom == None || dock_atom == None) return 0;
+    XSync(display, False);
+    return find_mapped_dock(display, DefaultRootWindow(display), type_atom,
+                            dock_atom, 0);
+}
+
 int main(int argc, char** argv) {
     const char* title = argc > 1 ? argv[1] : "BionicX desktop window";
     int x = argc > 2 ? atoi(argv[2]) : 100;
@@ -38,6 +102,12 @@ int main(int argc, char** argv) {
     if (display == NULL) {
         fprintf(stderr, "BXICEWM FAIL client-display title=%s\n", title);
         return 2;
+    }
+    if (argc > 1 && strcmp(argv[1], "--check-taskbar") == 0) {
+        int found = check_taskbar(display);
+        printf("BXTEST %s icewm-taskbar-mapped\n", found ? "PASS" : "FAIL");
+        XCloseDisplay(display);
+        return found ? 0 : 4;
     }
     int screen = DefaultScreen(display);
     int width = 620;

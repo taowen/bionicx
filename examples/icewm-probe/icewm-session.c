@@ -67,6 +67,10 @@ int main(void) {
     printf("BXTEST PASS icewm-manager-start pid=%ld\n", (long)wm);
     fflush(stdout);
 
+    char* taskbar_arguments[] = {client, "--check-taskbar", NULL};
+    pid_t taskbar = launch(client, taskbar_arguments);
+    int taskbar_ok = taskbar > 0 && wait_success(taskbar);
+
     char* first_arguments[] = {
         client, "BionicX Workspace A", "120", "130", "0x285078", "20", NULL,
     };
@@ -82,8 +86,9 @@ int main(void) {
 
     printf("BXTEST %s icewm-two-clients first=%d second=%d\n",
            first_ok && second_ok ? "PASS" : "FAIL", first_ok, second_ok);
-    printf("BXSUMMARY icewm passed=%d failed=%d\n",
-           first_ok && second_ok ? 2 : 1, first_ok && second_ok ? 0 : 1);
+    int passed = 1 + taskbar_ok + (first_ok && second_ok);
+    int failed = 3 - passed;
+    printf("BXSUMMARY icewm passed=%d failed=%d\n", passed, failed);
     fflush(stdout);
-    return first_ok && second_ok ? 0 : 5;
+    return taskbar_ok && first_ok && second_ok ? 0 : 5;
 }

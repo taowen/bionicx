@@ -36,6 +36,6 @@ icewm-probe exited with 0
 The existing core X11 suite also remains green at 18/18. See
 `evidence/icewm-managed-windows.png` and `evidence/icewm-managed-windows.log`.
 
-IceWM's taskbar remains disabled for this first milestone. Enabling it still
-exercises unresolved font/icon and taskbar paths; a complete panel, menu and
-desktop session are explicitly outside this increment.
+The subsequent taskbar increment is recorded in
+`2026-08-12-icewm-taskbar-imlib2-plugin.md`. A complete panel, menu and desktop
+session remain outside this reparenting increment.

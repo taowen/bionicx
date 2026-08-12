@@ -26,11 +26,11 @@ done
 
 for _ in $(seq 1 250); do
     "${adb[@]}" logcat -d -v brief | grep -Fq \
-        'BXSUMMARY icewm passed=2 failed=0' && break
+        'BXSUMMARY icewm passed=3 failed=0' && break
     sleep 0.1
 done
 result="$("${adb[@]}" logcat -d -v brief | grep -E \
     'BXICEWM|BXTEST|BXSUMMARY|icewm-probe exited with')"
 printf '%s\n' "$result"
-grep -Fq 'BXSUMMARY icewm passed=2 failed=0' <<<"$result"
+grep -Fq 'BXSUMMARY icewm passed=3 failed=0' <<<"$result"
 grep -Fq 'icewm-probe exited with 0' <<<"$result"
