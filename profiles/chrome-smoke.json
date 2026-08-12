@@ -14,7 +14,6 @@
       "--no-sandbox",
       "--disable-breakpad",
       "--disable-crashpad-for-testing",
-      "--disable-gpu",
       "--disable-dev-shm-usage",
       "--no-first-run",
       "--no-default-browser-check",
@@ -24,6 +23,9 @@
       "--user-data-dir=${HOME}/profile",
       "--ozone-platform=x11",
       "--ui-toolkit=gtk",
+      "--use-gl=angle",
+      "--use-angle=gl",
+      "--disable-features=SkiaGraphite",
       "--enable-logging=stderr",
       "about:blank"
     ],

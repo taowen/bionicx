@@ -859,6 +859,9 @@ int GLRenderer_getParamsv(GLRenderer* renderer, GLenum pname, GLenum type, void*
                 case GL_ALIASED_LINE_WIDTH_RANGE:
                     paramSize = 2 * sizeof(GLfloat);
                     break;
+                case GL_MAX_VIEWPORT_DIMS:
+                    paramSize = 2 * sizeof(GLint);
+                    break;
                 case GL_SCISSOR_BOX:
                 case GL_VIEWPORT:
                 case GL_BLEND_COLOR:

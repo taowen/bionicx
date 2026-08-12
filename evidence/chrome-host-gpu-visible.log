@@ -1,0 +1,21 @@
+BionicX Chrome host-GPU presentation verification on x300 01408BH601027129
+Date: 2026-08-12
+
+Controlled GLX client:
+  BXTEST PASS host-gl-max-viewport-dimensions maximum=16384x16384
+  BXSUMMARY host-glx passed=26 failed=0
+  BXTEST PASS host-gl-compositor blue=(13, 38, 191) red=(242, 26, 13) outside=(0, 0, 0) size=1920x1080
+
+Normal Chrome profile:
+  executor: bionicx-exec --direct (untraced)
+  required sandbox flag: --no-sandbox
+  GPU selection: --use-gl=angle --use-angle=gl
+  renderer selection: --disable-features=SkiaGraphite
+  --disable-gpu present: no
+  GPU process: alive
+  Gladio shader compile failures: 0
+  Skia shader compilation errors: 0
+
+Visible result:
+  evidence/chrome-host-gpu-visible.png shows the complete maximized Chrome UI
+  rendered through ANGLE/Ganesh and the Android host GLES driver.

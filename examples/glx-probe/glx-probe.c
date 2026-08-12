@@ -315,6 +315,15 @@ int main(void) {
     result("host-gl-indexed-integer", indexed_integer_ok, details);
     indexed_integer_ok ? passed++ : failed++;
 
+    GLint max_viewport_dims[2] = {0, 0};
+    glGetIntegerv(GL_MAX_VIEWPORT_DIMS, max_viewport_dims);
+    bool viewport_dims_ok = max_viewport_dims[0] >= 1920
+            && max_viewport_dims[1] >= 1080;
+    snprintf(details, sizeof(details), "maximum=%dx%d",
+             max_viewport_dims[0], max_viewport_dims[1]);
+    result("host-gl-max-viewport-dimensions", viewport_dims_ok, details);
+    viewport_dims_ok ? passed++ : failed++;
+
     while (glGetError() != GL_NO_ERROR) {}
     const GLint integer_vertices[] = {1, 2, 3, 4};
     GLuint integer_vertex_buffer = 0;

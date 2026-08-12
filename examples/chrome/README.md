@@ -25,6 +25,9 @@ data inputs extracted into a temporary staging tree. Proprietary binaries and
 downloaded packages remain ignored beneath `build/`; only acquisition facts,
 the dependency lock, source, diagnostics, and test evidence are committed.
 
-The current profile uses `--no-sandbox` and disables GPU acceleration. These
-are explicit remaining qualification gaps, not properties hidden by the
-installer.
+The current profile retains the required `--no-sandbox` and selects ANGLE's
+OpenGL backend over the BionicX Gladio bridge. Chrome's Ganesh renderer then
+runs on the Android host GLES driver; it is not a software-rendering fallback.
+Skia Graphite remains disabled until the native Vulkan bridge is implemented.
+The Chromium sandbox and Vulkan backend are explicit remaining qualification
+gaps, not properties hidden by the installer.
