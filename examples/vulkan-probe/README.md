@@ -6,8 +6,9 @@ app-private Unix socket to the Bionic Android host, which loads the system
 Vulkan loader and the device's native vendor driver.
 
 The probe verifies loader and instance discovery, physical-device identity,
-queue families, device memory, and the complete Xlib WSI path. It creates a
-real X window, logical device and swapchain, imports the window's
+queue families, device memory, and both Xlib and XCB WSI paths. It creates a
+real X window through Xlib, binds both surface APIs to its XID, then creates a
+logical device and swapchain, imports the window's
 `AHardwareBuffer`, records and submits a Vulkan clear, presents it, then checks
 the final pixels in an Android compositor screenshot.
 

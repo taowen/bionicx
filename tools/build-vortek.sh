@@ -27,7 +27,7 @@ podman run --rm --network host --userns=keep-id \
         # nominally const graph while reconstructing wire objects. Keep its
         # upstream warning policy from obscuring actionable build failures.
         aarch64-linux-gnu-gcc -shared -fPIC -O2 -w -pthread \
-            -DVK_USE_PLATFORM_XLIB_KHR \
+            -DVK_USE_PLATFORM_XLIB_KHR -DVK_USE_PLATFORM_XCB_KHR \
             -I"$source_dir/include" \
             "$source_dir/src/main.c" "$source_dir/src/vulkan_calls.c" \
             "$source_dir/src/vk_object.c" "$source_dir/src/vk_object_pool.c" \

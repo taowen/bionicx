@@ -20,11 +20,13 @@ podman run --rm --network host --userns=keep-id \
     "$builder_image" sh -eu -c '
         app_dir="'"$container_output"'/app"
         aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
-            -DVK_USE_PLATFORM_XLIB_KHR \
+            -DVK_USE_PLATFORM_XLIB_KHR -DVK_USE_PLATFORM_XCB_KHR \
             examples/vulkan-probe/vulkan-probe.c \
             -Wl,-rpath,'"'"'$ORIGIN/../lib'"'"' \
-            -o "$app_dir/bin/vulkan-probe" -lvulkan -lX11
+            -o "$app_dir/bin/vulkan-probe" \
+            -lvulkan -lX11-xcb -lX11 -lxcb
         cp -L /usr/lib/aarch64-linux-gnu/libvulkan.so.1 "$app_dir/lib/"
+        cp -L /usr/lib/aarch64-linux-gnu/libX11-xcb.so.1 "$app_dir/lib/"
     '
 
 cat > "$output_dir/app/share/vulkan/icd.d/vortek_icd.json" <<'EOF'

@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <X11/Xlib.h>
+#include <X11/Xlib-xcb.h>
 #include <vulkan/vulkan.h>
 
 static unsigned passed;
@@ -41,17 +42,24 @@ int main(void) {
             NULL, &returned_extension_count, extensions);
     bool has_surface = false;
     bool has_xlib_surface = false;
+    bool has_xcb_surface = false;
     for (uint32_t i = 0; i < returned_extension_count; ++i) {
         has_surface |= strcmp(extensions[i].extensionName,
                               VK_KHR_SURFACE_EXTENSION_NAME) == 0;
         has_xlib_surface |= strcmp(extensions[i].extensionName,
                                    VK_KHR_XLIB_SURFACE_EXTENSION_NAME) == 0;
+        has_xcb_surface |= strcmp(extensions[i].extensionName,
+                                  VK_KHR_XCB_SURFACE_EXTENSION_NAME) == 0;
     }
     snprintf(details, sizeof(details),
              "status=%d returned=%u surface=%u xlib=%u",
              status, returned_extension_count, has_surface, has_xlib_surface);
     result("host-vulkan-xlib-extensions",
            status == VK_SUCCESS && has_surface && has_xlib_surface, details);
+    snprintf(details, sizeof(details), "status=%d xcb=%u",
+             status, has_xcb_surface);
+    result("host-vulkan-xcb-extension",
+           status == VK_SUCCESS && has_xcb_surface, details);
     free(extensions);
 
     Display *display = XOpenDisplay(NULL);
@@ -70,6 +78,7 @@ int main(void) {
     const char *instance_extensions[] = {
         VK_KHR_SURFACE_EXTENSION_NAME,
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+        VK_KHR_XCB_SURFACE_EXTENSION_NAME,
     };
     VkApplicationInfo application = {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -83,7 +92,7 @@ int main(void) {
     VkInstanceCreateInfo create_info = {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo = &application,
-        .enabledExtensionCount = 2,
+        .enabledExtensionCount = 3,
         .ppEnabledExtensionNames = instance_extensions,
     };
     VkInstance instance = VK_NULL_HANDLE;
@@ -174,6 +183,27 @@ int main(void) {
     result("host-vulkan-xlib-surface",
            status == VK_SUCCESS && surface != VK_NULL_HANDLE, details);
 
+    VkSurfaceKHR xcb_surface = VK_NULL_HANDLE;
+    xcb_connection_t *xcb_connection = display
+            ? XGetXCBConnection(display) : NULL;
+    VkXcbSurfaceCreateInfoKHR xcb_surface_create_info = {
+        .sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+        .connection = xcb_connection,
+        .window = (xcb_window_t)window,
+    };
+    VkResult xcb_surface_status = xcb_connection && window
+            ? vkCreateXcbSurfaceKHR(instance, &xcb_surface_create_info,
+                                    NULL, &xcb_surface)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    snprintf(details, sizeof(details), "status=%d handle=%s window=0x%lx",
+             xcb_surface_status,
+             xcb_surface != VK_NULL_HANDLE ? "valid" : "null",
+             (unsigned long)window);
+    result("host-vulkan-xcb-surface",
+           xcb_surface_status == VK_SUCCESS
+                   && xcb_surface != VK_NULL_HANDLE,
+           details);
+
     VkBool32 surface_supported = VK_FALSE;
     VkResult support_status = surface != VK_NULL_HANDLE
             ? vkGetPhysicalDeviceSurfaceSupportKHR(
@@ -191,6 +221,16 @@ int main(void) {
            support_status == VK_SUCCESS && surface_supported
                    && xlib_supported,
            details);
+    VkBool32 xcb_supported = xcb_connection
+            ? vkGetPhysicalDeviceXcbPresentationSupportKHR(
+                    physical_device, graphics_family, xcb_connection,
+                    (xcb_visualid_t)XVisualIDFromVisual(
+                            DefaultVisual(display, DefaultScreen(display))))
+            : VK_FALSE;
+    snprintf(details, sizeof(details), "family=%u xcb=%u",
+             graphics_family, xcb_supported);
+    result("host-vulkan-xcb-presentation-support",
+           xcb_supported == VK_TRUE, details);
 
     VkSurfaceCapabilitiesKHR capabilities;
     memset(&capabilities, 0, sizeof(capabilities));
@@ -495,6 +535,8 @@ int main(void) {
         vkDestroySwapchainKHR(device, swapchain, NULL);
     if (device != VK_NULL_HANDLE) vkDestroyDevice(device, NULL);
 
+    if (xcb_surface != VK_NULL_HANDLE)
+        vkDestroySurfaceKHR(instance, xcb_surface, NULL);
     if (surface != VK_NULL_HANDLE) vkDestroySurfaceKHR(instance, surface, NULL);
 
 destroy_instance:

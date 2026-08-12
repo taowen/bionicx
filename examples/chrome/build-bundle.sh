@@ -92,7 +92,8 @@ podman run --rm --userns=keep-id \
 
 mkdir -p "$output_dir/app/opt/google" "$output_dir/app/etc/fonts" \
     "$output_dir/app/lib" "$output_dir/app/share/glib-2.0" \
-    "$output_dir/app/share/mime" "$output_dir/app/share/icons"
+    "$output_dir/app/share/mime" "$output_dir/app/share/icons" \
+    "$output_dir/app/share/vulkan/icd.d"
 cp -a "$temporary/extracted/opt/google/chrome" "$output_dir/app/opt/google/"
 cp "$repo_dir/examples/chrome/fonts.conf" "$output_dir/app/etc/fonts/fonts.conf"
 cp -a "$temporary/extracted/usr/share/glib-2.0/schemas" \
@@ -125,6 +126,8 @@ runtime_modules=(
     libfreeblpriv3.so
     libnssckbi.so
     libnssdbm3.so
+    # ANGLE's Vulkan backend is loaded dynamically by Chrome.
+    libvulkan.so.1
 )
 entries=(
     --entry "$output_dir/app/opt/google/chrome/chrome"
@@ -158,6 +161,16 @@ for checksum in "$library_root"/*.chk; do
     cp "$checksum" "$output_dir/app/lib/"
 done
 "$repo_dir/tools/build-gladio.sh" "$output_dir/app/lib"
+"$repo_dir/tools/build-vortek.sh" "$output_dir/app/lib"
+cat > "$output_dir/app/share/vulkan/icd.d/vortek_icd.json" <<'EOF'
+{
+  "file_format_version": "1.0.0",
+  "ICD": {
+    "library_path": "libvulkan_vortek.so",
+    "api_version": "1.3.128"
+  }
+}
+EOF
 
 # The ARM64 query tool must inspect the ARM64 plugins themselves. Run it in a
 # native-architecture build container, then rewrite its build-stage paths to

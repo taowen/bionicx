@@ -25,9 +25,13 @@ data inputs extracted into a temporary staging tree. Proprietary binaries and
 downloaded packages remain ignored beneath `build/`; only acquisition facts,
 the dependency lock, source, diagnostics, and test evidence are committed.
 
-The current profile retains the required `--no-sandbox` and selects ANGLE's
+The normal profile retains the required `--no-sandbox` and selects ANGLE's
 OpenGL backend over the BionicX Gladio bridge. Chrome's Ganesh renderer then
 runs on the Android host GLES driver; it is not a software-rendering fallback.
-Skia Graphite remains disabled until the native Vulkan bridge is implemented.
-The Chromium sandbox and Vulkan backend are explicit remaining qualification
-gaps, not properties hidden by the installer.
+
+`profiles/chrome-vulkan.json` is a separate experimental launch profile. It
+keeps `--no-sandbox`, selects ANGLE's Vulkan backend, and routes the ordinary
+glibc Vulkan loader through the pinned Vortek ICD to Android's vendor driver.
+Set `BIONICX_CHROME_PROFILE=profiles/chrome-vulkan.json` when running the
+installer. Skia Graphite remains disabled so ANGLE Vulkan can be qualified
+before changing Chrome's higher-level renderer.

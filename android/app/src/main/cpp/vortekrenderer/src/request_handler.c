@@ -9,7 +9,9 @@ void vt_handle_vkCreateInstance(VkContext* context) {
     VkInstanceCreateInfo createInfo = {0};
     vt_unserialize_vkCreateInstance(&createInfo, NULL, NULL, context->inputBuffer, &context->memoryPool);
 
-    const char* skipExtensions[] = {"VK_KHR_surface", "VK_KHR_xlib_surface"};
+    const char* skipExtensions[] = {
+        "VK_KHR_surface", "VK_KHR_xlib_surface", "VK_KHR_xcb_surface"
+    };
 
 #if ENABLE_VALIDATION_LAYER
     createInfo.ppEnabledLayerNames = validationLayers;
@@ -197,7 +199,9 @@ void vt_handle_vkEnumerateInstanceExtensionProperties(VkContext* context) {
     result = vulkanWrapper.vkEnumerateInstanceExtensionProperties(
             NULL, &exposedExtensionCount, exposedExtensions);
 
-    const char* extraExtensions[] = {"VK_KHR_surface", "VK_KHR_xlib_surface"};
+    const char* extraExtensions[] = {
+        "VK_KHR_surface", "VK_KHR_xlib_surface", "VK_KHR_xcb_surface"
+    };
     const char* skipExtensions[] = {"VK_KHR_android_surface"};
     injectExtensions2(context, &exposedExtensions, &exposedExtensionCount,
                       extraExtensions, ARRAY_SIZE(extraExtensions),
