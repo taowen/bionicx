@@ -2101,8 +2101,31 @@ void vt_handle_vkAcquireNextImageKHR(VkContext* context) {
 }
 
 void vt_handle_vkQueuePresentKHR(VkContext* context) {
+    uint64_t queueId;
     VkPresentInfoKHR presentInfo = {0};
-    vt_unserialize_VkPresentInfoKHR(&presentInfo, context->inputBuffer, &context->memoryPool);
+    vt_unserialize_vkQueuePresentKHR((VkQueue)&queueId, &presentInfo,
+                                    context->inputBuffer, &context->memoryPool);
+    VkQueue queue = VkObject_fromId(queueId);
+
+    VkResult result = VK_SUCCESS;
+    if (presentInfo.waitSemaphoreCount > 0) {
+        VkPipelineStageFlags waitStages[presentInfo.waitSemaphoreCount];
+        for (uint32_t i = 0; i < presentInfo.waitSemaphoreCount; i++)
+            waitStages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+        VkSubmitInfo submitInfo = {0};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.waitSemaphoreCount = presentInfo.waitSemaphoreCount;
+        submitInfo.pWaitSemaphores = presentInfo.pWaitSemaphores;
+        submitInfo.pWaitDstStageMask = waitStages;
+        result = vulkanWrapper.vkQueueSubmit(queue, 1, &submitInfo,
+                                             VK_NULL_HANDLE);
+    }
+
+    if (result == VK_SUCCESS)
+        result = vulkanWrapper.vkQueueWaitIdle(queue);
+    if (result == VK_ERROR_DEVICE_LOST) context->status = result;
+    if (result != VK_SUCCESS) return;
 
     for (int i = 0; i < presentInfo.swapchainCount; i++) {
         XWindowSwapchain_presentImage((XWindowSwapchain*)presentInfo.pSwapchains[i]);

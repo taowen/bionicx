@@ -518,31 +518,50 @@ int main(void) {
              record_status);
     result("host-vulkan-record-clear", record_status == VK_SUCCESS, details);
 
+    VkSemaphore present_semaphore = VK_NULL_HANDLE;
+    VkSemaphoreCreateInfo semaphore_create_info = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    };
+    VkResult semaphore_status = device != VK_NULL_HANDLE
+            ? vkCreateSemaphore(device, &semaphore_create_info, NULL,
+                                &present_semaphore)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    snprintf(details, sizeof(details), "status=%d handle=%s",
+             semaphore_status,
+             present_semaphore != VK_NULL_HANDLE ? "valid" : "null");
+    result("host-vulkan-present-semaphore",
+           semaphore_status == VK_SUCCESS
+                   && present_semaphore != VK_NULL_HANDLE,
+           details);
+
     VkSubmitInfo submit_info = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount = command_buffer != VK_NULL_HANDLE ? 1u : 0u,
         .pCommandBuffers = command_buffer != VK_NULL_HANDLE
                 ? &command_buffer : NULL,
+        .signalSemaphoreCount = present_semaphore != VK_NULL_HANDLE ? 1u : 0u,
+        .pSignalSemaphores = present_semaphore != VK_NULL_HANDLE
+                ? &present_semaphore : NULL,
     };
     VkResult submit_status = queue != VK_NULL_HANDLE
-            && record_status == VK_SUCCESS
+            && record_status == VK_SUCCESS && semaphore_status == VK_SUCCESS
             ? vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE)
             : VK_ERROR_INITIALIZATION_FAILED;
-    VkResult idle_status = submit_status == VK_SUCCESS
-            ? vkQueueWaitIdle(queue) : submit_status;
-    snprintf(details, sizeof(details), "submit=%d idle=%d",
-             submit_status, idle_status);
-    result("host-vulkan-submit-clear",
-           submit_status == VK_SUCCESS && idle_status == VK_SUCCESS, details);
+    snprintf(details, sizeof(details), "submit=%d signal=present-semaphore",
+             submit_status);
+    result("host-vulkan-submit-clear", submit_status == VK_SUCCESS, details);
 
     VkPresentInfoKHR present_info = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = present_semaphore != VK_NULL_HANDLE ? 1u : 0u,
+        .pWaitSemaphores = present_semaphore != VK_NULL_HANDLE
+                ? &present_semaphore : NULL,
         .swapchainCount = swapchain != VK_NULL_HANDLE ? 1u : 0u,
         .pSwapchains = swapchain != VK_NULL_HANDLE ? &swapchain : NULL,
         .pImageIndices = image_index < returned_image_count
                 ? &image_index : NULL,
     };
-    VkResult present_status = idle_status == VK_SUCCESS
+    VkResult present_status = submit_status == VK_SUCCESS
             ? vkQueuePresentKHR(queue, &present_info)
             : VK_ERROR_INITIALIZATION_FAILED;
     XSync(display, False);
@@ -551,6 +570,8 @@ int main(void) {
     result("host-vulkan-present", present_status == VK_SUCCESS, details);
 
     if (present_status == VK_SUCCESS) {
+        present_info.waitSemaphoreCount = 0;
+        present_info.pWaitSemaphores = NULL;
         for (unsigned frame = 0; frame < 50; ++frame) {
             vkQueuePresentKHR(queue, &present_info);
             XSync(display, False);
@@ -558,6 +579,8 @@ int main(void) {
         }
     }
     if (device != VK_NULL_HANDLE) vkDeviceWaitIdle(device);
+    if (present_semaphore != VK_NULL_HANDLE)
+        vkDestroySemaphore(device, present_semaphore, NULL);
     if (command_pool != VK_NULL_HANDLE)
         vkDestroyCommandPool(device, command_pool, NULL);
     free(swapchain_images);

@@ -58,5 +58,5 @@ wait_log "vulkan-probe exited with 0"
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(TEST|SUMMARY)|vulkan-probe exited with|enabled Vulkan')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY host-vulkan passed=27 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY host-vulkan passed=28 failed=0" <<<"$result"
 grep -Fq "vulkan-probe exited with 0" <<<"$result"
