@@ -5,10 +5,15 @@ import static com.winlator.xserver.XClientRequestHandler.RESPONSE_CODE_SUCCESS;
 import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
+import com.winlator.core.Bitmask;
+import com.winlator.xserver.Cursor;
+import com.winlator.xserver.EventListener;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.Window;
+import com.winlator.xserver.events.Event;
 import com.winlator.xserver.events.XInputDeviceEvent;
+import com.winlator.xserver.errors.BadCursor;
 import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.BadWindow;
@@ -42,9 +47,12 @@ public class XInputExtension extends Extension {
     private static abstract class ClientOpcodes {
         private static final byte GET_EXTENSION_VERSION = 1;
         private static final byte XI_QUERY_POINTER = 40;
+        private static final byte XI_CHANGE_CURSOR = 42;
         private static final byte XI_SELECT_EVENTS = 46;
         private static final byte XI_QUERY_VERSION = 47;
         private static final byte XI_QUERY_DEVICE = 48;
+        private static final byte XI_GRAB_DEVICE = 51;
+        private static final byte XI_UNGRAB_DEVICE = 52;
         private static final byte XI_GET_SELECTED_EVENTS = 60;
     }
 
@@ -85,6 +93,22 @@ public class XInputExtension extends Extension {
         }
     }
 
+    private void changeCursor(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        int cursorId = inputStream.readInt();
+        int deviceId = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        if (deviceId != MASTER_POINTER_ID && deviceId != ALL_MASTER_DEVICES)
+            throw new BadValue(deviceId);
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        Cursor cursor = cursorId == 0 ? null
+                : xServer.cursorManager.getCursor(cursorId);
+        if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
+        window.attributes.setCursor(cursor);
+    }
+
     public XInputExtension(XServer xServer, byte majorOpcode) {
         super(xServer, majorOpcode);
     }
@@ -107,23 +131,64 @@ public class XInputExtension extends Extension {
     public void sendDeviceEvent(int deviceId, int eventType, int detail,
                                 Window sourceWindow, short rootX, short rootY) {
         if (sourceWindow == null) return;
-        for (XClient client : xServer.getClientsSnapshot()) {
-            Window eventWindow = sourceWindow;
-            while (eventWindow != null
-                    && !client.isXiEventSelected(eventWindow, deviceId, eventType)) {
-                eventWindow = eventWindow.getParent();
+        XClient grabbedClient = null;
+        if (deviceId == MASTER_POINTER_ID
+                && xServer.grabManager.getWindow() != null) {
+            grabbedClient = xServer.grabManager.getClient();
+            Window target = null;
+            if (grabbedClient != null && xServer.grabManager.isOwnerEvents()) {
+                target = selectedAncestor(grabbedClient, sourceWindow,
+                        deviceId, eventType);
             }
-            if (eventWindow == null || !eventWindow.attributes.isEnabled()) continue;
-
-            short[] local = eventWindow.rootPointToLocal(rootX, rootY);
-            Window child = sourceWindow == eventWindow ? null : sourceWindow;
-            client.sendEvent(new XInputDeviceEvent(getMajorOpcode(), deviceId,
-                    eventType, detail, xServer.windowManager.rootWindow,
-                    eventWindow, child, rootX, rootY, local[0], local[1],
-                    xServer.keyboard.getBaseModifiers(),
-                    xServer.keyboard.getLockedModifiers(),
-                    xServer.keyboard.getModifiersMask().getBits()));
+            EventListener listener = xServer.grabManager.getEventListener();
+            int coreEvent = coreEventMask(eventType);
+            if (target == null && grabbedClient != null && listener != null
+                    && coreEvent != 0 && listener.isInterestedIn(coreEvent)) {
+                target = xServer.grabManager.getWindow();
+            }
+            if (target != null && target.attributes.isEnabled()) {
+                sendDeviceEventToClient(grabbedClient, deviceId, eventType,
+                        detail, sourceWindow, target, rootX, rootY);
+            }
         }
+        for (XClient client : xServer.getClientsSnapshot()) {
+            if (client == grabbedClient) continue;
+            Window eventWindow = selectedAncestor(client, sourceWindow,
+                    deviceId, eventType);
+            if (eventWindow == null || !eventWindow.attributes.isEnabled()) continue;
+            sendDeviceEventToClient(client, deviceId, eventType, detail,
+                    sourceWindow, eventWindow, rootX, rootY);
+        }
+    }
+
+    private Window selectedAncestor(XClient client, Window sourceWindow,
+                                    int deviceId, int eventType) {
+        Window eventWindow = sourceWindow;
+        while (eventWindow != null
+                && !client.isXiEventSelected(eventWindow, deviceId, eventType)) {
+            eventWindow = eventWindow.getParent();
+        }
+        return eventWindow;
+    }
+
+    private static int coreEventMask(int eventType) {
+        if (eventType == XI_BUTTON_PRESS) return Event.BUTTON_PRESS;
+        if (eventType == XI_BUTTON_RELEASE) return Event.BUTTON_RELEASE;
+        if (eventType == XI_MOTION) return Event.POINTER_MOTION;
+        return 0;
+    }
+
+    private void sendDeviceEventToClient(XClient client, int deviceId,
+            int eventType, int detail, Window sourceWindow, Window eventWindow,
+            short rootX, short rootY) {
+        short[] local = eventWindow.rootPointToLocal(rootX, rootY);
+        Window child = sourceWindow == eventWindow ? null : sourceWindow;
+        client.sendEvent(new XInputDeviceEvent(getMajorOpcode(), deviceId,
+                eventType, detail, xServer.windowManager.rootWindow,
+                eventWindow, child, rootX, rootY, local[0], local[1],
+                xServer.keyboard.getBaseModifiers(),
+                xServer.keyboard.getLockedModifiers(),
+                xServer.keyboard.getModifiersMask().getBits()));
     }
 
     private void getExtensionVersion(XClient client, XInputStream inputStream,
@@ -273,6 +338,89 @@ public class XInputExtension extends Extension {
         }
     }
 
+    private void grabDevice(XClient client, XInputStream inputStream,
+                            XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        int timestamp = inputStream.readInt();
+        int cursorId = inputStream.readInt();
+        int deviceId = inputStream.readUnsignedShort();
+        int mode = inputStream.readUnsignedByte();
+        int pairedDeviceMode = inputStream.readUnsignedByte();
+        boolean ownerEvents = inputStream.readUnsignedByte() != 0;
+        inputStream.skip(1);
+        int maskWords = inputStream.readUnsignedShort();
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID)
+            throw new BadValue(deviceId);
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        Cursor cursor = cursorId == 0 ? null
+                : xServer.cursorManager.getCursor(cursorId);
+        if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
+        if (timestamp != 0 || mode != 1 || pairedDeviceMode != 1
+                || maskWords > 8
+                || maskWords * 4 > client.getRemainingRequestLength()) {
+            throw new BadImplementation();
+        }
+
+        byte[] xiMask = new byte[maskWords * 4];
+        inputStream.read(xiMask);
+        int coreMask = 0;
+        if (maskBit(xiMask, XI_BUTTON_PRESS)) coreMask |= Event.BUTTON_PRESS;
+        if (maskBit(xiMask, XI_BUTTON_RELEASE)) coreMask |= Event.BUTTON_RELEASE;
+        if (maskBit(xiMask, XI_MOTION)) coreMask |= Event.POINTER_MOTION;
+
+        int status;
+        boolean grabbedByOtherClient = deviceId == MASTER_POINTER_ID
+                ? xServer.grabManager.getWindow() != null
+                    && xServer.grabManager.getClient() != client
+                : xServer.grabManager.getKeyboardClient() != null
+                    && xServer.grabManager.getKeyboardClient() != client;
+        if (grabbedByOtherClient) {
+            status = 1; // AlreadyGrabbed
+        }
+        else if (window.getMapState() != Window.MapState.VIEWABLE) {
+            status = 3; // GrabNotViewable
+        }
+        else {
+            status = 0; // GrabSuccess
+            if (deviceId == MASTER_POINTER_ID) {
+                xServer.grabManager.activatePointerGrab(window, ownerEvents,
+                        new Bitmask(coreMask), client, cursor);
+            }
+            else {
+                xServer.grabManager.activateKeyboardGrab(window, ownerEvents,
+                        client);
+            }
+        }
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)status);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writePad(24);
+        }
+    }
+
+    private static boolean maskBit(byte[] mask, int bit) {
+        return bit / 8 < mask.length
+                && (mask[bit / 8] & (1 << (bit & 7))) != 0;
+    }
+
+    private void ungrabDevice(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int timestamp = inputStream.readInt();
+        int deviceId = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID)
+            throw new BadValue(deviceId);
+        if (timestamp != 0) throw new BadImplementation();
+        if (deviceId == MASTER_POINTER_ID)
+            xServer.grabManager.deactivatePointerGrab(client);
+        else
+            xServer.grabManager.deactivateKeyboardGrab(client);
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -284,6 +432,9 @@ public class XInputExtension extends Extension {
             case ClientOpcodes.XI_QUERY_POINTER:
                 queryPointer(client, inputStream, outputStream);
                 break;
+            case ClientOpcodes.XI_CHANGE_CURSOR:
+                changeCursor(client, inputStream);
+                break;
             case ClientOpcodes.XI_SELECT_EVENTS:
                 selectEvents(client, inputStream);
                 break;
@@ -292,6 +443,12 @@ public class XInputExtension extends Extension {
                 break;
             case ClientOpcodes.XI_QUERY_DEVICE:
                 queryDevice(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.XI_GRAB_DEVICE:
+                grabDevice(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.XI_UNGRAB_DEVICE:
+                ungrabDevice(client, inputStream);
                 break;
             case ClientOpcodes.XI_GET_SELECTED_EVENTS:
                 getSelectedEvents(client, inputStream, outputStream);

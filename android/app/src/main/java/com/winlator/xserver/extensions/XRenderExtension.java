@@ -43,6 +43,7 @@ public class XRenderExtension extends Extension {
     private static final byte PICT_OP_IN = 5;
     private static final byte PICT_OP_OUT_REVERSE = 8;
     private static final byte PICT_OP_ADD = 12;
+    private static final byte PICT_OP_SATURATE = 13;
     private static final int SUBPIXEL_UNKNOWN = 0;
 
     private final int argb32Format = IDGenerator.generate();
@@ -693,7 +694,8 @@ public class XRenderExtension extends Extension {
 
         if (operation != PICT_OP_SRC && operation != PICT_OP_OVER
                 && operation != PICT_OP_OUT_REVERSE
-                && operation != PICT_OP_ADD)
+                && operation != PICT_OP_ADD
+                && operation != PICT_OP_SATURATE)
             throw new BadValue(operation);
         if (source == null
                 || (source.solidColor == null && source.drawable == null

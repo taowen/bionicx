@@ -1,0 +1,3 @@
+BionicX Mousepad integration test
+Debian 13 trixie ARM64 on Android/Bionic
+One shared apt/dpkg rootfs; no PRoot and no Termux.

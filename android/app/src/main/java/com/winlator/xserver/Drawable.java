@@ -336,6 +336,8 @@ public class Drawable extends XResource {
                                     + 127) / 255;
                         else if (operation == 12)
                             resultAlpha = Math.min(255, alpha + destinationAlpha);
+                        else if (operation == 13)
+                            resultAlpha = Math.min(255, alpha + destinationAlpha);
                         else continue;
                         data.putInt(offset, resultAlpha);
                         continue;
@@ -375,6 +377,26 @@ public class Drawable extends XResource {
                         int blue = addStraightChannel(source & 0xff, alpha,
                                 destination & 0xff, destinationAlpha,
                                 resultAlpha);
+                        data.putInt(offset, (resultAlpha << 24) | (red << 16)
+                                | (green << 8) | blue);
+                        continue;
+                    }
+                    if (operation == 13) {
+                        int destinationAlpha = (destination >>> 24) & 0xff;
+                        int sourceContribution = Math.min(alpha,
+                                255 - destinationAlpha);
+                        int resultAlpha = sourceContribution + destinationAlpha;
+                        int red = addStraightChannel((source >>> 16) & 0xff,
+                                sourceContribution,
+                                (destination >>> 16) & 0xff,
+                                destinationAlpha, resultAlpha);
+                        int green = addStraightChannel((source >>> 8) & 0xff,
+                                sourceContribution,
+                                (destination >>> 8) & 0xff,
+                                destinationAlpha, resultAlpha);
+                        int blue = addStraightChannel(source & 0xff,
+                                sourceContribution, destination & 0xff,
+                                destinationAlpha, resultAlpha);
                         data.putInt(offset, (resultAlpha << 24) | (red << 16)
                                 | (green << 8) | blue);
                         continue;
