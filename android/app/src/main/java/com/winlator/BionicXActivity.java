@@ -13,11 +13,13 @@ import android.widget.Toast;
 import com.winlator.bionicx.AppProfile;
 import com.winlator.core.AppUtils;
 import com.winlator.core.NetworkHelper;
+import com.winlator.core.TarCompressorUtils;
 import com.winlator.widget.TouchpadView;
 import com.winlator.widget.XServerView;
 import com.winlator.xconnector.UnixSocketConfig;
 import com.winlator.xenvironment.RootFS;
 import com.winlator.xenvironment.XEnvironment;
+import com.winlator.xenvironment.components.PulseAudioComponent;
 import com.winlator.xenvironment.components.XServerComponent;
 import com.winlator.xenvironment.components.VortekRendererComponent;
 import com.winlator.xserver.ScreenInfo;
@@ -89,6 +91,17 @@ public final class BionicXActivity extends Activity {
                         UnixSocketConfig.XSERVER_PATH);
         environment = new XEnvironment(this, rootFS);
         environment.addComponent(new XServerComponent(xServer, socket));
+        if (profile.hostServices.contains("pulseaudio")) {
+            File pulseDir = new File(getFilesDir(), "pulseaudio");
+            if (!TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD,
+                    this, "pulseaudio.tzst", pulseDir))
+                throw new IOException("cannot extract PulseAudio modules");
+            UnixSocketConfig pulseSocket = UnixSocketConfig.create(
+                    rootFS.getRootDir().getAbsolutePath(),
+                    UnixSocketConfig.PULSE_SERVER_PATH);
+            environment.addComponent(new PulseAudioComponent(pulseSocket));
+            Log.i(TAG, "enabled PulseAudio host service at " + pulseSocket.path);
+        }
         if (profile.hostServices.contains("vulkan")) {
             UnixSocketConfig vortekSocket = UnixSocketConfig.create(
                     rootFS.getRootDir().getAbsolutePath(),

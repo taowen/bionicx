@@ -44,7 +44,10 @@ android {
     }
 
     sourceSets {
-        main.jniLibs.srcDirs = []
+        // BionicX packages only the pinned Android PulseAudio host runtime.
+        // tools/prepare-pulseaudio-runtime.sh materializes these ignored build
+        // inputs from the Winlator source snapshot recorded in NOTICE.
+        main.jniLibs.srcDirs = ['src/main/audioJniLibs']
     }
 }
 

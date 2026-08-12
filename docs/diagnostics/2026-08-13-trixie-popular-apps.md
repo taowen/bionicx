@@ -17,14 +17,18 @@ x300 serial `01408BH601027129`, without root, PRoot, Termux or Frida.
 GIMP decoded the generated PNG through its packaged file plug-in, then an
 Android swipe painted a visible stroke on the canvas. Inkscape parsed and
 rendered the generated SVG with gradients, clipping, text and multiple shapes.
-VLC looped a deterministic 320x180, 30 fps raw I420 animation. Its screenshots
-two seconds apart had different SHA-256 hashes and visibly different frames.
+VLC originally looped a deterministic 320x180, 30 fps raw I420 animation. It
+now consumes a pure-Python-generated AVI containing the same 90 video frames
+plus 48 kHz stereo PCM. The real AVI demux, raw-video decoder, PCM decoder,
+XPutImage output and PulseAudio output are active together. AudioFlinger
+reported one active track with zero write errors and zero underruns.
 
 Evidence:
 
 - `evidence/bionicx-trixie-gimp-paint.png`
 - `evidence/bionicx-trixie-inkscape-svg.png`
 - `evidence/bionicx-trixie-vlc-i420.png`
+- `evidence/bionicx-trixie-vlc-audio.png`
 
 ## Runtime gaps exposed
 
@@ -60,6 +64,6 @@ transport exists: shared-memory attach and image transfer still require a real
 Android-compatible backend.
 
 The final cold run used no application library exception and rendered moving
-video. Expected diagnostics remain for disabled PulseAudio/D-Bus, the MIT-SHM
-QueryVersion fallback, and an optional XFixes request; none terminated or
-blanked the client.
+video with audible deterministic PCM. Expected diagnostics remain for D-Bus,
+the MIT-SHM QueryVersion fallback, and an optional XFixes request; none
+terminated or blanked the client.

@@ -60,7 +60,7 @@ public class PulseAudioComponent extends EnvironmentComponent {
     private int execPulseAudio() {
         Context context = environment.getContext();
         String nativeLibraryDir = context.getApplicationInfo().nativeLibraryDir;
-        File workingDir = new File(context.getFilesDir(), "/pulseaudio");
+        File workingDir = new File(context.getFilesDir(), "pulseaudio");
         if (!workingDir.isDirectory()) {
             workingDir.mkdirs();
             FileUtils.chmod(workingDir, 0771);

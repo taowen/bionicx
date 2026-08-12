@@ -1,0 +1,14 @@
+device=01408BH601027129
+android_uid=u0_a194
+profile=audio-probe
+trace=disabled
+
+BXTEST PASS host-audio connect=ok rate=48000 channels=2 frames=240000 bytes=960000 initialLatencyUsec=20000
+BXSUMMARY host-audio passed=1 failed=0
+
+# Concurrent `dumpsys media.audio_flinger` excerpt
+Sample rate: 48000 Hz
+AudioMixer tracks: 56 57
+numTracks=1 writeErrors=0 underruns=0 overruns=0
+Fast tracks: sMaxFastTracks=8 activeMask=0x1
+2 Tracks of which 1 are active

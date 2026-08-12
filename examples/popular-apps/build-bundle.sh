@@ -17,7 +17,9 @@ python3 "$repo_dir/examples/xfce-apps/build-png-fixtures.py" \
     "$output_dir/app/fixtures"
 python3 "$repo_dir/examples/popular-apps/build-y4m-fixture.py" \
     "$output_dir/app/fixtures/bionicx-motion.y4m" \
-    "$output_dir/app/fixtures/bionicx-motion.i420"
+    "$output_dir/app/fixtures/bionicx-motion.i420" \
+    "$output_dir/app/fixtures/bionicx-tone.wav" \
+    "$output_dir/app/fixtures/bionicx-motion-audio.avi"
 "$repo_dir/tools/prepare-desktop-rootfs.sh" "$output_dir"
 
 for required in usr/bin/gimp usr/bin/inkscape usr/bin/vlc; do

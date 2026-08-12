@@ -68,6 +68,7 @@ podman run --rm --pull=newer --network host \
     '
 
 cp "$repo_dir/profiles/hello.json" "$assets_dir/profiles/default.json"
+"$repo_dir/tools/prepare-pulseaudio-runtime.sh" >/dev/null
 JAVA_HOME="$java17_home" "$android_dir/gradlew" -p "$android_dir" \
     --no-daemon :app:assembleDebug
 cp "$android_dir/app/build/outputs/apk/debug/app-debug.apk" \

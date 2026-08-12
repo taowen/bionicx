@@ -8,3 +8,9 @@ in-process X server:
 The Winlator-derived files remain under LGPL-2.1. Additional third-party
 notices and licenses are retained in the Android source tree. BionicX does not
 redistribute WPS Office or a glibc root filesystem.
+
+The optional PulseAudio-to-AAudio host service uses the PulseAudio executable,
+modules and dependent Android libraries from the same Winlator source snapshot.
+Their acquisition script pins and verifies every binary input. PulseAudio is
+licensed under LGPL-2.1; its corresponding source is available from the
+Winlator source link above and https://www.freedesktop.org/wiki/Software/PulseAudio/.

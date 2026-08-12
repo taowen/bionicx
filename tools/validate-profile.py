@@ -44,5 +44,11 @@ if not isinstance(dpi, int) or not 72 <= dpi <= 400:
 for name in launch.get("environment", {}):
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
         fail(f"invalid environment variable: {name}")
+host_services = profile.get("hostServices", [])
+if not isinstance(host_services, list) or any(
+        service not in ("pulseaudio", "vulkan") for service in host_services):
+    fail("hostServices may only contain pulseaudio and vulkan")
+if len(host_services) != len(set(host_services)):
+    fail("hostServices must not contain duplicates")
 
 print(f"profile {profile['id']} is valid")

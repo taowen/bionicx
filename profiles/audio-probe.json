@@ -1,0 +1,23 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "audio-probe",
+  "name": "glibc X11 + Android audio probe",
+  "display": {"dpi": 144, "socket": "filesystem"},
+  "hostServices": ["pulseaudio"],
+  "launch": {
+    "mode": "loader",
+    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
+    "libraryPath": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
+    "executable": "${APP}/bin/audio-probe",
+    "workingDirectory": "${HOME}",
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "PULSE_SERVER": "unix:${RUNTIME}/tmp/.sound/PS0",
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
+      "LANG": "C.UTF-8"
+    }
+  }
+}
