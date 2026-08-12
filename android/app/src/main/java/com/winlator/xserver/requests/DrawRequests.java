@@ -108,8 +108,7 @@ public abstract class DrawRequests {
         if (window == null) throw new BadWindow(windowId);
         if (!window.isInputOutput()) throw new BadMatch();
 
-        Drawable drawable = window.getContent();
-        drawable.fillRect(x, y, width, height, 0x000000);
+        window.attributes.clearBackground(x, y, width, height);
 
         if (exposures) window.sendEvent(new Expose(window));
     }

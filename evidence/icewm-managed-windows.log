@@ -8,4 +8,5 @@ BXICEWM client title=BionicX Workspace B mapped=1 configured=1 focused=0 size=62
 BXTEST PASS icewm-two-clients first=1 second=1
 BXSUMMARY icewm passed=3 failed=0
 icewm-probe exited with 0
-regression: BXSUMMARY x11-probe passed=18 failed=0 observational_input=yes
+regression: BXSUMMARY x11-probe passed=19 failed=0 observational_input=yes
+visual: themed taskbar background, start icon, workspace/task controls visible

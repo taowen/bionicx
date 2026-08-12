@@ -47,3 +47,13 @@ mask. The controlled Render probe verifies an 8x8 mask by reading back a red
 inside pixel and unchanged blue outside pixel. IceWM no longer emits any Render
 `BadImplementation` errors. The still-incomplete visual panel is consequently
 a separate nested-window composition issue rather than this Render request.
+
+The compositor diagnosis then found that core `CWBackPixmap` attributes were
+silently discarded and `ClearArea` always wrote black. IceWM uses tiled window
+background pixmaps for its panel and controls. `WindowAttributes` now retains
+validated same-depth pixmaps, background pixels and ParentRelative state;
+`ClearArea` clips and tiles them, including zero width/height extent semantics.
+The core probe reads back the exact `0x3264c8` tile pixel and passes 19/19.
+After this change, visual inspection shows the IceWM start icon, workspace and
+task buttons, and monitor widgets across the bottom panel. Text placement and
+managed-window decorations are still incomplete and remain separate targets.

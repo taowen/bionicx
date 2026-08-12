@@ -1,0 +1,4 @@
+device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
+BXTEST PASS background-pixmap clear-pixel=0x3264c8
+BXSUMMARY passed=19 failed=0 observational_input=yes
+icewm: taskbar background, start icon, workspaces, tasks and monitors visible

@@ -202,6 +202,20 @@ int main(int argc, char **argv) {
     RECORD(drawing_ok);
 
     before = x_errors;
+    XSetWindowBackgroundPixmap(display, window, pixmap);
+    XClearArea(display, window, 400, 160, 80, 60, False);
+    XImage *background_image = XGetImage(display, window, 420, 180, 1, 1,
+                                         AllPlanes, ZPixmap);
+    XSync(display, False);
+    bool background_ok = x_errors == before && background_image &&
+            (XGetPixel(background_image, 0, 0) & 0x00ffffff) == 0x3264c8;
+    if (background_image) XDestroyImage(background_image);
+    result("background-pixmap", background_ok,
+           background_ok ? "clear-pixel=0x3264c8"
+                         : "background tile mismatch");
+    RECORD(background_ok);
+
+    before = x_errors;
     XSetForeground(display, gc, 0xa02020);
     XFillRectangle(display, window, gc, 240, 160, 80, 60);
     XSetForeground(display, gc, 0x2060c0);

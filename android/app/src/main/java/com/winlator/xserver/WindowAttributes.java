@@ -2,6 +2,9 @@ package com.winlator.xserver;
 
 import com.winlator.core.Bitmask;
 import com.winlator.xconnector.XInputStream;
+import com.winlator.xserver.errors.BadMatch;
+import com.winlator.xserver.errors.BadPixmap;
+import com.winlator.xserver.errors.XRequestError;
 
 public class WindowAttributes {
     public static final int FLAG_BACKGROUND_PIXMAP = 1<<0;
@@ -35,6 +38,10 @@ public class WindowAttributes {
     private Cursor cursor;
     private Bitmask doNotPropagateMask = new Bitmask(0);
     private Bitmask eventMask = new Bitmask(0);
+    private int backgroundPixel;
+    private Drawable backgroundPixmap;
+    private boolean parentRelativeBackground;
+    private boolean hasBackground;
     private WinGravity winGravity = WinGravity.CENTER;
     private WindowClass windowClass = WindowClass.INPUT_OUTPUT;
     private final Bitmask attributeFlags = new Bitmask(new int[]{FLAG_ENABLED, FLAG_RENDER_SUBWINDOWS, FLAG_VIEWABLE});
@@ -129,11 +136,16 @@ public class WindowAttributes {
         attributeFlags.set(FLAG_VIEWABLE, viewable);
     }
 
-    public void update(Bitmask valueMask, XInputStream inputStream, XClient client) {
+    public void update(Bitmask valueMask, XInputStream inputStream,
+                       XClient client) throws XRequestError {
         for (int index : valueMask) {
             switch (index) {
                 case FLAG_BACKGROUND_PIXEL:
-                    window.getContent().fillColor(inputStream.readInt());
+                    backgroundPixel = inputStream.readInt();
+                    backgroundPixmap = null;
+                    parentRelativeBackground = false;
+                    hasBackground = true;
+                    window.getContent().fillColor(backgroundPixel);
                     break;
                 case FLAG_BACKING_PIXEL:
                     backingPixel = inputStream.readInt();
@@ -164,6 +176,27 @@ public class WindowAttributes {
                     cursor = client.xServer.cursorManager.getCursor(inputStream.readInt());
                     break;
                 case FLAG_BACKGROUND_PIXMAP:
+                    int pixmapId = inputStream.readInt();
+                    backgroundPixmap = null;
+                    parentRelativeBackground = pixmapId == 1;
+                    hasBackground = pixmapId != 0;
+                    if (parentRelativeBackground) {
+                        Window parent = window.getParent();
+                        if (parent == null || !parent.isInputOutput()
+                                || parent.getContent().visual.depth
+                                != window.getContent().visual.depth)
+                            throw new BadMatch();
+                    }
+                    else if (pixmapId != 0) {
+                        Pixmap pixmap = client.xServer.pixmapManager
+                                .getPixmap(pixmapId);
+                        if (pixmap == null) throw new BadPixmap(pixmapId);
+                        if (pixmap.drawable.visual.depth
+                                != window.getContent().visual.depth)
+                            throw new BadMatch();
+                        backgroundPixmap = pixmap.drawable;
+                    }
+                    break;
                 case FLAG_BORDER_PIXMAP:
                 case FLAG_BORDER_PIXEL:
                 case FLAG_COLORMAP:
@@ -173,6 +206,50 @@ public class WindowAttributes {
         }
 
         client.xServer.windowManager.triggerOnUpdateWindowAttributes(window, valueMask);
+    }
+
+    public void clearBackground(int x, int y, int width, int height) {
+        Drawable destination = window.getContent();
+        int left = Math.max(0, x);
+        int top = Math.max(0, y);
+        int right = width == 0 ? destination.width
+                : Math.min(destination.width, x + width);
+        int bottom = height == 0 ? destination.height
+                : Math.min(destination.height, y + height);
+        if (left >= right || top >= bottom) return;
+        if (!hasBackground) return;
+
+        if (parentRelativeBackground) {
+            Window parent = window.getParent();
+            if (parent != null && parent.isInputOutput())
+                destination.copyArea((short)(window.getX() + left),
+                        (short)(window.getY() + top), (short)left, (short)top,
+                        (short)(right - left), (short)(bottom - top),
+                        parent.getContent());
+            return;
+        }
+        if (backgroundPixmap == null) {
+            destination.fillRect(left, top, right - left, bottom - top,
+                    backgroundPixel);
+            return;
+        }
+
+        int tileWidth = backgroundPixmap.width;
+        int tileHeight = backgroundPixmap.height;
+        for (int tileY = Math.floorDiv(top, tileHeight) * tileHeight;
+                tileY < bottom; tileY += tileHeight) {
+            for (int tileX = Math.floorDiv(left, tileWidth) * tileWidth;
+                    tileX < right; tileX += tileWidth) {
+                int copyLeft = Math.max(left, tileX);
+                int copyTop = Math.max(top, tileY);
+                int copyRight = Math.min(right, tileX + tileWidth);
+                int copyBottom = Math.min(bottom, tileY + tileHeight);
+                destination.copyArea((short)(copyLeft - tileX),
+                        (short)(copyTop - tileY), (short)copyLeft,
+                        (short)copyTop, (short)(copyRight - copyLeft),
+                        (short)(copyBottom - copyTop), backgroundPixmap);
+            }
+        }
     }
 
     public boolean isTransparent() {
