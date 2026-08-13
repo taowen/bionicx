@@ -38,14 +38,12 @@ Android-kernel, FHS, identity and DNS boundary consistently.
 
 ## 2. ELF handoff
 
-`bionicx-exec` is an Android NDK/Bionic AArch64 executable. It supports:
-
-- `loader`: exec glibc `ld-linux-aarch64.so.1` explicitly with a controlled
-  `--library-path`. This avoids changing the target ELF and is the default for
-  portable bundles.
-- `direct`: exec the application and let its `PT_INTERP` select glibc. This
-  preserves the application's identity in `/proc/self/exe`, but the interpreter
-  must be relocated to an absolute, executable app-private path.
+`bionicx-exec` is an Android NDK/Bionic AArch64 executable. It always executes
+the target directly. `bxapt` atomically normalizes every package-installed ELF
+with `PT_INTERP` to the one app-private glibc loader, converts legacy transitive
+`DT_RPATH` to `DT_RUNPATH`, and relocates absolute search entries. This keeps
+`/proc/self/exe`, child execution and library resolution identical for every
+application. Explicit-loader execution is not a profile or executor feature.
 
 The executor forks a child, observes only the exec boundary with ptrace,
 single-steps the loader entry, suppresses the synthetic Android SIGSEGV seen on
@@ -67,11 +65,12 @@ from accidentally consuming glibc loader configuration.
 
 ## 3. Profile contract
 
-Profiles are versioned JSON documents. Schema version 2 validates the ID,
-launch mode, environment names, DPI, socket mode and host services. Values may
+Profiles are versioned JSON documents. Schema version 3 validates the ID,
+environment names, DPI, socket mode and host services. Values may
 use `${FILES}`, `${APP}`, `${RUNTIME}`, `${HOME}`, `${TMP}`, and `${DISPLAY}`.
 There is no compatibility-module field: profiles cannot change the runtime
-ABI boundary. `LD_PRELOAD` and `BIONICX_*` runtime variables are reserved.
+ABI boundary. `LD_PRELOAD`, `LD_LIBRARY_PATH`, `BIONICX_ROOTFS`,
+`BIONICX_TMPDIR` and `BIONICX_DNS_SERVERS` are runtime-owned.
 
 The profile is configuration, not an installer. Bundle acquisition, license
 acceptance, recursive dependency resolution, interpreter relocation, and
@@ -118,6 +117,9 @@ helpers. Its implementation is split only for source ownership:
 - `fhs-path.c`, `fhs-exec.c` and `fhs-metadata.c` map the single shared rootfs;
 - `identity.c` exposes the current Android app UID/GID to glibc software;
 - `dns.c` supplies the Android network's active resolvers.
+- `sysv-semaphore.c` supplies one app-private, file-backed System V semaphore
+  namespace with cross-process locking and futex waits because Android seccomp
+  blocks the corresponding AArch64 syscalls for ordinary app UIDs.
 
 These are not selectable plugins and cannot vary by application. Unsupported
 kernel capabilities are explicit. In particular robust pthread mutexes return

@@ -16,7 +16,7 @@ only to migrate the already-installed private POC files, not to run WPS.
 
 ```text
 application profile (JSON)
-  executable, loader mode, argv, environment, host services, DPI
+  executable, argv, environment, host services, DPI
                               |
                               v
 Android/Bionic BionicXActivity ---- embedded Winlator-derived X server
@@ -117,39 +117,35 @@ runtime root, and launch BionicX.
 
 The xterm profile is the first package-installed terminal boundary. It starts
 Debian bash through a real PTY and verifies Android-injected keyboard input,
-command execution and rendered output. Loader-mode profiles automatically
-export their library search path so glibc parents can `exec` package-installed
-glibc children without PRoot.
+command execution and rendered output. Every package-installed ELF uses its
+normalized `PT_INTERP`; profiles cannot select another handoff mode.
 
 ## Add an application
 
-1. Put the application beneath `files/apps/<profile-id>` and a compatible
-   glibc runtime beneath `files/rootfs`.
-2. Run `tools/resolve-elf-deps.py` against every entry ELF and plugin tree.
-3. Add a profile conforming to `schemas/profile.schema.json`.
-4. Prefer `loader` mode. Use `direct` only when the program needs its real
-   `/proc/self/exe`, and relocate `PT_INTERP` to the app-private glibc loader.
-5. Start with the abstract X11 socket. Use `filesystem` only for a client
+1. Install the Debian package with `bxapt`, or a hash-pinned external `.deb`
+   with `bxapt deb`; both remain in the shared rootfs and dpkg database.
+2. Add a schema-3 profile naming the package-owned executable. Profiles have no
+   loader, preload, compatibility, dependency-copy, or fallback controls.
+3. Start with the abstract X11 socket. Use `filesystem` only for a client
    transport already patched to BionicX's private socket path.
-6. Reproduce a missing platform capability with a controlled client, then fix
+4. Reproduce a missing platform capability with a controlled client, then fix
    the shared runtime contract and rerun existing applications.
 
-The profile installer accepts independently prepared application and runtime
-trees:
+The profile installer accepts the rootfs seed once and optional controlled
+test fixtures. Real application packages are not copied through this path:
 
 ```sh
 tools/install-profile.sh \
   --profile profiles/hello.json \
   --app-root build/hello-bundle/app \
-  --runtime-root build/hello-bundle/rootfs \
+  --runtime-root build/rootfs-seed-bundle/rootfs \
   --serial <serial>
 ```
 
 ## WPS example
 
-Read [the WPS profile documentation](examples/wps/README.md). For the original
-POC device, `examples/wps/migrate-poc-device.sh` migrates its existing private
-files to BionicX and relocates the equal-width Android package prefix.
+Read [the WPS profile documentation](examples/wps/README.md). The hash-pinned
+external package is installed into the shared rootfs through `bxapt deb`.
 
 The repository contains screenshots, hashes, and the device report under
 `evidence/`; it deliberately contains no proprietary WPS binaries.
@@ -157,9 +153,8 @@ The repository contains screenshots, hashes, and the device report under
 ## Chrome example
 
 [`examples/chrome/README.md`](examples/chrome/README.md) documents the pinned,
-hash-locked Chrome stable ARM64 bundle. Its resolver roots include NSS modules
-loaded at runtime, while `--exclude-copy-root` prevents the large application
-ELFs from being duplicated into the flat library closure.
+hash-locked Chrome stable ARM64 package and the separately built host Vulkan
+bridge. Chrome and its Debian dependencies are never copied into that bridge.
 
 ## Scope and safety
 

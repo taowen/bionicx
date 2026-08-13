@@ -23,5 +23,5 @@ ANDROID_SERIAL=<serial> examples/runtime-probe/install-and-run.sh
 adb -s <serial> logcat -d -s BionicX | grep -E 'BX(TEST|CAP|SUMMARY)'
 ```
 
-`profiles/wps-compat-probe.json` is retained as a controlled command-launch
+`profiles/command-runtime-probe.json` is retained as a controlled command-launch
 fixture, but it uses the same runtime contract as every other profile.

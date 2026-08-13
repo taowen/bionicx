@@ -26,32 +26,24 @@ printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d
 chmod 0755 /usr/sbin/policy-rc.d
 mkdir -p /var/cache/apt/archives/partial
 
-apt-get update
-# debian:*-slim cleans archives after every apt invocation, so seed the cache
-# after update and immediately before the single install transaction.
-cp /tmp/*.deb /var/cache/apt/archives/
-# WPS 11.1.0.11720 has three known metadata omissions: its postinst invokes
-# hexdump without declaring the provider, libwpsmain loads libxslt.so.1, and
-# its bundled Qt xcb plugin links libxkbcommon-x11.so.0.  Keep these as
-# explicit package-level workarounds rather than copying individual libraries.
-apt-get install -y --no-install-recommends \
-    bsdextrautils dbus icewm libxkbcommon-x11-0 libxslt1.1 \
-    evince filezilla firefox-esr geany gimp inkscape libreoffice-writer \
-    mousepad ristretto strace thunderbird thunar vlc xterm \
-    /tmp/google-chrome.deb /tmp/wps-office.deb
+apt-get -o Acquire::http::Pipeline-Depth=0 \
+    -o Acquire::http::No-Cache=true update
+# The host image is only the package-manager/runtime seed. Applications,
+# desktop services and their dependencies belong to the device dpkg database
+# and are installed by bxapt from the same signed snapshot.
+apt-get -o Acquire::http::Pipeline-Depth=0 \
+    -o Acquire::http::No-Cache=true install -y --no-install-recommends \
+    apt binutils ca-certificates coreutils dash debian-archive-keyring dpkg \
+    findutils grep patchelf sed
 dpkg --audit
 
-mkdir -p /bionicx/apps/chrome/opt/google \
-    /bionicx/apps/wps-office/opt /bionicx/metadata
-mv /opt/google/chrome /bionicx/apps/chrome/opt/google/
-mv /opt/kingsoft /bionicx/apps/wps-office/opt/
-
+mkdir -p /bionicx/metadata
 apt-mark showmanual | sort > /bionicx/metadata/manual-packages.txt
 dpkg-query -W -f='${binary:Package}\t${Version}\n' | sort \
     > /bionicx/metadata/packages.tsv
 
-# The deployed image is immutable and apt never runs on Android.  Keep dpkg's
-# database and configured files, but discard download/cache/build-only state.
+# Downloads are transient; signed sources, keyrings and the dpkg database are
+# retained so bxapt owns all subsequent package transactions on Android.
 apt-get clean
 rm -rf /var/lib/apt/lists/* /var/log/* /tmp/* /var/tmp/*
 : > /etc/machine-id
