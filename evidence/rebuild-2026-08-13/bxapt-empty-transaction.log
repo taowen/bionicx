@@ -1,0 +1,28 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 15.5 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 110.3 MB/s (8511 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 13.5 MB/s (880 bytes in 0.000s)
+bionicx-exec: running untraced pid=24508
+bionicx-exec: primary pid=24508 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=24513
+Reading package lists...
+Building dependency tree...
+Reading state information...
+fonts-stix is already the newest version (1.1.1-5).
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+bionicx-exec: primary pid=24513 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=24524
+bionicx-exec: primary pid=24524 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=24528
+bionicx ELF fixups: 1300 entries
+bionicx-exec: primary pid=24528 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=24543
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+bionicx-exec: primary pid=24543 exited status=0x0; draining session
+bionicx-exec: session drained children=0

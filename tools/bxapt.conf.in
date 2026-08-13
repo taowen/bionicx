@@ -21,12 +21,6 @@ DPkg::Options {
   "--root=@ROOT@";
   "--admindir=@ROOT@/var/lib/dpkg";
 };
-// apt invokes dpkg separately for unpack and configure phases. Normalize the
-// complete root after each phase so newly unpacked maintainer-script helpers
-// enter the same loader/RUNPATH contract before configuration begins.
-DPkg::Post-Invoke {
-  "@ROOT@/bin/sh @FILES@/run/bxapt/rootfs-elf-fixup.sh @ROOT@ @ROOT@";
-};
 APT::Sandbox::User "";
 Acquire::Languages "none";
 Acquire::ForceIPv4 "true";

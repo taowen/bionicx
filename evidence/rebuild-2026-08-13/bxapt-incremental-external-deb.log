@@ -1,0 +1,47 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 8.3 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 108.1 MB/s (8383 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 7.2 MB/s (880 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/cache/trixie-desktop-apt/archives/libatomic1_14.2.0-19_arm64.deb: 1 file pushed, 0 skipped. 97.7 MB/s (10128 bytes in 0.000s)
+bionicx-exec: running untraced pid=19956
+(Reading database ... 40542 files and directories currently installed.)
+Preparing to unpack .../libatomic1_14.2.0-19_arm64.deb ...
+Unpacking libatomic1:arm64 (14.2.0-19) over (14.2.0-19) ...
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+bionicx-exec: primary pid=19956 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=19980
+bionicx ELF fixups: 1302 entries
+bionicx-exec: primary pid=19980 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=20008
+bionicx-exec: primary pid=20008 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=20013
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+1 not fully installed or removed.
+After this operation, 0 B of additional disk space will be used.
+Download complete and in download only mode
+bionicx-exec: primary pid=20013 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=20020
+bionicx-exec: primary pid=20020 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=20024
+bionicx ELF fixups: 0 entries
+bionicx-exec: primary pid=20024 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=20039
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+1 not fully installed or removed.
+After this operation, 0 B of additional disk space will be used.
+Setting up libatomic1:arm64 (14.2.0-19) ...
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+bionicx-exec: primary pid=20039 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXELAPSED 3.75 seconds

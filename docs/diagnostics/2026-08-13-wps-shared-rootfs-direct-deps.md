@@ -86,9 +86,11 @@ service and destination contract, not a libcups downgrade or binary patch.
 
 The formula warning has a similar legacy component: this WPS build contains
 explicit references to `Cambria Math` and the Wingdings families. Installing
-the normal Debian Symbola, Noto, and Liberation font set does not provide
-those proprietary family identities. Font substitution and glyph coverage
-must be tested separately; suppressing the warning is not acceptance.
+the normal Debian Symbola, Noto, Liberation, STIX/STIX Math, and OpenSymbol
+font set made every open family visible through Fontconfig but did not change
+the cold-start warning. Those packages do not provide the proprietary family
+identities WPS checks. Font substitution and glyph coverage must be tested
+separately; suppressing the warning is not acceptance.
 
 Evidence is in `evidence/rebuild-2026-08-13/wps-*`, including the successful
 home/editor screenshots, Qt plug-in diagnosis, package status and empty dpkg

@@ -1,0 +1,40 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 12.8 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 83.1 MB/s (8383 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 8.3 MB/s (880 bytes in 0.000s)
+bionicx-exec: running untraced pid=18344
+bionicx-exec: primary pid=18344 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=18349
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 1 reinstalled, 0 to remove and 0 not upgraded.
+Need to get 858 kB of archives.
+After this operation, 0 B of additional disk space will be used.
+Get:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 xterm arm64 398-1 [858 kB]
+Fetched 858 kB in 4s (200 kB/s)
+Download complete and in download only mode
+bionicx-exec: primary pid=18349 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=18401
+(Reading database ... 40542 files and directories currently installed.)
+Preparing to unpack .../archives/xterm_398-1_arm64.deb ...
+Unpacking xterm (398-1) over (398-1) ...
+bionicx-exec: primary pid=18401 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=18425
+bionicx ELF fixups: 1302 entries
+bionicx-exec: primary pid=18425 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=18573
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 1 reinstalled, 0 to remove and 0 not upgraded.
+1 not fully installed or removed.
+After this operation, 0 B of additional disk space will be used.
+E: Internal Error, No file name for xterm:arm64
+bionicx-exec: primary pid=18573 exited status=0x6400; draining session
+bionicx-exec: session drained children=0
+Command exited with non-zero status 100
+BXELAPSED 7.57 seconds

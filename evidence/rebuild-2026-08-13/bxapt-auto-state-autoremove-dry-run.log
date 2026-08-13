@@ -1,0 +1,18 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 13.5 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 57.4 MB/s (8511 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 32.5 MB/s (2411 bytes in 0.000s)
+bionicx-exec: running untraced pid=28721
+NOTE: This is only a simulation!
+      apt-get needs root privileges for real execution.
+      Keep also in mind that locking is deactivated,
+      so don't depend on the relevance to the real current situation!
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following packages will be REMOVED:
+  libjq1 libonig5
+0 upgraded, 0 newly installed, 2 to remove and 0 not upgraded.
+Remv libjq1 [1.7.1-6+deb13u3]
+Remv libonig5 [6.9.9-1+b1]
+bionicx-exec: primary pid=28721 exited status=0x0; draining session
+bionicx-exec: session drained children=0

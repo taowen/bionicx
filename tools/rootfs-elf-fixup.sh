@@ -152,8 +152,17 @@ if [ "${1:-}" = --files ]; then
     exit
 fi
 
+paths_file=
+if [ "${1:-}" = --paths-from ]; then
+    [ "$#" -ge 3 ] && [ "$#" -le 4 ] || {
+        echo "usage: rootfs-elf-fixup.sh --paths-from FILE TREE [RUNTIME_ROOT]" >&2
+        exit 2
+    }
+    paths_file=$2
+    shift 2
+fi
 [ "$#" -ge 1 ] && [ "$#" -le 2 ] || {
-    echo "usage: rootfs-elf-fixup.sh TREE [RUNTIME_ROOT]" >&2
+    echo "usage: rootfs-elf-fixup.sh [--paths-from FILE] TREE [RUNTIME_ROOT]" >&2
     exit 2
 }
 tree=$1
@@ -161,22 +170,87 @@ runtime=${2:-$tree}
 ledger_dir="${BIONICX_LEDGER_DIR:-$tree/var/lib/bionicx}"
 ledger="$ledger_dir/elf-fixups.tsv.tmp"
 dependency_index="$ledger_dir/elf-files.tsv.tmp"
+targets="$ledger_dir/elf-targets.tsv.tmp"
+changed_paths="$ledger_dir/elf-changed-paths.tsv.tmp"
 mkdir -p "$ledger_dir"
-: > "$ledger"
 find "$runtime" \( -type f -o -type l \) \
     \( -name '*.so' -o -name '*.so.*' \) -print | while IFS= read -r file; do
     printf '%s\t%s\n' "${file##*/}" "$file"
 done | sort -u > "$dependency_index"
 export BIONICX_ELF_INDEX="$dependency_index"
 
-for directory in usr opt bin sbin lib lib64; do
-    [ -d "$tree/$directory" ] || continue
-    find "$tree/$directory" -type f \( -perm /111 -o -name '*.so' \
-        -o -name '*.so.*' \) -exec /bin/sh "$0" --files \
-        "$tree" "$runtime" "$ledger" {} +
-done
+if [ -n "$paths_file" ]; then
+    [ -f "$paths_file" ] || {
+        echo "missing ELF path manifest: $paths_file" >&2
+        exit 1
+    }
+    : > "$targets"
+    : > "$changed_paths"
+    while IFS= read -r path || [ -n "$path" ]; do
+        case "$path" in
+            ./*) path=${path#./} ;;
+            /*) path=${path#/} ;;
+        esac
+        case "$path" in
+            ''|..|../*|*/..|*/../*) continue ;;
+        esac
+        printf '/%s\n' "$path" >> "$changed_paths"
+        file="$tree/$path"
+        [ -f "$file" ] && [ ! -L "$file" ] || continue
+        case "${file##*/}" in
+            *.so|*.so.*) ;;
+            *) [ -x "$file" ] || continue ;;
+        esac
+        printf '/%s\n' "$path" >> "$targets"
+    done < "$paths_file"
+    sort -u "$targets" -o "$targets"
+    sort -u "$changed_paths" -o "$changed_paths"
+
+    if [ -s "$changed_paths" ] && [ -f "$ledger_dir/elf-fixups.tsv" ]; then
+        awk -F '\t' 'NR == FNR { target[$1] = 1; next }
+            !($1 in target)' "$changed_paths" \
+            "$ledger_dir/elf-fixups.tsv" > "$ledger"
+    elif [ -f "$ledger_dir/elf-fixups.tsv" ]; then
+        cp "$ledger_dir/elf-fixups.tsv" "$ledger"
+    else
+        : > "$ledger"
+    fi
+
+    set --
+    count=0
+    while IFS= read -r relative || [ -n "$relative" ]; do
+        set -- "$@" "$tree$relative"
+        count=$((count + 1))
+        if [ "$count" -eq 128 ]; then
+            /bin/sh "$0" --files "$tree" "$runtime" "$ledger" "$@"
+            set --
+            count=0
+        fi
+    done < "$targets"
+    if [ "$#" -gt 0 ]; then
+        /bin/sh "$0" --files "$tree" "$runtime" "$ledger" "$@"
+    fi
+    pruned="$ledger_dir/elf-fixups-pruned.tsv.tmp"
+    : > "$pruned"
+    tab=$(printf '\t')
+    while IFS= read -r line || [ -n "$line" ]; do
+        relative=${line%%"$tab"*}
+        [ -e "$tree$relative" ] || continue
+        printf '%s\n' "$line" >> "$pruned"
+    done < "$ledger"
+    mv "$pruned" "$ledger"
+else
+    : > "$ledger"
+    for directory in usr opt bin sbin lib lib64; do
+        [ -d "$tree/$directory" ] || continue
+        find "$tree/$directory" -type f \( -perm /111 -o -name '*.so' \
+            -o -name '*.so.*' \) -exec /bin/sh "$0" --files \
+            "$tree" "$runtime" "$ledger" {} +
+    done
+fi
 sort -u "$ledger" -o "$ledger"
 mv "$ledger" "$ledger_dir/elf-fixups.tsv"
-rm -f "$dependency_index"
+rm -f "$dependency_index" "$targets" "$changed_paths" \
+    "$ledger_dir/elf-fixups-pruned.tsv.tmp"
 printf 'bionicx ELF fixups: %s entries\n' \
     "$(wc -l < "$ledger_dir/elf-fixups.tsv")"

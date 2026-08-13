@@ -1,0 +1,54 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 10.9 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 59.6 MB/s (8868 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 22.6 MB/s (2411 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/cache/trixie-desktop-apt/archives/libatomic1_14.2.0-19_arm64.deb: 1 file pushed, 0 skipped. 118.9 MB/s (10128 bytes in 0.000s)
+bionicx-exec: running untraced pid=29383
+bionicx-exec: primary pid=29383 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29434
+(Reading database ... 33945 files and directories currently installed.)
+Preparing to unpack .../libatomic1_14.2.0-19_arm64.deb ...
+Unpacking libatomic1:arm64 (14.2.0-19) over (14.2.0-19) ...
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+bionicx-exec: primary pid=29434 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29479
+bionicx ELF fixups: 1237 entries
+bionicx-exec: primary pid=29479 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29512
+bionicx-exec: primary pid=29512 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29517
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+1 not fully installed or removed.
+After this operation, 0 B of additional disk space will be used.
+Download complete and in download only mode
+bionicx-exec: primary pid=29517 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29524
+bionicx-exec: primary pid=29524 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29530
+bionicx ELF fixups: 1237 entries
+bionicx-exec: primary pid=29530 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29547
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+1 not fully installed or removed.
+After this operation, 0 B of additional disk space will be used.
+Setting up libatomic1:arm64 (14.2.0-19) ...
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+bionicx-exec: primary pid=29547 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29567
+libatomic1 set to manually installed.
+bionicx-exec: primary pid=29567 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXELAPSED 4.81 seconds

@@ -44,15 +44,46 @@ cp "$repo_dir/build/test-runtime-contract/runtime-contract-probe" \
     "$root/opt/vendor/qt/plugins/platforms/direct-plugin.so"
 cp "$repo_dir/build/test-runtime-contract/runtime-contract-probe" \
     "$root/opt/vendor/libbionicx-direct.so.1"
+cp "$repo_dir/build/test-runtime-contract/runtime-contract-probe" \
+    "$root/opt/untouched-probe"
+patchelf --set-interpreter /lib64/ld-linux-untouched.so.2 \
+    "$root/opt/untouched-probe"
 patchelf --add-needed libbionicx-direct.so.1 \
     "$root/opt/vendor/qt/plugins/platforms/direct-plugin.so"
+manifest="$test_dir/unpacked-paths.txt"
+printf '%s\n' \
+    './opt/vendor/qt/plugins/platforms/direct-plugin.so' \
+    './opt/vendor/libbionicx-direct.so.1' > "$manifest"
 BIONICX_PATCHELF=patchelf BIONICX_READELF=readelf \
-    "$repo_dir/tools/rootfs-elf-fixup.sh" "$root" >/dev/null
+    "$repo_dir/tools/rootfs-elf-fixup.sh" --paths-from "$manifest" \
+        "$root" >/dev/null
 case "$(patchelf --print-rpath "$root/opt/vendor/qt/plugins/platforms/direct-plugin.so")" in
     *"$root/opt/vendor"*) ;;
     *) echo "unique direct dependency directory was not normalized" >&2; exit 1 ;;
 esac
 grep -F $'/opt/vendor/qt/plugins/platforms/direct-plugin.so\tDT_NEEDED\tlibbionicx-direct.so.1\t'"$root/opt/vendor" \
+    "$root/var/lib/bionicx/elf-fixups.tsv" >/dev/null
+grep -F $'/usr/bin/probe\tPT_INTERP\t' \
+    "$root/var/lib/bionicx/elf-fixups.tsv" >/dev/null
+[[ "$(patchelf --print-interpreter "$root/opt/untouched-probe")" == \
+    /lib64/ld-linux-untouched.so.2 ]]
+ledger_before_empty=$(sha256sum "$root/var/lib/bionicx/elf-fixups.tsv")
+: > "$manifest"
+BIONICX_PATCHELF=patchelf BIONICX_READELF=readelf \
+    "$repo_dir/tools/rootfs-elf-fixup.sh" --paths-from "$manifest" \
+        "$root" >/dev/null
+[[ "$(sha256sum "$root/var/lib/bionicx/elf-fixups.tsv")" == \
+    "$ledger_before_empty" ]]
+unlink "$root/opt/vendor/qt/plugins/platforms/direct-plugin.so"
+BIONICX_PATCHELF=patchelf BIONICX_READELF=readelf \
+    "$repo_dir/tools/rootfs-elf-fixup.sh" --paths-from "$manifest" \
+        "$root" >/dev/null
+if grep -F '/opt/vendor/qt/plugins/platforms/direct-plugin.so' \
+        "$root/var/lib/bionicx/elf-fixups.tsv" >/dev/null; then
+    echo "removed ELF survived incremental ledger pruning" >&2
+    exit 1
+fi
+grep -F $'/usr/bin/probe\tPT_INTERP\t' \
     "$root/var/lib/bionicx/elf-fixups.tsv" >/dev/null
 
 app="$test_dir/app"

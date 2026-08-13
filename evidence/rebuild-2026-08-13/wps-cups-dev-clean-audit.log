@@ -1,0 +1,6 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 12.3 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 102.2 MB/s (8511 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 21.3 MB/s (2411 bytes in 0.000s)
+bionicx-exec: running untraced pid=27695
+bionicx-exec: primary pid=27695 exited status=0x0; draining session
+bionicx-exec: session drained children=0

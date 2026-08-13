@@ -8,7 +8,7 @@ dns_servers="${BIONICX_DNS_SERVERS:-}"
 
 usage() {
     echo "usage: tools/bxapt [--serial SERIAL] [--dns ADDRESSES] COMMAND [ARG ...]" >&2
-    echo "commands: update, install, remove, set, deb, fixup, normalize, apt, dpkg, query, run" >&2
+    echo "commands: update, install, remove, autoremove, set, deb, fixup, normalize, apt, dpkg, query, run" >&2
     exit "${1:-2}"
 }
 
@@ -29,6 +29,8 @@ adb_command=("${ADB:-adb}")
 root="/data/user/0/$package_id/files/rootfs"
 files="/data/user/0/$package_id/files"
 run_dir="$files/run/bxapt"
+unpack_manifest="$run_dir/unpacked-paths.txt"
+package_snapshot="$run_dir/installed-packages-before.txt"
 perl_libs="$root/etc/perl:$root/usr/share/perl5:$root/usr/lib/aarch64-linux-gnu/perl-base:$root/usr/lib/aarch64-linux-gnu/perl/5.40:$root/usr/share/perl/5.40"
 
 run_as() {
@@ -61,6 +63,27 @@ upload_private() {
     "${adb_command[@]}" shell rm "$temporary"
 }
 
+deb_package_name() {
+    local archive="$1"
+    local member
+    member="$(ar t "$archive" | awk '/^control\.tar/{ print; exit }')"
+    [[ -n "$member" ]] || {
+        echo "missing control archive in $archive" >&2
+        return 1
+    }
+    local decompressor=()
+    case "$member" in
+        *.xz) decompressor=(xz -dc) ;;
+        *.zst) decompressor=(zstd -dc) ;;
+        *.gz) decompressor=(gzip -dc) ;;
+        *.bz2) decompressor=(bzip2 -dc) ;;
+        *.tar) decompressor=(cat) ;;
+        *) echo "unsupported control archive: $member" >&2; return 1 ;;
+    esac
+    ar p "$archive" "$member" | "${decompressor[@]}" | \
+        tar -xOf - ./control | sed -n 's/^Package: //p' | head -n 1
+}
+
 prepare_state() {
     run_as test -x "$files/bin/bionicx-exec"
     run_as test -x "$root/usr/bin/apt-get"
@@ -84,15 +107,35 @@ prepare_state() {
         "$run_dir/sources.sources"
 }
 
+requested_packages=()
 case "$command_name" in
     update) arguments=(update) ;;
     install)
         [[ $# -ge 1 ]] || usage
-        arguments=(install -y --no-install-recommends "$@")
+        install_arguments=()
+        for argument in "$@"; do
+            if [[ "$argument" == --reinstall ]]; then
+                install_arguments+=("$argument")
+                continue
+            fi
+            if [[ ! "$argument" =~ ^[a-z0-9][a-z0-9+.-]*(:arm64)?(=[^[:space:]]+)?$ ]]; then
+                echo "invalid install argument: $argument" >&2
+                exit 2
+            fi
+            install_arguments+=("$argument")
+            requested="${argument%%=*}"
+            requested_packages+=("${requested%:arm64}")
+        done
+        [[ ${#requested_packages[@]} -gt 0 ]] || usage
+        arguments=(install -y --no-install-recommends "${install_arguments[@]}")
         ;;
     remove)
         [[ $# -ge 1 ]] || usage
         arguments=(remove -y "$@")
+        ;;
+    autoremove)
+        [[ $# -eq 0 ]] || usage
+        arguments=(autoremove -y)
         ;;
     set)
         [[ $# -eq 1 && -f "$1" ]] || usage
@@ -112,6 +155,9 @@ case "$command_name" in
             echo "empty package set: $1" >&2
             exit 2
         }
+        for package in "${packages[@]}"; do
+            requested_packages+=("${package%:arm64}")
+        done
         arguments=(install -y --no-install-recommends "${packages[@]}")
         ;;
     deb)
@@ -125,6 +171,12 @@ case "$command_name" in
             echo "actual:   $actual_sha256" >&2
             exit 1
         fi
+        deb_package="$(deb_package_name "$host_deb")"
+        if [[ ! "$deb_package" =~ ^[a-z0-9][a-z0-9+.-]*$ ]]; then
+            echo "invalid Package field in $host_deb: $deb_package" >&2
+            exit 1
+        fi
+        requested_packages+=("$deb_package")
         arguments=()
         ;;
     fixup) [[ $# -eq 0 ]] || usage; arguments=() ;;
@@ -159,6 +211,9 @@ environment=(
     "BIONICX_TMPDIR=$run_dir"
     "BIONICX_REWRITE_ABSOLUTE_SYMLINKS=1"
     "BIONICX_DNS_SERVERS=$dns_servers"
+    "BIONICX_UNPACK_MANIFEST=$unpack_manifest"
+    "BIONICX_PACKAGE_SNAPSHOT=$package_snapshot"
+    "BIONICX_APT_CONFIG=$run_dir/apt.conf"
     "FONTCONFIG_PATH=$root/etc/fonts"
     "FONTCONFIG_FILE=fonts.conf"
     "FONTCONFIG_SYSROOT=$root"
@@ -195,6 +250,26 @@ fixup_elf() {
     run_binary
 }
 
+fixup_unpacked_elf() {
+    binary="$root/bin/sh"
+    arguments=("$run_dir/rootfs-elf-fixup.sh" --paths-from \
+        "$unpack_manifest" "$root" "$root")
+    run_binary
+}
+
+snapshot_package_state() {
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --snapshot)
+    run_binary
+}
+
+reconcile_package_state() {
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --reconcile \
+        "${requested_packages[@]}")
+    run_binary
+}
+
 dpkg_arguments() {
     arguments=(--force-not-root --force-script-chrootless \
         --root="$root" --admindir="$root/var/lib/dpkg" "${arguments[@]}")
@@ -215,16 +290,26 @@ if [[ "$command_name" == deb ]]; then
     upload_private "$host_deb" "$device_deb"
     trap 'run_as rm -f "$device_deb" >/dev/null 2>&1 || true' EXIT
 
-    binary="$root/usr/bin/dpkg"
-    arguments=(--unpack "$device_deb")
-    dpkg_arguments
+    snapshot_package_state
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --unpack "$device_deb")
     run_binary
-    fixup_elf
+    fixup_unpacked_elf
 
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --clear)
+    run_binary
+    binary="$root/usr/bin/apt-get"
+    arguments=(-f install -y --no-install-recommends --download-only)
+    run_binary
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --unpack)
+    run_binary
+    fixup_unpacked_elf
     binary="$root/usr/bin/apt-get"
     arguments=(-f install -y --no-install-recommends)
     run_binary
-    fixup_elf
+    reconcile_package_state
     exit
 fi
 
@@ -236,8 +321,17 @@ elif [[ "$command_name" == query ]]; then
     binary="$root/usr/bin/dpkg-query"
     arguments=(--admindir="$root/var/lib/dpkg" "${arguments[@]}")
 fi
+if [[ "$command_name" == remove || "$command_name" == autoremove ]]; then
+    requested_arguments=("${arguments[@]}")
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --clear)
+    run_binary
+    binary="$root/usr/bin/apt-get"
+    arguments=("${requested_arguments[@]}")
+fi
 if [[ "$command_name" == install || "$command_name" == set ]]; then
     requested_arguments=("${arguments[@]}")
+    snapshot_package_state
     binary="$root/bin/sh"
     arguments=("$run_dir/bxapt-unpack.sh" --clear)
     run_binary
@@ -247,11 +341,12 @@ if [[ "$command_name" == install || "$command_name" == set ]]; then
     binary="$root/bin/sh"
     arguments=("$run_dir/bxapt-unpack.sh" --unpack)
     run_binary
-    fixup_elf
+    fixup_unpacked_elf
     binary="$root/usr/bin/apt-get"
-    arguments=("${requested_arguments[@]}")
+    arguments=(-f install -y --no-install-recommends)
 fi
 run_binary
 case "$command_name" in
-    install|set) fixup_elf ;;
+    install|set) reconcile_package_state ;;
+    remove|autoremove) fixup_unpacked_elf ;;
 esac

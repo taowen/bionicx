@@ -105,6 +105,7 @@ tools/bxapt --serial <serial> update
 tools/bxapt --serial <serial> install hello
 tools/bxapt --serial <serial> dpkg -s hello
 tools/bxapt --serial <serial> remove hello
+tools/bxapt --serial <serial> autoremove
 ```
 
 The launcher reads the active IPv4 DNS server from Android connectivity state,

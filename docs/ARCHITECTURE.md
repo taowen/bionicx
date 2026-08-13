@@ -39,6 +39,20 @@ helpers use the same loader contract as applications. The seed includes
 Debian's standalone sysusers implementation for rootfs account creation without
 a running systemd or Android root privileges.
 
+The unpacker records the paths owned by the exact downloaded deb set. The ELF
+normalizer builds its provider index from the complete rootfs, but atomically
+replaces ledger entries and rewrites files only for that transaction manifest.
+It therefore retains one global dependency namespace without rescanning every
+application under `/opt` after each package. `bxapt fixup` is the explicit
+full-root audit operation; normal installation does not use it as a fallback.
+
+The explicit unpack boundary means apt does not itself update `extended_states`
+for the downloaded dependency set. `bxapt` snapshots installed packages before
+the transaction and reconciles only the delta after successful configuration:
+new resolver dependencies become automatic and explicitly requested packages
+become manual. Removal and autoremove also run the incremental ledger pass,
+which prunes records for package-owned ELFs that no longer exist.
+
 This is a deployed userspace layout, not a chroot. Every Debian process enters
 one mandatory runtime contract (`libbionicx-runtime.so`) which defines the
 Android-kernel, FHS, identity and DNS boundary consistently.
