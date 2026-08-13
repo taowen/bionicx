@@ -1,0 +1,31 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libX11.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXau.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXdmcp.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXext.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXfixes.so.3
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXi.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXrandr.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXrender.so.1
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libresolv.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libxcb.so.1
+relocated 10 files
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/app/lib/libGL.so.1.7.0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle
+profile glx-probe is valid
+bionicx-exec: running untraced pid=9036
+bionicx-exec: running untraced pid=9048
+bionicx ELF fixups: 8 entries
+installed profile glx-probe for io.taowen.bx
+I/BionicX (10956): BXTEST PASS glx-display connected
+I/BionicX (10956): BXTEST PASS glx-extension opcode=145 event=0 error=128
+I/BionicX (10956): BXTEST PASS glx-version version=1.4
+I/BionicX (10956): BXTEST PASS glx-visual-config-wire visuals=1 properties=18 visual=0x1 rgba=1 depth=24
+I/BionicX (10956): BXTEST PASS glx-fbconfig-visual configs=3 visual=0x1 xVisual=0x1 xRenderable=1
+I/BionicX (10956): BXTEST PASS glx-es-profile-extension GLX_ARB_create_context GLX_ARB_get_proc_address GLX_EXT_create_context_es_profile
+I/BionicX (10956): BXTEST PASS glx-pbuffer drawable=0x400001 size=7x5
+I/BionicX (10956): BXTEST PASS glx-visual RGBA double-buffered
+I/BionicX (10956): BXTEST PASS glx-visual-config-api rgba=1 double=1 red=8 depth=24 type=0x8002
+I/BionicX (10956): BXTEST FAIL glx-context creation/make-current failed
+I/BionicX (10956): BXSUMMARY host-glx passed=9 failed=1
+I/BionicX (10956): glx-probe exited with 1

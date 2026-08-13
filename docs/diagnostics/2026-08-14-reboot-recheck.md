@@ -1,19 +1,33 @@
 # Force-stop and reboot recheck
 
-On `01408BH601027129`, after `am force-stop io.taowen.bx` and a full
-`adb reboot`, the seed id is still
+On `01408BH601027129`, after `am force-stop io.taowen.bx` and `adb reboot`,
+the seed is still
 `ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2`.
+`run-as` needs a few extra seconds before `bxapt` push works
+(`packagelist_parse` Permission denied immediately after boot).
 
-Host probes (runtime contract, new-device guide, ELF fixup, VLC AVI,
-soffice-doc, popular profiles) still print PASS. On the device,
-`vlc-avi-probe` is 10/10 and `soffice-origin-probe` is 5/5 with
-`LibreOffice 25.2.3.2`. Untraced `hello-x11` logs `glibc=2.41`.
+Durable files survive: qBittorrent payload `a68590ec…`, Krita
+`bionicx-saved.png`. `dpkg --audit` is empty once run-as settles.
 
-`glx-probe` after wake is 25/26: `glx-present` and the compositor
-blue/red pixels pass; `glx-fbconfig-visual` reports `visual=0x0
-xRenderable=0` on the first two cold starts. That one GLX config query
-is recorded as remaining, not as a seed wipe.
+Host probes (runtime contract, new-device guide, GLX seed-safe,
+krita-glx-destroy, keepassxc-cli, popular-durable, dpkg-consistency,
+firefox-online) still print PASS.
 
-`docs/NEW-DEVICE.md` still names seed rebuild, `bxapt` declarations,
-and the Android-kernel limits (`set_robust_list`, `clone3`,
-`--no-sandbox`).
+Device after reboot:
+
+- `keepassxc-cli-probe` 6/6
+- IceWM desktop session `--accept` 7/7 (xterm+mousepad, D-Bus, Pulse,
+  CUPS, Vulkan host service)
+- `glx-probe` `glx-fbconfig-visual` still `configs=3 visual=0x1
+  xRenderable=1`, then `glXCreateContext` returns NULL
+  (`passed=9 failed=1`). `krita-glx-destroy-probe` is 2/2 on
+  `create-new`. Waiting for `MapNotify` does not change that.
+
+The reboot matrix therefore covers seed, audit, durable files, the
+KeePassXC CLI path, and the untraced two-app desktop session.
+Gladio window-context creation after a cold boot is still a remaining
+GPU gap, not treated as 26/26.
+
+Evidence: `evidence/rebuild-2026-08-14/reboot-recheck.log`,
+`keepassxc-cli-probe-reboot.log`, `desktop-session-reboot.log`,
+`glx-probe-reboot.log`, `krita-glx-destroy-reboot.log`.

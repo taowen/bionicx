@@ -283,12 +283,30 @@ int main(void) {
     XStoreName(display, window, "BionicX host GPU GLX probe");
     XMapWindow(display, window);
     XSync(display, False);
+    {
+        XEvent mapped;
+        struct timespec pause = { .tv_nsec = 10 * 1000 * 1000 };
+        int waits = 0;
+        int saw_map = 0;
+        while (waits++ < 200) {
+            while (XPending(display) > 0) {
+                XNextEvent(display, &mapped);
+                if (mapped.type == MapNotify)
+                    saw_map = 1;
+            }
+            if (saw_map)
+                break;
+            nanosleep(&pause, NULL);
+        }
+    }
 
     GLXContext context = glXCreateContext(display, visual, NULL, True);
-    bool context_ok = context != NULL
+    bool make_current = context != NULL
             && glXMakeCurrent(display, window, context);
+    bool context_ok = make_current;
     result("glx-context", context_ok,
-           context_ok ? "current" : "creation/make-current failed");
+           context == NULL ? "create-null"
+           : make_current ? "current" : "make-current-failed");
     context_ok ? passed++ : failed++;
     if (!context_ok) goto cleanup_window;
 

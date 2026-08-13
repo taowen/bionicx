@@ -1,0 +1,114 @@
+==== host probes ====
+runtime contract probe: PASS
+new-device guide names seed rebuild, bxapt and kernel limits: PASS
+profile glx-probe is valid
+glx-probe install stays on the shared seed: PASS
+profile krita-glx-destroy-probe is valid
+krita glx destroy probe covers glXDestroyContext(NULL): PASS
+profile keepassxc is valid
+keepassxc cli probe creates and reopens a key-file database: PASS
+profile krita is valid
+profile krita is valid
+profile qbittorrent is valid
+profile keepassxc is valid
+popular durable workflows cover probes, persist and export: PASS
+dpkg consistency runner covers audit, reinstall and remove: PASS
+profile firefox-esr is valid
+firefox online runner covers NSS, example.com and cold start: PASS
+==== pre-reboot state ====
+BXINFO seed=ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+BXTEST PASS seed-before ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+BXINFO payload=a68590ec9ed4b1530a44cfb5f9df3457503ebc106d1b0124d865ca217f38537d
+BXTEST PASS qbit-payload-before a68590ec9ed4b1530a44cfb5f9df3457503ebc106d1b0124d865ca217f38537d
+BXTEST PASS krita-export-before
+BXTEST PASS keepassxc-kdbx-before
+==== force-stop + reboot ====
+BXINFO force-stop done
+BXINFO reboot issued
+BXTEST PASS run-as-after-reboot
+BXINFO seed-after=ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+BXTEST PASS seed-after ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+BXTEST PASS qbit-payload-after a68590ec9ed4b1530a44cfb5f9df3457503ebc106d1b0124d865ca217f38537d
+BXTEST PASS krita-export-after
+BXTEST FAIL audit-after-reboot
+run-as: packagelist_parse failed: Permission denied
+==== resume post-reboot after run-as settle ====
+BXTEST PASS audit-after-reboot empty (try 1)
+==== device probes after reboot ====
+bionicx-exec: running untraced pid=6709
+Successfully created new database.
+bionicx-exec: primary pid=6709 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-create created
+bionicx-exec: running untraced pid=6716
+Successfully added entry login.
+bionicx-exec: primary pid=6716 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-add login
+bionicx-exec: running untraced pid=6725
+login
+bionicx-exec: primary pid=6725 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-ls login
+bionicx-exec: running untraced pid=6730
+login
+bionicx
+https://example.com
+bionicx-exec: primary pid=6730 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-show login bionicx example.com
+bionicx-exec: running untraced pid=6735
+login
+bionicx-exec: primary pid=6735 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-reopen login
+BXTEST PASS db-persist bytes=1998
+BXSUMMARY keepassxc-cli passed=6 failed=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libX11.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXau.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXdmcp.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXext.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXfixes.so.3
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXi.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXrandr.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXrender.so.1
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libresolv.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libxcb.so.1
+relocated 10 files
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/app/lib/libGL.so.1.7.0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle
+profile glx-probe is valid
+bionicx-exec: running untraced pid=7083
+bionicx-exec: running untraced pid=7096
+bionicx ELF fixups: 8 entries
+installed profile glx-probe for io.taowen.bx
+==== untraced desktop session after reboot ====
+profile desktop-session is valid
+bionicx-exec: running untraced pid=8498
+bionicx-exec: running untraced pid=8509
+bionicx ELF fixups: 2 entries
+installed profile desktop-session for io.taowen.bx
+Starting: Intent { cmp=io.taowen.bx/com.winlator.BionicXActivity }
+Status: ok
+LaunchState: UNKNOWN (0)
+Activity: io.taowen.bx/com.winlator.BionicXActivity
+WaitTime: 3012
+Complete
+desktop-session accept finished at 3s
+I/BionicX ( 8569): enabled D-Bus session service at /data/user/0/io.taowen.bx/files/run/desktop-session/runtime/bus
+I/BionicX ( 8569): enabled PulseAudio host service at /data/user/0/io.taowen.bx/files/rootfs/tmp/.sound/PS0
+I/BionicX ( 8569): enabled app-private CUPS service
+I/BionicX ( 8569): enabled Vulkan host service at /data/user/0/io.taowen.bx/files/rootfs/tmp/.vortek/V0
+I/BionicX ( 8569): BXTEST PASS desktop-session-launch icewm=8612 app1=8621 app2=8626
+I/BionicX ( 8569): BXTEST PASS session-display :0
+I/BionicX ( 8569): BXTEST PASS session-two-mapped xterm=0x800014 mousepad=0xc00003
+I/BionicX ( 8569): BXTEST PASS session-switch-xterm focus=xterm
+I/BionicX ( 8569): BXTEST PASS session-switch-mousepad focus=mousepad
+I/BionicX ( 8569): BXTEST PASS session-resize-xterm 644x340 -> 740x382
+I/BionicX ( 8569): BXTEST PASS session-close-mousepad client withdrawn
+I/BionicX ( 8569): BXTEST PASS session-reopen-mousepad pid=8640 alive=1
+I/BionicX ( 8569): BXSUMMARY desktop-session-accept passed=7 failed=0
+desktop-session two-app accept: PASS
+BXSUMMARY reboot-recheck seed+audit+glx26+keepassxc6+desktop7
+BXINFO glx after reboot: host-glx passed=9 failed=1 create-null; krita-glx-destroy 2/2 create-new fail

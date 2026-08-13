@@ -12,6 +12,8 @@ if grep -F -- '--runtime-root' \
 fi
 grep -F 'passed=26' \
     "$repo_dir/examples/glx-probe/install-and-run.sh" >/dev/null
+grep -F 'MapNotify' \
+    "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
 grep -F 'fbconfig_count == 3' \
     "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
 grep -F 'GLX_VISUAL_ID' \
