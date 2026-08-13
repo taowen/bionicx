@@ -54,6 +54,13 @@ int main(int argc, char **argv) {
         fail("soname dlopen symbol");
     dlclose(soname_handle);
 
+    void *app_handle = dlopen("libbionicx-app-dlopen.so", RTLD_NOW);
+    if (app_handle == NULL) fail("app-lib soname dlopen");
+    int (*app_probe)(void) = dlsym(app_handle, "bionicx_runtime_dlopen_probe");
+    if (app_probe == NULL || app_probe() != 42)
+        fail("app-lib soname dlopen symbol");
+    dlclose(app_handle);
+
     pid_t chroot_child = fork();
     if (chroot_child < 0) fail("fork chroot contract");
     if (chroot_child == 0) {

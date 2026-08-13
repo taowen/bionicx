@@ -19,6 +19,8 @@ typedef struct XWindowSwapchain {
     VkImageUsageFlags imageUsage;
     VkQueue queue;
     JMethods* jmethods;
+    uint32_t acquireIndex;
+    int presented;
 } XWindowSwapchain;
 
 extern void getWindowExtent(JMethods* jmethods, int windowId, VkExtent2D* extent);
@@ -29,5 +31,6 @@ extern XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphi
 extern void XWindowSwapchain_destroy(VkDevice device, XWindowSwapchain* swapchain);
 extern VkResult XWindowSwapchain_acquireNextImage(XWindowSwapchain* swapchain, uint64_t timeout, VkSemaphore signalSemaphore, VkFence fence, uint32_t* imageIndex);
 extern void XWindowSwapchain_presentImage(XWindowSwapchain* swapchain);
+extern void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex);
 
 #endif

@@ -1,7 +1,9 @@
 # Host Vulkan probe
 
 This genuine AArch64 glibc client loads the pinned BionicX Vortek ICD through
-the ordinary Linux Vulkan loader. Vortek transports Vulkan calls over an
+the ordinary Linux Vulkan loader. The ICD JSON names the driver relative to
+the manifest (`../../../lib/libvulkan_vortek.so`), and the probe also
+`dlopen`s the ICD SONAME through the interposed runtime. Vortek transports Vulkan calls over an
 app-private Unix socket to the Bionic Android host, which loads the system
 Vulkan loader and the device's native vendor driver.
 
@@ -17,7 +19,13 @@ render pass with a red triangle over a green background. Vertex binding uses
 Vulkan 1.3 `vkCmdBindVertexBuffers2` with its optional size and stride arrays
 set to `NULL`, so the RPC bridge must preserve pointer presence exactly. It
 presents it through a semaphore without a prior queue idle, then checks
-the final pixels in an Android compositor screenshot.
+the final pixels in an Android compositor screenshot. It then acquires a
+second swapchain image (must not reuse the presented index), resizes the
+X window and expects `VK_ERROR_OUT_OF_DATE_KHR`, recreates with
+`oldSwapchain`, and remaps after an unmap/foreground cycle.
+
+The payload is installed against the existing seed rootfs. It does not
+replace `/files/rootfs`.
 
 ```sh
 ANDROID_SERIAL=<serial> examples/vulkan-probe/install-and-run.sh

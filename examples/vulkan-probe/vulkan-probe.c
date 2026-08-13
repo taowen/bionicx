@@ -1,3 +1,4 @@
+#include <dlfcn.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -103,6 +104,17 @@ int main(void) {
              VK_VERSION_MINOR(loader_version), VK_VERSION_PATCH(loader_version));
     result("host-vulkan-loader", status == VK_SUCCESS, details);
 
+    void *icd = dlopen("libvulkan_vortek.so", RTLD_NOW | RTLD_LOCAL);
+    const char *icd_how = "soname";
+    if (icd == NULL) {
+        icd = dlopen("lib/libvulkan_vortek.so", RTLD_NOW | RTLD_LOCAL);
+        icd_how = "app-relative";
+    }
+    snprintf(details, sizeof(details), "via=%s %s", icd_how,
+             icd != NULL ? "open" : dlerror());
+    result("host-vulkan-icd-library", icd != NULL, details);
+    if (icd != NULL) dlclose(icd);
+
     uint32_t extension_count = 0;
     status = vkEnumerateInstanceExtensionProperties(
             NULL, &extension_count, NULL);
@@ -127,9 +139,17 @@ int main(void) {
         has_xcb_surface |= strcmp(extensions[i].extensionName,
                                   VK_KHR_XCB_SURFACE_EXTENSION_NAME) == 0;
     }
+    char names[192] = {0};
+    size_t used = 0;
+    for (uint32_t i = 0; i < returned_extension_count && used + 2 < sizeof(names);
+            ++i) {
+        used += (size_t)snprintf(names + used, sizeof(names) - used, "%s%s",
+                                 used ? "," : "", extensions[i].extensionName);
+    }
     snprintf(details, sizeof(details),
-             "status=%d returned=%u surface=%u xlib=%u",
-             status, returned_extension_count, has_surface, has_xlib_surface);
+             "status=%d returned=%u surface=%u xlib=%u names=%s",
+             status, returned_extension_count, has_surface, has_xlib_surface,
+             names);
     result("host-vulkan-xlib-extensions",
            status == VK_SUCCESS && has_surface && has_xlib_surface, details);
     snprintf(details, sizeof(details), "status=%d xcb=%u",
@@ -352,6 +372,7 @@ int main(void) {
     result("host-vulkan-surface-capabilities",
            status == VK_SUCCESS && capabilities.currentExtent.width == 640
                    && capabilities.currentExtent.height == 360
+                   && capabilities.minImageCount >= 2
                    && capabilities.minImageCount > 0
                    && (capabilities.supportedUsageFlags
                        & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
@@ -1198,12 +1219,111 @@ int main(void) {
     if (present_status == VK_SUCCESS) {
         present_info.waitSemaphoreCount = 0;
         present_info.pWaitSemaphores = NULL;
-        for (unsigned frame = 0; frame < 50; ++frame) {
+        for (unsigned frame = 0; frame < 8; ++frame) {
             vkQueuePresentKHR(queue, &present_info);
             XSync(display, False);
-            usleep(100000);
+            usleep(20000);
         }
+        /* Hold the presented triangle long enough for a slow adb screencap.
+         * Resize/unmap below would otherwise clear the pixels. */
+        usleep(5000000);
     }
+
+    uint32_t second_index = UINT32_MAX;
+    VkResult second_acquire = swapchain != VK_NULL_HANDLE
+            ? vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
+                                    VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                    &second_index)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    snprintf(details, sizeof(details),
+             "status=%d first=%u second=%u count=%u",
+             second_acquire, image_index, second_index, returned_image_count);
+    result("host-vulkan-swapchain-acquire-rotate",
+           second_acquire == VK_SUCCESS && returned_image_count >= 2
+                   && second_index != image_index
+                   && second_index < returned_image_count, details);
+
+    if (display && window) {
+        XResizeWindow(display, window, 800, 400);
+        XSync(display, False);
+        usleep(50000);
+    }
+    VkSurfaceCapabilitiesKHR resized = {0};
+    VkResult resized_caps = surface != VK_NULL_HANDLE
+            ? vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+                    physical_device, surface, &resized)
+            : VK_ERROR_SURFACE_LOST_KHR;
+    uint32_t stale_index = 0;
+    VkResult stale_acquire = swapchain != VK_NULL_HANDLE
+            ? vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
+                                    VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                    &stale_index)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    snprintf(details, sizeof(details),
+             "caps=%d extent=%ux%u acquire=%d",
+             resized_caps, resized.currentExtent.width,
+             resized.currentExtent.height, stale_acquire);
+    result("host-vulkan-swapchain-resize-outdated",
+           resized_caps == VK_SUCCESS
+                   && (stale_acquire == VK_ERROR_OUT_OF_DATE_KHR
+                       || resized.currentExtent.width != 640),
+           details);
+
+    VkSwapchainKHR recreated = VK_NULL_HANDLE;
+    swapchain_create_info.oldSwapchain = swapchain;
+    swapchain_create_info.imageExtent = resized.currentExtent.width > 0
+            ? resized.currentExtent
+            : (VkExtent2D){800, 400};
+    swapchain_create_info.minImageCount = resized.minImageCount >= 2
+            ? resized.minImageCount : 2;
+    VkResult recreate_status = device != VK_NULL_HANDLE && surface != VK_NULL_HANDLE
+            ? vkCreateSwapchainKHR(device, &swapchain_create_info, NULL,
+                                   &recreated)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    if (swapchain != VK_NULL_HANDLE)
+        vkDestroySwapchainKHR(device, swapchain, NULL);
+    swapchain = recreated;
+    uint32_t recreated_count = 0;
+    uint32_t recreated_index = 0;
+    VkResult recreated_acquire = VK_ERROR_INITIALIZATION_FAILED;
+    if (recreate_status == VK_SUCCESS && swapchain != VK_NULL_HANDLE) {
+        vkGetSwapchainImagesKHR(device, swapchain, &recreated_count, NULL);
+        recreated_acquire = vkAcquireNextImageKHR(
+                device, swapchain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                &recreated_index);
+        present_info.pSwapchains = &swapchain;
+        present_info.pImageIndices = &recreated_index;
+        present_info.waitSemaphoreCount = 0;
+        if (recreated_acquire == VK_SUCCESS)
+            vkQueuePresentKHR(queue, &present_info);
+    }
+    snprintf(details, sizeof(details),
+             "create=%d images=%u acquire=%d index=%u",
+             recreate_status, recreated_count, recreated_acquire,
+             recreated_index);
+    result("host-vulkan-swapchain-recreate",
+           recreate_status == VK_SUCCESS && recreated_count >= 2
+                   && recreated_acquire == VK_SUCCESS, details);
+
+    if (display && window) {
+        XResizeWindow(display, window, 640, 360);
+        XUnmapWindow(display, window);
+        XSync(display, False);
+        usleep(50000);
+        XMapWindow(display, window);
+        XSync(display, False);
+        usleep(50000);
+    }
+    VkSurfaceCapabilitiesKHR remapped = {0};
+    if (surface != VK_NULL_HANDLE)
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+                physical_device, surface, &remapped);
+    snprintf(details, sizeof(details), "extent=%ux%u",
+             remapped.currentExtent.width, remapped.currentExtent.height);
+    result("host-vulkan-swapchain-foreground",
+           remapped.currentExtent.width > 0
+                   && remapped.currentExtent.height > 0, details);
+
     if (device != VK_NULL_HANDLE) vkDeviceWaitIdle(device);
     if (present_semaphore != VK_NULL_HANDLE)
         vkDestroySemaphore(device, present_semaphore, NULL);

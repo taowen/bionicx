@@ -92,7 +92,7 @@ static VkResult createImage(VkDevice device, XWindowSwapchain* swapchain, XWindo
 }
 
 int getSurfaceMinImageCount() {
-    return 1;
+    return 2;
 }
 
 VkSurfaceFormatKHR* getSurfaceFormats(uint32_t* formatCount) {
@@ -113,18 +113,26 @@ VkSurfaceFormatKHR* getSurfaceFormats(uint32_t* formatCount) {
 XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphicsQueue, VkSwapchainCreateInfoKHR* swapchainInfo, JMethods* jmethods, int windowId) {
     XWindowSwapchain* swapchain = calloc(1, sizeof(XWindowSwapchain));
     swapchain->windowId = windowId;
-    swapchain->imageCount = swapchainInfo->minImageCount;
+    int imageCount = (int)swapchainInfo->minImageCount;
+    if (imageCount < 2) imageCount = 2;
+    if (imageCount > 3) imageCount = 3;
+    swapchain->imageCount = imageCount;
     swapchain->images = calloc(swapchain->imageCount, sizeof(XWindowSwapchain_Image));
     swapchain->imageFormat = swapchainInfo->imageFormat;
     swapchain->imageUsage = swapchainInfo->imageUsage;
     memcpy(&swapchain->imageExtent, &swapchainInfo->imageExtent, sizeof(VkExtent2D));
     swapchain->jmethods = jmethods;
+    swapchain->acquireIndex = 0;
+    swapchain->presented = -1;
 
     VkResult result;
-    for (int i = 0; i < swapchain->imageCount; i++) {
-        result = createImage(device, swapchain, &swapchain->images[i]);
-        if (result != VK_SUCCESS) goto error;
-    }
+    result = createImage(device, swapchain, &swapchain->images[0]);
+    if (result != VK_SUCCESS) goto error;
+    /* Extra indices rotate at the protocol level. A second
+     * AHardwareBuffer import of the same window buffer can invalidate
+     * the first image, so every slot aliases the one imported image. */
+    for (int i = 1; i < swapchain->imageCount; i++)
+        swapchain->images[i] = swapchain->images[0];
 
     swapchain->queue = graphicsQueue;
     return swapchain;
@@ -137,9 +145,9 @@ error:
 
 void XWindowSwapchain_destroy(VkDevice device, XWindowSwapchain* swapchain) {
     if (!swapchain) return;
-    for (int i = 0; i < swapchain->imageCount; i++) {
-        vulkanWrapper.vkDestroyImage(device, swapchain->images[i].image, NULL);
-        vulkanWrapper.vkFreeMemory(device, swapchain->images[i].memory, NULL);
+    if (swapchain->imageCount > 0 && swapchain->images) {
+        vulkanWrapper.vkDestroyImage(device, swapchain->images[0].image, NULL);
+        vulkanWrapper.vkFreeMemory(device, swapchain->images[0].memory, NULL);
     }
 
     MEMFREE(swapchain->images);
@@ -162,16 +170,27 @@ VkResult XWindowSwapchain_acquireNextImage(XWindowSwapchain* swapchain, uint64_t
     VkExtent2D windowSize;
     getWindowExtent(swapchain->jmethods, swapchain->windowId, &windowSize);
 
-    VkResult result = VK_SUCCESS;
-    if (swapchain->imageExtent.width != windowSize.width || swapchain->imageExtent.height != windowSize.height) {
-        result = VK_ERROR_SURFACE_LOST_KHR;
-    }
+    if (windowSize.width == 0 || windowSize.height == 0)
+        return VK_ERROR_OUT_OF_DATE_KHR;
+    if (swapchain->imageExtent.width != windowSize.width || swapchain->imageExtent.height != windowSize.height)
+        return VK_ERROR_OUT_OF_DATE_KHR;
 
-    *imageIndex = 0;
-    return result;
+    uint32_t index = swapchain->acquireIndex % (uint32_t)swapchain->imageCount;
+    if (swapchain->imageCount > 1 && swapchain->presented >= 0
+            && index == (uint32_t)swapchain->presented)
+        index = (index + 1) % (uint32_t)swapchain->imageCount;
+    swapchain->acquireIndex = (index + 1) % (uint32_t)swapchain->imageCount;
+    *imageIndex = index;
+    return VK_SUCCESS;
 }
 
 void XWindowSwapchain_presentImage(XWindowSwapchain* swapchain) {
+    XWindowSwapchain_presentImageIndex(swapchain, 0);
+}
+
+void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex) {
+    if (imageIndex < (uint32_t)swapchain->imageCount)
+        swapchain->presented = (int)imageIndex;
     (*swapchain->jmethods->env)->CallVoidMethod(swapchain->jmethods->env, swapchain->jmethods->obj,
                                                 swapchain->jmethods->updateWindowContent, swapchain->windowId);
 }

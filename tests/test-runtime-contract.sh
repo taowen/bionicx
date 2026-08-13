@@ -20,19 +20,23 @@ cc -shared -fPIC -O2 -Wall -Wextra -Werror \
     "$repo_dir/native/runtime/identity.c" \
     "$repo_dir/native/runtime/sysv-semaphore.c" \
     -o "$test_dir/libbionicx-runtime.so" -ldl
+mkdir -p "$test_dir/bin" "$test_dir/lib"
 cc -O2 -Wall -Wextra -Werror \
     "$repo_dir/tests/fixtures/runtime-contract-probe.c" \
-    -o "$test_dir/runtime-contract-probe"
+    -o "$test_dir/bin/runtime-contract-probe"
 mkdir -p "$root/usr/lib/aarch64-linux-gnu"
 cc -shared -fPIC -O2 -Wall -Wextra -Werror \
     "$repo_dir/tests/fixtures/runtime-dlopen.c" \
     -o "$root/opt/bionicx-runtime-dlopen.so"
 cp "$root/opt/bionicx-runtime-dlopen.so" \
     "$root/usr/lib/aarch64-linux-gnu/libbionicx-runtime-dlopen.so"
+cc -shared -fPIC -O2 -Wall -Wextra -Werror \
+    "$repo_dir/tests/fixtures/runtime-dlopen.c" \
+    -o "$test_dir/lib/libbionicx-app-dlopen.so"
 
 BIONICX_ROOTFS="$root" \
 BIONICX_TMPDIR="$temporary" \
 BIONICX_DNS_SERVERS="127.0.0.53,127.0.0.54" \
 PATH=/usr/bin:/bin \
 LD_PRELOAD="$test_dir/libbionicx-runtime.so" \
-    "$test_dir/runtime-contract-probe" "$root" "$temporary"
+    "$test_dir/bin/runtime-contract-probe" "$root" "$temporary"

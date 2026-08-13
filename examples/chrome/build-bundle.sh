@@ -16,7 +16,7 @@ printf '%s\n' \
     '{' \
     '  "file_format_version": "1.0.0",' \
     '  "ICD": {' \
-    '    "library_path": "libvulkan_vortek.so",' \
+    '    "library_path": "../../../lib/libvulkan_vortek.so",' \
     '    "api_version": "1.3.128"' \
     '  }' \
     '}' > "$output_dir/app/share/vulkan/icd.d/vortek_icd.json"

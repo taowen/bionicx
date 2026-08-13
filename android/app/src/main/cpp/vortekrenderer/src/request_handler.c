@@ -1968,7 +1968,7 @@ void vt_handle_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkContext* context) {
 
     VkSurfaceCapabilitiesKHR surfaceCapabilities = {0};
     surfaceCapabilities.minImageCount = getSurfaceMinImageCount();
-    surfaceCapabilities.maxImageCount = surfaceCapabilities.minImageCount == 1 ? 2 : 0;
+    surfaceCapabilities.maxImageCount = 3;
     surfaceCapabilities.currentExtent = windowSize;
     surfaceCapabilities.minImageExtent = windowSize;
     surfaceCapabilities.maxImageExtent = windowSize;
@@ -2040,7 +2040,7 @@ void vt_handle_vkCreateSwapchainKHR(VkContext* context) {
                                             windowId);
         if (!swapchain) result = VK_ERROR_INITIALIZATION_FAILED;
     }
-    else result = VK_ERROR_SURFACE_LOST_KHR;
+    else result = VK_ERROR_OUT_OF_DATE_KHR;
 
     VT_SERIALIZE_CMD(VkSwapchainKHR, (VkSwapchainKHR)swapchain);
     vt_send(context->clientRing, result, outputBuffer, bufferSize);
@@ -2128,7 +2128,9 @@ void vt_handle_vkQueuePresentKHR(VkContext* context) {
     if (result != VK_SUCCESS) return;
 
     for (int i = 0; i < presentInfo.swapchainCount; i++) {
-        XWindowSwapchain_presentImage((XWindowSwapchain*)presentInfo.pSwapchains[i]);
+        uint32_t index = presentInfo.pImageIndices ? presentInfo.pImageIndices[i] : 0;
+        XWindowSwapchain_presentImageIndex(
+                (XWindowSwapchain*)presentInfo.pSwapchains[i], index);
     }
 }
 

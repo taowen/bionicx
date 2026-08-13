@@ -17,6 +17,37 @@ struct shell_child {
 static pthread_mutex_t shell_children_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct shell_child shell_children[SHELL_CHILD_SLOTS];
 
+static void *dlopen_from_executable_lib(const char *soname, int flags,
+                                        void *(*next)(const char *, int)) {
+    static ssize_t (*real_readlink)(const char *, char *, size_t);
+    static int (*real_access)(const char *, int);
+    if (real_readlink == NULL)
+        real_readlink = dlsym(RTLD_NEXT, "readlink");
+    if (real_access == NULL) real_access = dlsym(RTLD_NEXT, "access");
+    if (real_readlink == NULL || real_access == NULL) return NULL;
+
+    char exe[PATH_MAX];
+    ssize_t length = real_readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    if (length <= 0) return NULL;
+    exe[length] = '\0';
+    char *slash = strrchr(exe, '/');
+    if (slash == NULL) return NULL;
+    *slash = '\0';
+    /* App payloads keep plugins in lib/ next to bin/. The Vulkan loader
+     * dlopens ICD SONAMEs from libvulkan.so, so glibc never sees the
+     * executable RUNPATH. Do not use interposed access(): host checkouts
+     * under /var/home would be rewritten into the Debian rootfs. */
+    static const char *const suffixes[] = { "/../lib/", "/lib/", "/" };
+    for (size_t i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); ++i) {
+        char candidate[PATH_MAX];
+        int count = snprintf(candidate, sizeof(candidate), "%s%s%s",
+                exe, suffixes[i], soname);
+        if (count < 0 || count >= (int)sizeof(candidate)) continue;
+        if (real_access(candidate, F_OK) == 0) return next(candidate, flags);
+    }
+    return NULL;
+}
+
 void *dlopen(const char *path, int flags) {
     static void *(*next)(const char *, int);
     if (next == NULL) next = dlsym(RTLD_NEXT, "dlopen");
@@ -43,6 +74,8 @@ void *dlopen(const char *path, int flags) {
                 if (access(candidate, F_OK) == 0) return next(candidate, flags);
             }
         }
+        void *from_app = dlopen_from_executable_lib(path, flags, next);
+        if (from_app != NULL) return from_app;
     }
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
