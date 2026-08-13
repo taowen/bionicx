@@ -32,47 +32,102 @@ int main(void) {
     }
     int screen = DefaultScreen(display);
 
-    int listed = 0;
-    GLXFBConfig *all = glXGetFBConfigs(display, screen, &listed);
-    int found_single = 0;
-    int found_double = 0;
-    for (int i = 0; i < listed; i++) {
-        int db = -1;
-        if (all == NULL) break;
-        if (glXGetFBConfigAttrib(display, all[i], GLX_DOUBLEBUFFER, &db) != 0)
-            continue;
-        if (db == 0) found_single = 1;
-        if (db == 1) found_double = 1;
-    }
-    char listed_detail[48];
-    snprintf(listed_detail, sizeof(listed_detail),
-             "configs=%d single=%d double=%d",
-             listed, found_single, found_double);
-    check("qt-single-buffer", found_single, listed_detail);
-    if (all != NULL) XFree(all);
-
-    int single_attribs[] = {
-        GLX_X_RENDERABLE, True,
-        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+    /* Exact qglx_buildSpec() for Krita's first QSurfaceFormat:
+     * 3.3 Compatibility, SingleBuffer, rgb=1, alpha/depth/stencil=0.
+     * SingleBuffer omits GLX_DOUBLEBUFFER rather than requesting False. */
+    int qglx_attribs[] = {
+        GLX_LEVEL, 0,
         GLX_RENDER_TYPE, GLX_RGBA_BIT,
         GLX_RED_SIZE, 1,
         GLX_GREEN_SIZE, 1,
         GLX_BLUE_SIZE, 1,
-        GLX_DOUBLEBUFFER, False,
+        GLX_ALPHA_SIZE, 0,
+        GLX_DEPTH_SIZE, 0,
+        GLX_STENCIL_SIZE, 0,
+        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
         None
     };
-    int single_count = 0;
-    GLXFBConfig *single = glXChooseFBConfig(display, screen, single_attribs,
-                                            &single_count);
+    int qglx_count = 0;
+    GLXFBConfig *qglx = glXChooseFBConfig(display, screen, qglx_attribs,
+                                          &qglx_count);
+    char qglx_detail[32];
+    snprintf(qglx_detail, sizeof(qglx_detail), "count=%d", qglx_count);
+    check("qt-qglx-spec", qglx != NULL && qglx_count > 0, qglx_detail);
+
+    XVisualInfo *visual = NULL;
+    if (qglx != NULL && qglx_count > 0)
+        visual = glXGetVisualFromFBConfig(display, qglx[0]);
+    char visual_detail[48];
+    if (visual != NULL)
+        snprintf(visual_detail, sizeof(visual_detail),
+                 "depth=%d class=%d", visual->depth, visual->class);
+    else
+        snprintf(visual_detail, sizeof(visual_detail), "null");
+    check("qt-qglx-visual", visual != NULL && visual->class == TrueColor,
+          visual_detail);
+
+    typedef GLXContext (*create_fn)(Display *, GLXFBConfig, GLXContext, Bool,
+                                    const int *);
+    create_fn create = (create_fn)glXGetProcAddress(
+            (const GLubyte *)"glXCreateContextAttribsARB");
+    int context_ok = 0;
+    const char *context_detail = "no-config";
+    if (create != NULL && qglx != NULL && qglx_count > 0) {
+        int attribs[] = {
+            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+            GLX_CONTEXT_MINOR_VERSION_ARB, 3,
+            GLX_CONTEXT_PROFILE_MASK_ARB,
+                GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+            None
+        };
+        GLXContext ctx = create(display, qglx[0], NULL, True, attribs);
+        context_ok = ctx != NULL;
+        context_detail = context_ok ? "gl-3.3" : "create-failed";
+        if (ctx != NULL) glXDestroyContext(display, ctx);
+    } else if (create == NULL) {
+        context_detail = "no-proc";
+    }
+    check("qt-gl33-context", context_ok, context_detail);
+
+    int current_ok = 0;
+    const char *current_detail = "skipped";
+    if (context_ok && visual != NULL && qglx != NULL) {
+        create_fn create2 = create;
+        int attribs[] = {
+            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+            GLX_CONTEXT_MINOR_VERSION_ARB, 3,
+            GLX_CONTEXT_PROFILE_MASK_ARB,
+                GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+            None
+        };
+        GLXContext ctx = create2(display, qglx[0], NULL, True, attribs);
+        Colormap colormap = XCreateColormap(display, RootWindow(display, screen),
+                                            visual->visual, AllocNone);
+        XSetWindowAttributes wa = { .colormap = colormap };
+        Window window = XCreateWindow(display, RootWindow(display, screen),
+                                      0, 0, 64, 64, 0, visual->depth,
+                                      InputOutput, visual->visual,
+                                      CWColormap, &wa);
+        current_ok = ctx != NULL && window != 0
+                && glXMakeCurrent(display, window, ctx);
+        current_detail = current_ok ? "current" : "make-current-failed";
+        if (ctx != NULL) {
+            glXMakeCurrent(display, None, NULL);
+            glXDestroyContext(display, ctx);
+        }
+        if (window != 0) XDestroyWindow(display, window);
+        if (colormap != 0) XFreeColormap(display, colormap);
+    }
+    check("qt-qglx-current", current_ok, current_detail);
 
     int double_attribs[] = {
-        GLX_X_RENDERABLE, True,
-        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+        GLX_LEVEL, 0,
         GLX_RENDER_TYPE, GLX_RGBA_BIT,
         GLX_RED_SIZE, 1,
         GLX_GREEN_SIZE, 1,
         GLX_BLUE_SIZE, 1,
         GLX_DOUBLEBUFFER, True,
+        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
         None
     };
     int double_count = 0;
@@ -82,33 +137,8 @@ int main(void) {
     snprintf(double_detail, sizeof(double_detail), "count=%d", double_count);
     check("qt-double-buffer", dbl != NULL && double_count > 0, double_detail);
 
-    typedef GLXContext (*create_fn)(Display *, GLXFBConfig, GLXContext, Bool,
-                                    const int *);
-    create_fn create = (create_fn)glXGetProcAddress(
-            (const GLubyte *)"glXCreateContextAttribsARB");
-    int context_ok = 0;
-    const char *context_detail = "no-config";
-    GLXFBConfig chosen = NULL;
-    if (single_count > 0 && single != NULL) chosen = single[0];
-    else if (double_count > 0 && dbl != NULL) chosen = dbl[0];
-    if (create != NULL && chosen != NULL) {
-        int attribs[] = {
-            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-            GLX_CONTEXT_MINOR_VERSION_ARB, 3,
-            GLX_CONTEXT_PROFILE_MASK_ARB,
-                GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
-            None
-        };
-        GLXContext ctx = create(display, chosen, NULL, True, attribs);
-        context_ok = ctx != NULL;
-        context_detail = context_ok ? "gl-3.3" : "create-failed";
-        if (ctx != NULL) glXDestroyContext(display, ctx);
-    } else if (create == NULL) {
-        context_detail = "no-proc";
-    }
-    check("qt-gl33-context", context_ok, context_detail);
-
-    if (single != NULL) XFree(single);
+    if (visual != NULL) XFree(visual);
+    if (qglx != NULL) XFree(qglx);
     if (dbl != NULL) XFree(dbl);
     XCloseDisplay(display);
     printf("BXSUMMARY qt-glx-fbconfig passed=%d failed=%d\n", passed, failed);
