@@ -1,0 +1,41 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "krita",
+  "name": "Krita export (Debian trixie ARM64)",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "hostServices": [
+    "dbus"
+  ],
+  "launch": {
+    "executable": "${RUNTIME}/usr/bin/krita",
+    "workingDirectory": "${HOME}",
+    "arguments": [
+      "--nosplash",
+      "--export",
+      "--export-filename",
+      "${HOME}/Documents/bionicx-saved.png",
+      "${APP}/fixtures/bionicx-image.ppm"
+    ],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "GLADIO_X11_SOCKET": "/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0",
+      "HOME": "${HOME}",
+      "TMPDIR": "${CACHE}",
+      "XDG_RUNTIME_DIR": "${TMP}/runtime",
+      "XDG_CONFIG_HOME": "${HOME}/.config",
+      "XDG_CACHE_HOME": "${HOME}/.cache",
+      "XDG_DATA_HOME": "${HOME}/.local/share",
+      "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
+      "QT_QPA_PLATFORM": "xcb",
+      "QT_PLUGIN_PATH": "${RUNTIME}/usr/lib/aarch64-linux-gnu/qt5/plugins",
+      "QT_XKB_CONFIG_ROOT": "${RUNTIME}/usr/share/X11/xkb",
+      "NO_AT_BRIDGE": "1",
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
+      "LANG": "C.UTF-8"
+    }
+  }
+}

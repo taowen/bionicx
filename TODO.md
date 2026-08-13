@@ -68,8 +68,13 @@ then commit and push the smallest complete change.
 
 - [x] Complete online navigation for Firefox ESR and repeat cold-start/network
   acceptance on a device with working connectivity.
-- [ ] Complete real workflows for Krita, qBittorrent and KeePassXC, including
+- [x] Complete real workflows for Krita, qBittorrent and KeePassXC, including
   durable file/database state and the relevant network or graphics path.
+  `keepassxc-cli-probe` 6/6 plus deferred-open GUI `login`/`bionicx`/`https://example.com`;
+  qBittorrent 256 KiB payload `a68590ec…` persists across force-stop and cold
+  start while the GUI shows 100% Seeding; `krita-glx-destroy-probe` 4/4, untraced
+  Krita paints `bionicx-image.ppm`, and `krita --export` writes a 640×480 PNG
+  (`evidence/rebuild-2026-08-14/popular-durable-workflows.log`).
 - [x] Rebuild and rerun the accepted xterm, IceWM, Thunar, Mousepad, Ristretto,
   LibreOffice Writer, Evince, GIMP, Inkscape, VLC, Geany, FileZilla and
   Thunderbird profiles from the same clean seed and package declarations.
