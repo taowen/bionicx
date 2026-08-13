@@ -1,0 +1,23 @@
+profile evince-handy-gresource-probe is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 14.7 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 81.3 MB/s (9272 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 45.2 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 27.7 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 68.2 MB/s (78840 bytes in 0.001s)
+bionicx-exec: running untraced pid=9798
+bionicx-exec: primary pid=9798 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9809
+bionicx ELF fixups: 1 entries
+bionicx-exec: primary pid=9809 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/profiles/evince-handy-gresource-probe.json: 1 file pushed, 0 skipped. 14.5 MB/s (903 bytes in 0.000s)
+installed profile evince-handy-gresource-probe for io.taowen.bx
+I/BionicX ( 9871): BXTEST PASS gtk-dlopen libgtk-3.so.0
+I/BionicX ( 9871): BXTEST PASS handy-dlopen libhandy-1.so.0
+I/BionicX ( 9871): BXTEST PASS gtk-init DISPLAY connected
+I/BionicX ( 9871): BXTEST PASS handy-shared-css bytes=237
+I/BionicX ( 9871): BXTEST PASS handy-fallback-css bytes=5326
+I/BionicX ( 9871): BXTEST PASS hdy-init no-assert
+I/BionicX ( 9871): BXSUMMARY evince-handy-gresource passed=6 failed=0
+I/BionicX ( 9871): evince-handy-gresource-probe exited with 0

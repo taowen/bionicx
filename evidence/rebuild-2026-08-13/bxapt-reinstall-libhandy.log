@@ -1,0 +1,63 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 17.3 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 90.5 MB/s (9272 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 62.4 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 52.7 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 91.9 MB/s (78840 bytes in 0.001s)
+bionicx-exec: running untraced pid=9506
+bionicx-exec: primary pid=9506 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9515
+bionicx-exec: primary pid=9515 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9522
+bionicx-exec: primary pid=9522 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9526
+bionicx-exec: primary pid=9526 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9532
+bionicx-exec: primary pid=9532 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9536
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 1 reinstalled, 0 to remove and 0 not upgraded.
+Need to get 292 kB of archives.
+After this operation, 0 B of additional disk space will be used.
+Get:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 libhandy-1-0 arm64 1.8.3-2 [292 kB]
+Fetched 292 kB in 4s (80.4 kB/s)
+Download complete and in download only mode
+bionicx-exec: primary pid=9536 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9562
+bionicx-exec: primary pid=9562 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9574
+(Reading database ... 50699 files and directories currently installed.)
+Preparing to unpack .../libhandy-1-0_1.8.3-2_arm64.deb ...
+Unpacking libhandy-1-0:arm64 (1.8.3-2) over (1.8.3-2) ...
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+bionicx unpack wave remaining=0
+bionicx-exec: primary pid=9574 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9618
+bionicx ELF fixups: 2559 entries
+bionicx-exec: primary pid=9618 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9650
+Setting up libhandy-1-0:arm64 (1.8.3-2) ...
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+bionicx-exec: primary pid=9650 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9656
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+bionicx-exec: primary pid=9656 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9666
+libhandy-1-0 set to manually installed.
+bionicx-exec: primary pid=9666 exited status=0x0; draining session
+bionicx-exec: session drained children=0
