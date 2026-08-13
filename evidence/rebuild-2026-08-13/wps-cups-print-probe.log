@@ -1,0 +1,32 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/cups-probe-bundle
+profile cups-probe is valid
+bionicx-exec: running untraced pid=13383
+bionicx-exec: running untraced pid=13396
+BXTEST PASS dlopen-libcups-so-2 QLibrary(cups, 2)
+BXTEST PASS resolve-cupsAddOption
+BXTEST PASS resolve-cupsFreeDests
+BXTEST PASS resolve-cupsFreeOptions
+BXTEST PASS resolve-cupsGetDest
+BXTEST PASS resolve-cupsGetDests
+BXTEST PASS resolve-cupsGetOption
+BXTEST PASS resolve-cupsLastError
+BXTEST PASS resolve-cupsLastErrorString
+BXTEST PASS resolve-cupsPrintFile
+BXTEST PASS resolve-httpClose
+BXTEST PASS resolve-httpConnect2
+BXTEST PASS resolve-ippAddString
+BXTEST PASS resolve-ippDelete
+BXTEST PASS resolve-ippFindAttribute
+BXTEST PASS resolve-ippNewRequest
+BXTEST PASS resolve-ppdClose
+BXTEST PASS resolve-ppdFindOption
+BXTEST PASS resolve-ppdOpenFile
+BXTEST PASS wps-symbol-set KCUPSSupport resolveCups
+BXTEST PASS cupsGetDests-bionicx-test count=1
+BXTEST PASS file-device-uri file:/data/user/0/io.taowen.bx/files/run/cups/spool/bionicx-test.out
+BXTEST PASS write-fixture /data/user/0/io.taowen.bx/files/run/cups/run/bionicx-cups-probe.txt
+BXTEST PASS cupsPrintFile job=12 err=successful-ok
+BXTEST PASS job-payload BIONICX_CUPS_PRINT_PROBE
+
+BXSUMMARY wps-cups passed=25 failed=0
+cupsGetDests probe: PASS

@@ -38,18 +38,26 @@ for deb in "$dev_deb" "$lib_deb"; do
 done
 
 builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
+out="${output_dir#"$repo_dir/"}"
 podman run --rm --network host --userns=keep-id \
     --volume "$repo_dir:/work:Z" --workdir /work "$builder_image" \
-    aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
-        -I build/cache/cups-probe-dev/usr/include \
-        -L build/cache/cups-probe-dev/usr/lib/aarch64-linux-gnu \
-        examples/cups-probe/cups-probe.c \
-        -Wl,--allow-shlib-undefined \
-        -o "${output_dir#"$repo_dir/"}/app/bin/cups-probe" -lcups
+    sh -eu -c '
+        aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
+            -I build/cache/cups-probe-dev/usr/include \
+            -L build/cache/cups-probe-dev/usr/lib/aarch64-linux-gnu \
+            examples/cups-probe/cups-probe.c \
+            -Wl,--allow-shlib-undefined \
+            -o "'"$out"'/app/bin/cups-probe" -lcups
+        aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
+            examples/cups-probe/file-backend.c \
+            -o "'"$out"'/app/bin/file-backend"
+    '
 interpreter=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
 rpath=/data/user/0/io.taowen.bx/files/rootfs/usr/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu
 patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \
     "$output_dir/app/bin/cups-probe"
+patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \
+    "$output_dir/app/bin/file-backend"
 printf 'required_package=cups-client\nrootfs_payload=none\n' \
     > "$output_dir/BUILD-INFO"
 echo "$output_dir"

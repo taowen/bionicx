@@ -37,7 +37,7 @@ then commit and push the smallest complete change.
 - [x] Create one controlled local printer destination without requiring real
   hardware. Verify `cupsGetDests()` and a submitted test job before using WPS
   as the diagnostic surface.
-- [ ] Verify WPS discovers the destination, removes its misleading CUPS
+- [x] Verify WPS discovers the destination, removes its misleading CUPS
   warning, opens the print dialog and submits a document successfully.
 - [ ] Turn IceWM plus the existing D-Bus, audio, opener, CUPS and GPU services
   into one reusable desktop session. Verify two unrelated package-installed

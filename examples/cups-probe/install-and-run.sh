@@ -57,6 +57,20 @@ run_as sh -c "printf '%s\n' \
     'FileDevice Yes' \
     > '$server/cups-files.conf'"
 
+# Debian's cups-daemon does not ship the file: backend. Install the
+# glibc helper before cupsd starts so file: jobs actually write output.
+temporary_backend="/data/local/tmp/cups-file-backend-$$"
+"${adb[@]}" push "$bundle/app/bin/file-backend" "$temporary_backend" >/dev/null
+run_as mkdir -p files/rootfs/usr/lib/cups/backend
+run_as cp "$temporary_backend" files/rootfs/usr/lib/cups/backend/file
+run_as chmod 700 files/rootfs/usr/lib/cups/backend/file
+"${adb[@]}" shell rm "$temporary_backend"
+
+# Drop any leftover cupsd so this probe owns the private socket.
+"${adb[@]}" shell "run-as $package_id sh -c 'kill \$(cat $server/cupsd.pid 2>/dev/null) 2>/dev/null; killall cupsd 2>/dev/null; true'"
+sleep 0.3
+run_as rm -f "$socket" "$server/cupsd.pid"
+
 # bionicx-exec waits for session children, so start cupsd from a detached
 # shell instead of the blocking helper.
 "${adb[@]}" shell "run-as $package_id sh -c 'exec >/dev/null 2>&1; $files/bin/bionicx-exec --cwd $root --env LD_PRELOAD=$files/lib/libbionicx-runtime.so --env BIONICX_ROOTFS=$root --env BIONICX_TMPDIR=$server/run --env CUPS_SERVERROOT=$server --env CUPS_STATEDIR=$server --env CUPS_DATADIR=$root/usr/share/cups -- $root/usr/sbin/cupsd -f -c $server/cupsd.conf &'"
@@ -77,5 +91,8 @@ run_as mkdir -p files/apps/cups-probe/bin
 run_as cp "$temporary" files/apps/cups-probe/bin/cups-probe
 "${adb[@]}" shell rm "$temporary"
 
-exec_rootfs "$files/apps/cups-probe/bin/cups-probe"
+result="$(exec_rootfs "$files/apps/cups-probe/bin/cups-probe" || true)"
+printf '%s\n' "$result"
+grep -Fq "BXSUMMARY wps-cups passed=" <<<"$result"
+grep -Fq "failed=0" <<<"$result"
 echo "cupsGetDests probe: PASS"
