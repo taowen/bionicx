@@ -53,6 +53,12 @@ tools/bxapt --serial "$SERIAL" deb \
 tools/bxapt --serial "$SERIAL" deb \
   wps-office_11.1.0.11720_arm64.deb \
   172d8bcf3e3bc756994ae5adf66f63f22691e1ab0d18986c50bb6b6ab7f62948
+tools/bxapt --serial "$SERIAL" deb \
+  libwebp6_0.6.1-2.1+deb11u2_arm64.deb \
+  edeb260e528fecae77457a63a468e55837a98079fdd7f1e20e9813c358f8c755
+tools/bxapt --serial "$SERIAL" deb \
+  libtiff5_4.2.0-1+deb11u5_arm64.deb \
+  6896296ef6193ff77434c5d1d09dd9a333633f7a208ab1cc7de3b286d2d45824
 tools/bxapt --serial "$SERIAL" dpkg --audit
 ```
 

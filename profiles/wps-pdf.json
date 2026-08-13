@@ -11,6 +11,9 @@
     "executable": "${RUNTIME}/opt/kingsoft/wps-office/office6/wpspdf",
     "workingDirectory": "${RUNTIME}/opt/kingsoft/wps-office/office6",
     "argv0": "wpspdf",
+    "arguments": [
+      "${APP}/fixtures/BionicX-PDF-Integration.pdf"
+    ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",

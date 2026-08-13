@@ -24,8 +24,10 @@ and PDF are package-owned entrypoints under `${RUNTIME}/opt/kingsoft`; none has
 a private dependency closure, loader mode, application preload, or fallback.
 On a thin seed the Qt xcb plugin also needs `libxslt1.1` plus
 `libxkbcommon-x11-0` and the `libxcb-icccm4` / `image0` / `keysyms1` /
-`render-util0` / `xinerama0` / `xkb1` / `util1` set. `wpspdf` still needs
-`libtiff.so.5`, which trixie does not ship.
+`render-util0` / `xinerama0` / `xkb1` / `util1` set. `wpspdf` needs
+`libtiff.so.5`; install the hash-pinned bullseye `libwebp6` and `libtiff5`
+debs from `packages/external-arm64.tsv` with `bxapt deb` (see
+`examples/wps-pdf-tiff-probe`).
 
 Android seccomp blocks the ARM64 System V semaphore syscalls used by WPS. The
 mandatory runtime therefore provides one cross-process app-private semaphore

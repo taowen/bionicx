@@ -22,5 +22,6 @@ BXTEST PASS wps-xlsx ... A3=42 formula=SUM(A1:A2)
 BXTEST PASS wps-pptx ... BionicX Slides 20260813
 ```
 
-`wpspdf` still fails: it needs `libtiff.so.5`, which is not in Debian 13
-trixie (only `libtiff6`).
+`wpspdf` needed `libtiff.so.5`, which is not in Debian 13 trixie (only
+`libtiff6`). See `2026-08-14-wps-pdf-tiff.md` for the shared-rootfs
+`bxapt deb` fix and the live page recapture.

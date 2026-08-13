@@ -1,0 +1,6 @@
+BXTEST PASS dlopen-libtiff5 /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libtiff.so.5
+BXTEST PASS shared-libtiff5 /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libtiff.so.5
+BXTEST PASS pdfmain-present /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/libpdfmain.so
+BXTEST PASS dlopen-pdfmain /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/libpdfmain.so
+BXTEST PASS pdfmain-package-path /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/libpdfmain.so
+BXSUMMARY wps-pdf-tiff passed=5 failed=0
