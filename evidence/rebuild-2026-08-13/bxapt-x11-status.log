@@ -1,0 +1,12 @@
+==== seed ====
+ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+==== status ====
+hello 2.10-5 ii 
+x11-apps 7.7+11+b2 ii 
+xclock  un 
+xterm 398-1 ii 
+==== audit ====
+==== binaries ====
+-rwxrwxrwx 1 u0_a194 u0_a194  199361 2026-08-13 19:41 files/rootfs/usr/bin/xclock
+-rwxrwxrwx 1 u0_a194 u0_a194  199441 2026-08-13 19:41 files/rootfs/usr/bin/xeyes
+-rwxrwxrwx 1 u0_a194 u0_a194 1055729 2026-08-13 19:41 files/rootfs/usr/bin/xterm
