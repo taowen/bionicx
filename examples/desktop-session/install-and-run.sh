@@ -19,7 +19,11 @@ patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \
 adb -s "$serial" logcat -c
 adb -s "$serial" shell am force-stop io.taowen.bx
 adb -s "$serial" shell am start -W -n io.taowen.bx/com.winlator.BionicXActivity
-for i in $(seq 1 40); do
+mapped="${BIONICX_DESKTOP_MAPPED:-$repo_dir/build/desktop-session-mapped.png}"
+for i in $(seq 1 60); do
+    if [[ "$i" -eq 4 ]]; then
+        adb -s "$serial" exec-out screencap -p > "$mapped"
+    fi
     if adb -s "$serial" logcat -d -v brief | grep -Fq 'BXSUMMARY desktop-session-accept'; then
         echo "desktop-session accept finished at ${i}s"
         break
@@ -28,4 +32,17 @@ for i in $(seq 1 40); do
 done
 adb -s "$serial" exec-out screencap -p > \
     "${BIONICX_DESKTOP_SCREENSHOT:-$repo_dir/build/desktop-session-device.png}"
-adb -s "$serial" logcat -d -v brief | grep -E 'BXTEST|BXSUMMARY|desktop-session'
+result="$(adb -s "$serial" logcat -d -v brief \
+    | grep -E 'BXTEST|BXSUMMARY|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan')"
+printf '%s\n' "$result"
+grep -Fq "BXSUMMARY desktop-session-accept passed=7 failed=0" <<<"$result"
+grep -Fq "enabled D-Bus session service" <<<"$result"
+grep -Fq "enabled PulseAudio host service" <<<"$result"
+grep -Fq "enabled app-private CUPS service" <<<"$result"
+grep -Fq "enabled Vulkan host service" <<<"$result"
+if adb -s "$serial" shell run-as io.taowen.bx \
+        find files/apps -name 'libc.so.6' | grep -q .; then
+    echo "desktop-session must not grow a per-app libc.so.6" >&2
+    exit 1
+fi
+echo "desktop-session two-app accept: PASS"

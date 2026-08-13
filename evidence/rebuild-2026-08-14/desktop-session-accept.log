@@ -1,0 +1,14 @@
+I/BionicX (10184): enabled D-Bus session service at /data/user/0/io.taowen.bx/files/run/desktop-session/runtime/bus
+I/BionicX (10184): enabled PulseAudio host service at /data/user/0/io.taowen.bx/files/rootfs/tmp/.sound/PS0
+I/BionicX (10184): enabled app-private CUPS service
+I/BionicX (10184): enabled Vulkan host service at /data/user/0/io.taowen.bx/files/rootfs/tmp/.vortek/V0
+I/BionicX (10184): BXTEST PASS desktop-session-launch icewm=10234 app1=10251 app2=10256
+I/BionicX (10184): BXTEST PASS session-display :0
+I/BionicX (10184): BXTEST PASS session-two-mapped xterm=0x800014 mousepad=0xc00003
+I/BionicX (10184): BXTEST PASS session-switch-xterm focus=xterm
+I/BionicX (10184): BXTEST PASS session-switch-mousepad focus=mousepad
+I/BionicX (10184): BXTEST PASS session-resize-xterm 644x340 -> 740x382
+I/BionicX (10184): BXTEST PASS session-close-mousepad client withdrawn
+I/BionicX (10184): BXTEST PASS session-reopen-mousepad pid=10287 alive=1
+I/BionicX (10184): BXSUMMARY desktop-session-accept passed=7 failed=0
+desktop-session two-app accept: PASS

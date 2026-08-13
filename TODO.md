@@ -40,7 +40,7 @@ then commit and push the smallest complete change.
   as the diagnostic surface.
 - [x] Verify WPS discovers the destination, removes its misleading CUPS
   warning, opens the print dialog and submits a document successfully.
-- [ ] Turn IceWM plus the existing D-Bus, audio, opener, CUPS and GPU services
+- [x] Turn IceWM plus the existing D-Bus, audio, opener, CUPS and GPU services
   into one reusable desktop session. Verify two unrelated package-installed
   applications can be launched, switched, resized, closed and reopened without
   changing profiles or duplicating dependencies.
