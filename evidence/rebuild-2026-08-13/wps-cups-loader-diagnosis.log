@@ -1,0 +1,47 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 20.3 MB/s (1533 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 78.8 MB/s (6476 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 9.7 MB/s (551 bytes in 0.000s)
+bionicx-exec: running untraced pid=15429
+/data/user/0/io.taowen.bx/files/rootfs/usr/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu:/data/user/0/io.taowen.bx/files/rootfs/lib:/data/user/0/io.taowen.bx/files/rootfs/lib/aarch64-linux-gnu:$ORIGIN:$ORIGIN/../lib:$ORIGIN/addons/kfpccomb/
+bionicx-exec: primary pid=15429 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 14.8 MB/s (1533 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 106.7 MB/s (6476 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 5.8 MB/s (551 bytes in 0.000s)
+bionicx-exec: running untraced pid=15492
+/usr/lib/aarch64-linux-gnu/libcups.so: error while loading shared libraries: /usr/lib/aarch64-linux-gnu/libcups.so: cannot open shared object file: No such file or directory
+bionicx-exec: primary pid=15492 exited status=0x7f00; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 16.9 MB/s (1533 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 71.5 MB/s (6476 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 8.8 MB/s (551 bytes in 0.000s)
+bionicx-exec: running untraced pid=15556
+	linux-vdso.so.1 (0x00000070f1d12000)
+	/data/user/0/io.taowen.bx/files/lib/libbionicx-runtime.so (0x00000070f1bd0000)
+	libgssapi_krb5.so.2 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libgssapi_krb5.so.2 (0x00000070f1b50000)
+	libavahi-common.so.3 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libavahi-common.so.3 (0x00000070f1b10000)
+	libavahi-client.so.3 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libavahi-client.so.3 (0x00000070f1ad0000)
+	libgnutls.so.30 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libgnutls.so.30 (0x00000070f1850000)
+	libz.so.1 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libz.so.1 (0x00000070f1800000)
+	libm.so.6 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/libm.so.6 (0x00000070f1740000)
+	libc.so.6 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/libc.so.6 (0x00000070f1570000)
+	/data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1 (0x00000070f1cd5000)
+	libkrb5.so.3 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libkrb5.so.3 (0x00000070f1470000)
+	libk5crypto.so.3 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libk5crypto.so.3 (0x00000070f1410000)
+	libcom_err.so.2 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libcom_err.so.2 (0x00000070f13d0000)
+	libkrb5support.so.0 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libkrb5support.so.0 (0x00000070f1390000)
+	libdbus-1.so.3 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libdbus-1.so.3 (0x00000070f1300000)
+	libp11-kit.so.0 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libp11-kit.so.0 (0x00000070f1120000)
+	libidn2.so.0 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libidn2.so.0 (0x00000070f10c0000)
+	libunistring.so.5 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libunistring.so.5 (0x00000070f0eb0000)
+	libtasn1.so.6 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libtasn1.so.6 (0x00000070f0e60000)
+	libhogweed.so.6 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libhogweed.so.6 (0x00000070f0de0000)
+	libnettle.so.8 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libnettle.so.8 (0x00000070f0d60000)
+	libgmp.so.10 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libgmp.so.10 (0x00000070f0cb0000)
+	libkeyutils.so.1 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libkeyutils.so.1 (0x00000070f0c70000)
+	libresolv.so.2 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/libresolv.so.2 (0x00000070f0c30000)
+	libsystemd.so.0 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libsystemd.so.0 (0x00000070f0af0000)
+	libffi.so.8 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libffi.so.8 (0x00000070f0ab0000)
+	libcap.so.2 => /data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/libcap.so.2 (0x00000070f0a60000)
+bionicx-exec: primary pid=15556 exited status=0x0; draining session
+bionicx-exec: session drained children=0

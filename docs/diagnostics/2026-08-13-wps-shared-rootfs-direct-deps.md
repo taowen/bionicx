@@ -41,7 +41,7 @@ The Debian Qt6 xcb plug-in retained only the system RUNPATH. A controlled
 nested vendor plug-in regression covers unique resolution while the existing
 test continues to require `DT_RPATH` to become `DT_RUNPATH`.
 
-## Functional result and open gaps
+## Functional result
 
 An untraced cold start reached the complete WPS Writer home UI, opened a real
 `Document1`, and accepted two lines of Android keyboard input:
@@ -51,13 +51,44 @@ BionicX_WPS_shared_rootfs_2026
 Direct_DT_NEEDED_resolution_passed
 ```
 
-WPS's startup self-check still reports missing CUPS and formula-symbol fonts.
-The SaveAs dialog opened in the profile's private Documents directory, but
-after dismissing a duplicate-name confirmation its pointer/keyboard grab was
-left on the wrong window: controls still hovered while subsequent clicks and
-keys were not delivered. The new document therefore was not saved, and this
-run is not claimed as full WPS acceptance. The pre-existing `BionicX.docx` was
-not overwritten.
+The document was saved as a genuine OOXML `BionicX.docx`. The independent
+archive verifier found 16 members and two paragraphs containing the exact
+strings above. After a process stop and cold start, WPS's own Open dialog
+opened the saved file and rendered both lines again. The test artifact was
+then retained as `BionicXSharedRootfs.docx`; the pre-existing `BionicX.docx`
+was not overwritten.
+
+An earlier attempt selected that pre-existing filename. WPS rejected the
+duplicate and its dialog flow became awkward, but the request log contained
+neither a Core X11 nor XI grab request. Repeating the same SaveAs operation in
+an empty Documents directory passed. That observation is therefore not used
+as evidence for an X server focus/grab gap, and no X server workaround was
+added.
+
+WPS's startup self-check still reports missing CUPS and formula-symbol fonts;
+these are tracked separately from the completed editor/save/reopen path.
+
+## What the CUPS warning actually means
+
+The warning is not evidence that Debian 13's CUPS ABI is too new. Disassembly
+of `KCUPSSupport::resolveCups()` shows WPS constructing `QLibrary("cups", 2)`
+and resolving 27 CUPS, IPP, and PPD entry points. Every requested entry point
+is exported by trixie's `libcups.so.2`, and the glibc loader resolves that
+library and all of its dependencies from the shared rootfs.
+
+Installing `libcups2-dev` added the unversioned development link but did not
+change the warning, as expected from the explicit ABI version in the WPS
+code. `KCUPSSupport::isInitSuccess()` also requires initialization to have
+returned at least one printer destination. The old WPS self-check collapses
+the no-service/no-destination state into the misleading text “Missing Cups
+libraries.” The remaining work is consequently a shared desktop printing
+service and destination contract, not a libcups downgrade or binary patch.
+
+The formula warning has a similar legacy component: this WPS build contains
+explicit references to `Cambria Math` and the Wingdings families. Installing
+the normal Debian Symbola, Noto, and Liberation font set does not provide
+those proprietary family identities. Font substitution and glyph coverage
+must be tested separately; suppressing the warning is not acceptance.
 
 Evidence is in `evidence/rebuild-2026-08-13/wps-*`, including the successful
 home/editor screenshots, Qt plug-in diagnosis, package status and empty dpkg

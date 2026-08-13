@@ -1,0 +1,81 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 19.2 MB/s (1533 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 79.6 MB/s (6476 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 6.5 MB/s (551 bytes in 0.000s)
+bionicx-exec: running untraced pid=26132
+bionicx-exec: primary pid=26132 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=26146
+Reading package lists...
+Building dependency tree...
+Reading state information...
+libcups2t64 is already the newest version (2.4.10-3+deb13u2).
+Suggested packages:
+  fonts-noto-cjk-extra
+Recommended packages:
+  fonts-liberation-sans-narrow
+The following NEW packages will be installed:
+  fonts-liberation fonts-noto-cjk fonts-noto-core fonts-noto-mono
+  fonts-symbola
+0 upgraded, 5 newly installed, 0 to remove and 0 not upgraded.
+Need to get 72.0 MB of archives.
+After this operation, 146 MB of additional disk space will be used.
+Get:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 fonts-liberation all 1:2.1.5-3 [1475 kB]
+Get:2 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 fonts-noto-cjk all 1:20240730+repack1-1 [56.7 MB]
+Ign:2 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 fonts-noto-cjk all 1:20240730+repack1-1
+Get:3 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 fonts-noto-mono all 20201225-2 [398 kB]
+Get:4 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 fonts-noto-core all 20201225-2 [12.2 MB]
+Get:5 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 fonts-symbola all 2.60-2 [1279 kB]
+Get:2 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 fonts-noto-cjk all 1:20240730+repack1-1 [56.7 MB]
+Fetched 49.8 MB in 7min 58s (104 kB/s)
+Download complete and in download only mode
+bionicx-exec: primary pid=26146 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=18388
+Selecting previously unselected package fonts-liberation.
+(Reading database ... 33579 files and directories currently installed.)
+Preparing to unpack .../fonts-liberation_1%3a2.1.5-3_all.deb ...
+Unpacking fonts-liberation (1:2.1.5-3) ...
+Selecting previously unselected package fonts-noto-cjk.
+Preparing to unpack .../fonts-noto-cjk_1%3a20240730+repack1-1_all.deb ...
+Unpacking fonts-noto-cjk (1:20240730+repack1-1) ...
+Selecting previously unselected package fonts-noto-core.
+Preparing to unpack .../fonts-noto-core_20201225-2_all.deb ...
+Unpacking fonts-noto-core (20201225-2) ...
+Selecting previously unselected package fonts-noto-mono.
+Preparing to unpack .../fonts-noto-mono_20201225-2_all.deb ...
+Unpacking fonts-noto-mono (20201225-2) ...
+Selecting previously unselected package fonts-symbola.
+Preparing to unpack .../fonts-symbola_2.60-2_all.deb ...
+Unpacking fonts-symbola (2.60-2) ...
+Processing triggers for fontconfig (2.15.0-2.3) ...
+bionicx-exec: primary pid=18388 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=18477
+bionicx ELF fixups: 1235 entries
+bionicx-exec: primary pid=18477 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=22060
+Reading package lists...
+Building dependency tree...
+Reading state information...
+libcups2t64 is already the newest version (2.4.10-3+deb13u2).
+libcups2t64 set to manually installed.
+fonts-symbola is already the newest version (2.60-2).
+fonts-noto-core is already the newest version (20201225-2).
+fonts-noto-cjk is already the newest version (1:20240730+repack1-1).
+fonts-liberation is already the newest version (1:2.1.5-3).
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+5 not fully installed or removed.
+After this operation, 0 B of additional disk space will be used.
+Setting up fonts-noto-mono (20201225-2) ...
+Setting up fonts-noto-cjk (1:20240730+repack1-1) ...
+Setting up fonts-symbola (2.60-2) ...
+Setting up fonts-liberation (1:2.1.5-3) ...
+Setting up fonts-noto-core (20201225-2) ...
+bionicx ELF fixups: 1235 entries
+bionicx-exec: primary pid=22060 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=25669
+bionicx ELF fixups: 1235 entries
+bionicx-exec: primary pid=25669 exited status=0x0; draining session
+bionicx-exec: session drained children=0
