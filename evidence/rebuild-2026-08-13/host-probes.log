@@ -21,3 +21,8 @@ rootfs ELF fixup: PASS
 ==== test-gtk-template-probe ====
 profile gtk-template-probe is valid
 GTK template probe and gresource-preserving fixup: PASS
+==== test-soffice-doc-probe ====
+profile soffice-doc-probe is valid
+soffice document-load probe covers gtk3 VCL and convert-to: PASS
+==== test-popular-app-profiles ====
+popular app profiles stay on the shared seed declarations: PASS

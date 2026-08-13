@@ -9,6 +9,8 @@ xterm
 # Browser, office and communication
 firefox-esr
 libreoffice-writer
+libreoffice-gtk3
+libreoffice-math
 thunderbird
 
 # File and document tools

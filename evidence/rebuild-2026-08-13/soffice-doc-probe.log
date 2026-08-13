@@ -1,0 +1,25 @@
+profile soffice-doc-probe is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 12.2 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 121.3 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 61.8 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 24.6 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 69.7 MB/s (78840 bytes in 0.001s)
+bionicx-exec: running untraced pid=26200
+bionicx-exec: primary pid=26200 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=26211
+bionicx ELF fixups: 2 entries
+bionicx-exec: primary pid=26211 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/profiles/soffice-doc-probe.json: 1 file pushed, 0 skipped. 24.9 MB/s (1132 bytes in 0.000s)
+installed profile soffice-doc-probe for io.taowen.bx
+I/BionicX (26271): BXTEST PASS display :0
+I/BionicX (26271): BXTEST PASS fixture /data/user/0/io.taowen.bx/files/apps/soffice-doc-probe/fixtures/bionicx-writer.odt
+I/BionicX (26271): BXTEST PASS gen-plugin /data/user/0/io.taowen.bx/files/rootfs/usr/lib/libreoffice/program/libvclplug_genlo.so
+I/BionicX (26271): BXTEST PASS gtk3-plugin /data/user/0/io.taowen.bx/files/rootfs/usr/lib/libreoffice/program/libvclplug_gtk3lo.so
+I/BionicX (26271): BXTEST PASS soffice /data/user/0/io.taowen.bx/files/rootfs/usr/lib/libreoffice/program/soffice.bin
+I/BionicX (26271): BXTEST PASS dlopen-swlo /data/user/0/io.taowen.bx/files/rootfs/usr/lib/libreoffice/program/libswlo.so
+I/BionicX (26271): BXTEST PASS convert-txt exit=0
+I/BionicX (26271): BXTEST PASS txt-heading LibreOffice Writer on BionicX
+I/BionicX (26271): BXSUMMARY soffice-doc passed=8 failed=0
+I/BionicX (26271): soffice-doc-probe exited with 0

@@ -1,29 +1,20 @@
 {
   "$schema": "../schemas/profile.schema.json",
   "schemaVersion": 3,
-  "id": "libreoffice-writer",
-  "name": "LibreOffice Writer (Debian trixie ARM64)",
+  "id": "soffice-doc-probe",
+  "name": "LibreOffice Writer document-load probe",
   "display": {
     "dpi": 144,
     "socket": "filesystem"
   },
   "launch": {
-    "executable": "${RUNTIME}/bin/sh",
+    "executable": "${APP}/bin/soffice-doc-probe",
     "workingDirectory": "${RUNTIME}/usr/lib/libreoffice/program",
-    "arguments": [
-      "${RUNTIME}/usr/bin/soffice",
-      "--writer",
-      "--nologo",
-      "--nofirststartwizard",
-      "--norestore",
-      "--nodefault",
-      "${APP}/fixtures/bionicx-writer.odt"
-    ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",
-      "TMPDIR": "${CACHE}",
-      "TEMP": "${CACHE}",
+      "TMPDIR": "${TMP}",
+      "TEMP": "${TMP}",
       "XDG_RUNTIME_DIR": "${TMP}/runtime",
       "XDG_CONFIG_HOME": "${HOME}/.config",
       "XDG_CACHE_HOME": "${HOME}/.cache",

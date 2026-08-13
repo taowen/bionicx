@@ -26,6 +26,6 @@ python3 "$repo_dir/examples/productivity-apps/build-odt-fixture.py" \
 python3 "$repo_dir/examples/wps/build-pdf-fixture.py" \
     "$output_dir/app/fixtures/bionicx-pages.pdf"
 printf '%s\n' \
-    'required_packages=firefox-esr libreoffice-writer evince gimp inkscape' \
+    'required_packages=firefox-esr libreoffice-writer libreoffice-gtk3 libreoffice-math evince gimp inkscape' \
     'rootfs_payload=none' > "$output_dir/BUILD-INFO"
 printf '%s\n' "$output_dir"
