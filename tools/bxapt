@@ -106,6 +106,13 @@ prepare_state() {
         "$run_dir/bxapt-unpack.sh"
     upload_private "$repo_dir/tools/bxapt-ldconfig.sh" \
         "$run_dir/bxapt-ldconfig.sh"
+    # The installed APK may extract an older libbionicx-runtime.so on launch.
+    # Refresh it from the tree that matches this bxapt so groupadd/open hooks
+    # stay in place for maintainer scripts.
+    runtime_so="$repo_dir/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so"
+    if [[ -f "$runtime_so" ]]; then
+        upload_private "$runtime_so" "$files/lib/libbionicx-runtime.so"
+    fi
     run_as cp "$root/etc/apt/sources.list.d/debian.sources" \
         "$run_dir/sources.sources"
 }

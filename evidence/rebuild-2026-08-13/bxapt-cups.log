@@ -1,0 +1,134 @@
+bionicx-exec: running untraced pid=9234
+bionicx-exec: primary pid=9234 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9245
+bionicx-exec: primary pid=9245 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9252
+bionicx-exec: primary pid=9252 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9256
+bionicx-exec: primary pid=9256 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9261
+bionicx-exec: primary pid=9261 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9266
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  adduser bc cups-common libncursesw6 libproc2-0 libreadline8t64 procps
+  readline-common ssl-cert
+Suggested packages:
+  liblocale-gettext-perl perl cron quota cups cups-bsd smbclient cups-filters
+  cups-pdf cups-ppdc cups-server-common foomatic-db-compressed-ppds
+  | foomatic-db ghostscript poppler-utils udev readline-doc
+Recommended packages:
+  avahi-daemon colord cups-browsed ipp-usb libgpm2 psmisc
+  linux-sysctl-defaults
+The following NEW packages will be installed:
+  adduser bc cups-client cups-common cups-daemon libncursesw6 libproc2-0
+  libreadline8t64 procps readline-common ssl-cert
+0 upgraded, 11 newly installed, 0 to remove and 0 not upgraded.
+Need to get 2352 kB of archives.
+After this operation, 11.7 MB of additional disk space will be used.
+Get:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 adduser all 3.152 [191 kB]
+Get:2 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 readline-common all 8.2-6 [69.4 kB]
+Get:3 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 libreadline8t64 arm64 8.2-6 [159 kB]
+Get:4 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 bc arm64 1.07.1-4+b1 [101 kB]
+Get:5 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 libncursesw6 arm64 6.5+20250216-2 [124 kB]
+Get:6 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 libproc2-0 arm64 2:4.0.4-9 [62.8 kB]
+Get:7 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 procps arm64 2:4.0.4-9 [871 kB]
+Get:8 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 ssl-cert all 1.1.3 [16.8 kB]
+Get:9 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 cups-daemon arm64 2.4.10-3+deb13u2 [341 kB]
+Get:10 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 cups-common all 2.4.10-3+deb13u2 [258 kB]
+Get:11 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 cups-client arm64 2.4.10-3+deb13u2 [157 kB]
+Fetched 2352 kB in 14s (173 kB/s)
+Download complete and in download only mode
+bionicx-exec: primary pid=9266 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9370
+bionicx-exec: primary pid=9370 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9378
+Selecting previously unselected package adduser.
+(Reading database ... 10643 files and directories currently installed.)
+Preparing to unpack .../archives/adduser_3.152_all.deb ...
+Unpacking adduser (3.152) ...
+Selecting previously unselected package bc.
+Preparing to unpack .../bc_1.07.1-4+b1_arm64.deb ...
+Unpacking bc (1.07.1-4+b1) ...
+Selecting previously unselected package cups-client.
+Preparing to unpack .../cups-client_2.4.10-3+deb13u2_arm64.deb ...
+Unpacking cups-client (2.4.10-3+deb13u2) ...
+Selecting previously unselected package cups-common.
+Preparing to unpack .../cups-common_2.4.10-3+deb13u2_all.deb ...
+Unpacking cups-common (2.4.10-3+deb13u2) ...
+Selecting previously unselected package cups-daemon.
+Preparing to unpack .../cups-daemon_2.4.10-3+deb13u2_arm64.deb ...
+Unpacking cups-daemon (2.4.10-3+deb13u2) ...
+Selecting previously unselected package libncursesw6:arm64.
+Preparing to unpack .../libncursesw6_6.5+20250216-2_arm64.deb ...
+Unpacking libncursesw6:arm64 (6.5+20250216-2) ...
+Selecting previously unselected package libproc2-0:arm64.
+Preparing to unpack .../libproc2-0_2%3a4.0.4-9_arm64.deb ...
+Unpacking libproc2-0:arm64 (2:4.0.4-9) ...
+Selecting previously unselected package libreadline8t64:arm64.
+Preparing to unpack .../libreadline8t64_8.2-6_arm64.deb ...
+Adding 'diversion of /lib/aarch64-linux-gnu/libhistory.so.8 to /lib/aarch64-linux-gnu/libhistory.so.8.usr-is-merged by libreadline8t64'
+Adding 'diversion of /lib/aarch64-linux-gnu/libhistory.so.8.2 to /lib/aarch64-linux-gnu/libhistory.so.8.2.usr-is-merged by libreadline8t64'
+Adding 'diversion of /lib/aarch64-linux-gnu/libreadline.so.8 to /lib/aarch64-linux-gnu/libreadline.so.8.usr-is-merged by libreadline8t64'
+Adding 'diversion of /lib/aarch64-linux-gnu/libreadline.so.8.2 to /lib/aarch64-linux-gnu/libreadline.so.8.2.usr-is-merged by libreadline8t64'
+Unpacking libreadline8t64:arm64 (8.2-6) ...
+Selecting previously unselected package procps.
+Preparing to unpack .../procps_2%3a4.0.4-9_arm64.deb ...
+Unpacking procps (2:4.0.4-9) ...
+Selecting previously unselected package readline-common.
+Preparing to unpack .../readline-common_8.2-6_all.deb ...
+Unpacking readline-common (8.2-6) ...
+Selecting previously unselected package ssl-cert.
+Preparing to unpack .../ssl-cert_1.1.3_all.deb ...
+Unpacking ssl-cert (1.1.3) ...
+Processing triggers for man-db (2.13.1-1) ...
+setpriv: keep process capabilities failed: Operation not permitted
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+bionicx unpack wave remaining=0
+bionicx-exec: primary pid=9378 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=9691
+bionicx ELF fixups: 1430 entries
+bionicx-exec: primary pid=9691 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=10809
+Setting up adduser (3.152) ...
+Setting up cups-common (2.4.10-3+deb13u2) ...
+Setting up cups-client (2.4.10-3+deb13u2) ...
+groupadd: cannot open /etc/group: Read-only file system
+fatal: `/sbin/groupadd -g 101 lpadmin' returned error code 10. Exiting.
+Setting up ssl-cert (1.1.3) ...
+dpkg: error processing package cups-client (--configure):
+ installed cups-client package post-installation script subprocess returned error exit status 82
+groupadd: cannot open /etc/group: Read-only file system
+fatal: `/sbin/groupadd -g 101 ssl-cert' returned error code 10. Exiting.
+Setting up libproc2-0:arm64 (2:4.0.4-9) ...
+dpkg: error processing package ssl-cert (--configure):
+ installed ssl-cert package post-installation script subprocess returned error exit status 82
+dpkg: dependency problems prevent configuration of cups-daemon:
+ cups-daemon depends on ssl-cert; however:
+  Package ssl-cert is not configured yet.
+
+dpkg: error processing package cups-daemon (--configure):
+ dependency problems - leaving unconfigured
+Setting up libncursesw6:arm64 (6.5+20250216-2) ...
+Setting up procps (2:4.0.4-9) ...
+Setting up readline-common (8.2-6) ...
+Setting up libreadline8t64:arm64 (8.2-6) ...
+Setting up bc (1.07.1-4+b1) ...
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+Errors were encountered while processing:
+ cups-client
+ ssl-cert
+ cups-daemon
+bionicx-exec: primary pid=10809 exited status=0x100; draining session
+bionicx-exec: session drained children=0
