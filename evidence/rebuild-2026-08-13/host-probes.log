@@ -37,3 +37,5 @@ profile keepassxc is valid
 popular app profiles stay on the shared seed declarations: PASS
 ==== test-new-device-guide post-reboot ====
 new-device guide names seed rebuild, bxapt and kernel limits: PASS
+==== test-bxapt-reconstruct-evidence ====
+bxapt reconstruct evidence covers seed, declarations and empty audit: PASS
