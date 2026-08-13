@@ -22,4 +22,23 @@ if "$repo_dir/tools/install-profile.sh" \
 fi
 grep -F 'missing usr/' "$test_dir/empty.err" >/dev/null
 
+if "$repo_dir/tools/install-profile.sh" --help 2>"$test_dir/help.err"; then
+    :
+fi
+grep -F -- '--replace-rootfs' "$test_dir/help.err" >/dev/null
+
+# ELF normalize uses the seed's /bin/sh and patchelf. The shipped installer
+# must extract the rootfs before it calls bxapt normalize.
+awk '
+    /^[[:space:]]*#/ { next }
+    /tar -C files\/rootfs/ { rootfs=NR }
+    /normalize "\$profile_id"/ { normalize=NR }
+    END {
+        if (rootfs == 0 || normalize == 0 || rootfs >= normalize) {
+            print "rootfs extract must precede bxapt normalize" > "/dev/stderr"
+            exit 1
+        }
+    }
+' "$repo_dir/tools/install-profile.sh"
+
 echo "install-profile rootfs path check: PASS"
