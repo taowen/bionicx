@@ -1,0 +1,34 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "desktop-session",
+  "name": "IceWM desktop session with two package apps",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "hostServices": ["dbus", "cups"],
+  "launch": {
+    "executable": "${APP}/bin/desktop-session",
+    "workingDirectory": "${HOME}",
+    "arguments": [
+      "${RUNTIME}/usr/bin/icewm",
+      "${RUNTIME}/usr/bin/xterm",
+      "${RUNTIME}/usr/bin/mousepad"
+    ],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "XDG_RUNTIME_DIR": "${TMP}/runtime",
+      "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
+      "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
+      "GSETTINGS_BACKEND": "memory",
+      "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
+      "LANG": "C.UTF-8",
+      "VK_ICD_FILENAMES": "${APP}/share/vulkan/icd.d/vortek_icd.json",
+      "VORTEK_SERVER_PATH": "${RUNTIME}/tmp/.vortek/V0"
+    }
+  }
+}

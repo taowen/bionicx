@@ -1,0 +1,126 @@
+==== seed ====
+ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+==== status ====
+bsdextrautils 2.41-5 ii 
+cups-daemon 2.4.10-3+deb13u2 ii 
+dbus 1.16.2-2 ii 
+dictionaries-common 1.30.10 ii 
+evince 48.1-3+deb13u1 ii 
+geany 2.0-2 ii 
+hello 2.10-5 ii 
+icewm 3.7.4-1 ii 
+mousepad 0.6.3-1 ii 
+ristretto 0.13.3-1 ii 
+thunar 4.20.2-1+deb13u1 ii 
+x11-apps 7.7+11+b2 ii 
+xterm 398-1 ii 
+==== marks ====
+-- manual --
+adduser
+apt
+bc
+binutils
+bsdextrautils
+bubblewrap
+ca-certificates
+coreutils
+cups-client
+cups-common
+cups-daemon
+dash
+dbus
+debian-archive-keyring
+dictionaries-common
+dirmngr
+dpkg
+emacsen-common
+evince
+evince-common
+findutils
+geany
+gnome-desktop3-data
+gnupg
+gnupg-l10n
+gpg
+gpg-agent
+gpgconf
+gpgsm
+grep
+gsettings-desktop-schemas
+gstreamer1.0-plugins-base
+hello
+hunspell-en-us
+icewm
+iso-codes
+libarchive13t64
+libaspell15
+libassuan9
+libcap2-bin
+libcdparanoia0
+libcurl3t64-gnutls
+libdjvulibre-text
+libdjvulibre21
+libdrm-common
+libdrm2
+libenchant-2-2
+libevdocument3-4t64
+libevview3-3t64
+libgcrypt20
+libgnome-desktop-3-20t64
+libgpg-error0
+libgpgme11t64
+libgpgmepp6t64
+libgspell-1-3
+libgspell-1-common
+libgstreamer-plugins-base1.0-0
+libgstreamer1.0-0
+libgtksourceview-4-0
+libgtksourceview-4-common
+libgxps2t64
+libhandy-1-0
+libhunspell-1.7-0
+libicu76
+libkpathsea6
+libksba8
+libldap2
+libmagic-mgc
+libmagic1t64
+libmousepad0
+libncursesw6
+libnghttp2-14
+libnghttp3-9
+libngtcp2-16
+libngtcp2-crypto-gnutls8
+libnpth0t64
+libnspr4
+libnss3
+liborc-0.4-0t64
+libpoppler-glib8t64
+libpoppler147
+libproc2-0
+libpsl5t64
+libreadline8t64
+librtmp1
+libsasl2-2
+libsasl2-modules-db
+libsecret-1-0
+libsecret-common
+libssh2-1t64
+libsynctex2
+libtext-iconv-perl
+libtheoradec1
+libtheoraenc1
+libvisual-0.4-0
+libxkbregistry0
+mousepad
+patchelf
+pinentry-curses
+procps
+readline-common
+ristretto
+sed
+ssl-cert
+thunar
+x11-apps
+xterm
+==== audit ====

@@ -314,6 +314,17 @@ int main(int argc, char **argv) {
 
     snprintf(path, sizeof(path), "%s/usr/bin/bionicx-script", root);
     write_file(path, "#!/bin/sh\nexit 23\n", 0700);
+    pid_t execl_child = fork();
+    if (execl_child < 0) fail("fork execl");
+    if (execl_child == 0) {
+        execl("/usr/bin/bionicx-script", "bionicx-script", (char *)NULL);
+        _exit(121);
+    }
+    int execl_status = 0;
+    if (waitpid(execl_child, &execl_status, 0) != execl_child ||
+            !WIFEXITED(execl_status) || WEXITSTATUS(execl_status) != 23)
+        fail("execl must run the rootfs script, not the host path");
+
     pid_t child = fork();
     if (child < 0) fail("fork");
     if (child == 0) {

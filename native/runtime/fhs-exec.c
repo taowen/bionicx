@@ -360,6 +360,78 @@ int execvp(const char *path, char *const arguments[]) {
     return exec_script(actual, arguments, next);
 }
 
+static char **vararg_arguments(const char *argument, va_list values,
+                               size_t *count_out) {
+    va_list count_values;
+    va_copy(count_values, values);
+    size_t count = 1;
+    while (va_arg(count_values, const char *) != NULL) ++count;
+    va_end(count_values);
+    char **arguments = calloc(count + 1, sizeof(*arguments));
+    if (arguments == NULL) return NULL;
+    arguments[0] = (char *)argument;
+    for (size_t i = 1; i < count; ++i)
+        arguments[i] = va_arg(values, char *);
+    (void)va_arg(values, char *);
+    arguments[count] = NULL;
+    *count_out = count;
+    return arguments;
+}
+
+int execl(const char *path, const char *argument, ...) {
+    va_list values;
+    va_start(values, argument);
+    size_t count = 0;
+    char **arguments = vararg_arguments(argument, values, &count);
+    va_end(values);
+    if (arguments == NULL) return -1;
+    int result = execv(path, arguments);
+    int saved_errno = errno;
+    free(arguments);
+    errno = saved_errno;
+    return result;
+}
+
+int execle(const char *path, const char *argument, ...) {
+    va_list values;
+    va_start(values, argument);
+    size_t count = 0;
+    char **arguments = vararg_arguments(argument, values, &count);
+    char *const *environment = va_arg(values, char *const *);
+    va_end(values);
+    if (arguments == NULL) return -1;
+    int result = execve(path, arguments, (char *const *)environment);
+    int saved_errno = errno;
+    free(arguments);
+    errno = saved_errno;
+    return result;
+}
+
+int execvpe(const char *path, char *const arguments[],
+            char *const environment[]) {
+    char buffer[PATH_MAX];
+    const char *actual = path;
+    if (strchr(path, '/') == NULL) {
+        const char *root = bionicx_getenv("BIONICX_ROOTFS");
+        static const char *directories[] = {
+            "/usr/sbin", "/usr/bin", "/sbin", "/bin"
+        };
+        if (root != NULL && root[0] == '/') {
+            for (size_t i = 0;
+                    i < sizeof(directories) / sizeof(directories[0]); ++i) {
+                int count = snprintf(buffer, sizeof(buffer), "%s%s/%s", root,
+                                     directories[i], path);
+                if (count > 0 && count < (int)sizeof(buffer) &&
+                        access(buffer, X_OK) == 0) {
+                    actual = buffer;
+                    break;
+                }
+            }
+        }
+    }
+    return execve(actual, arguments, environment);
+}
+
 int execlp(const char *path, const char *argument, ...) {
     va_list values;
     va_start(values, argument);
