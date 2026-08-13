@@ -26,3 +26,12 @@ profile soffice-doc-probe is valid
 soffice document-load probe covers gtk3 VCL and convert-to: PASS
 ==== test-popular-app-profiles ====
 popular app profiles stay on the shared seed declarations: PASS
+==== test-vlc-avi-probe ====
+vlc avi probe covers libvlc demux of the motion fixture: PASS
+==== test-popular-app-profiles ====
+profile firefox-esr is valid
+profile firefox-esr is valid
+profile krita is valid
+profile qbittorrent is valid
+profile keepassxc is valid
+popular app profiles stay on the shared seed declarations: PASS

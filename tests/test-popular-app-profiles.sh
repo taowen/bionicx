@@ -66,4 +66,6 @@ test -s "$prod_bundle/app/fixtures/bionicx-image.ppm"
 test -s "$prod_bundle/app/fixtures/bionicx-page.html"
 test -s "$prod_bundle/app/fixtures/firefox-online-user.js"
 test -s "$pop_bundle/app/fixtures/bionicx-webseed.torrent"
+test -s "$pop_bundle/app/fixtures/bionicx-motion-audio.avi"
+grep -F 'bionicx-motion-audio.avi' "$repo_dir/profiles/vlc.json" >/dev/null
 echo "popular app profiles stay on the shared seed declarations: PASS"
