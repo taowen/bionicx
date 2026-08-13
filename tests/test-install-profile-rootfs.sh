@@ -41,4 +41,13 @@ awk '
     }
 ' "$repo_dir/tools/install-profile.sh"
 
+mkdir -p "$test_dir/nogl"
+if "$repo_dir/tools/install-profile.sh" \
+        --profile "$repo_dir/profiles/krita.json" \
+        --app-root "$test_dir/nogl" 2>"$test_dir/nogl.err"; then
+    echo "krita without Gladio libGL was accepted" >&2
+    exit 1
+fi
+grep -F 'needs Gladio libGL' "$test_dir/nogl.err" >/dev/null
+
 echo "install-profile rootfs path check: PASS"

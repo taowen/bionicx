@@ -120,6 +120,11 @@ of each window. Installing packages is not acceptance.
 - [x] `bxapt set packages/trixie-popular.txt` leaves xterm, evince, keepassxc,
   krita and firefox-esr `ii`.
 - [x] Launch and screenshot xterm (`bash-5.2$`), evince (fixture PDF),
-  KeePassXC 2.7.10 and Firefox `example.com` untraced as `u0_a381`
+  KeePassXC 2.7.10, Firefox `example.com` and Krita (640×480 fixture,
+  brush presets) untraced as `u0_a381`
   (`examples/vivo-apps/run.sh`, `evidence/vivo-10AFA31610002QH/`).
-  Krita starts untraced then exits 139 on this Mali; that is not accepted.
+  Krita 139 was Mesa without Gladio; `install-profile` now requires
+  `libGL.so` when the profile sets `GLADIO_X11_SOCKET`. f2fs denies
+  `linkat(AT_EMPTY_PATH)` so KConfig could not write `kritarc`; the
+  runtime copies instead, and `seed-krita-resources.sh` installs the
+  Debian default bundles.

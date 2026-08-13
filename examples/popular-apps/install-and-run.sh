@@ -38,6 +38,11 @@ esac
     --app-root "$bundle_dir/app" \
     --serial "$serial"
 
+if [[ "$profile_name" == krita ]]; then
+    ANDROID_SERIAL="$serial" \
+        "$repo_dir/examples/popular-apps/seed-krita-resources.sh"
+fi
+
 if [[ "$profile_name" == keepassxc ]]; then
     "$repo_dir/examples/keepassxc-cli-probe/install-and-run.sh"
 fi

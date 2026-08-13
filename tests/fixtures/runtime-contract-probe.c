@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <errno.h>
 #include <dirent.h>
 #include <dlfcn.h>
@@ -9,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/sem.h>
 #include <sys/types.h>
 #include <spawn.h>
@@ -104,6 +106,10 @@ int main(int argc, char **argv) {
     make_directory(path);
     snprintf(path, sizeof(path), "%s/usr/bin", root);
     make_directory(path);
+    snprintf(path, sizeof(path), "%s/usr/share", root);
+    make_directory(path);
+    snprintf(path, sizeof(path), "%s/usr/share/krita", root);
+    make_directory(path);
     snprintf(path, sizeof(path), "%s/opt", root);
     make_directory(path);
     snprintf(path, sizeof(path), "%s/var", root);
@@ -162,6 +168,14 @@ int main(int argc, char **argv) {
     if (directory == NULL) fail("redirected opendir");
     if (closedir(directory) != 0) fail("closedir");
 
+    write_file("/usr/share/krita/marker", "bundles\n", 0600);
+    struct statvfs vfs;
+    if (statvfs("/usr/share/krita", &vfs) != 0)
+        fail("redirected statvfs /usr/share/krita");
+    if (vfs.f_blocks == 0) fail("statvfs /usr/share/krita has no blocks");
+    if (statvfs("/", &vfs) != 0) fail("statvfs /");
+    if (vfs.f_bavail == 0) fail("statvfs / must not report a full Android /");
+
     write_file("/var/lib/dpkg/status", "status\n", 0600);
     char canonical[PATH_MAX];
     if (realpath("/var/lib/dpkg/status", canonical) == NULL)
@@ -214,6 +228,19 @@ int main(int argc, char **argv) {
     if (status_info.st_ino == status_old_info.st_ino)
         fail("status-old linkat must be a copy");
     if (unlink("/var/lib/dpkg/status-old") != 0) fail("status-old linkat unlink");
+    int status_fd = open("/var/lib/dpkg/status", O_RDONLY);
+    if (status_fd < 0) fail("open status for AT_EMPTY_PATH");
+    if (linkat(status_fd, "", AT_FDCWD, "/var/lib/dpkg/status-tmpfile",
+               AT_EMPTY_PATH) != 0)
+        fail("QSaveFile AT_EMPTY_PATH copy fallback");
+    close(status_fd);
+    snprintf(status_old, sizeof(status_old), "%s/var/lib/dpkg/status-tmpfile",
+             root);
+    if (lstat(status_old, &status_old_info) != 0) fail("status-tmpfile lstat");
+    if (status_info.st_ino == status_old_info.st_ino)
+        fail("status-tmpfile must be a copy");
+    if (unlink("/var/lib/dpkg/status-tmpfile") != 0)
+        fail("status-tmpfile unlink");
     unsetenv("BIONICX_FORCE_LINK_COPY");
 
     FILE *group_stream = fopen("/etc/group", "r+");

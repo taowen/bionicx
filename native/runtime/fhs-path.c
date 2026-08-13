@@ -1,6 +1,8 @@
 #include "runtime-internal.h"
 
 #include <dlfcn.h>
+#include <sys/statfs.h>
+#include <sys/statvfs.h>
 
 /* Redirect Linux FHS paths into app-private Android directories. */
 const char *bionicx_redirect_path(const char *path, char buffer[PATH_MAX]) {
@@ -320,6 +322,62 @@ int fstatat64(int directory, const char *path, struct stat64 *value,
     return actual != NULL ? next(directory, actual, value, flags) : -1;
 }
 
+/* Android's / is often 100% full. glibc apps that statvfs("/") or an
+ * unredirected /usr think there is no space and skip writes / resource
+ * copies. Reuse the app-private rootfs numbers when the kernel reports
+ * zero available blocks. */
+static void replenish_statvfs(struct statvfs *info) {
+    static int (*next)(const char *, struct statvfs *);
+    if (info == NULL || info->f_bavail != 0) return;
+    if (next == NULL) next = dlsym(RTLD_NEXT, "statvfs");
+    const char *root = bionicx_captured_rootfs();
+    if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
+    if (root == NULL || root[0] != '/') return;
+    struct statvfs fresh;
+    if (next(root, &fresh) == 0 && fresh.f_bavail != 0) *info = fresh;
+}
+
+static void replenish_statfs(struct statfs *info) {
+    static int (*next)(const char *, struct statfs *);
+    if (info == NULL || info->f_bavail != 0) return;
+    if (next == NULL) next = dlsym(RTLD_NEXT, "statfs");
+    const char *root = bionicx_captured_rootfs();
+    if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
+    if (root == NULL || root[0] != '/') return;
+    struct statfs fresh;
+    if (next(root, &fresh) == 0 && fresh.f_bavail != 0) *info = fresh;
+}
+
+int statvfs(const char *path, struct statvfs *info) {
+    static int (*next)(const char *, struct statvfs *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "statvfs");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    if (next(actual, info) != 0) return -1;
+    replenish_statvfs(info);
+    return 0;
+}
+
+int statvfs64(const char *path, struct statvfs64 *info) {
+    return statvfs(path, (struct statvfs *)info);
+}
+
+int statfs(const char *path, struct statfs *info) {
+    static int (*next)(const char *, struct statfs *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "statfs");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    if (next(actual, info) != 0) return -1;
+    replenish_statfs(info);
+    return 0;
+}
+
+int statfs64(const char *path, struct statfs64 *info) {
+    return statfs(path, (struct statfs *)info);
+}
+
 int unlink(const char *path) {
     static int (*next)(const char *);
     if (next == NULL) next = dlsym(RTLD_NEXT, "unlink");
@@ -456,6 +514,73 @@ int link(const char *old_path, const char *new_path) {
     return copy_regular_file(actual_old, actual_new, 0);
 }
 
+static int resolve_at_path(int directory, const char *path, char out[PATH_MAX]) {
+    if (path != NULL && path[0] == '/') {
+        if (snprintf(out, PATH_MAX, "%s", path) >= PATH_MAX) {
+            errno = ENAMETOOLONG;
+            return -1;
+        }
+        return 0;
+    }
+    if (directory == AT_FDCWD) {
+        if (getcwd(out, PATH_MAX) == NULL) return -1;
+        if (path != NULL && path[0] != '\0') {
+            size_t used = strlen(out);
+            if (snprintf(out + used, PATH_MAX - used, "/%s", path) >=
+                    (int)(PATH_MAX - used)) {
+                errno = ENAMETOOLONG;
+                return -1;
+            }
+        }
+        return 0;
+    }
+    static ssize_t (*real_readlink)(const char *, char *, size_t);
+    if (real_readlink == NULL) real_readlink = dlsym(RTLD_NEXT, "readlink");
+    char fd_path[64];
+    snprintf(fd_path, sizeof(fd_path), "/proc/self/fd/%d", directory);
+    char directory_path[PATH_MAX];
+    ssize_t length = real_readlink(fd_path, directory_path,
+                                   sizeof(directory_path) - 1);
+    if (length < 0) return -1;
+    directory_path[length] = '\0';
+    if (path != NULL && path[0] != '\0') {
+        if (snprintf(out, PATH_MAX, "%s/%s", directory_path, path) >= PATH_MAX) {
+            errno = ENAMETOOLONG;
+            return -1;
+        }
+    } else if (snprintf(out, PATH_MAX, "%s", directory_path) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+    return 0;
+}
+
+static int copy_linkat(int old_directory, const char *old_path,
+                       int new_directory, const char *new_path, int flags) {
+    char old_resolved[PATH_MAX], new_resolved[PATH_MAX];
+    char old_redirect[PATH_MAX], new_redirect[PATH_MAX];
+    const char *source;
+    if ((flags & AT_EMPTY_PATH) != 0 &&
+            (old_path == NULL || old_path[0] == '\0')) {
+        if (snprintf(old_resolved, sizeof(old_resolved), "/proc/self/fd/%d",
+                     old_directory) >= (int)sizeof(old_resolved)) {
+            errno = ENAMETOOLONG;
+            return -1;
+        }
+        source = old_resolved;
+    } else {
+        if (resolve_at_path(old_directory, old_path, old_resolved) != 0)
+            return -1;
+        source = bionicx_redirect_path(old_resolved, old_redirect);
+        if (source == NULL) return -1;
+    }
+    if (resolve_at_path(new_directory, new_path, new_resolved) != 0) return -1;
+    const char *destination = bionicx_redirect_path(new_resolved, new_redirect);
+    if (destination == NULL) return -1;
+    int follow = (flags & (AT_SYMLINK_FOLLOW | AT_EMPTY_PATH)) != 0;
+    return copy_regular_file(source, destination, follow);
+}
+
 int linkat(int old_directory, const char *old_path, int new_directory,
            const char *new_path, int flags) {
     static int (*next)(int, const char *, int, const char *, int);
@@ -464,22 +589,14 @@ int linkat(int old_directory, const char *old_path, int new_directory,
     const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
     const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
     if (actual_old == NULL || actual_new == NULL) return -1;
-    int follow = (flags & AT_SYMLINK_FOLLOW) != 0;
-    if (link_copy_forced()) {
-        if (old_directory != AT_FDCWD || new_directory != AT_FDCWD ||
-                (flags & AT_EMPTY_PATH) != 0) {
-            errno = EOPNOTSUPP;
-            return -1;
-        }
-        return copy_regular_file(actual_old, actual_new, follow);
-    }
+    if (link_copy_forced())
+        return copy_linkat(old_directory, actual_old, new_directory,
+                           actual_new, flags);
     int result = next(old_directory, actual_old, new_directory, actual_new,
                       flags);
     if (result == 0 || !link_copy_errno(errno)) return result;
-    if (old_directory != AT_FDCWD || new_directory != AT_FDCWD ||
-            (flags & AT_EMPTY_PATH) != 0)
-        return -1;
-    return copy_regular_file(actual_old, actual_new, follow);
+    return copy_linkat(old_directory, actual_old, new_directory, actual_new,
+                       flags);
 }
 
 int chdir(const char *path) {

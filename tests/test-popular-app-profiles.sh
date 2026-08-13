@@ -31,6 +31,10 @@ grep -F 'build-gladio.sh' \
     "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
 grep -F 'firefox-esr' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'krita' "$repo_dir/packages/trixie-popular.txt" >/dev/null
+grep -F 'seed-krita-resources.sh' \
+    "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
+grep -F '/usr/share/krita/bundles' \
+    "$repo_dir/examples/popular-apps/seed-krita-resources.sh" >/dev/null
 grep -F 'qbittorrent' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'keepassxc' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'browser.aboutwelcome.enabled' \

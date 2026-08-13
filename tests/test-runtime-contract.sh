@@ -68,6 +68,14 @@ grep -F 'BIONICX_FORCE_LINK_COPY' \
     "$repo_dir/native/runtime/fhs-path.c" >/dev/null
 grep -F 'dpkg status-old copy fallback' \
     "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
+grep -F 'statvfs("/usr/share/krita"' \
+    "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
+grep -F 'replenish_statvfs' \
+    "$repo_dir/native/runtime/fhs-path.c" >/dev/null
+grep -F 'AT_EMPTY_PATH' \
+    "$repo_dir/native/runtime/fhs-path.c" >/dev/null
+grep -F 'QSaveFile AT_EMPTY_PATH copy fallback' \
+    "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
 
 BIONICX_ROOTFS="$root" \
 BIONICX_APP="$test_dir/app" \

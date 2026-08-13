@@ -30,6 +30,12 @@ python3 "$repo_dir/tools/validate-profile.py" "$profile"
 profile_id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["id"])' "$profile")"
 if [[ -n "$app_root" ]]; then
     [[ -d "$app_root" ]] || { echo "missing app root: $app_root" >&2; exit 1; }
+    # Krita/KeePassXC without Gladio load Debian Mesa and SIGSEGV on Android.
+    if grep -Fq GLADIO_X11_SOCKET "$profile" &&
+            [[ ! -e "$app_root/lib/libGL.so.1" && ! -e "$app_root/lib/libGL.so" ]]; then
+        echo "profile $profile_id needs Gladio libGL in $app_root/lib" >&2
+        exit 1
+    fi
 fi
 if [[ -n "$runtime_root" ]]; then
     [[ -d "$runtime_root" ]] || { echo "missing runtime root: $runtime_root" >&2; exit 1; }
