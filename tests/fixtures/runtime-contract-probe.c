@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/sem.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -117,6 +118,19 @@ int main(int argc, char **argv) {
             !WIFEXITED(stat_status) || WEXITSTATUS(stat_status) != 0)
         return 6;
 
+    FILE *shell_stream = popen("printf bionicx-popen", "r");
+    if (shell_stream == NULL) fail("popen rootfs shell");
+    char shell_output[32] = {0};
+    const size_t shell_output_length = sizeof("bionicx-popen") - 1;
+    if (fread(shell_output, 1, shell_output_length, shell_stream) !=
+            shell_output_length ||
+            strcmp(shell_output, "bionicx-popen") != 0 ||
+            pclose(shell_stream) != 0)
+        fail("rootfs popen result");
+    int system_status = system("exit 17");
+    if (!WIFEXITED(system_status) || WEXITSTATUS(system_status) != 17)
+        fail("rootfs system result");
+
     char template[] = "/tmp/bionicx.XXXXXX";
     descriptor = mkstemp(template);
     if (descriptor < 0) fail("redirected mkstemp");
@@ -130,6 +144,22 @@ int main(int argc, char **argv) {
     struct passwd *current_user = getpwuid(geteuid());
     if (current_user == NULL || current_user->pw_uid != geteuid())
         fail("current app user mapping");
+
+    int semaphore = semget(IPC_PRIVATE, 1, IPC_CREAT | 0600);
+    if (semaphore < 0) fail("semget");
+    if (semctl(semaphore, 0, SETVAL, 0) != 0) fail("semctl SETVAL");
+    pid_t semaphore_child = fork();
+    if (semaphore_child < 0) fail("fork semaphore");
+    if (semaphore_child == 0) {
+        struct sembuf increment = {.sem_num = 0, .sem_op = 1};
+        _exit(semop(semaphore, &increment, 1) == 0 ? 0 : 121);
+    }
+    int semaphore_status = 0;
+    if (waitpid(semaphore_child, &semaphore_status, 0) != semaphore_child ||
+            !WIFEXITED(semaphore_status) || WEXITSTATUS(semaphore_status) != 0 ||
+            semctl(semaphore, 0, GETVAL) != 1 ||
+            semctl(semaphore, 0, IPC_RMID) != 0)
+        fail("cross-process System V semaphore");
 
     snprintf(path, sizeof(path), "%s/usr/bin/bionicx-script", root);
     write_file(path, "#!/bin/sh\nexit 23\n", 0700);

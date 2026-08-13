@@ -18,6 +18,7 @@ cc -shared -fPIC -O2 -Wall -Wextra -Werror \
     "$repo_dir/native/runtime/fhs-exec.c" \
     "$repo_dir/native/runtime/fhs-metadata.c" \
     "$repo_dir/native/runtime/identity.c" \
+    "$repo_dir/native/runtime/sysv-semaphore.c" \
     -o "$test_dir/libbionicx-runtime.so" -ldl
 cc -O2 -Wall -Wextra -Werror \
     "$repo_dir/tests/fixtures/runtime-contract-probe.c" \

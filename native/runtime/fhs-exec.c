@@ -1,6 +1,20 @@
 #include "runtime-internal.h"
 
 #include <dlfcn.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
+#include <sys/wait.h>
+
+#define SHELL_CHILD_SLOTS 64
+
+struct shell_child {
+    FILE *stream;
+    pid_t pid;
+};
+
+static pthread_mutex_t shell_children_lock = PTHREAD_MUTEX_INITIALIZER;
+static struct shell_child shell_children[SHELL_CHILD_SLOTS];
 
 static char **script_arguments(const char *path, char *const arguments[],
                                char program[PATH_MAX],
@@ -161,4 +175,118 @@ int execlp(const char *path, const char *argument, ...) {
     free(arguments);
     errno = saved_errno;
     return result;
+}
+
+static const char *rootfs_shell(char path[PATH_MAX]) {
+    const char *root = bionicx_getenv("BIONICX_ROOTFS");
+    if (root == NULL || root[0] != '/' ||
+            snprintf(path, PATH_MAX, "%s/bin/sh", root) >= PATH_MAX) {
+        errno = ENOENT;
+        return NULL;
+    }
+    return path;
+}
+
+FILE *popen(const char *command, const char *type) {
+    if (command == NULL || type == NULL ||
+            (strcmp(type, "r") != 0 && strcmp(type, "re") != 0 &&
+             strcmp(type, "w") != 0 && strcmp(type, "we") != 0)) {
+        errno = EINVAL;
+        return NULL;
+    }
+    int descriptors[2];
+    if (pipe2(descriptors, O_CLOEXEC) != 0) return NULL;
+    int reading = type[0] == 'r';
+    pid_t child = fork();
+    if (child < 0) {
+        int saved = errno;
+        close(descriptors[0]);
+        close(descriptors[1]);
+        errno = saved;
+        return NULL;
+    }
+    if (child == 0) {
+        int child_end = reading ? descriptors[1] : descriptors[0];
+        int standard = reading ? STDOUT_FILENO : STDIN_FILENO;
+        close(reading ? descriptors[0] : descriptors[1]);
+        if (dup2(child_end, standard) < 0) _exit(126);
+        close(child_end);
+        char shell[PATH_MAX];
+        if (rootfs_shell(shell) == NULL) _exit(126);
+        char *const arguments[] = {
+            (char *)"sh", (char *)"-c", (char *)"--", (char *)command, NULL
+        };
+        execv(shell, arguments);
+        _exit(127);
+    }
+    int parent_end = reading ? descriptors[0] : descriptors[1];
+    close(reading ? descriptors[1] : descriptors[0]);
+    if (type[1] != 'e') {
+        int flags = fcntl(parent_end, F_GETFD);
+        if (flags >= 0) (void)fcntl(parent_end, F_SETFD, flags & ~FD_CLOEXEC);
+    }
+    FILE *stream = fdopen(parent_end, reading ? "r" : "w");
+    if (stream == NULL) {
+        int saved = errno;
+        close(parent_end);
+        (void)waitpid(child, NULL, 0);
+        errno = saved;
+        return NULL;
+    }
+    pthread_mutex_lock(&shell_children_lock);
+    for (size_t index = 0; index < SHELL_CHILD_SLOTS; ++index) {
+        if (shell_children[index].stream != NULL) continue;
+        shell_children[index].stream = stream;
+        shell_children[index].pid = child;
+        pthread_mutex_unlock(&shell_children_lock);
+        return stream;
+    }
+    pthread_mutex_unlock(&shell_children_lock);
+    fclose(stream);
+    (void)waitpid(child, NULL, 0);
+    errno = EMFILE;
+    return NULL;
+}
+
+int pclose(FILE *stream) {
+    pid_t child = -1;
+    pthread_mutex_lock(&shell_children_lock);
+    for (size_t index = 0; index < SHELL_CHILD_SLOTS; ++index) {
+        if (shell_children[index].stream != stream) continue;
+        child = shell_children[index].pid;
+        shell_children[index].stream = NULL;
+        shell_children[index].pid = 0;
+        break;
+    }
+    pthread_mutex_unlock(&shell_children_lock);
+    if (child < 0) { errno = EINVAL; return -1; }
+    int close_result = fclose(stream);
+    int status = 0;
+    while (waitpid(child, &status, 0) < 0) {
+        if (errno != EINTR) return -1;
+    }
+    return close_result == 0 ? status : -1;
+}
+
+int system(const char *command) {
+    if (command == NULL) {
+        char shell[PATH_MAX];
+        return rootfs_shell(shell) != NULL && access(shell, X_OK) == 0;
+    }
+    pid_t child = fork();
+    if (child < 0) return -1;
+    if (child == 0) {
+        char shell[PATH_MAX];
+        if (rootfs_shell(shell) == NULL) _exit(126);
+        char *const arguments[] = {
+            (char *)"sh", (char *)"-c", (char *)"--", (char *)command, NULL
+        };
+        execv(shell, arguments);
+        _exit(127);
+    }
+    int status = 0;
+    while (waitpid(child, &status, 0) < 0) {
+        if (errno != EINTR) return -1;
+    }
+    return status;
 }
