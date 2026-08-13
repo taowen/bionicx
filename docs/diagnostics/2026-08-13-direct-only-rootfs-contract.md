@@ -16,6 +16,8 @@ The contract is now intentionally singular:
 - legacy transitive `DT_RPATH` is normalized to `DT_RUNPATH`, and the global
   search order is Debian system libraries followed by optional controlled
   fixture libraries and the entrypoint directory;
+- every normalized ELF carries that search order itself; neither the Android
+  launcher nor `bxapt` injects `LD_LIBRARY_PATH`;
 - the same normalization is applied to controlled `${APP}` fixtures during
   profile installation.
 

@@ -9,7 +9,7 @@ temporary="/proc/$$/cwd/build/test-runtime-contract/tmp"
 
 mkdir -p "$test_dir" "$root" "$temporary"
 find "$test_dir" -mindepth 1 -delete
-mkdir -p "$root" "$temporary"
+mkdir -p "$root/etc" "$temporary"
 
 cc -shared -fPIC -O2 -Wall -Wextra -Werror \
     "$repo_dir/native/runtime/android-kernel.c" \
@@ -26,6 +26,7 @@ cc -O2 -Wall -Wextra -Werror \
 
 BIONICX_ROOTFS="$root" \
 BIONICX_TMPDIR="$temporary" \
+BIONICX_DNS_SERVERS="127.0.0.53,127.0.0.54" \
 PATH=/usr/bin:/bin \
 LD_PRELOAD="$test_dir/libbionicx-runtime.so" \
     "$test_dir/runtime-contract-probe" "$root" "$temporary"

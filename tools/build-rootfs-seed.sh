@@ -87,7 +87,13 @@ done < <(find "$output_dir/rootfs" -type l -print0)
 runtime_overlay="$temporary/runtime-overlay"
 "$repo_dir/examples/hello/build-bundle.sh" "$runtime_overlay"
 rm -f "$runtime_overlay/app/bin/hello-x11"
+# Debian exposes its loader through a multiarch symlink. BionicX's fixed
+# interpreter is a separate build artifact and must not overwrite that symlink
+# target or inherit its pathname identity.
+rm -f "$output_dir/rootfs/usr/lib/ld-linux-aarch64.so.1"
 cp -a "$runtime_overlay/rootfs/usr/lib/." "$output_dir/rootfs/usr/lib/"
+[[ -f "$output_dir/rootfs/usr/lib/ld-linux-aarch64.so.1" &&
+        ! -L "$output_dir/rootfs/usr/lib/ld-linux-aarch64.so.1" ]]
 "$repo_dir/tools/build-gladio.sh" "$output_dir/rootfs/usr/lib"
 
 # Seed construction and every bxapt transaction use the same ELF

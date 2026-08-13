@@ -9,6 +9,7 @@ if [ "${1:-}" = --files ]; then
     shift 3
     loader="${BIONICX_INTERPRETER:-$runtime/usr/lib/ld-linux-aarch64.so.1}"
     deploy_root="${BIONICX_DEPLOY_ROOT:-$runtime}"
+    system_runpath="$deploy_root/usr/lib:$deploy_root/usr/lib/aarch64-linux-gnu:$deploy_root/lib:$deploy_root/lib/aarch64-linux-gnu:\$ORIGIN:\$ORIGIN/../lib"
     if [ -n "${BIONICX_ROOT_ALIAS:-}" ]; then
         root_alias=$BIONICX_ROOT_ALIAS
     else
@@ -40,9 +41,15 @@ if [ "${1:-}" = --files ]; then
         mv "$temporary" "$file"
     }
     for file do
+        # Executable scripts and static ELFs are deliberately outside the
+        # dynamic-loader contract.
+        needed=$(run_patchelf --print-needed "$file" 2>/dev/null) || continue
         relative=${file#"$tree"}
         current_interpreter=$(run_patchelf --print-interpreter "$file" \
             2>/dev/null || true)
+        # The dynamic loader has neither an interpreter nor DT_NEEDED. Adding
+        # a dynamic tag to it changes its bootstrap layout and is forbidden.
+        [ -n "$current_interpreter" ] || [ -n "$needed" ] || continue
         if [ -n "$current_interpreter" ] && \
                 [ "$current_interpreter" != "$loader" ]; then
             update_patchelf "$file" --set-interpreter "$loader"
@@ -56,7 +63,7 @@ if [ "${1:-}" = --files ]; then
                 grep -q '(RPATH)'; then
             legacy_rpath=1
         fi
-        rewritten_rpath=
+        rewritten_rpath=$system_runpath
         changed=0
         old_ifs=$IFS
         IFS=:
@@ -68,15 +75,15 @@ if [ "${1:-}" = --files ]; then
                 "$runtime"/*|"$root_alias"/*) ;;
                 /*) entry="$deploy_root$entry"; changed=1 ;;
             esac
-            if [ -n "$rewritten_rpath" ]; then
-                rewritten_rpath="$rewritten_rpath:$entry"
-            else
-                rewritten_rpath=$entry
-            fi
+            case ":$rewritten_rpath:" in
+                *":$entry:"*) ;;
+                *) rewritten_rpath="$rewritten_rpath:$entry" ;;
+            esac
         done
         set +f
         IFS=$old_ifs
-        if [ "$changed" -eq 1 ] || [ "$legacy_rpath" -eq 1 ]; then
+        if [ "$current_rpath" != "$rewritten_rpath" ] ||
+                [ "$changed" -eq 1 ] || [ "$legacy_rpath" -eq 1 ]; then
             update_patchelf "$file" --set-rpath "$rewritten_rpath"
             current_rpath=$rewritten_rpath
         fi

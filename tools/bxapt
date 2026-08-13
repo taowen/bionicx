@@ -29,7 +29,6 @@ adb_command=("${ADB:-adb}")
 root="/data/user/0/$package_id/files/rootfs"
 files="/data/user/0/$package_id/files"
 run_dir="$files/run/bxapt"
-runtime_libs="$root/usr/lib:$root/usr/lib/aarch64-linux-gnu"
 perl_libs="$root/etc/perl:$root/usr/share/perl5:$root/usr/lib/aarch64-linux-gnu/perl-base:$root/usr/lib/aarch64-linux-gnu/perl/5.40:$root/usr/share/perl/5.40"
 
 run_as() {
@@ -153,7 +152,6 @@ prepare_state
 environment=(
     "DPKG_DATADIR=$root/usr/share/dpkg"
     "DPKG_ROOT=$root"
-    "LD_LIBRARY_PATH=$runtime_libs"
     "LD_PRELOAD=$files/lib/libbionicx-runtime.so"
     "BIONICX_ROOTFS=$root"
     "BIONICX_TMPDIR=$run_dir"

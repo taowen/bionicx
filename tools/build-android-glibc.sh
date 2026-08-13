@@ -10,6 +10,32 @@ source_prefix=/data/data/com.winlator/files/rootfs
 target_prefix=/data/data/io.taowen.bx/files/rootfs
 jobs="${BIONICX_GLIBC_JOBS:-8}"
 
+verify_output() {
+    python3 - "$1" "$target_prefix" <<'PY'
+from pathlib import Path
+import sys
+
+output = Path(sys.argv[1])
+prefix = sys.argv[2].encode()
+libc = (output / "libc.so.6").read_bytes()
+expected_resolver = prefix + b"/etc/resolv.conf"
+if expected_resolver not in libc:
+    raise SystemExit("glibc contract: fixed rootfs resolver path is absent")
+
+# Android app seccomp traps these calls even before glibc can observe ENOSYS.
+# The pinned source recipe must compile them out; runtime instruction rewriting
+# is intentionally not an execution path.
+svc = bytes.fromhex("010000d4")
+clone3 = bytes.fromhex("683680d2")
+robust = bytes.fromhex("680c80d2")
+if clone3 + svc in libc:
+    raise SystemExit("glibc contract: raw clone3 stub remains")
+for offset in range(0, max(0, len(libc) - 16), 4):
+    if libc[offset:offset + 4] == robust and svc in libc[offset + 4:offset + 16]:
+        raise SystemExit("glibc contract: raw set_robust_list stub remains")
+PY
+}
+
 mkdir -p "$cache_dir"
 definition_hash="$({
     printf '%s\n' "$glibc_version" "$glibc_sha256" "$package_commit"
@@ -21,6 +47,7 @@ result_dir="$cache_dir/android-glibc-$definition_hash"
 if [[ -x "$result_dir/output/ld-linux-aarch64.so.1" \
         && -f "$result_dir/output/libc.so.6" \
         && -f "$result_dir/output/libm.so.6" ]]; then
+    verify_output "$result_dir/output"
     echo "$result_dir/output"
     exit 0
 fi
@@ -151,6 +178,7 @@ podman run --rm --userns=keep-id --volume "$repo_dir:/work:Z" \
 "$repo_dir/tools/relocate-prefix.py" "$temporary/output" \
     --from-prefix "${source_prefix%/files/rootfs}" \
     --to-prefix "${target_prefix%/files/rootfs}"
+verify_output "$temporary/output"
 
 printf '%s\n' \
     "glibc=$glibc_version" \

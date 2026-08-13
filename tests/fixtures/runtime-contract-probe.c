@@ -64,6 +64,18 @@ int main(int argc, char **argv) {
             strcmp(value, "rooted\n") != 0) return 3;
     close(descriptor);
 
+    snprintf(path, sizeof(path), "%s/etc/resolv.conf", root);
+    descriptor = open(path, O_RDONLY);
+    if (descriptor < 0) fail("runtime resolv.conf");
+    char resolver_config[128] = {0};
+    ssize_t resolver_length = read(descriptor, resolver_config,
+                                   sizeof(resolver_config) - 1);
+    close(descriptor);
+    if (resolver_length <= 0 ||
+            strstr(resolver_config, "nameserver 127.0.0.53\n") == NULL ||
+            strstr(resolver_config, "nameserver 127.0.0.54\n") == NULL)
+        fail("Android resolver publication");
+
     snprintf(path, sizeof(path), "%s/opt/bionicx-probe", root);
     write_file(path, "opted\n", 0600);
     descriptor = open("/opt/bionicx-probe", O_RDONLY);

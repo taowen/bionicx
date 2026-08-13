@@ -81,7 +81,7 @@ public class NetworkHelper {
         return result;
     }
 
-    public List<String> getIPv4DnsServers() {
+    public List<String> getDnsServers() {
         ArrayList<String> result = new ArrayList<>();
         Network activeNetwork = connectivityManager.getActiveNetwork();
         if (activeNetwork == null) return result;
@@ -89,7 +89,7 @@ public class NetworkHelper {
         LinkProperties linkProperties = connectivityManager.getLinkProperties(activeNetwork);
         if (linkProperties == null) return result;
         for (InetAddress address : linkProperties.getDnsServers()) {
-            if (address instanceof Inet4Address) result.add(address.getHostAddress());
+            result.add(address.getHostAddress());
         }
         return result;
     }

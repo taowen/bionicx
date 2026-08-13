@@ -59,9 +59,11 @@ single-UID BionicX session, waits briefly, and escalates remaining children to
 KILL. One APK process/UID owns one active display session, matching the Android
 sandbox and preventing detached clients from outliving their X server.
 
-Environment variables such as `LD_LIBRARY_PATH` and `LD_PRELOAD` are set in the
-child after the Bionic executable has started. This prevents Android's linker
-from accidentally consuming glibc loader configuration.
+The normalized `RUNPATH` is the only library-search contract. `LD_LIBRARY_PATH`
+is neither injected nor accepted, so an incomplete package normalization fails
+directly instead of being hidden by a process-global search path. The mandatory
+`LD_PRELOAD` is set in the child after the Bionic executor has started, keeping
+the Android linker outside the glibc environment.
 
 ## 3. Profile contract
 
@@ -116,7 +118,8 @@ helpers. Its implementation is split only for source ownership:
 - `android-kernel.c` defines Android seccomp/syscall behavior;
 - `fhs-path.c`, `fhs-exec.c` and `fhs-metadata.c` map the single shared rootfs;
 - `identity.c` exposes the current Android app UID/GID to glibc software;
-- `dns.c` supplies the Android network's active resolvers.
+- `dns.c` atomically publishes the Android network's active resolvers to the
+  rootfs path compiled into glibc; it does not hook glibc's resolver.
 - `sysv-semaphore.c` supplies one app-private, file-backed System V semaphore
   namespace with cross-process locking and futex waits because Android seccomp
   blocks the corresponding AArch64 syscalls for ordinary app UIDs.

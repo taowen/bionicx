@@ -7,7 +7,8 @@ integration target, not a synthetic painted-window probe.
 The profile starts an interactive Debian bash inside xterm. BionicX adapts the
 shared `/usr/bin/bash` interpreter to the app-private glibc loader because
 there is intentionally no chroot or PRoot to resolve Debian's stock absolute
-loader path. The inherited multiarch `LD_LIBRARY_PATH` remains package based.
+loader path. Its normalized `RUNPATH` is the sole library search path; no
+process-global `LD_LIBRARY_PATH` is injected.
 
 Build and install with:
 

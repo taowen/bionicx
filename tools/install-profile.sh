@@ -58,7 +58,7 @@ if [[ -n "$runtime_root" ]]; then
     else
         # A rootfs is an immutable package image.  Remove the previous image
         # before extraction so libraries deleted by a package transition
-        # cannot remain on LD_LIBRARY_PATH and mask an incomplete build.
+        # cannot survive a seed transition and mask an incomplete package set.
         "${adb[@]}" shell run-as "$package" find \
             files/rootfs -mindepth 1 -delete >/dev/null
         tar -C "$runtime_root" -cf - . | \

@@ -1,0 +1,12 @@
+bionicx-exec: running untraced pid=27498
+Ign:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie InRelease
+Ign:2 http://snapshot.debian.org/archive/debian-security/20260811T000000Z trixie-security InRelease
+Ign:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie InRelease
+Ign:2 http://snapshot.debian.org/archive/debian-security/20260811T000000Z trixie-security InRelease
+Ign:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie InRelease
+Ign:2 http://snapshot.debian.org/archive/debian-security/20260811T000000Z trixie-security InRelease
+Err:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie InRelease
+  Temporary failure resolving 'snapshot.debian.org'
+Err:2 http://snapshot.debian.org/archive/debian-security/20260811T000000Z trixie-security InRelease
+  Temporary failure resolving 'snapshot.debian.org'
+Reading package lists...

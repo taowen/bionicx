@@ -154,13 +154,7 @@ public final class BionicXActivity extends Activity {
             }
             String executable = profile.expand(this, profile.executable);
             File executableFile = new File(executable);
-            command.add("--env");
-            command.add("LD_LIBRARY_PATH="
-                    + profile.expand(this, "${RUNTIME}/usr/lib") + ":"
-                    + profile.expand(this, "${RUNTIME}/usr/lib/aarch64-linux-gnu") + ":"
-                    + new File(getFilesDir(), "apps/" + profile.id + "/lib") + ":"
-                    + executableFile.getParent());
-            List<String> servers = new NetworkHelper(this).getIPv4DnsServers();
+            List<String> servers = new NetworkHelper(this).getDnsServers();
             Log.i(TAG, "runtime DNS servers=" + servers.size());
             command.add("--env");
             command.add("BIONICX_DNS_SERVERS=" + String.join(",", servers));
