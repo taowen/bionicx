@@ -21,6 +21,29 @@ void *dlopen(const char *path, int flags) {
     static void *(*next)(const char *, int);
     if (next == NULL) next = dlsym(RTLD_NEXT, "dlopen");
     if (path == NULL) return next(NULL, flags);
+    /* A bare SONAME is resolved from this preload object's return
+     * address, so glibc ignores the executable RUNPATH. Search the
+     * Debian multiarch directories ourselves. */
+    if (strchr(path, '/') == NULL) {
+        const char *root = bionicx_captured_rootfs();
+        if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
+        if (root != NULL && root[0] == '/') {
+            static const char *const directories[] = {
+                "/usr/lib/aarch64-linux-gnu",
+                "/lib/aarch64-linux-gnu",
+                "/usr/lib",
+                "/lib",
+                NULL
+            };
+            for (int i = 0; directories[i] != NULL; ++i) {
+                char candidate[PATH_MAX];
+                int count = snprintf(candidate, sizeof(candidate), "%s%s/%s",
+                        root, directories[i], path);
+                if (count < 0 || count >= (int)sizeof(candidate)) continue;
+                if (access(candidate, F_OK) == 0) return next(candidate, flags);
+            }
+        }
+    }
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
     return actual != NULL ? next(actual, flags) : NULL;

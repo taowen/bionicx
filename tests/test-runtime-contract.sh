@@ -23,9 +23,12 @@ cc -shared -fPIC -O2 -Wall -Wextra -Werror \
 cc -O2 -Wall -Wextra -Werror \
     "$repo_dir/tests/fixtures/runtime-contract-probe.c" \
     -o "$test_dir/runtime-contract-probe"
+mkdir -p "$root/usr/lib/aarch64-linux-gnu"
 cc -shared -fPIC -O2 -Wall -Wextra -Werror \
     "$repo_dir/tests/fixtures/runtime-dlopen.c" \
     -o "$root/opt/bionicx-runtime-dlopen.so"
+cp "$root/opt/bionicx-runtime-dlopen.so" \
+    "$root/usr/lib/aarch64-linux-gnu/libbionicx-runtime-dlopen.so"
 
 BIONICX_ROOTFS="$root" \
 BIONICX_TMPDIR="$temporary" \

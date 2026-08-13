@@ -78,9 +78,22 @@ for argument do
     esac
 done
 
+# Static-PIE ldconfig cannot use LD_PRELOAD, so `include /etc/ld.so.conf.d`
+# would read Android /etc and scan empty host directories. Point it at the
+# app-private multiarch trees instead.
+conf=$root/etc/ld.so.conf.bionicx
+{
+    echo "$root/lib"
+    echo "$root/usr/lib"
+    echo "$root/lib/aarch64-linux-gnu"
+    echo "$root/usr/lib/aarch64-linux-gnu"
+    echo "$root/usr/local/lib"
+    echo "$root/usr/local/lib/aarch64-linux-gnu"
+} > "$conf"
+
 # Word-splitting $filtered is intentional: these are rewritten ldconfig flags.
 # shellcheck disable=SC2086
 exec "$real" \
     -C "$root/etc/ld.so.cache" \
-    -f "$root/etc/ld.so.conf" \
+    -f "$conf" \
     $filtered

@@ -1,0 +1,7 @@
+I/BionicX: BXTEST PASS gtk-dlopen libgtk-3.so.0
+I/BionicX: BXTEST PASS gio-dlopen libgio-2.0.so.0
+I/BionicX: BXTEST PASS gtk-init DISPLAY connected
+I/BionicX: BXTEST PASS gtk-statusbar-ui bytes=1039
+I/BionicX: BXTEST PASS gtk-dialog-ui bytes=1260
+I/BionicX: BXTEST PASS gtk-statusbar GtkStatusbar mapped
+I/BionicX: BXSUMMARY gtk-template passed=6 failed=0

@@ -40,7 +40,8 @@ out=$(BIONICX_ROOTFS="$root" /bin/sh "$root/sbin/ldconfig" \
     -r "$root/" --verbose)
 printf '%s\n' "$out"
 printf '%s\n' "$out" | grep -F -- "-C $root/etc/ld.so.cache" >/dev/null
-printf '%s\n' "$out" | grep -F -- "-f $root/etc/ld.so.conf" >/dev/null
+printf '%s\n' "$out" | grep -F -- "-f $root/etc/ld.so.conf.bionicx" >/dev/null
+grep -F "$root/usr/lib/aarch64-linux-gnu" "$root/etc/ld.so.conf.bionicx" >/dev/null
 printf '%s\n' "$out" | grep -F -- --verbose >/dev/null
 if printf '%s\n' "$out" | grep -Eq -- ' -r | --root '; then
     echo "wrapper leaked a chroot argument: $out" >&2

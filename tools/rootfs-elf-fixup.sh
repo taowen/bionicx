@@ -95,6 +95,14 @@ if [ "${1:-}" = --files ]; then
                 "$current_interpreter" "$loader" >> "$ledger"
         fi
 
+        # patchelf --set-rpath moves .gresource.* into a rewritten PT_LOAD
+        # and GTK then cannot find /org/gtk/libgtk/ui templates. Leave the
+        # original RUNPATH; ld.so.cache covers multiarch directories.
+        if run_readelf -S "$file" 2>/dev/null | grep -q ' \.gresource'; then
+            printf '%s\tGRESOURCE\tkeep-rpath\n' "$relative" >> "$ledger"
+            continue
+        fi
+
         current_rpath=$(run_patchelf --print-rpath "$file" 2>/dev/null || true)
         legacy_rpath=0
         if [ -n "$current_rpath" ] && run_readelf -d "$file" 2>/dev/null | \

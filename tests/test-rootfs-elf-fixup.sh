@@ -96,4 +96,18 @@ BIONICX_PATCHELF=patchelf BIONICX_READELF=readelf \
 [[ "$(patchelf --print-interpreter "$app/bin/app-probe")" == \
     "$root/usr/lib/ld-linux-aarch64.so.1" ]]
 [[ "$(patchelf --print-rpath "$app/bin/app-probe")" == "$system_runpath" ]]
+
+gresource_probe="$root/usr/lib/libgresource-keep.so"
+cp "$repo_dir/build/test-runtime-contract/runtime-contract-probe" \
+    "$gresource_probe"
+printf 'GVariant' > "$test_dir/gresource.bin"
+objcopy --add-section .gresource.gtk="$test_dir/gresource.bin" \
+    "$gresource_probe"
+patchelf --set-rpath /original/gresource-rpath "$gresource_probe"
+BIONICX_PATCHELF=patchelf BIONICX_READELF=readelf \
+    "$repo_dir/tools/rootfs-elf-fixup.sh" "$root" >/dev/null
+[[ "$(patchelf --print-rpath "$gresource_probe")" == \
+    /original/gresource-rpath ]]
+grep -F $'/usr/lib/libgresource-keep.so\tGRESOURCE\tkeep-rpath' \
+    "$root/var/lib/bionicx/elf-fixups.tsv" >/dev/null
 echo "rootfs ELF fixup: PASS"
