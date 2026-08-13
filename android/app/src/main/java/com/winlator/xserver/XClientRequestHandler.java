@@ -475,6 +475,16 @@ public class XClientRequestHandler implements RequestHandler {
                             DrawRequests.polyText8(client, inputStream, outputStream);
                         }
                         break;
+                    case ClientOpcodes.IMAGE_TEXT8:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.DRAWABLE_MANAGER, XServer.Lockable.GRAPHIC_CONTEXT_MANAGER)) {
+                            DrawRequests.imageText8(client, inputStream, outputStream);
+                        }
+                        break;
+                    case ClientOpcodes.IMAGE_TEXT16:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.DRAWABLE_MANAGER, XServer.Lockable.GRAPHIC_CONTEXT_MANAGER)) {
+                            DrawRequests.imageText16(client, inputStream, outputStream);
+                        }
+                        break;
                     case ClientOpcodes.CREATE_COLORMAP:
                         client.skipRequest();
                         break;

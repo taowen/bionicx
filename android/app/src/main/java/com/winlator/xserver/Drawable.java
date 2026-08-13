@@ -461,6 +461,10 @@ public class Drawable extends XResource {
         forceUpdate();
     }
 
+    public static final int TEXT8_WIDTH = 8;
+    public static final int TEXT8_ASCENT = 11;
+    public static final int TEXT8_DESCENT = 3;
+
     public int drawText8(int x, int baseline, String text, int color) {
         if (data == null || text.isEmpty()) return 0;
         int stride = getStride();
@@ -468,14 +472,10 @@ public class Drawable extends XResource {
         data.rewind();
         bitmap.copyPixelsFromBuffer(data);
 
-        Paint paint = new Paint();
-        paint.setAntiAlias(false);
-        paint.setTypeface(Typeface.MONOSPACE);
-        paint.setTextSize(16.0f);
-        paint.setColor(0xff000000 | (color & 0x00ffffff));
+        Paint paint = text8Paint(color);
         Canvas canvas = new Canvas(bitmap);
         canvas.drawText(text, x, baseline, paint);
-        int advance = Math.round(paint.measureText(text));
+        int advance = text.length() * TEXT8_WIDTH;
 
         data.rewind();
         bitmap.copyPixelsToBuffer(data);
@@ -483,6 +483,25 @@ public class Drawable extends XResource {
         bitmap.recycle();
         forceUpdate();
         return advance;
+    }
+
+    public int drawImageText8(int x, int baseline, String text, int foreground,
+                              int background) {
+        int width = text.length() * TEXT8_WIDTH;
+        int top = baseline - TEXT8_ASCENT;
+        int height = TEXT8_ASCENT + TEXT8_DESCENT;
+        if (width > 0 && height > 0) fillRect(x, top, width, height, background);
+        if (!text.isEmpty()) drawText8(x, baseline, text, foreground);
+        return width;
+    }
+
+    private static Paint text8Paint(int color) {
+        Paint paint = new Paint();
+        paint.setAntiAlias(false);
+        paint.setTypeface(Typeface.MONOSPACE);
+        paint.setTextSize(TEXT8_ASCENT);
+        paint.setColor(0xff000000 | (color & 0x00ffffff));
+        return paint;
     }
 
     public void drawAlphaMaskedBitmap(byte foreRed, byte foreGreen, byte foreBlue, byte backRed, byte backGreen, byte backBlue, Drawable srcDrawable, Drawable maskDrawable) {

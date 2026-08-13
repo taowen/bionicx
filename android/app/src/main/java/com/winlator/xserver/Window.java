@@ -40,6 +40,12 @@ public class Window extends XResource {
     private final List<Window> immutableChildren = Collections.unmodifiableList(children);
     private final ArrayList<EventListener> eventListeners = new ArrayList<>();
     private FullscreenTransformation fullscreenTransformation;
+    public static final int SHAPE_BOUNDING = 0;
+    public static final int SHAPE_CLIP = 1;
+    public static final int SHAPE_INPUT = 2;
+
+    private volatile ShapeRegion boundingShape;
+    private volatile ShapeRegion clipShape;
     private volatile ShapeRegion inputShape;
 
     public static final class ShapeRectangle {
@@ -424,6 +430,79 @@ public class Window extends XResource {
     public void setInputShape(List<ShapeRectangle> rectangles, int xOffset, int yOffset) {
         inputShape = rectangles == null ? null
                 : new ShapeRegion(rectangles, xOffset, yOffset);
+    }
+
+    public void setWindowShape(int kind, List<ShapeRectangle> rectangles,
+                               int xOffset, int yOffset) {
+        ShapeRegion region = rectangles == null ? null
+                : new ShapeRegion(rectangles, xOffset, yOffset);
+        switch (kind) {
+            case SHAPE_BOUNDING:
+                boundingShape = region;
+                break;
+            case SHAPE_CLIP:
+                clipShape = region;
+                break;
+            case SHAPE_INPUT:
+                setInputShape(rectangles, xOffset, yOffset);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public boolean isWindowShaped(int kind) {
+        return shapeRegion(kind) != null;
+    }
+
+    public List<ShapeRectangle> copyWindowShape(int kind) {
+        ShapeRegion region = shapeRegion(kind);
+        if (region == null) return Collections.emptyList();
+        ArrayList<ShapeRectangle> copied = new ArrayList<>(region.rectangles.size());
+        for (ShapeRectangle rectangle : region.rectangles) {
+            copied.add(new ShapeRectangle(region.xOffset + rectangle.x,
+                    region.yOffset + rectangle.y, rectangle.width,
+                    rectangle.height));
+        }
+        return copied;
+    }
+
+    public int[] getWindowShapeExtents(int kind) {
+        ShapeRegion region = shapeRegion(kind);
+        if (region == null) {
+            if (kind == SHAPE_BOUNDING) {
+                return new int[]{-borderWidth, -borderWidth,
+                        width + 2 * borderWidth, height + 2 * borderWidth};
+            }
+            return new int[]{0, 0, width, height};
+        }
+        if (region.rectangles.isEmpty()) return new int[]{0, 0, 0, 0};
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        for (ShapeRectangle rectangle : region.rectangles) {
+            int left = region.xOffset + rectangle.x;
+            int top = region.yOffset + rectangle.y;
+            minX = Math.min(minX, left);
+            minY = Math.min(minY, top);
+            maxX = Math.max(maxX, left + rectangle.width);
+            maxY = Math.max(maxY, top + rectangle.height);
+        }
+        return new int[]{minX, minY, maxX - minX, maxY - minY};
+    }
+
+    private ShapeRegion shapeRegion(int kind) {
+        switch (kind) {
+            case SHAPE_BOUNDING:
+                return boundingShape;
+            case SHAPE_CLIP:
+                return clipShape;
+            case SHAPE_INPUT:
+                return inputShape;
+            default:
+                return null;
+        }
     }
 
     public short[] rootPointToLocal(short x, short y) {

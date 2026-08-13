@@ -1,0 +1,7 @@
+I/BionicX ( 7737): BXTEST PASS display-connect :0
+I/BionicX ( 7737): BXTEST PASS image-text8 field=9984 background=1749 foreground=267
+I/BionicX ( 7737): BXTEST PASS shape-query event=65 error=0
+I/BionicX ( 7737): BXTEST PASS shape-version 1.1
+I/BionicX ( 7737): BXTEST PASS shape-rectangles shaped=1 count=1 rect=120x40+12+16 extents=120x40+12+16
+I/BionicX ( 7737): BXTEST PASS shape-select-input mask=0x1
+I/BionicX ( 7737): BXSUMMARY image-text8-shape passed=6 failed=0

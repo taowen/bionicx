@@ -291,4 +291,58 @@ public abstract class DrawRequests {
             x += drawable.drawText8(x, y, text, graphicsContext.getForeground());
         }
     }
+
+    public static void imageText8(XClient client, XInputStream inputStream,
+                                  XOutputStream outputStream) throws XRequestError {
+        int drawableId = inputStream.readInt();
+        int gcId = inputStream.readInt();
+        int x = inputStream.readShort();
+        int y = inputStream.readShort();
+        int count = client.getRequestData() & 0xff;
+        int remaining = client.getRemainingRequestLength();
+        if (count > remaining) count = remaining;
+        byte[] bytes = new byte[count];
+        if (count > 0) inputStream.read(bytes);
+        if (remaining > count) inputStream.skip(remaining - count);
+
+        Drawable drawable = client.xServer.drawableManager.getDrawable(drawableId);
+        if (drawable == null) throw new BadDrawable(drawableId);
+        GraphicsContext graphicsContext = client.xServer.graphicsContextManager
+                .getGraphicsContext(gcId);
+        if (graphicsContext == null) throw new BadGraphicsContext(gcId);
+
+        String text = new String(bytes, client.xServer.LATIN1_CHARSET);
+        drawable.drawImageText8(x, y, text, graphicsContext.getForeground(),
+                graphicsContext.getBackground());
+    }
+
+    public static void imageText16(XClient client, XInputStream inputStream,
+                                   XOutputStream outputStream) throws XRequestError {
+        int drawableId = inputStream.readInt();
+        int gcId = inputStream.readInt();
+        int x = inputStream.readShort();
+        int y = inputStream.readShort();
+        int count = client.getRequestData() & 0xff;
+        int remaining = client.getRemainingRequestLength();
+        int available = remaining / 2;
+        if (count > available) count = available;
+        byte[] latin1 = new byte[count];
+        for (int i = 0; i < count; i++) {
+            int byte1 = inputStream.readUnsignedByte();
+            int byte2 = inputStream.readUnsignedByte();
+            latin1[i] = (byte)(byte1 == 0 ? byte2 : '?');
+        }
+        int consumed = count * 2;
+        if (remaining > consumed) inputStream.skip(remaining - consumed);
+
+        Drawable drawable = client.xServer.drawableManager.getDrawable(drawableId);
+        if (drawable == null) throw new BadDrawable(drawableId);
+        GraphicsContext graphicsContext = client.xServer.graphicsContextManager
+                .getGraphicsContext(gcId);
+        if (graphicsContext == null) throw new BadGraphicsContext(gcId);
+
+        String text = new String(latin1, client.xServer.LATIN1_CHARSET);
+        drawable.drawImageText8(x, y, text, graphicsContext.getForeground(),
+                graphicsContext.getBackground());
+    }
 }
