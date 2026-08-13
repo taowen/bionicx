@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <pwd.h>
+#include <shadow.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -135,6 +136,90 @@ int main(int argc, char **argv) {
         fail("redirected rename");
     snprintf(path, sizeof(path), "%s/opt/bionicx-rename-target", root);
     if (access(path, F_OK) != 0) fail("renamed backing file");
+
+    /* shadow-tools uses a hard-link lock before replacing account files. */
+    snprintf(path, sizeof(path), "%s/etc/group", root);
+    write_file(path, "root:x:0:\n", 0600);
+    if (link("/etc/group", "/etc/group.lock") != 0)
+        fail("redirected group lock link");
+    snprintf(path, sizeof(path), "%s/etc/group.lock", root);
+    if (access(path, F_OK) != 0) fail("group lock backing file");
+    if (unlink("/etc/group.lock") != 0) fail("redirected group lock unlink");
+    if (linkat(AT_FDCWD, "/etc/group", AT_FDCWD, "/etc/group.lock", 0) != 0)
+        fail("redirected group lock linkat");
+    if (unlinkat(AT_FDCWD, "/etc/group.lock", 0) != 0)
+        fail("redirected group lock unlinkat");
+
+    FILE *group_stream = fopen("/etc/group", "r+");
+    if (group_stream == NULL) fail("fopen /etc/group r+");
+    if (fseek(group_stream, 0, SEEK_END) != 0 ||
+            fputs("bionicx-probe:x:12345:\n", group_stream) < 0)
+        fail("write /etc/group");
+    if (fclose(group_stream) != 0) fail("fclose /etc/group");
+    snprintf(path, sizeof(path), "%s/etc/group", root);
+    group_stream = fopen(path, "r");
+    if (group_stream == NULL) fail("backing /etc/group");
+    char group_file[256] = {0};
+    if (fread(group_file, 1, sizeof(group_file) - 1, group_stream) <= 0 ||
+            strstr(group_file, "bionicx-probe:x:12345:\n") == NULL)
+        fail("group write stayed in rootfs");
+    fclose(group_stream);
+
+    int (*open2)(const char *, int) = dlsym(RTLD_DEFAULT, "__open_2");
+    if (open2 == NULL) fail("__open_2 symbol");
+    int group_fd = open2("/etc/group", O_RDWR);
+    if (group_fd < 0) fail("fortified open /etc/group");
+    close(group_fd);
+
+    if (lckpwdf() != 0) fail("lckpwdf");
+    snprintf(path, sizeof(path), "%s/etc/.pwd.lock", root);
+    if (access(path, F_OK) != 0) fail("lckpwdf backing file");
+    if (ulckpwdf() != 0) fail("ulckpwdf");
+
+    pid_t unlocked_child = fork();
+    if (unlocked_child < 0) fail("fork sanitized fopen");
+    if (unlocked_child == 0) {
+        unsetenv("LD_PRELOAD");
+        unsetenv("BIONICX_ROOTFS");
+        unsetenv("BIONICX_TMPDIR");
+        group_stream = fopen("/etc/group", "r+");
+        if (group_stream == NULL) _exit(116);
+        fclose(group_stream);
+        if (lckpwdf() != 0) _exit(115);
+        if (ulckpwdf() != 0) _exit(114);
+        _exit(0);
+    }
+    int unlocked_status = 0;
+    if (waitpid(unlocked_child, &unlocked_status, 0) != unlocked_child ||
+            !WIFEXITED(unlocked_status) || WEXITSTATUS(unlocked_status) != 0)
+        fail("sanitized fopen/lckpwdf still uses captured rootfs");
+
+    pid_t execve_child = fork();
+    if (execve_child < 0) fail("fork execve contract");
+    if (execve_child == 0) {
+        char shell[PATH_MAX];
+        snprintf(shell, sizeof(shell), "%s/bin/sh", root);
+        char *const arguments[] = {
+            (char *)"sh", (char *)"-c",
+            (char *)"test -f /etc/bionicx-probe", NULL
+        };
+        char *const sanitized[] = {
+            (char *)"PATH=/usr/bin:/bin",
+            (char *)"HOME=/tmp",
+            NULL
+        };
+        unsetenv("LD_PRELOAD");
+        unsetenv("BIONICX_ROOTFS");
+        unsetenv("BIONICX_TMPDIR");
+        /* Path redirection must keep working after helpers sanitize environ. */
+        if (access("/etc/bionicx-probe", R_OK) != 0) _exit(118);
+        execve(shell, arguments, sanitized);
+        _exit(119);
+    }
+    int execve_status = 0;
+    if (waitpid(execve_child, &execve_status, 0) != execve_child ||
+            !WIFEXITED(execve_status) || WEXITSTATUS(execve_status) != 0)
+        fail("execve preserves runtime environment");
 
     pid_t stat_child = fork();
     if (stat_child < 0) fail("fork stat probe");

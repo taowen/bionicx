@@ -1,0 +1,4 @@
+bionicx-exec: running untraced pid=24463
+Hit:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie InRelease
+Hit:2 http://snapshot.debian.org/archive/debian-security/20260811T000000Z trixie-security InRelease
+Reading package lists...

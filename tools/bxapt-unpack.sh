@@ -6,6 +6,7 @@ archives="$root/var/cache/apt/archives"
 manifest=${BIONICX_UNPACK_MANIFEST:?missing BIONICX_UNPACK_MANIFEST}
 snapshot=${BIONICX_PACKAGE_SNAPSHOT:?missing BIONICX_PACKAGE_SNAPSHOT}
 apt_config=${BIONICX_APT_CONFIG:?missing BIONICX_APT_CONFIG}
+requested_state=${BIONICX_REQUESTED_PACKAGES:?missing BIONICX_REQUESTED_PACKAGES}
 case "${1:-}" in
     --clear)
         find "$archives" -maxdepth 1 -type f -name '*.deb' -delete
@@ -29,6 +30,13 @@ case "${1:-}" in
         "$root/usr/bin/dpkg-query" --admindir="$root/var/lib/dpkg" \
             -W '-f=${Package} ${db:Status-Abbrev}\n' 2>/dev/null | \
             awk '$2 == "ii" { print $1 }' | sort -u > "$snapshot"
+        ;;
+    --record-requested)
+        shift
+        : > "$requested_state"
+        for package do
+            printf '%s\n' "$package" >> "$requested_state"
+        done
         ;;
     --reconcile)
         shift
@@ -63,7 +71,7 @@ EOF
         rm -f "$current" "$requested"
         ;;
     *)
-        echo "usage: bxapt-unpack.sh --clear|--unpack|--snapshot|--reconcile" >&2
+        echo "usage: bxapt-unpack.sh --clear|--unpack|--snapshot|--record-requested|--reconcile" >&2
         exit 2
         ;;
 esac

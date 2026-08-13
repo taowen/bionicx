@@ -34,6 +34,8 @@ static inline const char *bionicx_getenv(const char *name) {
     return NULL;
 }
 
+BIONICX_INTERNAL const char *bionicx_captured_rootfs(void);
+BIONICX_INTERNAL const char *bionicx_captured_tmpdir(void);
 BIONICX_INTERNAL const char *bionicx_redirect_path(
         const char *path, char buffer[PATH_MAX]);
 BIONICX_INTERNAL mode_t bionicx_optional_mode(

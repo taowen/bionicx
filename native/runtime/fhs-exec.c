@@ -95,12 +95,147 @@ static int exec_script(const char *path, char *const arguments[],
     char program[PATH_MAX], interpreter_argument[PATH_MAX];
     char **script = script_arguments(path, arguments, program,
                                      interpreter_argument);
-    if (script == NULL) return execute(path, arguments);
+    if (script == NULL) {
+        /* A missing shebang is a real ELF. A present shebang must not reach
+         * the kernel: #!/bin/sh would start Android's Bionic shell. */
+        int descriptor = open(path, O_RDONLY | O_CLOEXEC);
+        if (descriptor >= 0) {
+            char magic[2] = {0, 0};
+            ssize_t n = read(descriptor, magic, 2);
+            close(descriptor);
+            if (n == 2 && magic[0] == '#' && magic[1] == '!') {
+                errno = ENOEXEC;
+                return -1;
+            }
+        }
+        return execute(path, arguments);
+    }
     int result = execute(program, script);
     int saved_errno = errno;
     free(script);
     errno = saved_errno;
     return result;
+}
+
+static const char *const runtime_environment_names[] = {
+    "LD_PRELOAD",
+    "BIONICX_ROOTFS",
+    "BIONICX_TMPDIR",
+    "BIONICX_DNS_SERVERS",
+    "BIONICX_VIRTUAL_ROOT",
+    "BIONICX_REWRITE_ABSOLUTE_SYMLINKS",
+};
+
+static char captured_runtime_environment
+        [sizeof(runtime_environment_names) /
+         sizeof(runtime_environment_names[0])][PATH_MAX];
+
+__attribute__((constructor(101)))
+static void capture_runtime_environment(void) {
+    for (size_t i = 0; i < sizeof(runtime_environment_names) /
+            sizeof(runtime_environment_names[0]); ++i) {
+        const char *value = getenv(runtime_environment_names[i]);
+        if (value == NULL) {
+            captured_runtime_environment[i][0] = '\0';
+            continue;
+        }
+        snprintf(captured_runtime_environment[i],
+                 sizeof(captured_runtime_environment[i]), "%s", value);
+    }
+}
+
+static const char *captured_runtime_value(const char *name) {
+    for (size_t i = 0; i < sizeof(runtime_environment_names) /
+            sizeof(runtime_environment_names[0]); ++i) {
+        if (strcmp(runtime_environment_names[i], name) != 0) continue;
+        return captured_runtime_environment[i][0] != '\0'
+                ? captured_runtime_environment[i] : NULL;
+    }
+    return NULL;
+}
+
+static void restore_runtime_environment(void) {
+    for (size_t i = 0; i < sizeof(runtime_environment_names) /
+            sizeof(runtime_environment_names[0]); ++i) {
+        if (captured_runtime_environment[i][0] == '\0') continue;
+        setenv(runtime_environment_names[i],
+               captured_runtime_environment[i], 1);
+    }
+}
+
+const char *bionicx_captured_rootfs(void) {
+    return captured_runtime_value("BIONICX_ROOTFS");
+}
+
+const char *bionicx_captured_tmpdir(void) {
+    return captured_runtime_value("BIONICX_TMPDIR");
+}
+
+static int environment_has_name(const char *entry, const char *name) {
+    size_t length = strlen(name);
+    return strncmp(entry, name, length) == 0 && entry[length] == '=';
+}
+
+static int is_runtime_environment_entry(const char *entry) {
+    for (size_t i = 0; i < sizeof(runtime_environment_names) /
+            sizeof(runtime_environment_names[0]); ++i) {
+        if (environment_has_name(entry, runtime_environment_names[i]))
+            return 1;
+    }
+    return 0;
+}
+
+/* dpkg execve()s maintainer helpers with a sanitized environment. The
+ * mandatory runtime contract must still travel with every Debian process. */
+static char **with_runtime_environment(char *const environment[],
+                                       size_t *owned_from) {
+    *owned_from = 0;
+    if (environment == NULL) return NULL;
+
+    size_t original = 0;
+    while (environment[original] != NULL) ++original;
+
+    size_t extra = 0;
+    const char *values[sizeof(runtime_environment_names) /
+                       sizeof(runtime_environment_names[0])];
+    for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); ++i) {
+        values[i] = captured_runtime_value(runtime_environment_names[i]);
+        if (values[i] != NULL) ++extra;
+    }
+
+    char **merged = calloc(original + extra + 1, sizeof(*merged));
+    if (merged == NULL) return NULL;
+    size_t out = 0;
+    for (size_t i = 0; i < original; ++i) {
+        if (!is_runtime_environment_entry(environment[i]))
+            merged[out++] = environment[i];
+    }
+    *owned_from = out;
+    for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); ++i) {
+        if (values[i] == NULL) continue;
+        size_t needed = strlen(runtime_environment_names[i]) + 1 +
+                        strlen(values[i]) + 1;
+        merged[out] = malloc(needed);
+        if (merged[out] == NULL) {
+            while (out > *owned_from) free(merged[--out]);
+            free(merged);
+            return NULL;
+        }
+        memcpy(merged[out], runtime_environment_names[i],
+               strlen(runtime_environment_names[i]));
+        merged[out][strlen(runtime_environment_names[i])] = '=';
+        memcpy(merged[out] + strlen(runtime_environment_names[i]) + 1,
+               values[i], strlen(values[i]) + 1);
+        ++out;
+    }
+    merged[out] = NULL;
+    return merged;
+}
+
+static void free_runtime_environment(char **merged, size_t owned_from) {
+    if (merged == NULL) return;
+    for (size_t i = owned_from; merged[i] != NULL; ++i) free(merged[i]);
+    free(merged);
 }
 
 int execv(const char *path, char *const arguments[]) {
@@ -109,6 +244,7 @@ int execv(const char *path, char *const arguments[]) {
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
     if (actual == NULL) return -1;
+    restore_runtime_environment();
     ensure_rootfs_path();
     return exec_script(actual, arguments, next);
 }
@@ -120,13 +256,19 @@ int execve(const char *path, char *const arguments[],
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
     if (actual == NULL) return -1;
+    size_t owned_from = 0;
+    char **merged = with_runtime_environment(environment, &owned_from);
+    if (environment != NULL && merged == NULL) return -1;
+    char *const *actual_environment = merged != NULL ? merged : environment;
     char program[PATH_MAX], interpreter_argument[PATH_MAX];
     char **script = script_arguments(actual, arguments, program,
                                      interpreter_argument);
-    if (script == NULL) return next(actual, arguments, environment);
-    int result = next(program, script, environment);
+    int result = script == NULL
+            ? next(actual, arguments, actual_environment)
+            : next(program, script, actual_environment);
     int saved_errno = errno;
     free(script);
+    free_runtime_environment(merged, owned_from);
     errno = saved_errno;
     return result;
 }
@@ -137,6 +279,7 @@ int execvp(const char *path, char *const arguments[]) {
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
     if (actual == NULL) return -1;
+    restore_runtime_environment();
     ensure_rootfs_path();
     if (actual == path && strchr(path, '/') == NULL) {
         const char *root = bionicx_getenv("BIONICX_ROOTFS");

@@ -8,7 +8,7 @@ dns_servers="${BIONICX_DNS_SERVERS:-}"
 
 usage() {
     echo "usage: tools/bxapt [--serial SERIAL] [--dns ADDRESSES] COMMAND [ARG ...]" >&2
-    echo "commands: update, install, remove, autoremove, set, deb, fixup, normalize, apt, dpkg, query, run" >&2
+    echo "commands: update, install, remove, autoremove, set, deb, recover, fixup, normalize, apt, dpkg, query, run" >&2
     exit "${1:-2}"
 }
 
@@ -31,6 +31,7 @@ files="/data/user/0/$package_id/files"
 run_dir="$files/run/bxapt"
 unpack_manifest="$run_dir/unpacked-paths.txt"
 package_snapshot="$run_dir/installed-packages-before.txt"
+requested_state="$run_dir/requested-packages.txt"
 perl_libs="$root/etc/perl:$root/usr/share/perl5:$root/usr/lib/aarch64-linux-gnu/perl-base:$root/usr/lib/aarch64-linux-gnu/perl/5.40:$root/usr/share/perl/5.40"
 
 run_as() {
@@ -179,6 +180,10 @@ case "$command_name" in
         requested_packages+=("$deb_package")
         arguments=()
         ;;
+    recover)
+        [[ $# -eq 0 ]] || usage
+        arguments=()
+        ;;
     fixup) [[ $# -eq 0 ]] || usage; arguments=() ;;
     normalize)
         [[ $# -eq 1 && "$1" =~ ^[a-z0-9][a-z0-9._-]{0,63}$ ]] || usage
@@ -213,6 +218,7 @@ environment=(
     "BIONICX_DNS_SERVERS=$dns_servers"
     "BIONICX_UNPACK_MANIFEST=$unpack_manifest"
     "BIONICX_PACKAGE_SNAPSHOT=$package_snapshot"
+    "BIONICX_REQUESTED_PACKAGES=$requested_state"
     "BIONICX_APT_CONFIG=$run_dir/apt.conf"
     "FONTCONFIG_PATH=$root/etc/fonts"
     "FONTCONFIG_FILE=fonts.conf"
@@ -274,11 +280,22 @@ snapshot_package_state() {
     run_binary
 }
 
+record_requested_packages() {
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --record-requested \
+        "${requested_packages[@]}")
+    run_binary
+}
+
 reconcile_package_state() {
     binary="$root/bin/sh"
     arguments=("$run_dir/bxapt-unpack.sh" --reconcile \
         "${requested_packages[@]}")
     run_binary
+}
+
+clear_transaction_state() {
+    run_as rm -f "$package_snapshot" "$requested_state" "$unpack_manifest"
 }
 
 dpkg_arguments() {
@@ -296,12 +313,33 @@ if [[ "$command_name" == normalize ]]; then
     exit
 fi
 
+if [[ "$command_name" == recover ]]; then
+    run_as test -s "$package_snapshot"
+    run_as test -r "$requested_state"
+    run_as test -r "$unpack_manifest"
+    binary="$root/bin/sh"
+    arguments=("$run_dir/rootfs-elf-fixup.sh" --paths-from \
+        "$unpack_manifest" "$root" "$root")
+    run_binary
+    binary="$root/usr/bin/apt-get"
+    arguments=(-f install -y --no-install-recommends)
+    run_binary
+    requested_packages=()
+    while IFS= read -r package || [[ -n "$package" ]]; do
+        [[ -n "$package" ]] && requested_packages+=("$package")
+    done < <(run_as cat "$requested_state")
+    reconcile_package_state
+    clear_transaction_state
+    exit
+fi
+
 if [[ "$command_name" == deb ]]; then
     device_deb="$run_dir/incoming/${host_deb##*/}"
     upload_private "$host_deb" "$device_deb"
     trap 'run_as rm -f "$device_deb" >/dev/null 2>&1 || true' EXIT
 
     snapshot_package_state
+    record_requested_packages
     binary="$root/bin/sh"
     arguments=("$run_dir/bxapt-unpack.sh" --unpack "$device_deb")
     run_binary
@@ -343,6 +381,7 @@ fi
 if [[ "$command_name" == install || "$command_name" == set ]]; then
     requested_arguments=("${arguments[@]}")
     snapshot_package_state
+    record_requested_packages
     binary="$root/bin/sh"
     arguments=("$run_dir/bxapt-unpack.sh" --clear)
     run_binary
@@ -353,11 +392,17 @@ if [[ "$command_name" == install || "$command_name" == set ]]; then
     arguments=("$run_dir/bxapt-unpack.sh" --unpack)
     run_binary
     fixup_unpacked_elf
+    if [[ "${BIONICX_BXAPT_STOP_AFTER:-}" == unpack ]]; then
+        # Leave transaction metadata in place so a later recover can finish
+        # unpacked or half-configured packages. This is a test hook, not a
+        # product fallback mode.
+        exit 0
+    fi
     binary="$root/usr/bin/apt-get"
     arguments=(-f install -y --no-install-recommends)
 fi
 run_binary
 case "$command_name" in
-    install|set) reconcile_package_state ;;
+    install|set) reconcile_package_state; clear_transaction_state ;;
     remove|autoremove) fixup_unpacked_elf ;;
 esac

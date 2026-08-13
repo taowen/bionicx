@@ -11,28 +11,30 @@ then commit and push the smallest complete change.
 
 ## P0: package transactions
 
-- [ ] Reproduce the shadow-tools `/etc/group.lock` failure with a controlled
+- [x] Reproduce the shadow-tools `/etc/group.lock` failure with a controlled
   account-creation probe and fix the shared FHS/locking contract. A clean
   `bxapt install cups-daemon cups-client` must configure package accounts
   without pre-creating them with `systemd-sysusers` as a recovery step.
-- [ ] Add an explicit interrupted-transaction recovery path to `bxapt`. It must
+- [x] Add an explicit interrupted-transaction recovery path to `bxapt`. It must
   finish unpacked/half-configured packages, rerun incremental ELF normalization
   where required, and reconcile apt manual/automatic marks from the retained
   pre-transaction snapshot.
-- [ ] Exercise install, failed configure, recovery, remove and autoremove from
+- [x] Exercise install, failed configure, recovery, remove and autoremove from
   a clean seed using a package that creates system users/groups. Require an
   empty `dpkg --audit`, correct account files, correct apt marks and a pruned
   ELF ledger after every final state.
 - [ ] Rebuild and publish the reproducible seed with the fixed Android glibc
   identity namespace, then reconstruct the shared device rootfs only through
-  the pinned seed plus `bxapt` declarations.
+  the pinned seed plus `bxapt` declarations. The identity-fixed seed is on
+  `01408BH601027129` (`ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2`);
+  the popular/WPS/Chrome cohort has not been reinstalled through `bxapt set`.
 
 ## P1: shared desktop services
 
-- [ ] Add app-private CUPS supervision as a shared desktop service. cupsd must
+- [x] Add app-private CUPS supervision as a shared desktop service. cupsd must
   use private configuration, run, spool and socket paths and survive the same
   force-stop/restart lifecycle tests as the session D-Bus service.
-- [ ] Create one controlled local printer destination without requiring real
+- [x] Create one controlled local printer destination without requiring real
   hardware. Verify `cupsGetDests()` and a submitted test job before using WPS
   as the diagnostic surface.
 - [ ] Verify WPS discovers the destination, removes its misleading CUPS

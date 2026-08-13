@@ -8,11 +8,13 @@ const char *bionicx_redirect_path(const char *path, char buffer[PATH_MAX]) {
     const char *target = NULL;
     const char *suffix = NULL;
     if (strcmp(path, "/tmp") == 0 || strncmp(path, "/tmp/", 5) == 0) {
-        target = bionicx_getenv("BIONICX_TMPDIR");
+        target = bionicx_captured_tmpdir();
+        if (target == NULL) target = bionicx_getenv("BIONICX_TMPDIR");
         if (target == NULL || target[0] != '/') return path;
         suffix = path + 4;
     } else if (strcmp(path, "/run") == 0 || strncmp(path, "/run/", 5) == 0) {
-        target = bionicx_getenv("BIONICX_TMPDIR");
+        target = bionicx_captured_tmpdir();
+        if (target == NULL) target = bionicx_getenv("BIONICX_TMPDIR");
         if (target == NULL || target[0] != '/') return path;
         suffix = path;
     } else if (strcmp(path, "/usr") == 0 || strncmp(path, "/usr/", 5) == 0 ||
@@ -21,7 +23,8 @@ const char *bionicx_redirect_path(const char *path, char buffer[PATH_MAX]) {
             strcmp(path, "/etc") == 0 || strncmp(path, "/etc/", 5) == 0 ||
             strcmp(path, "/opt") == 0 || strncmp(path, "/opt/", 5) == 0 ||
             strcmp(path, "/var") == 0 || strncmp(path, "/var/", 5) == 0) {
-        target = bionicx_getenv("BIONICX_ROOTFS");
+        target = bionicx_captured_rootfs();
+        if (target == NULL) target = bionicx_getenv("BIONICX_ROOTFS");
         if (target == NULL || target[0] != '/') return path;
         suffix = path;
     } else {
@@ -110,6 +113,52 @@ int openat(int directory, const char *path, int flags, ...) {
     return (flags & O_CREAT) || ((flags & O_TMPFILE) == O_TMPFILE)
             ? next(directory, actual, flags, mode)
             : next(directory, actual, flags);
+}
+
+/* Fortified glibc open() compiles to __open_2 / __open64_2 and never
+ * reaches the interposed open() symbol. shadow-utils groupadd uses this. */
+int __open_2(const char *path, int flags) {
+    return open(path, flags);
+}
+
+int __open64_2(const char *path, int flags) {
+    return open64(path, flags);
+}
+
+int __openat_2(int directory, const char *path, int flags) {
+    return openat(directory, path, flags);
+}
+
+int __openat64_2(int directory, const char *path, int flags) {
+    return openat64(directory, path, flags);
+}
+
+static int password_lock_fd = -1;
+
+int lckpwdf(void) {
+    struct flock lock;
+    if (password_lock_fd >= 0) return 0;
+    password_lock_fd = open("/etc/.pwd.lock", O_WRONLY | O_CREAT, 0600);
+    if (password_lock_fd < 0) return -1;
+    memset(&lock, 0, sizeof(lock));
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    if (fcntl(password_lock_fd, F_SETLKW, &lock) < 0) {
+        close(password_lock_fd);
+        password_lock_fd = -1;
+        return -1;
+    }
+    return 0;
+}
+
+int ulckpwdf(void) {
+    if (password_lock_fd < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    int result = close(password_lock_fd);
+    password_lock_fd = -1;
+    return result;
 }
 
 int openat64(int directory, const char *path, int flags, ...) {
@@ -294,6 +343,27 @@ int renameat2(int old_directory, const char *old_path, int new_directory,
               const char *new_path, unsigned int flags) {
     static int (*next)(int, const char *, int, const char *, unsigned int);
     if (next == NULL) next = dlsym(RTLD_NEXT, "renameat2");
+    char old_buffer[PATH_MAX], new_buffer[PATH_MAX];
+    const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
+    const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
+    if (actual_old == NULL || actual_new == NULL) return -1;
+    return next(old_directory, actual_old, new_directory, actual_new, flags);
+}
+
+int link(const char *old_path, const char *new_path) {
+    static int (*next)(const char *, const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "link");
+    char old_buffer[PATH_MAX], new_buffer[PATH_MAX];
+    const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
+    const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
+    if (actual_old == NULL || actual_new == NULL) return -1;
+    return next(actual_old, actual_new);
+}
+
+int linkat(int old_directory, const char *old_path, int new_directory,
+           const char *new_path, int flags) {
+    static int (*next)(int, const char *, int, const char *, int);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "linkat");
     char old_buffer[PATH_MAX], new_buffer[PATH_MAX];
     const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
     const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
