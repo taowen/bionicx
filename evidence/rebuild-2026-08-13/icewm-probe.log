@@ -1,0 +1,78 @@
+I/BionicX ( 4897): BXTEST PASS icewm-manager-start pid=4946
+I/BionicX ( 4897): BXICEWM taskbar window=0x400061 geometry=1920x32+0+0
+I/BionicX ( 4897): BXTEST PASS icewm-taskbar-mapped
+I/BionicX ( 4897): BXICEWM tree depth=0 id=0x4000a6 parent=0x4 map=0 class=1 events=0x32203f geometry=1x1+0+0 title=YXTrayProxy
+I/BionicX ( 4897): BXICEWM tree depth=0 id=0x400060 parent=0x4 map=0 class=1 events=0x20203f geometry=1x1+0+0 title=IceDock
+I/BionicX ( 4897): BXICEWM tree depth=0 id=0x400006 parent=0x4 map=2 class=2 events=0x203f geometry=1x1-1-1 title=IceTopWin
+I/BionicX ( 4897): BXICEWM tree depth=0 id=0x400062 parent=0x4 map=0 class=2 events=0x203f geometry=1920x1+0+1079 title=IceEdge
+I/BionicX ( 4897): BXICEWM tree depth=0 id=0x4000ce parent=0x4 map=2 class=1 events=0x20a03f geometry=1920x32+0+1048 title=Frame
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x4000cf parent=0x4000ce map=2 class=1 events=0x38203f geometry=1920x32+0+0 title=TaskBarFrame
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x400061 parent=0x4000cf map=2 class=1 events=0xf2203f geometry=1920x32+0+0 title=TaskBar
+I/BionicX ( 4897): BXICEWM pixels title=TaskBar nonzero=61440 different=59520 first=0xff000000 hash=0xa7c8e9c85cc3eb03
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x4000a3 parent=0x400061 map=0 class=1 events=0x20203f geometry=1x24+0+0 title=SystemTray
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x4000a2 parent=0x400061 map=2 class=1 events=0x20a03f geometry=1x31+1670+1 title=TrayPane
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x4000a1 parent=0x400061 map=2 class=1 events=0x20a03f geometry=1440x31+229+1 title=TaskPane
+I/BionicX ( 4897): BXICEWM tree depth=4 id=0x400123 parent=0x4000a1 map=2 class=1 events=0x20a03f geometry=479x31+480+0 title=-
+I/BionicX ( 4897): BXICEWM tree depth=4 id=0x400122 parent=0x4000a1 map=2 class=1 events=0x20a03f geometry=480x31+0+0 title=-
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x4000a0 parent=0x400061 map=0 class=1 events=0x20203f geometry=1440x27+229+3 title=AddressBar
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x40008e parent=0x400061 map=2 class=1 events=0x20203f geometry=110x31+137+1 title=Workspaces
+I/BionicX ( 4897): BXICEWM tree depth=4 id=0x400098 parent=0x40008e map=2 class=1 events=0x20203f geometry=55x31+55+0 title=Desktop 2
+I/BionicX ( 4897): BXICEWM tree depth=4 id=0x40008f parent=0x40008e map=2 class=1 events=0x20203f geometry=55x31+0+0 title=Desktop 1
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x400083 parent=0x400061 map=2 class=1 events=0x20203f geometry=25x31+53+1 title=ShowDesktop
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x400079 parent=0x400061 map=2 class=1 events=0x20203f geometry=25x31+78+1 title=ShowWindowList
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x400075 parent=0x400061 map=2 class=1 events=0x20a03f geometry=26x31+107+1 title=IceToolbar
+I/BionicX ( 4897): BXICEWM tree depth=4 id=0x400076 parent=0x400075 map=2 class=1 events=0x20203f geometry=25x31+0+0 title=XTerm
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x40006b parent=0x400061 map=2 class=1 events=0x20203f geometry=53x31+0+1 title=TaskBarMenu
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x40006a parent=0x400061 map=2 class=1 events=0x21203f geometry=10x20+1676+6 title=IceAPM
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x400069 parent=0x400061 map=2 class=1 events=0x21203f geometry=158x20+1760+6 title=Clock
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x400067 parent=0x400061 map=0 class=1 events=0x21203f geometry=20x20+0+0 title=NET-erspan0
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x400066 parent=0x400061 map=0 class=1 events=0x21203f geometry=20x20+0+0 title=NET-wifi-aware0
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x400065 parent=0x400061 map=2 class=1 events=0x21203f geometry=20x20+1688+6 title=NET-wlan0
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x400064 parent=0x400061 map=2 class=1 events=0x21203f geometry=20x20+1736+6 title=CPU-1
+I/BionicX ( 4897): BXICEWM tree depth=3 id=0x400063 parent=0x400061 map=2 class=1 events=0x21203f geometry=20x20+1712+6 title=MEM
+I/BionicX ( 4897): BXICEWM tree depth=0 id=0x40010f parent=0x4 map=2 class=1 events=0x20a03f geometry=628x338+628+0 title=Frame
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400116 parent=0x40010f map=2 class=2 events=0x0 geometry=580x4+24+0 title=topSide
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400110 parent=0x40010f map=2 class=1 events=0x38203f geometry=620x310+4+24 title=Container
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0xc00001 parent=0x400110 map=2 class=1 events=0xe28000 geometry=620x310+0+0 title=BionicX Workspace B
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400111 parent=0x40010f map=2 class=1 events=0x21203f geometry=620x20+4+4 title=TitleBar
+I/BionicX ( 4897): BXICEWM pixels title=TitleBar nonzero=12400 different=10207 first=0xff000000 hash=0xeb15e4c8fd8d2590
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x400115 parent=0x400111 map=2 class=1 events=0x21203f geometry=20x20+560+0 title=Minimize
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x400114 parent=0x400111 map=2 class=1 events=0x21203f geometry=20x20+580+0 title=Maximize
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x400113 parent=0x400111 map=2 class=1 events=0x21203f geometry=20x20+600+0 title=Close
+I/BionicX ( 4897): BXICEWM pixels title=Close nonzero=400 different=360 first=0xffffffff hash=0xa04bfb7d7d7ef8a8
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x400112 parent=0x400111 map=2 class=1 events=0x21203f geometry=20x20+0+0 title=SysMenu
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x40011d parent=0x40010f map=2 class=2 events=0x0 geometry=24x24+604+314 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x40011c parent=0x40010f map=2 class=2 events=0x0 geometry=24x24+0+314 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x40011b parent=0x40010f map=2 class=2 events=0x0 geometry=24x24+604+0 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x40011a parent=0x40010f map=2 class=2 events=0x0 geometry=24x24+0+0 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400119 parent=0x40010f map=2 class=2 events=0x0 geometry=580x4+24+334 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400118 parent=0x40010f map=2 class=2 events=0x0 geometry=4x290+624+24 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400117 parent=0x40010f map=2 class=2 events=0x0 geometry=4x290+0+24 title=-
+I/BionicX ( 4897): BXICEWM tree depth=0 id=0x4000f7 parent=0x4 map=2 class=1 events=0x20a03f geometry=628x338+0+0 title=Frame
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x4000ff parent=0x4000f7 map=2 class=2 events=0x0 geometry=580x4+24+0 title=topSide
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x4000f8 parent=0x4000f7 map=2 class=1 events=0x38203f geometry=620x310+4+24 title=Container
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x800001 parent=0x4000f8 map=2 class=1 events=0xe28000 geometry=620x310+0+0 title=BionicX Workspace A
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x4000f9 parent=0x4000f7 map=2 class=1 events=0x21203f geometry=620x20+4+4 title=TitleBar
+I/BionicX ( 4897): BXICEWM pixels title=TitleBar nonzero=12400 different=10225 first=0xff000000 hash=0x8fafb2e3d59a6be1
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x4000fd parent=0x4000f9 map=2 class=1 events=0x21203f geometry=20x20+560+0 title=Minimize
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x4000fc parent=0x4000f9 map=2 class=1 events=0x21203f geometry=20x20+580+0 title=Maximize
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x4000fb parent=0x4000f9 map=2 class=1 events=0x21203f geometry=20x20+600+0 title=Close
+I/BionicX ( 4897): BXICEWM pixels title=Close nonzero=400 different=360 first=0xffffffff hash=0xfba37fa44206e2d6
+I/BionicX ( 4897): BXICEWM tree depth=2 id=0x4000fa parent=0x4000f9 map=2 class=1 events=0x21203f geometry=20x20+0+0 title=SysMenu
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x40010d parent=0x4000f7 map=2 class=2 events=0x0 geometry=24x24+604+314 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x40010b parent=0x4000f7 map=2 class=2 events=0x0 geometry=24x24+0+314 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400109 parent=0x4000f7 map=2 class=2 events=0x0 geometry=24x24+604+0 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400107 parent=0x4000f7 map=2 class=2 events=0x0 geometry=24x24+0+0 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400105 parent=0x4000f7 map=2 class=2 events=0x0 geometry=580x4+24+334 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400103 parent=0x4000f7 map=2 class=2 events=0x0 geometry=4x290+624+24 title=-
+I/BionicX ( 4897): BXICEWM tree depth=1 id=0x400101 parent=0x4000f7 map=2 class=2 events=0x0 geometry=4x290+0+24 title=-
+I/BionicX ( 4897): BXICEWM tree depth=0 id=0x400007 parent=0x4 map=0 class=2 events=0x203f geometry=1x1-1-1 title=IceBottom
+I/BionicX ( 4897): BXICEWM tree depth=0 id=0x400003 parent=0x4 map=0 class=1 events=0x0 geometry=1x1-1-1 title=IceWM 3.7.4 (Linux/aarch64)
+I/BionicX ( 4897): BXICEWM tree-summary windows=62
+I/BionicX ( 4897): BXTEST PASS icewm-decoration-pixels painted=4/4
+I/BionicX ( 4897): BXTEST PASS icewm-window-tree
+I/BionicX ( 4897): BXICEWM client title=BionicX Workspace A mapped=1 configured=1 focused=0 size=620x310
+I/BionicX ( 4897): BXICEWM client title=BionicX Workspace B mapped=1 configured=1 focused=0 size=620x310
+I/BionicX ( 4897): BXTEST PASS icewm-two-clients first=1 second=1
+I/BionicX ( 4897): BXSUMMARY icewm passed=4 failed=0
+I/BionicX ( 4897): icewm-probe exited with 0
