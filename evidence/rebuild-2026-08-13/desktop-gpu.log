@@ -57,36 +57,127 @@ cups-probe: destinations=1
 cups-probe: destination=bionicx-test instance=
 cupsGetDests probe: PASS
 cups-probe rc=0
-===== 2026-08-14T03:58:28+08:00 WPS print e2e =====
-bionicx-exec: running untraced pid=13383
-bionicx-exec: running untraced pid=13396
-BXTEST PASS dlopen-libcups-so-2 QLibrary(cups, 2)
-BXTEST PASS resolve-cupsAddOption
-BXTEST PASS resolve-cupsFreeDests
-BXTEST PASS resolve-cupsFreeOptions
-BXTEST PASS resolve-cupsGetDest
-BXTEST PASS resolve-cupsGetDests
-BXTEST PASS resolve-cupsGetOption
-BXTEST PASS resolve-cupsLastError
-BXTEST PASS resolve-cupsLastErrorString
-BXTEST PASS resolve-cupsPrintFile
-BXTEST PASS resolve-httpClose
-BXTEST PASS resolve-httpConnect2
-BXTEST PASS resolve-ippAddString
-BXTEST PASS resolve-ippDelete
-BXTEST PASS resolve-ippFindAttribute
-BXTEST PASS resolve-ippNewRequest
-BXTEST PASS resolve-ppdClose
-BXTEST PASS resolve-ppdFindOption
-BXTEST PASS resolve-ppdOpenFile
-BXTEST PASS wps-symbol-set KCUPSSupport resolveCups
-BXTEST PASS cupsGetDests-bionicx-test count=1
-BXTEST PASS file-device-uri file:/data/user/0/io.taowen.bx/files/run/cups/spool/bionicx-test.out
-BXTEST PASS write-fixture /data/user/0/io.taowen.bx/files/run/cups/run/bionicx-cups-probe.txt
-BXTEST PASS cupsPrintFile job=12 err=successful-ok
-BXTEST PASS job-payload BIONICX_CUPS_PRINT_PROBE
+==== 2026-08-14T04:00:13+08:00 desktop-gpu recapture ====
+profile vulkan-probe is valid
+vulkan swapchain probe and host minImageCount=2: PASS
+profile glx-probe is valid
+glx-probe install stays on the shared seed: PASS
+profile chrome is valid
+chrome vulkan profile keeps ANGLE/Vortek and the pinned deb: PASS
+===== 2026-08-14T04:00:21+08:00 vulkan-probe =====
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libX11.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libXau.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libXdmcp.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libXext.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libXfixes.so.3
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libXi.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libXrandr.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libXrender.so.1
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libresolv.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/rootfs/usr/lib/libxcb.so.1
+relocated 10 files
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle/app/lib/libvulkan_vortek.so
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/vulkan-probe-bundle
+profile vulkan-probe is valid
+bionicx-exec: running untraced pid=16974
+bionicx-exec: running untraced pid=16985
+bionicx ELF fixups: 10 entries
+installed profile vulkan-probe for io.taowen.bx
+BXTEST PASS host-vulkan-compositor pixels=174537 bounds=0,0-639,359 triangle=55756 triangleBounds=90,51-549,291 size=1920x1080
+I/BionicX (17133): enabled Vulkan host service at /data/user/0/io.taowen.bx/files/rootfs/tmp/.vortek/V0
+I/BionicX (17133): BXTEST PASS host-vulkan-loader status=0 version=1.4.309
+I/BionicX (17133): BXTEST PASS host-vulkan-icd-library via=soname open
+I/BionicX (17133): BXTEST PASS host-vulkan-instance-extensions status=0 extensions=17
+I/BionicX (17133): BXTEST PASS host-vulkan-xlib-extensions status=0 returned=17 surface=1 xlib=1 names=VK_KHR_surface,VK_KHR_surface_protected_capabilities,VK_EXT_swapchain_colorspace,VK_KHR_get_surface_capabilities2,VK_GOOGLE_surfaceless_query,VK_EXT_surface_maintenance1,VK_EXT_debug_report,V
+I/BionicX (17133): BXTEST PASS host-vulkan-xcb-extension status=0 xcb=1
+I/BionicX (17133): BXTEST PASS host-vulkan-xlib-window display=open window=0x400001 size=640x360
+I/BionicX (17133): BXTEST PASS host-vulkan-create-instance status=0 handle=valid
+I/BionicX (17133): BXTEST PASS host-vulkan-physical-devices status=0 devices=1
+I/BionicX (17133): BXTEST PASS host-vulkan-device-properties status=0 name=Vortek (Adreno (TM) 750) api=1.3.128 vendor=0x5143 device=0x43051401
+I/BionicX (17133): BXTEST PASS host-vulkan-device-extension-honesty status=0 returned=133 swapchain=1 fragmentShadingRate=0
+I/BionicX (17133): BXTEST PASS host-vulkan-queue-families families=3 graphics=0
+I/BionicX (17133): BXTEST PASS host-vulkan-memory types=9 heaps=2 bytes=9388290048
+I/BionicX (17133): BXTEST PASS host-vulkan-xlib-surface status=0 handle=valid window=0x400001
+I/BionicX (17133): BXTEST PASS host-vulkan-xcb-surface status=0 handle=valid window=0x400001
+I/BionicX (17133): BXTEST PASS host-vulkan-presentation-support status=0 surface=1 xlib=1
+I/BionicX (17133): BXTEST PASS host-vulkan-xcb-presentation-support family=0 xcb=1
+I/BionicX (17133): BXTEST PASS host-vulkan-surface-capabilities status=0 extent=640x360 images=2..3 usage=0x9f
+I/BionicX (17133): BXTEST PASS host-vulkan-surface-formats status=0 advertised=4 returned=4
+I/BionicX (17133): BXTEST PASS host-vulkan-present-modes status=0 advertised=4 returned=4 fifo=1
+I/BionicX (17133): BXTEST PASS host-vulkan-logical-device status=0 handle=valid family=0
+I/BionicX (17133): BXTEST PASS host-vulkan-device-queue handle=valid family=0 index=0
+I/BionicX (17133): BXTEST PASS host-vulkan-swapchain status=0 handle=valid format=44 extent=640x360 images=2
+I/BionicX (17133): BXTEST PASS host-vulkan-swapchain-images status=0 advertised=2 returned=2
+I/BionicX (17133): BXTEST PASS host-vulkan-render-target view=0 renderPass=0 framebuffer=0
+I/BionicX (17133): BXTEST PASS host-vulkan-shader-modules vertex=0 fragment=0
+I/BionicX (17133): BXTEST PASS host-vulkan-vertex-upload create=0 type=6 allocate=0 bind=0 map=0 bytes=60
+I/BionicX (17133): BXTEST PASS host-vulkan-index-uniform-upload index=0 indexBytes=6 uniform=0 uniformBytes=16
+I/BionicX (17133): BXTEST PASS host-vulkan-sampled-image staging=0 image=0 type=0 allocate=0 bind=0 view=0 sampler=0
+I/BionicX (17133): BXTEST PASS host-vulkan-uniform-descriptor layout=0 pool=0 allocate=0 set=valid
+I/BionicX (17133): BXTEST PASS host-vulkan-graphics-pipeline layout=0 pipeline=0 handle=valid
+I/BionicX (17133): BXTEST PASS host-vulkan-command-buffer pool=0 allocate=0 handle=valid
+I/BionicX (17133): BXTEST PASS host-vulkan-acquire status=0 index=0 count=2
+I/BionicX (17133): BXTEST PASS host-vulkan-record-bind2-indexed-descriptor status=0 background=26,191,64 triangle=230,20,10
+I/BionicX (17133): BXTEST PASS host-vulkan-present-semaphore status=0 handle=valid
+I/BionicX (17133): BXTEST PASS host-vulkan-submit-graphics submit=0 signal=present-semaphore
+I/BionicX (17133): BXTEST PASS host-vulkan-present status=0 index=0 background=26,191,64 triangle=230,20,10
+I/BionicX (17133): BXTEST PASS host-vulkan-swapchain-acquire-rotate status=0 first=0 second=1 count=2
+I/BionicX (17133): BXTEST PASS host-vulkan-swapchain-resize-outdated caps=0 extent=800x400 acquire=-1000001004
+I/BionicX (17133): BXTEST PASS host-vulkan-swapchain-recreate create=0 images=2 acquire=0 index=0
+I/BionicX (17133): BXTEST PASS host-vulkan-swapchain-foreground extent=640x360
+I/BionicX (17133): BXSUMMARY host-vulkan passed=40 failed=0
+I/BionicX (17133): vulkan-probe exited with 0
+vulkan_rc=0
+===== 2026-08-14T04:01:18+08:00 glx-probe =====
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libX11.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXau.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXdmcp.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXext.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXfixes.so.3
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXi.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXrandr.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXrender.so.1
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libresolv.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libxcb.so.1
+relocated 10 files
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/app/lib/libGL.so.1.7.0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle
+profile glx-probe is valid
+bionicx-exec: running untraced pid=17502
+bionicx-exec: running untraced pid=17513
+bionicx ELF fixups: 8 entries
+installed profile glx-probe for io.taowen.bx
+BXTEST PASS host-gl-compositor blue=(13, 38, 191) red=(242, 26, 13) outside=(0, 0, 0) size=1920x1080
+glx_rc=1
+===== 2026-08-14T04:04:15+08:00 chrome-vulkan install =====
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/chrome-host-bridge/app/lib/libvulkan_vortek.so
+checked 1 ELF objects; maximum required GLIBC version <= 2.41
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/chrome-host-bridge
+profile chrome is valid
+bionicx-exec: running untraced pid=19887
+bionicx-exec: running untraced pid=19898
+bionicx ELF fixups: 2 entries
+installed profile chrome for io.taowen.bx
+Starting: Intent { cmp=io.taowen.bx/com.winlator.BionicXActivity }
+Status: ok
+LaunchState: COLD
+Activity: io.taowen.bx/com.winlator.BionicXActivity
+TotalTime: 192
+WaitTime: 194
+Complete
 
-BXSUMMARY wps-cups passed=25 failed=0
-cupsGetDests probe: PASS
-WPS print dialog: Name=bionicx-test Status=Ready
-WPS submitted bionicx-test-13 PDF 15418 bytes
+==== 2026-08-14T04:08:21+08:00 GPU recapture summary ====
+vulkan-probe: BXSUMMARY host-vulkan passed=40 failed=0
+  device=Vortek (Adreno (TM) 750) images=2 acquire-rotate/resize-outdated/recreate/foreground PASS
+  compositor triangle pixels PASS no VirGL
+glx-probe: Gladio on /vendor/lib64/egl/libGLESv2_adreno.so identity=OpenGL ES 3.2 Gladio
+  compositor blue/red pixels PASS
+  BXSUMMARY host-glx passed=25 failed=1 (glx-fbconfig-visual configs=3 visual=0x0 xRenderable=0)
+  same 25/26 on warm rerun; no VirGL
+chrome-vulkan: --no-sandbox --single-process --use-angle=vulkan
+  WebGL fixture WEBGL_OK green canvas ANGLE/Adreno
+  example.com Example Domain
+  resize 1600x900 still Example Domain; restore 1920x1080
+  cold start Example Domain Engine Name=ANGLE vulkan.adreno.so no VirGL

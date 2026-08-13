@@ -17,3 +17,12 @@ appear.
 
 `glx-probe` now installs with `--app-root` only. It is 26/26 plus compositor
 pixels through Gladio on `/vendor/lib64/egl/libGLESv2_adreno.so`.
+
+Post-reconstruct recapture (2026-08-14) on the same seed: `vulkan-probe`
+40/40 including swapchain acquire-rotate / resize-outdated / recreate /
+foreground, compositor triangle on Vortek (Adreno 750). `glx-probe`
+compositor blue/red still pass; the summary is 25/26 because
+`glx-fbconfig-visual` reports `configs=3 visual=0x0 xRenderable=0` on both
+cold and warm start. Untraced Chrome Vulkan still shows `WEBGL_OK`, Example
+Domain, a 1600x900 resize, and a force-stop cold start on
+`/vendor/lib64/hw/vulkan.adreno.so` with no VirGL.

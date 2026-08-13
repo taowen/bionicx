@@ -46,11 +46,11 @@ then commit and push the smallest complete change.
 
 ## P1: GPU completion
 
-- [ ] Complete Vortek multi-image swapchain acquire/present/recreate lifetime
+- [x] Complete Vortek multi-image swapchain acquire/present/recreate lifetime
   handling and add repeated resize/background/foreground regression coverage.
-- [ ] Revalidate Chrome ANGLE Vulkan without tracing: normal browsing, WebGL,
+- [x] Revalidate Chrome ANGLE Vulkan without tracing: normal browsing, WebGL,
   video/compositing, resize and cold restart. Keep `--no-sandbox`.
-- [ ] Keep Gladio OpenGL and Vortek Vulkan as pinned submodules and verify both
+- [x] Keep Gladio OpenGL and Vortek Vulkan as pinned submodules and verify both
   against the device's host Mali/Adreno driver path without VirGL fallback.
 
 ## P2: WPS completeness
