@@ -13,7 +13,11 @@
   "launch": {
     "executable": "${RUNTIME}/usr/bin/keepassxc",
     "workingDirectory": "${HOME}",
-    "arguments": [],
+    "arguments": [
+      "--keyfile",
+      "${APP}/fixtures/bionicx.key",
+      "${APP}/fixtures/bionicx.kdbx"
+    ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",

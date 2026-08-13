@@ -120,6 +120,27 @@ int main(void) {
     }
     check("qt-qglx-current", current_ok, current_detail);
 
+    /* KeePassXC Qt 5 default: version 2.0, NoProfile, SingleBuffer,
+     * depth/alpha/stencil -1 (omitted), swapInterval 1 (not an FBConfig). */
+    int keepassxc_attribs[] = {
+        GLX_LEVEL, 0,
+        GLX_RENDER_TYPE, GLX_RGBA_BIT,
+        GLX_RED_SIZE, 1,
+        GLX_GREEN_SIZE, 1,
+        GLX_BLUE_SIZE, 1,
+        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+        None
+    };
+    int keepassxc_count = 0;
+    GLXFBConfig *keepassxc = glXChooseFBConfig(display, screen,
+                                               keepassxc_attribs,
+                                               &keepassxc_count);
+    char keepassxc_detail[32];
+    snprintf(keepassxc_detail, sizeof(keepassxc_detail),
+             "count=%d", keepassxc_count);
+    check("qt-keepassxc-spec", keepassxc != NULL && keepassxc_count > 0,
+          keepassxc_detail);
+
     int double_attribs[] = {
         GLX_LEVEL, 0,
         GLX_RENDER_TYPE, GLX_RGBA_BIT,
@@ -139,6 +160,7 @@ int main(void) {
 
     if (visual != NULL) XFree(visual);
     if (qglx != NULL) XFree(qglx);
+    if (keepassxc != NULL) XFree(keepassxc);
     if (dbl != NULL) XFree(dbl);
     XCloseDisplay(display);
     printf("BXSUMMARY qt-glx-fbconfig passed=%d failed=%d\n", passed, failed);

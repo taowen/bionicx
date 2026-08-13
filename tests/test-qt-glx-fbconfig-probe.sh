@@ -22,7 +22,9 @@ grep -F 'SINGLE_FBCONFIG_ID' \
     >/dev/null
 grep -F 'qt-qglx-current' \
     "$repo_dir/examples/qt-glx-fbconfig-probe/qt-glx-fbconfig-probe.c" >/dev/null
-grep -F 'passed=5 failed=0' \
+grep -F 'qt-keepassxc-spec' \
+    "$repo_dir/examples/qt-glx-fbconfig-probe/qt-glx-fbconfig-probe.c" >/dev/null
+grep -F 'passed=6 failed=0' \
     "$repo_dir/examples/qt-glx-fbconfig-probe/install-and-run.sh" >/dev/null
 if grep -F -- '--runtime-root' \
         "$repo_dir/examples/qt-glx-fbconfig-probe/install-and-run.sh" \

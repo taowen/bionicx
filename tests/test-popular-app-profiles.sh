@@ -19,6 +19,10 @@ grep -F 'bionicx-webseed.torrent' \
 grep -F '"dbus"' "$repo_dir/profiles/krita.json" >/dev/null
 grep -F '"dbus"' "$repo_dir/profiles/qbittorrent.json" >/dev/null
 grep -F '"dbus"' "$repo_dir/profiles/keepassxc.json" >/dev/null
+grep -F 'bionicx.kdbx' "$repo_dir/profiles/keepassxc.json" >/dev/null
+grep -F -- '--keyfile' "$repo_dir/profiles/keepassxc.json" >/dev/null
+grep -F 'keepassxc-cli-probe' \
+    "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
 grep -F 'firefox-esr' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'krita' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'qbittorrent' "$repo_dir/packages/trixie-popular.txt" >/dev/null

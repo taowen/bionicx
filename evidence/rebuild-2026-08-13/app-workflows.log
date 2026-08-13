@@ -1,0 +1,4 @@
+qBittorrent: untraced UI, bionicx-network-payload.bin 256KiB 100% Seeding
+keepassxc-cli-probe: BXSUMMARY keepassxc-cli passed=6 failed=0
+qt-glx-fbconfig-probe: BXSUMMARY qt-glx-fbconfig passed=6 failed=0
+KeePassXC GUI: still exit 139 after auto-type plugin warning

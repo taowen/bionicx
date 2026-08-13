@@ -34,6 +34,10 @@ esac
     --app-root "$bundle_dir/app" \
     --serial "$serial"
 
+if [[ "$profile_name" == keepassxc ]]; then
+    "$repo_dir/examples/keepassxc-cli-probe/install-and-run.sh"
+fi
+
 if [[ "$profile_name" == firefox-esr-online ]]; then
     # GreD loads libnssckbi.so by full path. Reuse the shared libnss3 copy.
     if "${adb[@]}" shell run-as "$package_id" \

@@ -46,5 +46,5 @@ done
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(TEST|SUMMARY)|qt-glx-fbconfig-probe exited')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY qt-glx-fbconfig passed=5 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY qt-glx-fbconfig passed=6 failed=0" <<<"$result"
 grep -Fq "qt-glx-fbconfig-probe exited with 0" <<<"$result"
