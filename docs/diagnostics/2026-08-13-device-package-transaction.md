@@ -56,5 +56,12 @@ Android input executed `echo bionicx-shared-rootfs`, and both command and output
 were rendered by the real X11 client. The screenshot is
 `evidence/rebuild-2026-08-13/xterm-shared-rootfs-command.png`.
 
+The package-installed IceWM 3.7.4 was then launched from the same rootfs with
+two independent controlled glibc X11 clients. It selected the root redirect,
+reparented and decorated both clients, painted both title bars and close
+buttons, mapped its full-width taskbar and retained both clients for their
+complete lifetime. The untraced result was `4/4`, with the live desktop in
+`evidence/rebuild-2026-08-13/icewm-shared-rootfs.png`.
+
 The complete original failure, staged repair and final audit are retained in
 `evidence/rebuild-2026-08-13/`.
