@@ -115,6 +115,16 @@ void *dlopen(const char *path, int flags) {
         const char *gred = bionicx_getenv("MOZILLA_FIVE_HOME");
         void *from_gred = dlopen_from_directory(gred, path, flags, next);
         if (from_gred != NULL) return from_gred;
+        const char *app = bionicx_getenv("BIONICX_APP");
+        if (app != NULL && app[0] == '/') {
+            char app_lib[PATH_MAX];
+            if (snprintf(app_lib, sizeof(app_lib), "%s/lib", app) <
+                    (int)sizeof(app_lib)) {
+                void *from_app_payload = dlopen_from_directory(
+                        app_lib, path, flags, next);
+                if (from_app_payload != NULL) return from_app_payload;
+            }
+        }
         const char *root = bionicx_captured_rootfs();
         if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
         if (root != NULL && root[0] == '/') {

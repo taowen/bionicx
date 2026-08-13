@@ -1,0 +1,2 @@
+profile qt-glx-fbconfig-probe is valid
+qt glx fbconfig probe requires a SingleBuffer config for Qt: PASS

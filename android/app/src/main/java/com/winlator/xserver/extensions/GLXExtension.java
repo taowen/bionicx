@@ -28,7 +28,9 @@ import java.io.IOException;
 public class GLXExtension extends Extension {
     public static final byte MAJOR_VERSION = 1;
     public static final byte MINOR_VERSION = 4;
-    private static final byte DEFAULT_FBCONFIG_ID = 1;
+    private static final int DEFAULT_FBCONFIG_ID = 1;
+    private static final int SINGLE_FBCONFIG_ID = 2;
+    private static final int QT_SINGLE_FBCONFIG_ID = 3;
     private final SparseArray<SparseLongArray> clientGLXContexts = new SparseArray<>();
     private final SparseArray<SparseLongArray> clientGLContexts = new SparseArray<>();
     private final String glxExtensions = "GLX_ARB_create_context GLX_ARB_get_proc_address " +
@@ -243,12 +245,10 @@ public class GLXExtension extends Extension {
         }
     }
 
-    private void getFBConfigs(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
-        inputStream.skip(4);
-
-        final int numFBConfigs = 1;
-        final int[] properties = new int[]{
-            GLXEnums.GLX_FBCONFIG_ID, DEFAULT_FBCONFIG_ID,
+    private int[] fbConfigProperties(int id, int doubleBuffer, int depth,
+                                     int stencil, int alpha) {
+        return new int[]{
+            GLXEnums.GLX_FBCONFIG_ID, id,
             GLXEnums.GLX_VISUAL_ID, xServer.pixmapManager.visual.id,
             GLXEnums.GLX_X_RENDERABLE, 1,
             GLXEnums.GLX_X_VISUAL_TYPE, GLXEnums.GLX_TRUE_COLOR,
@@ -256,11 +256,13 @@ public class GLXExtension extends Extension {
             GLXEnums.GLX_RED_SIZE, 8,
             GLXEnums.GLX_GREEN_SIZE, 8,
             GLXEnums.GLX_BLUE_SIZE, 8,
-            GLXEnums.GLX_ALPHA_SIZE, 8,
-            GLXEnums.GLX_DEPTH_SIZE, 24,
-            GLXEnums.GLX_STENCIL_SIZE, 8,
-            GLXEnums.GLX_BUFFER_SIZE, 32,
-            GLXEnums.GLX_DOUBLEBUFFER, 1,
+            GLXEnums.GLX_ALPHA_SIZE, alpha,
+            GLXEnums.GLX_DEPTH_SIZE, depth,
+            GLXEnums.GLX_STENCIL_SIZE, stencil,
+            GLXEnums.GLX_BUFFER_SIZE, 24 + alpha,
+            GLXEnums.GLX_DOUBLEBUFFER, doubleBuffer,
+            GLXEnums.GLX_SAMPLE_BUFFERS, 0,
+            GLXEnums.GLX_SAMPLES, 0,
             GLXEnums.GLX_DRAWABLE_TYPE,
                 GLXEnums.GLX_WINDOW_BIT | GLXEnums.GLX_PBUFFER_BIT,
             GLXEnums.GLX_RENDER_TYPE, GLXEnums.GLX_RGBA_BIT,
@@ -268,7 +270,20 @@ public class GLXExtension extends Extension {
             GLXEnums.GLX_MAX_PBUFFER_HEIGHT, 4096,
             GLXEnums.GLX_MAX_PBUFFER_PIXELS, 4096 * 4096
         };
-        final int numProperties = properties.length / 2;
+    }
+
+    private void getFBConfigs(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
+        inputStream.skip(4);
+
+        /* Qt's first qglx_findConfig pass asks for SingleBuffer (DOUBLEBUFFER=0).
+         * Advertise both that and the original double-buffered config. */
+        final int[][] configs = {
+            fbConfigProperties(DEFAULT_FBCONFIG_ID, 1, 24, 8, 8),
+            fbConfigProperties(SINGLE_FBCONFIG_ID, 0, 24, 8, 8),
+            fbConfigProperties(QT_SINGLE_FBCONFIG_ID, 0, 0, 0, 0)
+        };
+        final int numFBConfigs = configs.length;
+        final int numProperties = configs[0].length / 2;
 
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
@@ -279,10 +294,10 @@ public class GLXExtension extends Extension {
             outputStream.writeInt(numProperties);
             outputStream.writePad(16);
 
-            for (int i = 0, j, k = 0; i < numFBConfigs; i++) {
-                for (j = 0; j < numProperties; j++, k++) {
-                    outputStream.writeInt(properties[k*2+0]);
-                    outputStream.writeInt(properties[k*2+1]);
+            for (int[] properties : configs) {
+                for (int j = 0; j < numProperties; j++) {
+                    outputStream.writeInt(properties[j * 2]);
+                    outputStream.writeInt(properties[j * 2 + 1]);
                 }
             }
         }
@@ -297,7 +312,10 @@ public class GLXExtension extends Extension {
         int numAttribs = inputStream.readInt();
 
         if (contextId == 0) throw new GLXBadContext();
-        if (fbConfigId != DEFAULT_FBCONFIG_ID) throw new GLXBadFBConfig();
+        if (fbConfigId != DEFAULT_FBCONFIG_ID
+                && fbConfigId != SINGLE_FBCONFIG_ID
+                && fbConfigId != QT_SINGLE_FBCONFIG_ID)
+            throw new GLXBadFBConfig();
 
         int glMajorVersion = 3;
         int glMinorVersion = 3;

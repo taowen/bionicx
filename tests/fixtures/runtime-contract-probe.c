@@ -76,6 +76,13 @@ int main(int argc, char **argv) {
     dlclose(softokn);
     dlclose(nss3);
 
+    void *app_gl = dlopen("libbionicx-app-gl.so", RTLD_NOW);
+    if (app_gl == NULL) fail("app-payload libGL");
+    int (*app_gl_marker)(void) = dlsym(app_gl, "bionicx_softokn_marker");
+    if (app_gl_marker == NULL || app_gl_marker() != 7)
+        fail("libGL must come from BIONICX_APP/lib before multiarch");
+    dlclose(app_gl);
+
     pid_t chroot_child = fork();
     if (chroot_child < 0) fail("fork chroot contract");
     if (chroot_child == 0) {

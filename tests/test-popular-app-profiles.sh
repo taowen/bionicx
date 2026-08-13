@@ -10,6 +10,10 @@ grep -F 'https://example.com/' \
 grep -F 'bionicx-page.html' \
     "$repo_dir/profiles/firefox-esr.json" >/dev/null
 grep -F 'bionicx-image.ppm' "$repo_dir/profiles/krita.json" >/dev/null
+grep -F 'GLADIO_X11_SOCKET' "$repo_dir/profiles/krita.json" >/dev/null
+grep -F 'LD_LIBRARY_PATH=' \
+    "$repo_dir/android/app/src/main/java/com/winlator/BionicXActivity.java" \
+    >/dev/null
 grep -F 'bionicx-webseed.torrent' \
     "$repo_dir/profiles/qbittorrent.json" >/dev/null
 grep -F '"dbus"' "$repo_dir/profiles/krita.json" >/dev/null

@@ -14,6 +14,10 @@ case "$profile_name" in
     firefox-esr-online|krita)
         bundle_dir="${BIONICX_PRODUCTIVITY_BUNDLE:-$repo_dir/build/productivity-apps-bundle}"
         "$repo_dir/examples/productivity-apps/build-bundle.sh" "$bundle_dir"
+        if [[ "$profile_name" == krita ]]; then
+            mkdir -p "$bundle_dir/app/lib"
+            "$repo_dir/tools/build-gladio.sh" "$bundle_dir/app/lib"
+        fi
         ;;
     qbittorrent|keepassxc)
         bundle_dir="${BIONICX_POPULAR_BUNDLE:-$repo_dir/build/popular-apps-bundle}"

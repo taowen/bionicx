@@ -47,14 +47,26 @@ cc -shared -fPIC -O2 -Wall -Wextra -Werror \
     -DBIONICX_SOFTOKN_MARKER=2 \
     "$repo_dir/tests/fixtures/runtime-softokn-marker.c" \
     -o "$root/usr/lib/aarch64-linux-gnu/libsoftokn3.so"
+mkdir -p "$test_dir/app/lib"
+cc -shared -fPIC -O2 -Wall -Wextra -Werror \
+    -DBIONICX_SOFTOKN_MARKER=7 \
+    "$repo_dir/tests/fixtures/runtime-softokn-marker.c" \
+    -o "$test_dir/app/lib/libbionicx-app-gl.so"
+cc -shared -fPIC -O2 -Wall -Wextra -Werror \
+    -DBIONICX_SOFTOKN_MARKER=8 \
+    "$repo_dir/tests/fixtures/runtime-softokn-marker.c" \
+    -o "$root/usr/lib/aarch64-linux-gnu/libbionicx-app-gl.so"
 
 # GreD libnss3 must win over the multiarch libsoftokn3.so for bare dlopen.
 grep -F 'libsoftokn3 must come from GreD' \
     "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
 grep -F 'dlopen_from_loaded_nss' \
     "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
+grep -F 'BIONICX_APP' \
+    "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
 
 BIONICX_ROOTFS="$root" \
+BIONICX_APP="$test_dir/app" \
 BIONICX_TMPDIR="$temporary" \
 BIONICX_DNS_SERVERS="127.0.0.53,127.0.0.54" \
 PATH=/usr/bin:/bin \

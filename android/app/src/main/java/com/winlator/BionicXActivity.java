@@ -169,6 +169,13 @@ public final class BionicXActivity extends Activity {
             command.add("--env");
             command.add("BIONICX_ROOTFS=" + profile.expand(this, "${RUNTIME}"));
             command.add("--env");
+            command.add("BIONICX_APP=" + profile.expand(this, "${APP}"));
+            File appLib = new File(profile.expand(this, "${APP}"), "lib");
+            if (appLib.isDirectory()) {
+                command.add("--env");
+                command.add("LD_LIBRARY_PATH=" + appLib.getPath());
+            }
+            command.add("--env");
             command.add("BIONICX_TMPDIR=" + profile.expand(this, "${CACHE}"));
             command.add("--env");
             command.add("FONTCONFIG_PATH="
