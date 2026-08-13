@@ -4,9 +4,11 @@ set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 grep -F 'Liberation Sans' \
     "$repo_dir/examples/wps-font-probe/wps-font-probe.c" >/dev/null
-grep -F 'font-family-liberation-sans' \
+grep -F 'font-family-%s' \
     "$repo_dir/examples/wps-font-probe/wps-font-probe.c" >/dev/null
-grep -F 'font-family-calibri' \
+grep -F 'liberation-sans' \
+    "$repo_dir/examples/wps-font-probe/wps-font-probe.c" >/dev/null
+grep -F '"calibri"' \
     "$repo_dir/examples/wps-font-probe/wps-font-probe.c" >/dev/null
 grep -F '0x2211' "$repo_dir/examples/wps-font-probe/wps-font-probe.c" >/dev/null
 grep -F 'LiberationSans' \

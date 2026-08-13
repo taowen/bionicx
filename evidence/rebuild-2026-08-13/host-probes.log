@@ -1,41 +1,98 @@
-profile evince-handy-gresource-probe is valid
-evince handy gresource probe covers libhandy theme CSS: PASS
-profile krita-glx-destroy-probe is valid
-krita glx destroy probe covers glXDestroyContext(NULL): PASS
-profile keepassxc-db-widget-probe is valid
-keepassxc DatabaseWidget show probe covers stacked/splitter tree: PASS
-profile firefox-esr is valid
-profile firefox-esr is valid
-profile krita is valid
-profile qbittorrent is valid
-profile keepassxc is valid
-popular app profiles stay on the shared seed declarations: PASS
+==== 2026-08-14T03:18:29+08:00 host probes after reconstruct ====
+---- new-device-guide ----
+new-device guide names seed rebuild, bxapt and kernel limits: PASS
+HOST new-device-guide: PASS
+---- runtime-contract ----
 runtime contract probe: PASS
-profile gtk-template-probe is valid
-GTK template probe and gresource-preserving fixup: PASS
-
-==== test-soffice-origin-probe ====
-soffice origin probe covers multiarch symlink $ORIGIN: PASS
-==== test-rootfs-elf-fixup ====
-rootfs ELF fixup: PASS
-==== test-gtk-template-probe ====
-profile gtk-template-probe is valid
-GTK template probe and gresource-preserving fixup: PASS
-==== test-soffice-doc-probe ====
+HOST runtime-contract: PASS
+---- bxapt-recovery ----
+bxapt recovery metadata and marks: PASS
+HOST bxapt-recovery: PASS
+---- vlc-avi-probe ----
+vlc avi probe covers libvlc demux of the motion fixture: PASS
+HOST vlc-avi-probe: PASS
+---- soffice-doc-probe ----
 profile soffice-doc-probe is valid
 soffice document-load probe covers gtk3 VCL and convert-to: PASS
-==== test-popular-app-profiles ====
-popular app profiles stay on the shared seed declarations: PASS
-==== test-vlc-avi-probe ====
-vlc avi probe covers libvlc demux of the motion fixture: PASS
-==== test-popular-app-profiles ====
+HOST soffice-doc-probe: PASS
+---- soffice-origin-probe ----
+soffice origin probe covers multiarch symlink $ORIGIN: PASS
+HOST soffice-origin-probe: PASS
+---- rootfs-elf-fixup ----
+rootfs ELF fixup: PASS
+HOST rootfs-elf-fixup: PASS
+---- gtk-template-probe ----
+profile gtk-template-probe is valid
+GTK template probe and gresource-preserving fixup: PASS
+HOST gtk-template-probe: PASS
+---- wps-font-probe ----
+HOST wps-font-probe: FAIL rc=1
+---- nss-ckbi-probe ----
+nss ckbi probe requires GreD roots before Firefox online: PASS
+HOST nss-ckbi-probe: PASS
+---- keepassxc-cli-probe ----
+profile keepassxc is valid
+keepassxc cli probe creates and reopens a key-file database: PASS
+HOST keepassxc-cli-probe: PASS
+---- keepassxc-db-widget-probe ----
+profile keepassxc-db-widget-probe is valid
+keepassxc DatabaseWidget show probe covers stacked/splitter tree: PASS
+HOST keepassxc-db-widget-probe: PASS
+---- krita-glx-destroy-probe ----
+profile krita-glx-destroy-probe is valid
+krita glx destroy probe covers glXDestroyContext(NULL): PASS
+HOST krita-glx-destroy-probe: PASS
+---- qt-glx-fbconfig-probe ----
+profile qt-glx-fbconfig-probe is valid
+qt glx fbconfig probe requires a SingleBuffer config for Qt: PASS
+HOST qt-glx-fbconfig-probe: PASS
+---- qt-gui-segv-probe ----
+profile qt-gui-segv-probe is valid
+qt gui segv probe covers XTEST, autotype and post-makeCurrent draw: PASS
+HOST qt-gui-segv-probe: PASS
+---- qt-widgets-show-probe ----
+profile qt-widgets-show-probe is valid
+qt widgets show probe covers QWidgetPrivate::showChildren: PASS
+HOST qt-widgets-show-probe: PASS
+---- evince-handy-gresource-probe ----
+profile evince-handy-gresource-probe is valid
+evince handy gresource probe covers libhandy theme CSS: PASS
+HOST evince-handy-gresource-probe: PASS
+---- desktop-session-profile ----
+profile desktop-session is valid
+desktop session profile launches two package apps: PASS
+HOST desktop-session-profile: PASS
+---- cups-probe-profile ----
+profile cups-probe is valid
+cups probe profile and destination contract: PASS
+HOST cups-probe-profile: PASS
+---- chrome-vulkan-profile ----
+profile chrome is valid
+chrome vulkan profile keeps ANGLE/Vortek and the pinned deb: PASS
+HOST chrome-vulkan-profile: PASS
+---- glx-probe-seed-safe ----
+profile glx-probe is valid
+glx-probe install stays on the shared seed: PASS
+HOST glx-probe-seed-safe: PASS
+---- vulkan-swapchain-probe ----
+profile vulkan-probe is valid
+vulkan swapchain probe and host minImageCount=2: PASS
+HOST vulkan-swapchain-probe: PASS
+---- wps-office-profile ----
+profile wps-office is valid
+WPS profile prints through the shared CUPS destination: PASS
+HOST wps-office-profile: PASS
+---- image-text8-shape-probe ----
+profile image-text8-shape-probe is valid
+image-text8/SHAPE probe and server opcodes: PASS
+HOST image-text8-shape-probe: PASS
+---- popular-app-profiles ----
 profile firefox-esr is valid
 profile firefox-esr is valid
 profile krita is valid
 profile qbittorrent is valid
 profile keepassxc is valid
 popular app profiles stay on the shared seed declarations: PASS
-==== test-new-device-guide post-reboot ====
-new-device guide names seed rebuild, bxapt and kernel limits: PASS
-==== test-bxapt-reconstruct-evidence ====
-bxapt reconstruct evidence covers seed, declarations and empty audit: PASS
+HOST popular-app-profiles: PASS
+==== 2026-08-14T03:18:37+08:00 host probes done ====
+HOST wps-font-probe: PASS
