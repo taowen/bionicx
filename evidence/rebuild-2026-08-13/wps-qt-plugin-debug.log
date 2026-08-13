@@ -1,0 +1,620 @@
+--------- beginning of system
+08-13 13:37:59.492  2312  4446 I ActivityManager: Force stopping io.taowen.bx appid=10194 user=0: from pid 14537
+08-13 13:37:59.496  2312  4446 I ActivityManager: Killing 13940:io.taowen.bx/u0a194 (adj 0): stop io.taowen.bx due to from pid 14537
+--------- beginning of main
+08-13 13:37:59.498 14499 14499 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-13 13:37:59.499  2312  2361 D DisplayManagerService: Drop pending events for gone uid 10194
+08-13 13:37:59.499   829   829 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-13 13:37:59.500  2312  4446 W ActivityTaskManager: Force removing ActivityRecord{6f129cd u0 io.taowen.bx/com.winlator.BionicXActivity t1058 f}}: app died, no saved state
+08-13 13:37:59.500 14499 14499 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-13 13:37:59.502  2659  2692 V WindowManagerShell: Transition requested: android.os.BinderProxy@8f01a6c TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=1058 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=io.taowen.bx/com.winlator.BionicXActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} numActivities=0 lastActiveTime=62680398 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@1d05835} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+08-13 13:37:59.502   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:37:59.502  2312  4446 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:37:59.502  2312  4446 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:37:59.503  1514  1514 I vendor.qti.hardware.servicetrackeraidl-service: killProcess is called for pid : 13940
+08-13 13:37:59.503   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:37:59.503  2312  4446 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:37:59.503   829 14540 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-13 13:37:59.503  2312  4446 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:37:59.503   829 14540 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-13 13:37:59.503   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:37:59.504  2312  4446 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:37:59.504  2312  4446 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:37:59.507   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:37:59.507  2312  4446 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:37:59.507  2312  4446 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:37:59.507  2312  4446 I DisplayRotation: rotationForOrientation: orientation=6, preferredRotation=1, sensorRotation=1, lastRotation=1
+08-13 13:37:59.507  2312  4446 I DisplayRotation: updateRotation: lastOrientation=6, oldRotation=1, newRotation=1
+08-13 13:37:59.508  1442  1525 E ANDR-PWR-OPT: VIDEOPOWEROPT: sendEvents() 186: Timer started 
+08-13 13:37:59.510  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 197654537; UID 1000; state: ENABLED
+08-13 13:37:59.510  2659  2659 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-13 13:37:59.510  2659  2659 D CentralSurfaces: Received new disable state: enaihbcrso.qingr (unchanged)
+08-13 13:37:59.511  1442  1525 I ANDR-PWR-OPT: PowerAppClassifier: getAppType() 59: checking app [com.ayaneo.home] is type 3
+08-13 13:37:59.512  2312  4446 I AppsFilter: interaction: PackageSetting{64ff3ec com.taowen.arctrl.binderprobe.displaymanager/10211} -> PackageSetting{ce020e8 io.taowen.bx/10194} BLOCKED
+08-13 13:37:59.512  2312  4446 I AppsFilter: interaction: PackageSetting{6bb1a4a com.taowen.arctrl.binderprobe.activitymanager/10216} -> PackageSetting{ce020e8 io.taowen.bx/10194} BLOCKED
+08-13 13:37:59.512  2312  4446 I AppsFilter: interaction: PackageSetting{ee8edbb com.android.microdroid.empty_payload/10164} -> PackageSetting{ce020e8 io.taowen.bx/10194} BLOCKED
+08-13 13:37:59.512  2312  4446 I AppsFilter: interaction: PackageSetting{b3e62d8 com.proot.terminal/10181} -> PackageSetting{ce020e8 io.taowen.bx/10194} BLOCKED
+08-13 13:37:59.512  2312  4446 I AppsFilter: interaction: PackageSetting{6be1631 com.focaltech.fpsensormmitest/10144} -> PackageSetting{ce020e8 io.taowen.bx/10194} BLOCKED
+08-13 13:37:59.512  2312  4446 I AppsFilter: interaction: PackageSetting{4989116 com.taowen.arctrl.binderprobe.contentprovider/10215} -> PackageSetting{ce020e8 io.taowen.bx/10194} BLOCKED
+08-13 13:37:59.513  2659  2659 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-13 13:37:59.518  1583  1583 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+08-13 13:37:59.518  2659  2659 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-13 13:37:59.519  2312  6740 D InputDispatcher: onFocusChangedLocked
+08-13 13:37:59.520  2128  2128 I adbd    : Remote process closed the socket (on MSG_PEEK)
+08-13 13:37:59.521  1300  1300 I Zygote  : Process 13940 exited due to signal 9 (Killed)
+08-13 13:37:59.521  2312  4446 V ActivityManager: Got obituary of 13940:io.taowen.bx
+08-13 13:37:59.522  2312  2705 I WindowManager: WIN DEATH: Window{b4cedde u0 io.taowen.bx/com.winlator.BionicXActivity}
+08-13 13:37:59.522  2312 16154 I ImeTracker: io.taowen.bx:4a7ead93: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_REMOVE_CLIENT
+08-13 13:37:59.522  2312  2705 W InputManager-JNI: Input channel object 'b4cedde io.taowen.bx/com.winlator.BionicXActivity (client)' was disposed without first being removed with the input manager!
+08-13 13:37:59.522  2312 16154 I ImeTracker: io.taowen.bx:4a7ead93: onCancelled at PHASE_SERVER_SHOULD_HIDE
+08-13 13:37:59.523  2659  2659 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-13 13:37:59.524  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.524  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.525  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.525  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.525  3921  4196 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.526  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.526  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.527  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.527  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.535  2312  2705 D CompatibilityChangeReporter: Compat change id reported: 161145287; UID 1000; state: DISABLED
+08-13 13:37:59.535  2312  2705 D CompatibilityChangeReporter: Compat change id reported: 161145287; UID 1000; state: ENABLED
+08-13 13:37:59.537  2659  2659 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-13 13:37:59.548  2659  2659 I StatusBarHideIconsForBouncerManager: updateHideIconsForBouncer set com.ayaneo.home hide statusbar
+08-13 13:37:59.548  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 161252188; UID 10194; state: DISABLED
+08-13 13:37:59.549  2312  2796 W ActivityTaskManager: callingPackage for (uid=2000, pid=14545) has no WPC
+08-13 13:37:59.549  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 265464455; UID 10194; state: DISABLED
+08-13 13:37:59.549  3921  3921 D AutofillManager: view not autofillable - not passing ime action check
+08-13 13:37:59.549  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 265452344; UID 10194; state: DISABLED
+08-13 13:37:59.549  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 266124927; UID 10194; state: DISABLED
+08-13 13:37:59.549  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 265451093; UID 10194; state: DISABLED
+08-13 13:37:59.549  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 265456536; UID 10194; state: DISABLED
+08-13 13:37:59.549  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 255940284; UID 10194; state: DISABLED
+08-13 13:37:59.549  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 236283604; UID 10194; state: DISABLED
+08-13 13:37:59.549  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 263959004; UID 10194; state: DISABLED
+08-13 13:37:59.549  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 264304459; UID 10194; state: DISABLED
+08-13 13:37:59.550  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 264301586; UID 10194; state: DISABLED
+08-13 13:37:59.550  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 254631730; UID 10194; state: DISABLED
+08-13 13:37:59.550  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 273509367; UID 10194; state: DISABLED
+08-13 13:37:59.550  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 263259275; UID 10194; state: DISABLED
+08-13 13:37:59.550  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 174042980; UID 10194; state: DISABLED
+08-13 13:37:59.550  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 174042936; UID 10194; state: DISABLED
+08-13 13:37:59.550  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 181136395; UID 10194; state: DISABLED
+08-13 13:37:59.550   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:37:59.551  2312  2796 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:37:59.551  2312  2796 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:37:59.551   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:37:59.551  2312  2796 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:37:59.551  2312  2796 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:37:59.552  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 194480991; UID 10194; state: ENABLED
+08-13 13:37:59.558  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 197654537; UID 10194; state: DISABLED
+08-13 13:37:59.558  2312  2796 D CompatibilityChangeReporter: Compat change id reported: 205907456; UID 10194; state: DISABLED
+08-13 13:37:59.558  2312  2796 D ActivityTrigger: ActivityTrigger activityPauseTrigger 
+08-13 13:37:59.558   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:37:59.559  2312  2796 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:37:59.559  2312  2796 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:37:59.559  2312  2796 I ActivityTaskManager: Add Task{f97282 #1058 type=standard A=10194:io.taowen.bx} to hidden list because adding Task{d932fcf #1059 type=standard A=10194:io.taowen.bx}
+08-13 13:37:59.560  2312  2796 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=io.taowen.bx/com.winlator.BionicXActivity} with LAUNCH_MULTIPLE from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+08-13 13:37:59.560  1442  1525 I ANDR-PWR-OPT: PowerAppClassifier: getAppType() 59: checking app [io.taowen.bx] is type 2
+08-13 13:37:59.560  1442  1525 I QLM-Client-Lib: qlm_client_init: Initialized client poweropt-service
+08-13 13:37:59.560  1442  1525 I ANDR-PWR-OPT: PowerAppClassifier: getAppType() 59: checking app [com.ayaneo.home] is type 3
+08-13 13:37:59.561  1474  1618 E ANDR-PERF-RESOURCEQS: ANDR-PERF-RESOURCEQS: AddAndApply() 131: Resource value ffffffff is not supported
+08-13 13:37:59.562  2312  2364 W WindowManager: Failed to deliver inset control state change to w=Window{b4cedde u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-13 13:37:59.562  2312  2364 W WindowManager: android.os.DeadObjectException
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.view.IWindow$Stub$Proxy.insetsControlChanged(IWindow.java:495)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.wm.WindowState.notifyInsetsControlChanged(WindowState.java:3812)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.wm.InsetsStateController.lambda$notifyPendingInsetsControlChanged$3(InsetsStateController.java:343)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.wm.InsetsStateController.$r8$lambda$8yykPRG1GyNq_J17QvL9d5xANMc(InsetsStateController.java:0)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.wm.InsetsStateController$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator.executeAfterPrepareSurfacesRunnables(WindowAnimator.java:294)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator.animate(WindowAnimator.java:202)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator.lambda$new$1(WindowAnimator.java:99)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator.$r8$lambda$aHNu1uhcqxihX5NZc4McDDQPAyw(WindowAnimator.java:0)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator$$ExternalSyntheticLambda1.doFrame(R8$$SyntheticClass:0)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1348)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1359)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.view.Choreographer.doCallbacks(Choreographer.java:963)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.view.Choreographer.doFrame(Choreographer.java:888)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.view.Choreographer$FrameDisplayEventReceiver.run(Choreographer.java:1333)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.os.Handler.handleCallback(Handler.java:958)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.os.Handler.dispatchMessage(Handler.java:99)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.os.Looper.loopOnce(Looper.java:205)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.os.Looper.loop(Looper.java:294)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at android.os.HandlerThread.run(HandlerThread.java:67)
+08-13 13:37:59.562  2312  2364 W WindowManager: 	at com.android.server.ServiceThread.run(ServiceThread.java:46)
+08-13 13:37:59.562  2312 20932 W WindowManager: Failed looking up window session=Session{5311070 2659:u0a10124} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6067 com.android.server.wm.Session.updateRequestedVisibleTypes:690 android.view.IWindowSession$Stub.onTransact:1034 
+08-13 13:37:59.562  2659  2659 D CentralSurfaces: Received new disable state: enaihbcrso.qingr (unchanged)
+08-13 13:37:59.563  3855 17921 W InputReader: pauseServer
+08-13 13:37:59.564  2312  2363 D CompatibilityChangeReporter: Compat change id reported: 135634846; UID 10194; state: DISABLED
+08-13 13:37:59.564  2312  2363 D CompatibilityChangeReporter: Compat change id reported: 177438394; UID 10194; state: DISABLED
+08-13 13:37:59.564  2312  2363 D CompatibilityChangeReporter: Compat change id reported: 135772972; UID 10194; state: DISABLED
+08-13 13:37:59.564  2312  2363 D CompatibilityChangeReporter: Compat change id reported: 135754954; UID 10194; state: DISABLED
+08-13 13:37:59.564  2312  2789 D CoreBackPreview: Window{5e86f06 u0 Splash Screen io.taowen.bx}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@6748019, mPriority=0, mIsAnimationCallback=false}
+08-13 13:37:59.564  2312  2370 D CompatibilityChangeReporter: Compat change id reported: 143937733; UID 10194; state: DISABLED
+08-13 13:37:59.565  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.566  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.566  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.567  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.567  2659  2746 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.567  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.568  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.568  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.568  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.569  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.569  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.570 14550 14550 I xsu     : sending cmd:chmod 750 /storage
+08-13 13:37:59.570 14550 14550 I xsu     : sending cmd end:chmod 750 /storage
+08-13 13:37:59.570 14550 14550 I xsu     : free cmd end
+08-13 13:37:59.570 14550 14550 I xsu     : xsu_recv cmd before
+08-13 13:37:59.570 14550 14550 I xsu_api : xsu_recv memset enter
+08-13 13:37:59.570 14550 14550 I xsu_api : xsu_recv memset end
+08-13 13:37:59.570  1604 14553 I xsu_api : xsu_recv memset enter
+08-13 13:37:59.570  1604 14553 I xsu_api : xsu_recv memset end
+08-13 13:37:59.570  1604 14553 I xsu_api : xsu_recv retry end
+08-13 13:37:59.570  1604 14553 I xsu_api : ret=4, version=200, type=0, payload_size=22
+08-13 13:37:59.570  1604 14553 I xsu_api : xsu_recv type and len
+08-13 13:37:59.570  1604 14553 I xsu_api : header.type=0, header.payload_size=22, xsu_header_t=4
+08-13 13:37:59.570  1604 14553 I xsu_api : xsu_recv type and len end
+08-13 13:37:59.570  1604 14553 I xsud    : handle comming cmd:chmod 750 /storage
+08-13 13:37:59.571  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.571  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.571  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.571  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.571  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.571  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.572  1300  1300 D Zygote  : Forked child process 14555
+08-13 13:37:59.572  2312  2370 I ActivityManager: Start proc 14555:io.taowen.bx/u0a194 for next-top-activity {io.taowen.bx/com.winlator.BionicXActivity}
+08-13 13:37:59.572  2312 14556 W ContextImpl: Calling a method in the system process without a qualified user: android.app.ContextImpl.sendBroadcast:1220 com.qualcomm.qti.Performance$SendGameLaunchBroadcast.run:248 java.lang.Thread.run:1564 <bottom of call stack> <bottom of call stack> 
+08-13 13:37:59.574  3798  4675 W SQLiteLog: (28) double-quoted string literal: "io.taowen.bx"
+08-13 13:37:59.574 14555 14555 I libc    : SetHeapTaggingLevel: tag level set to 0
+08-13 13:37:59.577 14555 14555 I io.taowen.bx: Late-enabling -Xcheck:jni
+08-13 13:37:59.579 14550 14550 I xsu_api : xsu_recv retry end
+08-13 13:37:59.579 14550 14550 I xsu_api : ret=4, version=200, type=3, payload_size=0
+08-13 13:37:59.579 14550 14550 I xsu_api : xsu_recv type and len
+08-13 13:37:59.579 14550 14550 I xsu_api : header.type=3, header.payload_size=0, xsu_header_t=4
+08-13 13:37:59.579 14550 14550 I xsu_api : xsu_recv type and len end
+08-13 13:37:59.579 14550 14550 I xsu     : xsu_recv cmd end
+08-13 13:37:59.579 14550 14550 I xsu     : end session!
+08-13 13:37:59.584 14557 14557 I xsu     : sending cmd:setenforce 0
+08-13 13:37:59.584 14557 14557 I xsu     : sending cmd end:setenforce 0
+08-13 13:37:59.585 14557 14557 I xsu     : free cmd end
+08-13 13:37:59.585 14557 14557 I xsu     : xsu_recv cmd before
+08-13 13:37:59.585 14557 14557 I xsu_api : xsu_recv memset enter
+08-13 13:37:59.585 14557 14557 I xsu_api : xsu_recv memset end
+08-13 13:37:59.585  1604 14558 I xsu_api : xsu_recv memset enter
+08-13 13:37:59.585  1604 14558 I xsu_api : xsu_recv memset end
+08-13 13:37:59.585  1604 14558 I xsu_api : xsu_recv retry end
+08-13 13:37:59.585  1604 14558 I xsu_api : ret=4, version=200, type=0, payload_size=16
+08-13 13:37:59.585  1604 14558 I xsu_api : xsu_recv type and len
+08-13 13:37:59.585  1604 14558 I xsu_api : header.type=0, header.payload_size=16, xsu_header_t=4
+08-13 13:37:59.585  1604 14558 I xsu_api : xsu_recv type and len end
+08-13 13:37:59.585  1604 14558 I xsud    : handle comming cmd:setenforce 0
+08-13 13:37:59.589 14555 14555 I io.taowen.bx: Using CollectorTypeCMC GC.
+08-13 13:37:59.591  2128  2229 I adbd    : jdwp connection from 14555
+08-13 13:37:59.592 14557 14557 I xsu_api : xsu_recv retry end
+08-13 13:37:59.592 14557 14557 I xsu_api : ret=4, version=200, type=3, payload_size=0
+08-13 13:37:59.592 14557 14557 I xsu_api : xsu_recv type and len
+08-13 13:37:59.592 14557 14557 I xsu_api : header.type=3, header.payload_size=0, xsu_header_t=4
+08-13 13:37:59.592 14557 14557 I xsu_api : xsu_recv type and len end
+08-13 13:37:59.592 14557 14557 I xsu     : xsu_recv cmd end
+08-13 13:37:59.592 14557 14557 I xsu     : end session!
+08-13 13:37:59.593 14555 14555 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+08-13 13:37:59.598  2312  2789 D CompatibilityInfo: mCompatibilityFlags - 0
+08-13 13:37:59.598  2312  2789 D CompatibilityInfo: applicationDensity - 440
+08-13 13:37:59.598  2312  2789 D CompatibilityInfo: applicationScale - 1.0
+08-13 13:37:59.598  2312  2789 I ActivityTaskManager: The Process io.taowen.bx Already Exists in BG. So sending its PID: 14555
+08-13 13:37:59.600  2312  2495 D CompatibilityChangeReporter: Compat change id reported: 265195908; UID 10194; state: ENABLED
+08-13 13:37:59.602 14555 14555 D CompatibilityChangeReporter: Compat change id reported: 171979766; UID 10194; state: DISABLED
+08-13 13:37:59.602 14555 14555 D CompatibilityChangeReporter: Compat change id reported: 242716250; UID 10194; state: DISABLED
+08-13 13:37:59.604  2312  2789 D CompatibilityChangeReporter: Compat change id reported: 170503758; UID 10194; state: DISABLED
+08-13 13:37:59.606 14555 14555 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.test.base.jar
+08-13 13:37:59.684 14555 14555 D nativeloader: Configuring clns-4 for other apk /data/app/~~5qP5nsu4Y7Tud7TArj4xHg==/io.taowen.bx-_b84dAfAgoDs1Utws59YIA==/base.apk. target_sdk_version=28, uses_libraries=, library_path=/data/app/~~5qP5nsu4Y7Tud7TArj4xHg==/io.taowen.bx-_b84dAfAgoDs1Utws59YIA==/lib/arm64:/data/app/~~5qP5nsu4Y7Tud7TArj4xHg==/io.taowen.bx-_b84dAfAgoDs1Utws59YIA==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/io.taowen.bx
+08-13 13:37:59.684 14555 14555 D nativeloader: Extending system_exposed_libraries: libbinauralrenderer_wrapper.qti.so:libhoaeffects.qti.so:libQOC.qti.so:libupdateprof.qti.so:libthermalclient.qti.so:libQOC.qti.so:libdiag_system.qti.so:libqape.qti.so:libqesdk_ndk_platform.qti.so:liblistenjni.qti.so
+08-13 13:37:59.687 14555 14555 D nativeloader: Load libframework-connectivity-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity.jar: ok
+08-13 13:37:59.688 14555 14555 I Perf    : Connecting to perf service.
+08-13 13:37:59.690 14555 14555 V GraphicsEnvironment: Currently set values for:
+08-13 13:37:59.690 14555 14555 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+08-13 13:37:59.690 14555 14555 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+08-13 13:37:59.690 14555 14555 V GraphicsEnvironment: ANGLE GameManagerService for io.taowen.bx: false
+08-13 13:37:59.690 14555 14555 V GraphicsEnvironment: io.taowen.bx is not listed in per-application setting
+08-13 13:37:59.690 14555 14555 V GraphicsEnvironment: Updatable production driver is not supported on the device.
+08-13 13:37:59.696  3921  4196 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.697  2312 20932 I ActivityManager: Flag disabled. Ignoring finishAttachApplication from uid: 10194. pid: 14555
+08-13 13:37:59.734  2312  2364 W WindowManager: Failed to deliver inset control state change to w=Window{b4cedde u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-13 13:37:59.734  2312  2364 W WindowManager: android.os.DeadObjectException
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.view.IWindow$Stub$Proxy.insetsControlChanged(IWindow.java:495)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.wm.WindowState.notifyInsetsControlChanged(WindowState.java:3812)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.wm.InsetsStateController.lambda$notifyPendingInsetsControlChanged$3(InsetsStateController.java:343)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.wm.InsetsStateController.$r8$lambda$8yykPRG1GyNq_J17QvL9d5xANMc(InsetsStateController.java:0)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.wm.InsetsStateController$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator.executeAfterPrepareSurfacesRunnables(WindowAnimator.java:294)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator.animate(WindowAnimator.java:202)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator.lambda$new$1(WindowAnimator.java:99)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator.$r8$lambda$aHNu1uhcqxihX5NZc4McDDQPAyw(WindowAnimator.java:0)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator$$ExternalSyntheticLambda1.doFrame(R8$$SyntheticClass:0)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1348)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1359)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.view.Choreographer.doCallbacks(Choreographer.java:963)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.view.Choreographer.doFrame(Choreographer.java:888)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.view.Choreographer$FrameDisplayEventReceiver.run(Choreographer.java:1333)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.os.Handler.handleCallback(Handler.java:958)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.os.Handler.dispatchMessage(Handler.java:99)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.os.Looper.loopOnce(Looper.java:205)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.os.Looper.loop(Looper.java:294)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at android.os.HandlerThread.run(HandlerThread.java:67)
+08-13 13:37:59.734  2312  2364 W WindowManager: 	at com.android.server.ServiceThread.run(ServiceThread.java:46)
+08-13 13:37:59.736  3921  4196 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.737   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:37:59.737  2312 20932 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:37:59.737  2312 20932 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:37:59.738  2312 20932 I ActivityTaskManager: The Process io.taowen.bx Already Exists in BG. So sending its PID: 14555
+08-13 13:37:59.738  2312 20932 I DisplayRotation: rotationForOrientation: orientation=6, preferredRotation=1, sensorRotation=1, lastRotation=1
+08-13 13:37:59.738  2312 20932 I DisplayRotation: updateRotation: lastOrientation=6, oldRotation=1, newRotation=1
+08-13 13:37:59.739  1442  1525 I ANDR-PWR-OPT: PowerAppClassifier: getAppType() 59: checking app [io.taowen.bx] is type 2
+08-13 13:37:59.739  1442  1525 I QLM-Client-Lib: qlm_client_init: Initialized client poweropt-service
+08-13 13:37:59.740   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:37:59.740  2312 20932 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:37:59.740  2312 20932 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:37:59.742  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.742  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.743 14555 14574 D vulkan  : searching for layers in '/data/app/~~5qP5nsu4Y7Tud7TArj4xHg==/io.taowen.bx-_b84dAfAgoDs1Utws59YIA==/lib/arm64'
+08-13 13:37:59.743 14555 14574 D vulkan  : searching for layers in '/data/app/~~5qP5nsu4Y7Tud7TArj4xHg==/io.taowen.bx-_b84dAfAgoDs1Utws59YIA==/base.apk!/lib/arm64-v8a'
+08-13 13:37:59.745  2312  2360 V WindowManager: Sent Transition #355 createdAt=08-13 13:37:59.500 via request=TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=1058 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=io.taowen.bx/com.winlator.BionicXActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} numActivities=0 lastActiveTime=62680398 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{828db30 Task{f97282 #1058 type=standard A=10194:io.taowen.bx}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+08-13 13:37:59.745  2659  2692 V WindowManagerShell: onTransitionReady android.os.BinderProxy@8f01a6c: {id=355 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@99f7d34} m=OPEN f=MOVE_TO_TOP leash=Surface(name=Task=1059)/@0xb313a21 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@b46575d} m=CLOSE f=NONE leash=Surface(name=Task=1058)/@0xa31fe46 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0}]}
+08-13 13:37:59.745  2312  2363 D OomAdjuster: App adj change from cached state to fg state : 14555 io.taowen.bx
+08-13 13:37:59.745  2659  2692 V WindowManagerShell: Playing animation for (#355)android.os.BinderProxy@8f01a6c@0
+08-13 13:37:59.745  2659  2692 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultMixedHandler@34c80d7
+08-13 13:37:59.745  2659  2692 V WindowManagerShell:  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@b885ee1
+08-13 13:37:59.745  2659  2692 V WindowManagerShell:  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@8ff2406
+08-13 13:37:59.745  2659  2692 V WindowManagerShell:  try handler com.android.wm.shell.recents.RecentsTransitionHandler@4405ac7
+08-13 13:37:59.745  2659  2692 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+08-13 13:37:59.745  2659  2692 V WindowManagerShell:  try handler com.android.wm.shell.pip.PipTransition@7f978f4
+08-13 13:37:59.745  2659  2692 V WindowManagerShell:  try handler com.android.wm.shell.splitscreen.StageCoordinator@8cb081d
+08-13 13:37:59.745  2659  2692 V WindowManagerShell:  try handler com.android.wm.shell.transition.RemoteTransitionHandler@e5ddc63
+08-13 13:37:59.745  2659  2692 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=355 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@99f7d34} m=OPEN f=MOVE_TO_TOP leash=Surface(name=Task=1059)/@0xb313a21 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@b46575d} m=CLOSE f=NONE leash=Surface(name=Task=1058)/@0xa31fe46 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0}]}
+08-13 13:37:59.745  2312  2360 V WindowManager:     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+08-13 13:37:59.745  2659  2692 V WindowManagerShell:  Delegate animation for #355 to null
+08-13 13:37:59.745  2659  2692 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultTransitionHandler@eaf3060
+08-13 13:37:59.745  2659  2692 V WindowManagerShell: start default transition animation, info = {id=355 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@99f7d34} m=OPEN f=MOVE_TO_TOP leash=Surface(name=Task=1059)/@0xb313a21 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@b46575d} m=CLOSE f=NONE leash=Surface(name=Task=1058)/@0xa31fe46 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0}]}
+08-13 13:37:59.745  2659  2692 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@a7fb8d2 animAttr=0xb type=CLOSE isEntrance=false
+08-13 13:37:59.745  2659  2692 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@71ddda3 animAttr=0xa type=CLOSE isEntrance=true
+08-13 13:37:59.745  1474  1618 E ANDR-PERF-RESOURCEQS: ANDR-PERF-RESOURCEQS: AddAndApply() 167: Failed to apply optimization [10, 8]
+08-13 13:37:59.746  2659  2692 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@eaf3060
+08-13 13:37:59.747  2312  2360 V WindowManager:     info={id=355 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{1dab58e Task{d932fcf #1059 type=standard A=10194:io.taowen.bx}}} m=OPEN f=MOVE_TO_TOP leash=Surface(name=Task=1059)/@0xf534353 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0},{WCT{RemoteToken{828db30 Task{f97282 #1058 type=standard A=10194:io.taowen.bx}}} m=CLOSE f=NONE leash=Surface(name=Task=1058)/@0x6a654e2 sb=Rect(0, 0 - 1920, 1080) eb=Rect(0, 0 - 1920, 1080) d=0}]}
+08-13 13:37:59.748  2312 20932 W WindowManager: Failed to deliver inset control state change to w=Window{b4cedde u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-13 13:37:59.748  2312 20932 W WindowManager: android.os.DeadObjectException
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at android.view.IWindow$Stub$Proxy.insetsControlChanged(IWindow.java:495)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.WindowState.notifyInsetsControlChanged(WindowState.java:3812)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.InsetsStateController.lambda$notifyPendingInsetsControlChanged$3(InsetsStateController.java:343)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.InsetsStateController.$r8$lambda$8yykPRG1GyNq_J17QvL9d5xANMc(InsetsStateController.java:0)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.InsetsStateController$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.WindowAnimator.executeAfterPrepareSurfacesRunnables(WindowAnimator.java:294)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacementNoTrace(RootWindowContainer.java:820)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacement(RootWindowContainer.java:765)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacementLoop(WindowSurfacePlacer.java:177)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacement(WindowSurfacePlacer.java:126)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.WindowManagerService.relayoutWindow(WindowManagerService.java:2427)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.Session.relayout(Session.java:249)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.Session.relayoutAsync(Session.java:263)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at android.view.IWindowSession$Stub.onTransact(IWindowSession.java:731)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at com.android.server.wm.Session.onTransact(Session.java:178)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at android.os.Binder.execTransactInternal(Binder.java:1344)
+08-13 13:37:59.748  2312 20932 W WindowManager: 	at android.os.Binder.execTransact(Binder.java:1275)
+08-13 13:37:59.752  3921  4196 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.756  1541  1541 I qspmHal : enter getGpuProf at: -106915380
+08-13 13:37:59.756  1541  1541 I qspmHal : PID 14555 from GFX matched.
+08-13 13:37:59.756  1541  1541 I qspmHal : gpuProfName:io.taowen.bx-gpu - gpu prof_info.path:/data/vendor/gaming/io.taowen.bx-gpu
+08-13 13:37:59.756  1541  1541 E qspmHal : GPU profile file NOT found !!
+08-13 13:37:59.756 14555 14574 I AdrenoVK-0: ===== BEGIN DUMP OF OVERRIDDEN SETTINGS =====
+08-13 13:37:59.756 14555 14574 I AdrenoVK-0: ===== END DUMP OF OVERRIDDEN SETTINGS =====
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: QUALCOMM build          : 43c70540de, Ibee7afe120
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Build Date              : 07/17/24
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Shader Compiler Version : E031.45.02.16
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Local Branch            : 
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Remote Branch           : refs/tags/AU_LINUX_ANDROID_LA.VENDOR.14.3.0.11.00.00.973.576
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Remote Branch           : NONE
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Reconstruct Branch      : NOTHING
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Build Config            : S P 16.1.2 AArch64
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Driver Path             : /vendor/lib64/hw/vulkan.adreno.so
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Driver Version          : 0762.24
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: PFP                     : 0x01520175
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: ME                      : 0x01520023
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Application Name    : android framework
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Application Version : 0x00000000
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Engine Name         : android framework
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Engine Version      : 0x00000000
+08-13 13:37:59.758 14555 14574 I AdrenoVK-0: Api Version         : 0x00401000
+08-13 13:37:59.760  3921  4196 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.760 14555 14555 I BionicX : profile=wps-office display=1920x1080@144 socket=filesystem
+08-13 13:37:59.762 14555 14577 D CompatibilityChangeReporter: Compat change id reported: 351566728; UID 10194; state: DISABLED
+08-13 13:37:59.763 14555 14555 D nativeloader: Load /data/app/~~5qP5nsu4Y7Tud7TArj4xHg==/io.taowen.bx-_b84dAfAgoDs1Utws59YIA==/lib/arm64/libwinlator.so using class loader ns clns-4 (caller=/data/app/~~5qP5nsu4Y7Tud7TArj4xHg==/io.taowen.bx-_b84dAfAgoDs1Utws59YIA==/base.apk!classes11.dex): ok
+08-13 13:37:59.764  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.765  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.765  2659  2746 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.766 14555 14555 D nativeloader: Load /data/app/~~5qP5nsu4Y7Tud7TArj4xHg==/io.taowen.bx-_b84dAfAgoDs1Utws59YIA==/lib/arm64/libgladiorenderer.so using class loader ns clns-4 (caller=/data/app/~~5qP5nsu4Y7Tud7TArj4xHg==/io.taowen.bx-_b84dAfAgoDs1Utws59YIA==/base.apk!classes8.dex): ok
+08-13 13:37:59.772 14555 14581 I BionicX : runtime DNS servers=1
+08-13 13:37:59.773 14555 14555 D CompatibilityChangeReporter: Compat change id reported: 237531167; UID 10194; state: DISABLED
+08-13 13:37:59.773 14555 14555 W OpenGLRenderer: Unknown dataspace 0
+08-13 13:37:59.773 14555 14581 I BionicX : launching WPS Office Writer (AArch64): [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --cwd, /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6, --argv0, wps, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/wps-office, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/wps-office, --env, XDG_RUNTIME_DIR=/data/user/0/io.taowen.bx/files/run/wps-office/runtime, --env, GCONV_PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/gconv, --env, LANG=C, --env, QT_QPA_PLATFORM=xcb, --env, QT_DEBUG_PLUGINS=1, --env, QT_X11_NO_MITSHM=1, --env, PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/bin:/data/user/0/io.taowen.bx/files/rootfs/bin:/product/bin:/system/bin, --env, BIONICX_OPEN_PDF=/data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/wpspdf, --env, BIONICX_DNS_SERVERS=10.21.198.26, --env, BIONICX_ROOTFS=/data/user/0/io.taowen.bx/files/rootfs, --env, BIONICX_TMPDIR=/data/user/0/io.taowen.bx/cache, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/rootfs/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, FONTCONFIG_SYSROOT=/data/user/0/io.taowen.bx/files/rootfs, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-runtime.so, --, /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/wps]
+08-13 13:37:59.774  2312 16154 W WindowManager: Failed looking up window session=Session{3e85ffd 14555:u0a10194} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6067 com.android.server.wm.Session.updateRequestedVisibleTypes:690 android.view.IWindowSession$Stub.onTransact:1034 
+08-13 13:37:59.778 14555 14585 I BionicX : bionicx-exec: running untraced pid=14587
+08-13 13:37:59.779  2312  2788 D CoreBackPreview: Window{4259e3e u0 io.taowen.bx/com.winlator.BionicXActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@28d9431, mPriority=0, mIsAnimationCallback=false}
+08-13 13:37:59.780  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS1.100000 FRAMECOUNT33
+08-13 13:37:59.780  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 1.100000
+08-13 13:37:59.787 14555 14578 D libEGL  : loaded /vendor/lib64/egl/libEGL_adreno.so
+08-13 13:37:59.789 14555 14578 D libEGL  : loaded /vendor/lib64/egl/libGLESv1_CM_adreno.so
+08-13 13:37:59.791 14555 14578 D libEGL  : loaded /vendor/lib64/egl/libGLESv2_adreno.so
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: QUALCOMM build                   : 43c70540de, Ibee7afe120
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: Build Date                       : 07/17/24
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: OpenGL ES Shader Compiler Version: E031.45.02.16
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: Local Branch                     : 
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: Remote Branch                    : refs/tags/AU_LINUX_ANDROID_LA.VENDOR.14.3.0.11.00.00.973.576
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: Remote Branch                    : NONE
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: Reconstruct Branch               : NOTHING
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: Build Config                     : S P 16.1.2 AArch64
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: Driver Version                   : 0762.24
+08-13 13:37:59.808 14555 14578 I AdrenoGLES-0: Process Name                     : io.taowen.bx
+08-13 13:37:59.809 14555 14578 I AdrenoGLES-0: PFP: 0x01520175, ME: 0x01520023
+08-13 13:37:59.810  1541  1541 I qspmHal : enter getGpuProf at: -106915326
+08-13 13:37:59.810  1541  1541 I qspmHal : PID 14555 from GFX matched.
+08-13 13:37:59.810  1541  1541 I qspmHal : gpuProfName:io.taowen.bx-gpu - gpu prof_info.path:/data/vendor/gaming/io.taowen.bx-gpu
+08-13 13:37:59.810  1541  1541 E qspmHal : GPU profile file NOT found !!
+08-13 13:37:59.811 14555 14578 I AdrenoUtils: <ReadGpuID:357>: Reading chip ID through GSL
+08-13 13:37:59.815   829   829 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.allocator@4.0::IAllocator/default in either framework or device VINTF manifest.
+08-13 13:37:59.815  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.815  1450  1450 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.815  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.816  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.816 14555 14574 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.824  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.825  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.825  2312  2360 I ActivityTaskManager: Displayed io.taowen.bx/com.winlator.BionicXActivity for user 0: +274ms
+08-13 13:37:59.829  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.829  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.829 14555 14574 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.831  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.831  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.831  2659  2746 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.835  2312  4446 D InputDispatcher: onFocusChangedLocked
+08-13 13:37:59.837  2312  4446 D CompatibilityChangeReporter: Compat change id reported: 214016041; UID 10194; state: DISABLED
+08-13 13:37:59.837  2312  4446 I ImeTracker: io.taowen.bx:3f7cef3e: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+08-13 13:37:59.837  2312  4446 I ImeTracker: io.taowen.bx:3f7cef3e: onCancelled at PHASE_SERVER_SHOULD_HIDE
+08-13 13:37:59.837  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.837  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.838  2659  2746 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:37:59.838  5422  5422 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():2259 
+08-13 13:37:59.839  5422  5422 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():103 repeatCheckTimes = 0, locked = false
+08-13 13:37:59.839  5422  5422 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1446 onStartInput(EditorInfo{EditorInfo{packageName=io.taowen.bx, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+08-13 13:37:59.839  5422  5422 W AndroidIME: LatinIMEBase.updateInputViewCoverNavigation():327 Null input view, cannot update padding!
+08-13 13:37:59.839  5422  5422 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():103 repeatCheckTimes = 1, locked = false
+08-13 13:37:59.839  2312  2788 W PackageConfigPersister: App-specific configuration not found for packageName: io.taowen.bx and userId: 0
+08-13 13:37:59.839  2312  2364 W WindowManager: Failed to deliver inset control state change to w=Window{b4cedde u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-13 13:37:59.839  2312  2364 W WindowManager: android.os.DeadObjectException
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at android.view.IWindow$Stub$Proxy.insetsControlChanged(IWindow.java:495)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.WindowState.notifyInsetsControlChanged(WindowState.java:3812)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.InsetsStateController.lambda$notifyPendingInsetsControlChanged$3(InsetsStateController.java:343)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.InsetsStateController.$r8$lambda$8yykPRG1GyNq_J17QvL9d5xANMc(InsetsStateController.java:0)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.InsetsStateController$$ExternalSyntheticLambda2.run(R8$$SyntheticClass:0)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.WindowAnimator.executeAfterPrepareSurfacesRunnables(WindowAnimator.java:294)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacementNoTrace(RootWindowContainer.java:820)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.RootWindowContainer.performSurfacePlacement(RootWindowContainer.java:765)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacementLoop(WindowSurfacePlacer.java:177)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacement(WindowSurfacePlacer.java:126)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer.performSurfacePlacement(WindowSurfacePlacer.java:115)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.wm.WindowSurfacePlacer$Traverser.run(WindowSurfacePlacer.java:57)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at android.os.Handler.handleCallback(Handler.java:958)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at android.os.Handler.dispatchMessage(Handler.java:99)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at android.os.Looper.loopOnce(Looper.java:205)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at android.os.Looper.loop(Looper.java:294)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at android.os.HandlerThread.run(HandlerThread.java:67)
+08-13 13:37:59.839  2312  2364 W WindowManager: 	at com.android.server.ServiceThread.run(ServiceThread.java:46)
+08-13 13:37:59.867 14555 14586 I BionicX : QFactoryLoader::QFactoryLoader() checking directory path "/data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms" ...
+08-13 13:37:59.867 14555 14586 I BionicX : QFactoryLoader::QFactoryLoader() looking at "/data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so"
+08-13 13:37:59.867 14555 14586 I BionicX : Found metadata in lib /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so, metadata=
+08-13 13:37:59.867 14555 14586 I BionicX : {
+08-13 13:37:59.867 14555 14586 I BionicX :     "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+08-13 13:37:59.867 14555 14586 I BionicX :     "MetaData": {
+08-13 13:37:59.867 14555 14586 I BionicX :         "Keys": [
+08-13 13:37:59.867 14555 14586 I BionicX :             "xcb"
+08-13 13:37:59.867 14555 14586 I BionicX :         ]
+08-13 13:37:59.867 14555 14586 I BionicX :     },
+08-13 13:37:59.867 14555 14586 I BionicX :     "archreq": 0,
+08-13 13:37:59.867 14555 14586 I BionicX :     "className": "QXcbIntegrationPlugin",
+08-13 13:37:59.867 14555 14586 I BionicX :     "debug": false,
+08-13 13:37:59.867 14555 14586 I BionicX :     "version": 330752
+08-13 13:37:59.867 14555 14586 I BionicX : }
+08-13 13:37:59.867 14555 14586 I BionicX : 
+08-13 13:37:59.867 14555 14586 I BionicX : 
+08-13 13:37:59.867 14555 14586 I BionicX : Got keys from plugin meta data ("xcb")
+08-13 13:37:59.867 14555 14586 I BionicX : QFactoryLoader::QFactoryLoader() checking directory path "/data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/platforms" ...
+08-13 13:37:59.867 14555 14586 I BionicX : Cannot load library /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so: (libQt5XcbQpaKso.so.5: cannot open shared object file: No such file or directory)
+08-13 13:37:59.867 14555 14586 I BionicX : QLibraryPrivate::loadPlugin failed on "/data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so" : "Cannot load library /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so: (libQt5XcbQpaKso.so.5: cannot open shared object file: No such file or directory)"
+08-13 13:37:59.867 14555 14586 I BionicX : qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.
+08-13 13:37:59.867 14555 14586 I BionicX : This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+08-13 13:37:59.867 14555 14586 I BionicX : 
+08-13 13:37:59.867 14555 14586 I BionicX : Available platform plugins are: xcb.
+08-13 13:37:59.867 14555 14586 I BionicX : 
+08-13 13:37:59.884 14555 14586 I BionicX : bionicx-exec: primary pid=14587 exited status=0x100; draining session
+08-13 13:37:59.925 14555 14586 I BionicX : QFactoryLoader::QFactoryLoader() checking directory path "/data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms" ...
+08-13 13:37:59.925 14555 14586 I BionicX : QFactoryLoader::QFactoryLoader() looking at "/data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so"
+08-13 13:37:59.925 14555 14586 I BionicX : Found metadata in lib /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so, metadata=
+08-13 13:37:59.925 14555 14586 I BionicX : {
+08-13 13:37:59.925 14555 14586 I BionicX :     "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+08-13 13:37:59.925 14555 14586 I BionicX :     "MetaData": {
+08-13 13:37:59.925 14555 14586 I BionicX :         "Keys": [
+08-13 13:37:59.925 14555 14586 I BionicX :             "xcb"
+08-13 13:37:59.925 14555 14586 I BionicX :         ]
+08-13 13:37:59.925 14555 14586 I BionicX :     },
+08-13 13:37:59.925 14555 14586 I BionicX :     "archreq": 0,
+08-13 13:37:59.925 14555 14586 I BionicX :     "className": "QXcbIntegrationPlugin",
+08-13 13:37:59.925 14555 14586 I BionicX :     "debug": false,
+08-13 13:37:59.925 14555 14586 I BionicX :     "version": 330752
+08-13 13:37:59.925 14555 14586 I BionicX : }
+08-13 13:37:59.925 14555 14586 I BionicX : 
+08-13 13:37:59.925 14555 14586 I BionicX : 
+08-13 13:37:59.925 14555 14586 I BionicX : Got keys from plugin meta data ("xcb")
+08-13 13:37:59.925 14555 14586 I BionicX : QFactoryLoader::QFactoryLoader() checking directory path "/data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/platforms" ...
+08-13 13:37:59.926 14555 14586 I BionicX : Cannot load library /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so: (libQt5XcbQpaKso.so.5: cannot open shared object file: No such file or directory)
+08-13 13:37:59.926 14555 14586 I BionicX : QLibraryPrivate::loadPlugin failed on "/data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so" : "Cannot load library /data/user/0/io.taowen.bx/files/rootfs/opt/kingsoft/wps-office/office6/qt/plugins/platforms/libqxcb.so: (libQt5XcbQpaKso.so.5: cannot open shared object file: No such file or directory)"
+08-13 13:37:59.926 14555 14586 I BionicX : qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.
+08-13 13:37:59.926 14555 14586 I BionicX : This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+08-13 13:37:59.926 14555 14586 I BionicX : 
+08-13 13:37:59.926 14555 14586 I BionicX : Available platform plugins are: xcb.
+08-13 13:37:59.926 14555 14586 I BionicX : 
+08-13 13:37:59.930 14555 14586 I BionicX : bionicx-exec: session child pid=14597 exited status=0xb
+08-13 13:37:59.930 14555 14586 I BionicX : bionicx-exec: session drained children=1
+08-13 13:37:59.930 14555 14581 I BionicX : wps-office exited with 1
+08-13 13:37:59.932 14555 14563 I io.taowen.bx: Compiler allocated 4390KB to compile void android.view.ViewRootImpl.performTraversals()
+08-13 13:37:59.938  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.938  1450  1640 W qdgralloc: Failed to open smmu proxy node = /dev/qti-smmu-proxy, error = No such file or directory
+08-13 13:37:59.939  2659  2746 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:38:00.000  2312  2512 V AlarmManager: set(android) : type=3 triggerAtTime=2026-08-13 13:39:00 win=0 maxElapsed=62848249 interval=0 flags=0x9 callingUid=1000
+08-13 13:38:00.099  2659  2726 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@da696e9
+08-13 13:38:00.099  2312  2788 D CoreBackPreview: Window{5e86f06 u0 Splash Screen io.taowen.bx EXITING}: Setting back callback null
+08-13 13:38:00.100  2312 20932 W InputManager-JNI: Input channel object '5e86f06 Splash Screen io.taowen.bx (client)' was disposed without first being removed with the input manager!
+08-13 13:38:00.258  2659  2692 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#355)android.os.BinderProxy@8f01a6c@0
+08-13 13:38:00.262  2312  2360 V WindowManager: Finish Transition #355: created at 08-13 13:37:59.500 collect-started=0.113ms request-sent=0.265ms started=8.718ms ready=240.44ms sent=244.093ms finished=760.871ms
+08-13 13:38:00.263  2312  2789 W WindowManager: Exception thrown during dispatchAppVisibility Window{b4cedde u0 io.taowen.bx/com.winlator.BionicXActivity EXITING}
+08-13 13:38:00.263  2312  2789 W WindowManager: android.os.DeadObjectException
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at android.os.BinderProxy.transactNative(Native Method)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at android.view.IWindow$Stub$Proxy.dispatchAppVisibility(IWindow.java:562)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.WindowState.sendAppVisibilityToClients(WindowState.java:3281)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.WindowContainer.sendAppVisibilityToClients(WindowContainer.java:1221)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.WindowToken.setClientVisible(WindowToken.java:414)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.ActivityRecord.setClientVisible(ActivityRecord.java:7114)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.ActivityRecord.postApplyAnimation(ActivityRecord.java:5670)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.ActivityRecord.commitVisibility(ActivityRecord.java:5613)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.Transition.finishTransition(Transition.java:1166)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.TransitionController.finishTransition(TransitionController.java:868)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.WindowOrganizerController.finishTransition(WindowOrganizerController.java:396)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at android.window.IWindowOrganizerController$Stub.onTransact(IWindowOrganizerController.java:286)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at com.android.server.wm.WindowOrganizerController.onTransact(WindowOrganizerController.java:181)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at android.os.Binder.execTransactInternal(Binder.java:1344)
+08-13 13:38:00.263  2312  2789 W WindowManager: 	at android.os.Binder.execTransact(Binder.java:1275)
+08-13 13:38:00.264  2312  2789 I Process : Sending signal. PID: 13940 SIG: 9
+08-13 13:38:00.272  2659  2692 V WindowManagerShell: Track 0 became idle
+08-13 13:38:00.272  2659  2692 V WindowManagerShell: All active transition animations finished
+08-13 13:38:00.274   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:38:00.274  2312  2363 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:38:00.274  2312  2363 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:38:00.274   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:38:00.274  2312  2363 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:38:00.274  2312  2363 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:38:00.275  2312  2363 W ActivityManager: setHasOverlayUi called on unknown pid: 13940
+08-13 13:38:00.276  2754  2764 W DynamicDDSService: appName is not found in cache: com.ayaneo.home
+08-13 13:38:00.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS3.000000 FRAMECOUNT93
+08-13 13:38:00.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 3.000000
+08-13 13:38:00.282  3416  3430 I FontLog : (REDACTED) Received query %s, URI %s
+08-13 13:38:00.283  3416  3430 I FontLog : (REDACTED) Query [%s] resolved to %s
+08-13 13:38:00.283  3416  3430 I FontLog : (REDACTED) Fetch %s end status %s
+08-13 13:38:00.284  1583  1583 E BpTransactionCompletedListener: Failed to transact (-32)
+08-13 13:38:00.284  1583  1583 E BpTransactionCompletedListener: Failed to transact (-32)
+08-13 13:38:00.285  3416  3430 I FontLog : (REDACTED) Pulling font file for id = %d, cache size = %d
+08-13 13:38:00.288  3416  3430 I FontLog : (REDACTED) Pulling font file for id = %d, cache size = %d
+08-13 13:38:00.292  3855  3855 I Timer-4 : type=1400 audit(0.0:2524927): avc:  denied  { read } for  name="pwm1" dev="sysfs" ino=103506 scontext=u:r:system_app:s0 tcontext=u:object_r:sysfs:s0 tclass=file permissive=1
+08-13 13:38:00.292  3855  3855 I Timer-4 : type=1400 audit(0.0:2524928): avc:  denied  { open } for  path="/sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1" dev="sysfs" ino=103506 scontext=u:r:system_app:s0 tcontext=u:object_r:sysfs:s0 tclass=file permissive=1
+08-13 13:38:00.292  3855  3855 I Timer-4 : type=1400 audit(0.0:2524929): avc:  denied  { getattr } for  path="/sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1" dev="sysfs" ino=103506 scontext=u:r:system_app:s0 tcontext=u:object_r:sysfs:s0 tclass=file permissive=1
+08-13 13:38:00.299  3921  3921 D AutofillManager: view not autofillable - not passing ime action check
+08-13 13:38:00.304  3921  3921 D AutofillManager: view not autofillable - not passing ime action check
+08-13 13:38:00.300 14600 14600 I top     : type=1400 audit(0.0:2524930): avc:  denied  { read } for  name="pid_max" dev="proc" ino=5645342 scontext=u:r:system_app:s0 tcontext=u:object_r:proc_pid_max:s0 tclass=file permissive=1
+08-13 13:38:00.300 14600 14600 I top     : type=1400 audit(0.0:2524931): avc:  denied  { open } for  path="/proc/sys/kernel/pid_max" dev="proc" ino=5645342 scontext=u:r:system_app:s0 tcontext=u:object_r:proc_pid_max:s0 tclass=file permissive=1
+08-13 13:38:00.356  1451  1717 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 69999 us
+08-13 13:38:00.376  2312  8197 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-13 13:38:00.377  1451  1717 I SDM     : HWDeviceDRM::SetupConcurrentWriteback: Tear down the Concurrent Writeback topology
+08-13 13:38:00.448  1451  1717 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-13 13:38:00.501 14499 14499 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-13 13:38:00.501   829   829 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-13 13:38:00.502 14499 14499 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-13 13:38:00.504   829 14602 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-13 13:38:00.504   829 14602 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-13 13:38:00.729   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:38:00.729  2312  2788 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:38:00.730  2312  2788 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:38:00.730   829   829 I hwservicemanager: getTransport: Cannot find entry vendor.qti.hardware.servicetracker@1.2::IServicetracker/default in either framework or device VINTF manifest.
+08-13 13:38:00.730  2312  2788 W ActivityTaskManager: servicetracker HIDL not available
+08-13 13:38:00.730  2312  2788 E ActivityTaskManager: Unable to get servicetracker HAL instance
+08-13 13:38:00.781  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS65.900002 FRAMECOUNT66
+08-13 13:38:00.781  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 65.900002
+08-13 13:38:00.817  1451  1717 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-13 13:38:00.853  1451  1717 I SDM     : HWDeviceDRM::SetupConcurrentWriteback: Tear down the Concurrent Writeback topology
+08-13 13:38:00.924  1451  1717 I SDM     : DisplayBase::CommitThread: Received idle timeout, panel: video, timeout: 70000 us
+08-13 13:38:01.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS8.900000 FRAMECOUNT9
+08-13 13:38:01.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 8.900000
+08-13 13:38:01.316 14605 14605 I top     : type=1400 audit(0.0:2525108): avc:  denied  { read } for  name="pid_max" dev="proc" ino=5645342 scontext=u:r:system_app:s0 tcontext=u:object_r:proc_pid_max:s0 tclass=file permissive=1
+08-13 13:38:01.320 14605 14605 I top     : type=1400 audit(0.0:2525109): avc:  denied  { open } for  path="/proc/sys/kernel/pid_max" dev="proc" ino=5645342 scontext=u:r:system_app:s0 tcontext=u:object_r:proc_pid_max:s0 tclass=file permissive=1
+08-13 13:38:01.320 14605 14605 I top     : type=1400 audit(0.0:2525110): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_spu_qti:s0 tclass=file permissive=1
+08-13 13:38:01.320 14605 14605 I top     : type=1400 audit(0.0:2525111): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:hal_light_default:s0 tclass=file permissive=1
+08-13 13:38:01.320 14605 14605 I top     : type=1400 audit(0.0:2525112): avc:  denied  { getattr } for  path="/proc/1398" dev="proc" ino=5639982 scontext=u:r:system_app:s0 tcontext=u:r:hal_allocator_default:s0 tclass=dir permissive=1
+08-13 13:38:01.502 14499 14499 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-13 13:38:01.503   829   829 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-13 13:38:01.504 14499 14499 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-13 13:38:01.507   829 14606 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-13 13:38:01.507   829 14606 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-13 13:38:01.780  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS2.900000 FRAMECOUNT3
+08-13 13:38:01.780  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 2.900000
+08-13 13:38:02.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-13 13:38:02.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-13 13:38:02.504 14499 14499 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-13 13:38:02.505   829   829 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-13 13:38:02.506 14499 14499 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-13 13:38:02.508   829 14608 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-13 13:38:02.508   829 14608 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-13 13:38:02.777 14609 14609 I xsu     : sending cmd:echo 76 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-13 13:38:02.778 14609 14609 I xsu     : sending cmd end:echo 76 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-13 13:38:02.778 14609 14609 I xsu     : free cmd end
+08-13 13:38:02.778 14609 14609 I xsu     : xsu_recv cmd before
+08-13 13:38:02.778 14609 14609 I xsu_api : xsu_recv memset enter
+08-13 13:38:02.778 14609 14609 I xsu_api : xsu_recv memset end
+08-13 13:38:02.779  1604 14610 I xsu_api : xsu_recv memset enter
+08-13 13:38:02.779  1604 14610 I xsu_api : xsu_recv memset end
+08-13 13:38:02.779  1604 14610 I xsu_api : xsu_recv retry end
+08-13 13:38:02.779  1604 14610 I xsu_api : ret=4, version=200, type=0, payload_size=69
+08-13 13:38:02.779  1604 14610 I xsu_api : xsu_recv type and len
+08-13 13:38:02.779  1604 14610 I xsu_api : header.type=0, header.payload_size=69, xsu_header_t=4
+08-13 13:38:02.779  1604 14610 I xsu_api : xsu_recv type and len end
+08-13 13:38:02.779  1604 14610 I xsud    : handle comming cmd:echo 76 > /sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1
+08-13 13:38:02.780  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-13 13:38:02.780  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-13 13:38:02.792 14609 14609 I xsu_api : xsu_recv retry end
+08-13 13:38:02.792 14609 14609 I xsu_api : ret=4, version=200, type=3, payload_size=0
+08-13 13:38:02.788 14611 14611 I sh      : type=1400 audit(0.0:2525122): avc:  denied  { write } for  name="pwm1" dev="sysfs" ino=103506 scontext=u:r:xsud:s0 tcontext=u:object_r:sysfs:s0 tclass=file permissive=1
+08-13 13:38:02.792 14609 14609 I xsu_api : xsu_recv type and len
+08-13 13:38:02.792 14609 14609 I xsu_api : header.type=3, header.payload_size=0, xsu_header_t=4
+08-13 13:38:02.792 14609 14609 I xsu_api : xsu_recv type and len end
+08-13 13:38:02.792 14609 14609 I xsu     : xsu_recv cmd end
+08-13 13:38:02.792 14609 14609 I xsu     : end session!
+08-13 13:38:02.788 14611 14611 I sh      : type=1400 audit(0.0:2525123): avc:  denied  { open } for  path="/sys/devices/platform/soc/soc:pwm-fan/hwmon/hwmon0/pwm1" dev="sysfs" ino=103506 scontext=u:r:xsud:s0 tcontext=u:object_r:sysfs:s0 tclass=file permissive=1
+08-13 13:38:03.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-13 13:38:03.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-13 13:38:03.316 14612 14612 I top     : type=1400 audit(0.0:2525124): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:hal_fingerprint_default:s0 tclass=file permissive=1
+08-13 13:38:03.316 14612 14612 I top     : type=1400 audit(0.0:2525125): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_qwesd:s0 tclass=file permissive=1
+08-13 13:38:03.316 14612 14612 I top     : type=1400 audit(0.0:2525126): avc:  denied  { open } for  path="/proc/1447/stat" dev="proc" ino=5645409 scontext=u:r:system_app:s0 tcontext=u:r:hal_fingerprint_default:s0 tclass=file permissive=1
+08-13 13:38:03.507 14499 14499 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-13 13:38:03.507   829   829 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-13 13:38:03.508 14499 14499 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-13 13:38:03.511   829 14614 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-13 13:38:03.511   829 14614 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-13 13:38:03.780  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-13 13:38:03.780  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-13 13:38:04.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getNodeData() 196: FPS0.000000 FRAMECOUNT0
+08-13 13:38:04.280  1442  1625 I ANDR-PWR-OPT: PowerHelper: getFps() 168: Returned fps value: 0.000000
+08-13 13:38:04.509 14499 14499 W HidlServiceManagement: Waited one second for vendor.qti.diaghal@1.0::Idiag/default
+08-13 13:38:04.509   829   829 I hwservicemanager: Since vendor.qti.diaghal@1.0::Idiag/default is not registered, trying to start it as a lazy HAL (if it's not configured to be a lazy HAL, it may be stuck starting or still starting).
+08-13 13:38:04.510 14499 14499 I HidlServiceManagement: getService: Trying again for vendor.qti.diaghal@1.0::Idiag/default...
+08-13 13:38:04.512   829 14616 W libc    : Unable to set property "ctl.interface_start" to "vendor.qti.diaghal@1.0::Idiag/default": error code: 0x20
+08-13 13:38:04.512   829 14616 I hwservicemanager: Tried to start vendor.qti.diaghal@1.0::Idiag/default as a lazy service, but was unable to. Usually this happens when a service is not installed, but if the service is intended to be used as a lazy service, then it may be configured incorrectly.
+08-13 13:38:04.576 14615 14615 I top     : type=1400 audit(0.0:2525134): avc:  denied  { read } for  scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_sensorscalibrate_qti_default:s0 tclass=file permissive=1
+08-13 13:38:04.580 14615 14615 I top     : type=1400 audit(0.0:2525135): avc:  denied  { open } for  path="/proc/1509/stat" dev="proc" ino=5645429 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_sensorscalibrate_qti_default:s0 tclass=file permissive=1
+08-13 13:38:04.580 14615 14615 I top     : type=1400 audit(0.0:2525136): avc:  denied  { getattr } for  path="/proc/1514" dev="proc" ino=5645360 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_srvctracker_default:s0 tclass=dir permissive=1
+08-13 13:38:04.580 14615 14615 I top     : type=1400 audit(0.0:2525137): avc:  denied  { search } for  name="1514" dev="proc" ino=5645360 scontext=u:r:system_app:s0 tcontext=u:r:vendor_hal_srvctracker_default:s0 tclass=dir permissive=1
+08-13 13:38:04.580 14615 14615 I top     : type=1400 audit(0.0:2525138): avc:  denied  { getattr } for  path="/proc/1518" dev="proc" ino=5640002 scontext=u:r:system_app:s0 tcontext=u:r:hal_vibrator_default:s0 tclass=dir permissive=1

@@ -1,0 +1,55 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 19.6 MB/s (1533 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 47.0 MB/s (4405 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 8.0 MB/s (551 bytes in 0.000s)
+bionicx-exec: running untraced pid=10860
+bionicx-exec: primary pid=10860 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=10866
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Recommended packages:
+  libfile-mimeinfo-perl libnet-dbus-perl libx11-protocol-perl x11-utils
+  x11-xserver-utils
+The following NEW packages will be installed:
+  xdg-utils
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+1 not fully installed or removed.
+Need to get 75.8 kB of archives.
+After this operation, 356 kB of additional disk space will be used.
+Get:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 xdg-utils all 1.2.1-2 [75.8 kB]
+Fetched 75.8 kB in 2s (34.5 kB/s)
+Download complete and in download only mode
+bionicx-exec: primary pid=10866 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=10882
+Selecting previously unselected package xdg-utils.
+(Reading database ... 33553 files and directories currently installed.)
+Preparing to unpack .../xdg-utils_1.2.1-2_all.deb ...
+Unpacking xdg-utils (1.2.1-2) ...
+bionicx-exec: primary pid=10882 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=10900
+bionicx ELF fixups: 1235 entries
+bionicx-exec: primary pid=10900 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=22783
+Reading package lists...
+Building dependency tree...
+Reading state information...
+xdg-utils is already the newest version (1.2.1-2).
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+2 not fully installed or removed.
+After this operation, 0 B of additional disk space will be used.
+Setting up wps-office (11.1.0.11720) ...
+mv: cannot stat '/usr/share/applications/wps-office-wps-aarch64.desktop': No such file or directory
+dpkg: error processing package wps-office (--configure):
+ installed wps-office package post-installation script subprocess returned error exit status 1
+Setting up xdg-utils (1.2.1-2) ...
+update-alternatives: using /usr/bin/xdg-open to provide /usr/bin/open (open) in auto mode
+Errors were encountered while processing:
+ wps-office
+bionicx ELF fixups: 1235 entries
+E: Sub-process /data/user/0/io.taowen.bx/files/rootfs/usr/bin/dpkg returned an error code (1)
+bionicx-exec: primary pid=22783 exited status=0x6400; draining session
+bionicx-exec: session drained children=0

@@ -33,6 +33,44 @@ if [ "${1:-}" = --files ]; then
         fi
         "$runtime/usr/bin/readelf" "$@"
     }
+    dependency_directory() {
+        soname=$1
+        owner_directory=${file%/*}
+        old_ifs=$IFS
+        IFS=:
+        set -f
+        for entry in $rewritten_rpath; do
+            directory=$(printf '%s\n' "$entry" | sed \
+                -e "s|\${ORIGIN}|$owner_directory|g" \
+                -e "s|\$ORIGIN|$owner_directory|g")
+            if [ -e "$directory/$soname" ]; then
+                set +f
+                IFS=$old_ifs
+                return 1
+            fi
+        done
+        set +f
+        IFS=$old_ifs
+
+        candidates=$(awk -F '\t' -v name="$soname" \
+            '$1 == name { print $2 }' "$BIONICX_ELF_INDEX")
+        [ -n "$candidates" ] || return 1
+        selected=
+        for candidate in $candidates; do
+            resolved=$(readlink -f "$candidate" 2>/dev/null || printf '%s' "$candidate")
+            case " $selected " in
+                *" $resolved "*) ;;
+                *) selected="$selected $resolved" ;;
+            esac
+        done
+        set -- $selected
+        [ "$#" -eq 1 ] || return 1
+        directory=${1%/*}
+        case "$directory" in
+            "$runtime"/*) printf '%s%s\n' "$deploy_root" "${directory#"$runtime"}" ;;
+            *) return 1 ;;
+        esac
+    }
     update_patchelf() {
         temporary="$1.bionicx-new.$$"
         file=$1
@@ -82,6 +120,18 @@ if [ "${1:-}" = --files ]; then
         done
         set +f
         IFS=$old_ifs
+        for soname in $needed; do
+            direct_directory=$(dependency_directory "$soname" || true)
+            [ -n "$direct_directory" ] || continue
+            case ":$rewritten_rpath:" in
+                *":$direct_directory:"*) ;;
+                *)
+                    rewritten_rpath="$rewritten_rpath:$direct_directory"
+                    printf '%s\tDT_NEEDED\t%s\t%s\n' "$relative" \
+                        "$soname" "$direct_directory" >> "$ledger"
+                    ;;
+            esac
+        done
         if [ "$current_rpath" != "$rewritten_rpath" ] ||
                 [ "$changed" -eq 1 ] || [ "$legacy_rpath" -eq 1 ]; then
             update_patchelf "$file" --set-rpath "$rewritten_rpath"
@@ -110,8 +160,14 @@ tree=$1
 runtime=${2:-$tree}
 ledger_dir="${BIONICX_LEDGER_DIR:-$tree/var/lib/bionicx}"
 ledger="$ledger_dir/elf-fixups.tsv.tmp"
+dependency_index="$ledger_dir/elf-files.tsv.tmp"
 mkdir -p "$ledger_dir"
 : > "$ledger"
+find "$runtime" \( -type f -o -type l \) \
+    \( -name '*.so' -o -name '*.so.*' \) -print | while IFS= read -r file; do
+    printf '%s\t%s\n' "${file##*/}" "$file"
+done | sort -u > "$dependency_index"
+export BIONICX_ELF_INDEX="$dependency_index"
 
 for directory in usr opt bin sbin lib lib64; do
     [ -d "$tree/$directory" ] || continue
@@ -121,5 +177,6 @@ for directory in usr opt bin sbin lib lib64; do
 done
 sort -u "$ledger" -o "$ledger"
 mv "$ledger" "$ledger_dir/elf-fixups.tsv"
+rm -f "$dependency_index"
 printf 'bionicx ELF fixups: %s entries\n' \
     "$(wc -l < "$ledger_dir/elf-fixups.tsv")"

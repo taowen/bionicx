@@ -39,6 +39,22 @@ readelf -d "$root/usr/bin/probe" | grep -q '(RUNPATH)'
 cmp -s "$root/usr/bin/script" <(printf '#!/bin/sh\nexit 0\n')
 [[ "$(sha256sum "$root/usr/lib/ld-linux-aarch64.so.1")" == "$loader_before" ]]
 
+mkdir -p "$root/opt/vendor/qt/plugins/platforms"
+cp "$repo_dir/build/test-runtime-contract/runtime-contract-probe" \
+    "$root/opt/vendor/qt/plugins/platforms/direct-plugin.so"
+cp "$repo_dir/build/test-runtime-contract/runtime-contract-probe" \
+    "$root/opt/vendor/libbionicx-direct.so.1"
+patchelf --add-needed libbionicx-direct.so.1 \
+    "$root/opt/vendor/qt/plugins/platforms/direct-plugin.so"
+BIONICX_PATCHELF=patchelf BIONICX_READELF=readelf \
+    "$repo_dir/tools/rootfs-elf-fixup.sh" "$root" >/dev/null
+case "$(patchelf --print-rpath "$root/opt/vendor/qt/plugins/platforms/direct-plugin.so")" in
+    *"$root/opt/vendor"*) ;;
+    *) echo "unique direct dependency directory was not normalized" >&2; exit 1 ;;
+esac
+grep -F $'/opt/vendor/qt/plugins/platforms/direct-plugin.so\tDT_NEEDED\tlibbionicx-direct.so.1\t'"$root/opt/vendor" \
+    "$root/var/lib/bionicx/elf-fixups.tsv" >/dev/null
+
 app="$test_dir/app"
 mkdir -p "$app/bin"
 cp "$repo_dir/build/test-runtime-contract/runtime-contract-probe" \

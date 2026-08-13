@@ -66,7 +66,12 @@ single-UID BionicX session, waits briefly, and escalates remaining children to
 KILL. One APK process/UID owns one active display session, matching the Android
 sandbox and preventing detached clients from outliving their X server.
 
-The normalized `RUNPATH` is the only library-search contract. `LD_LIBRARY_PATH`
+The normalized `RUNPATH` is the only library-search contract. In addition to
+the fixed system directories and the ELF's relocated original entries, the
+normalizer adds the directory of a directly needed SONAME when that provider
+is unique in the shared rootfs. This preserves non-transitive namespace
+isolation while supporting vendor plug-ins whose direct dependencies live next
+to the vendor executable. Ambiguous providers are never guessed. `LD_LIBRARY_PATH`
 is neither injected nor accepted, so an incomplete package normalization fails
 directly instead of being hidden by a process-global search path. The mandatory
 `LD_PRELOAD` is set in the child after the Bionic executor has started, keeping
