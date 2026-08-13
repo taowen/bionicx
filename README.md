@@ -37,8 +37,9 @@ The repository separates four concerns:
   contract loaded by every Debian process.
 - `android`: display/input/socket host based on Winlator's in-process X server.
 
-See [the detailed architecture](docs/ARCHITECTURE.md) and
-[compatibility boundaries](docs/COMPATIBILITY.md). The staged path from
+See [the detailed architecture](docs/ARCHITECTURE.md),
+[compatibility boundaries](docs/COMPATIBILITY.md), and the
+[new-device install guide](docs/NEW-DEVICE.md). The staged path from
 controlled clients to Chrome and WPS is tracked in the
 [integration test matrix](docs/TEST-MATRIX.md); current implementation work is
 ordered in the [TODO list](TODO.md).
@@ -53,7 +54,7 @@ tools/build.sh
 tests/test-runtime-contract.sh
 examples/hello/build-bundle.sh
 
-ANDROID_SERIAL=<serial> adb install -r build/bionicx-debug.apk
+ANDROID_SERIAL=<serial> tools/install-apk.sh build/bionicx-debug.apk
 ANDROID_SERIAL=<serial> examples/hello/install-and-run.sh
 ANDROID_SERIAL=<serial> examples/font-xft-probe/install-and-run.sh
 ANDROID_SERIAL=<serial> examples/clipboard-x11-probe/install-and-run.sh

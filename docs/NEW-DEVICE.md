@@ -27,12 +27,18 @@ glibc 2.41 overlay. It does not download Chrome or WPS.
 
 ```sh
 tools/build-rootfs-seed.sh build/rootfs-seed-bundle
-adb -s "$SERIAL" install -r build/bionicx-debug.apk
+tools/install-apk.sh --serial "$SERIAL" build/bionicx-debug.apk
 tools/install-profile.sh \
   --profile profiles/hello.json \
   --runtime-root build/rootfs-seed-bundle/rootfs \
   --serial "$SERIAL"
 ```
+
+`tools/install-apk.sh` uses `adb install -r -t` on ordinary devices. On vivo
+X300 / V2509A OriginOS it pushes the APK and taps the package-installer risk
+page (`607,2289` then `607,2462` at 1216x2640) while `pm install -r -t` runs,
+then stages `files/bin/bionicx-exec` so `bxapt normalize` does not wait for a
+first Activity launch.
 
 Pass the Debian tree (`.../rootfs`), not the seed bundle directory. The
 installer rejects a nested bundle so `bxapt` can find `/usr/bin/apt-get`.

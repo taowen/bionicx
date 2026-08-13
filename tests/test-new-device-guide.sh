@@ -6,6 +6,8 @@ guide="$repo_dir/docs/NEW-DEVICE.md"
 test -s "$guide"
 grep -F 'tools/build.sh' "$guide" >/dev/null
 grep -F 'tools/build-rootfs-seed.sh' "$guide" >/dev/null
+grep -F 'tools/install-apk.sh' "$guide" >/dev/null
+grep -F 'pm install -r -t' "$guide" >/dev/null
 grep -F 'tools/bxapt' "$guide" >/dev/null
 grep -F 'packages/trixie-popular.txt' "$guide" >/dev/null
 grep -F 'BIONICX_VIRTUAL_ROOT' "$guide" >/dev/null
