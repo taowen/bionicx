@@ -12,6 +12,7 @@
     "executable": "${APP}/bin/desktop-session",
     "workingDirectory": "${HOME}",
     "arguments": [
+      "--accept",
       "${RUNTIME}/usr/bin/icewm",
       "${RUNTIME}/usr/bin/xterm",
       "${RUNTIME}/usr/bin/mousepad"
