@@ -20,7 +20,7 @@
     "hostServices": {
       "type": "array",
       "uniqueItems": true,
-      "items": {"enum": ["dbus", "pulseaudio", "vulkan"]}
+      "items": {"enum": ["dbus", "pulseaudio", "vulkan", "cups"]}
     },
     "launch": {
       "type": "object",

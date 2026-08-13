@@ -1,0 +1,5 @@
+bionicx-exec: running untraced pid=14250
+cups-probe: destinations=1
+cups-probe: destination=bionicx-test instance=
+bionicx-exec: primary pid=14250 exited status=0x0; draining session
+bionicx-exec: session drained children=0

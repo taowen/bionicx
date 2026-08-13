@@ -20,6 +20,7 @@ import com.winlator.xconnector.UnixSocketConfig;
 import com.winlator.xenvironment.RootFS;
 import com.winlator.xenvironment.XEnvironment;
 import com.winlator.xenvironment.components.DBusComponent;
+import com.winlator.xenvironment.components.CupsComponent;
 import com.winlator.xenvironment.components.PulseAudioComponent;
 import com.winlator.xenvironment.components.SysVSharedMemoryComponent;
 import com.winlator.xenvironment.components.XServerComponent;
@@ -119,6 +120,10 @@ public final class BionicXActivity extends Activity {
             environment.addComponent(new PulseAudioComponent(pulseSocket));
             Log.i(TAG, "enabled PulseAudio host service at " + pulseSocket.path);
         }
+        if (profile.hostServices.contains("cups")) {
+            environment.addComponent(new CupsComponent());
+            Log.i(TAG, "enabled app-private CUPS service");
+        }
         if (profile.hostServices.contains("vulkan")) {
             UnixSocketConfig vortekSocket = UnixSocketConfig.create(
                     rootFS.getRootDir().getAbsolutePath(),
@@ -177,6 +182,12 @@ public final class BionicXActivity extends Activity {
                 command.add("--env");
                 command.add("DBUS_SESSION_BUS_ADDRESS=unix:path="
                         + profile.expand(this, "${TMP}/runtime/bus"));
+            }
+            if (profile.hostServices.contains("cups")
+                    && !profile.environment.containsKey("CUPS_SERVER")) {
+                command.add("--env");
+                command.add("CUPS_SERVER=" + profile.expand(this,
+                        "${TMP}/../cups/run/cups.sock"));
             }
             command.add("--env");
             command.add("LD_PRELOAD="

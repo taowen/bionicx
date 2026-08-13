@@ -1,0 +1,16 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "cups-probe",
+  "name": "CUPS destination probe",
+  "hostServices": ["cups"],
+  "launch": {
+    "executable": "${APP}/bin/cups-probe",
+    "workingDirectory": "${APP}",
+    "environment": {
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/sbin:${RUNTIME}/bin"
+    }
+  }
+}

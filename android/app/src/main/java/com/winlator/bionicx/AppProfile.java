@@ -69,7 +69,7 @@ public final class AppProfile {
         hostServices = stringList(root.optJSONArray("hostServices"));
         for (String service : hostServices) {
             if (!service.equals("dbus") && !service.equals("pulseaudio")
-                    && !service.equals("vulkan"))
+                    && !service.equals("vulkan") && !service.equals("cups"))
                 throw new JSONException("unsupported host service: " + service);
         }
         environment = new LinkedHashMap<>();
