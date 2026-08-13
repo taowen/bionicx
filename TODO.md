@@ -66,7 +66,7 @@ then commit and push the smallest complete change.
 
 ## P2: Debian application coverage
 
-- [ ] Complete online navigation for Firefox ESR and repeat cold-start/network
+- [x] Complete online navigation for Firefox ESR and repeat cold-start/network
   acceptance on a device with working connectivity.
 - [ ] Complete real workflows for Krita, qBittorrent and KeePassXC, including
   durable file/database state and the relevant network or graphics path.

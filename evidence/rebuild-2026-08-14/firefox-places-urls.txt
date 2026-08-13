@@ -1,0 +1,5 @@
+https://support.mozilla.org/products/firefox
+https://support.mozilla.org/kb/customize-firefox-controls-buttons-and-toolbars?utm_source=firefox-browser&utm_medium=default-bookmarks&utm_campaign=customize
+https://www.mozilla.org/contribute/
+https://www.mozilla.org/about/
+https://example.com/

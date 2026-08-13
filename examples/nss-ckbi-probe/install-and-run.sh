@@ -58,9 +58,9 @@ result="$("${adb[@]}" shell run-as "$package_id" \
     --env "LD_PRELOAD=$files/lib/libbionicx-runtime.so" \
     --env "BIONICX_ROOTFS=$root" \
     --env "BIONICX_TMPDIR=$files/run/bxapt" \
-    --env "BIONICX_DNS_SERVERS=${dns_servers:-172.19.0.2}" \
+    --env "BIONICX_DNS_SERVERS=${dns_servers:-8.8.8.8}" \
     --env "MOZILLA_FIVE_HOME=$root/usr/lib/firefox-esr" \
-    -- "$files/apps/nss-ckbi-probe/nss-ckbi-probe" 2>&1)"
+    -- "$files/apps/nss-ckbi-probe/nss-ckbi-probe" 2>&1 || true)"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY nss-ckbi passed=" <<<"$result"
 echo "$result" | grep -E 'BXSUMMARY nss-ckbi passed=[0-9]+ failed=0' >/dev/null
