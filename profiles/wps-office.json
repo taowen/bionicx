@@ -23,5 +23,6 @@
       "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
       "BIONICX_OPEN_PDF": "${RUNTIME}/opt/kingsoft/wps-office/office6/wpspdf"
     }
-  }
+  },
+  "hostServices": ["cups"]
 }

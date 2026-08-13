@@ -1,0 +1,20 @@
+Setting up wps-office (11.1.0.11720) ...
+bionicx-exec: session child pid=2309 exited status=0x0
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+bionicx-exec: primary pid=30137 exited status=0x0; draining session
+bionicx-exec: session drained children=1
+bionicx-exec: running untraced pid=2323
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+bionicx-exec: primary pid=2323 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=2329
+libglu1-mesa set to automatically installed.
+libglvnd0 set to automatically installed.
+libopengl0 set to automatically installed.
+wps-office set to automatically installed.
+wps-office set to manually installed.
+bionicx-exec: primary pid=2329 exited status=0x0; draining session
+bionicx-exec: session drained children=0
