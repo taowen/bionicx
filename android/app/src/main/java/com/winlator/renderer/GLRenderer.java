@@ -35,6 +35,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -63,6 +65,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
     protected short surfaceWidth;
     protected short surfaceHeight;
     public final EffectComposer effectComposer = new EffectComposer(this);
+    private final CountDownLatch eglContextReady = new CountDownLatch(1);
 
     public GLRenderer(XServerView xServerView, XServer xServer) {
         this.xServerView = xServerView;
@@ -80,10 +83,21 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
         xServer.pointer.addOnPointerMotionListener(this);
     }
 
+    public boolean awaitEglContext(long timeoutMs) {
+        try {
+            return eglContextReady.await(timeoutMs, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            return eglContextReady.getCount() == 0;
+        }
+    }
+
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GPUHelper.setGlobalEGLContext();
         GLXExtension.setRendererEGLContext();
+        eglContextReady.countDown();
 
         GLES20.glFrontFace(GLES20.GL_CCW);
         GLES20.glDisable(GLES20.GL_CULL_FACE);

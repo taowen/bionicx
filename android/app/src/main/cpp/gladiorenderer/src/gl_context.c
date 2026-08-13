@@ -3,8 +3,11 @@
 #include "gl_dsa.h"
 #include "sysvshared_memory.h"
 #include "request_handler.h"
+#include <android/log.h>
 #include <errno.h>
 #include <time.h>
+
+#define GLX_LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "GladioGLX", __VA_ARGS__)
 
 static EGLContext rendererEGLContext = EGL_NO_CONTEXT;
 static pthread_mutex_t renderer_context_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -20,12 +23,15 @@ void setRendererEGLContext(EGLContext context) {
 static EGLContext waitForRendererEGLContext() {
     struct timespec deadline;
     clock_gettime(CLOCK_REALTIME, &deadline);
-    deadline.tv_sec += 5;
+    deadline.tv_sec += 2;
 
     pthread_mutex_lock(&renderer_context_mutex);
     while (rendererEGLContext == EGL_NO_CONTEXT) {
         if (pthread_cond_timedwait(&renderer_context_ready, &renderer_context_mutex,
-                                  &deadline) == ETIMEDOUT) break;
+                                  &deadline) == ETIMEDOUT) {
+            GLX_LOGE("timed out waiting for compositor EGL context");
+            break;
+        }
     }
     EGLContext context = rendererEGLContext;
     pthread_mutex_unlock(&renderer_context_mutex);
@@ -337,23 +343,42 @@ GLXContext* createGLXContext(int contextId, GLXContext* sharedContext) {
     EGLBoolean success;
 
     EGLDisplay eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (!eglDisplay) return NULL;
+    if (!eglDisplay) {
+        GLX_LOGE("eglGetDisplay failed err=0x%x", eglGetError());
+        return NULL;
+    }
 
     EGLint major, minor;
     success = eglInitialize(eglDisplay, &major, &minor);
-    if (!success) return NULL;
+    if (!success) {
+        GLX_LOGE("eglInitialize failed err=0x%x", eglGetError());
+        return NULL;
+    }
 
     int numConfigs;
     EGLConfig eglConfig;
     success = eglChooseConfig(eglDisplay, confAttribList, &eglConfig, 1, &numConfigs);
-    if (!success || numConfigs != 1) return NULL;
+    if (!success || numConfigs != 1) {
+        GLX_LOGE("eglChooseConfig failed success=%d n=%d err=0x%x",
+                 success, numConfigs, eglGetError());
+        return NULL;
+    }
 
     EGLContext shareContext = sharedContext
             ? sharedContext->eglContext
             : waitForRendererEGLContext();
-    if (shareContext == EGL_NO_CONTEXT) return NULL;
     EGLContext eglContext = eglCreateContext(eglDisplay, eglConfig, shareContext, ctxAttribList);
-    if (eglContext == EGL_NO_CONTEXT) return NULL;
+    if (eglContext == EGL_NO_CONTEXT && shareContext != EGL_NO_CONTEXT) {
+        GLX_LOGE("eglCreateContext share failed err=0x%x; retry without share",
+                 eglGetError());
+        eglContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT,
+                                      ctxAttribList);
+    }
+    if (eglContext == EGL_NO_CONTEXT) {
+        GLX_LOGE("eglCreateContext failed err=0x%x share=%p",
+                 eglGetError(), (void *)shareContext);
+        return NULL;
+    }
 
     GLXContext* context = calloc(1, sizeof(GLXContext));
     context->eglContext = eglContext;

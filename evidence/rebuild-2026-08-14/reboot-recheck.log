@@ -30,40 +30,172 @@ BXINFO seed-after=ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44
 BXTEST PASS seed-after ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
 BXTEST PASS qbit-payload-after a68590ec9ed4b1530a44cfb5f9df3457503ebc106d1b0124d865ca217f38537d
 BXTEST PASS krita-export-after
-BXTEST FAIL audit-after-reboot
-run-as: packagelist_parse failed: Permission denied
-==== resume post-reboot after run-as settle ====
-BXTEST PASS audit-after-reboot empty (try 1)
+BXTEST PASS audit-after-reboot empty
 ==== device probes after reboot ====
-bionicx-exec: running untraced pid=6709
+/var/home/taowen/projects/glibc-on-bionic/bionicx/examples/keepassxc-cli-probe/keepassxc-deferred-open: 1 file pushed, 0 skipped. 15.2 MB/s (1262 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/examples/keepassxc-cli-probe/fixtures/bionicx.key: 1 file pushed, 0 skipped. 3.0 MB/s (259 bytes in 0.000s)
+bionicx-exec: running untraced pid=6550
 Successfully created new database.
-bionicx-exec: primary pid=6709 exited status=0x0; draining session
+bionicx-exec: primary pid=6550 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-create created
-bionicx-exec: running untraced pid=6716
+bionicx-exec: running untraced pid=6555
 Successfully added entry login.
-bionicx-exec: primary pid=6716 exited status=0x0; draining session
+bionicx-exec: primary pid=6555 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-add login
-bionicx-exec: running untraced pid=6725
+bionicx-exec: running untraced pid=6560
 login
-bionicx-exec: primary pid=6725 exited status=0x0; draining session
+bionicx-exec: primary pid=6560 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-ls login
-bionicx-exec: running untraced pid=6730
+bionicx-exec: running untraced pid=6565
 login
 bionicx
 https://example.com
-bionicx-exec: primary pid=6730 exited status=0x0; draining session
+bionicx-exec: primary pid=6565 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-show login bionicx example.com
-bionicx-exec: running untraced pid=6735
+bionicx-exec: running untraced pid=6572
 login
-bionicx-exec: primary pid=6735 exited status=0x0; draining session
+bionicx-exec: primary pid=6572 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-reopen login
-BXTEST PASS db-persist bytes=1998
+BXTEST PASS db-persist bytes=1982
 BXSUMMARY keepassxc-cli passed=6 failed=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/cache/android-glibc-971b1b324ddd240b/output
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libX11.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXau.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXdmcp.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXext.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXfixes.so.3
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXi.so.6
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXrandr.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXrender.so.1
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libresolv.so.2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libxcb.so.1
+relocated 10 files
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle
+/work/third_party/gladio/src/main.c: In function 'getRangeIndices':
+/work/third_party/gladio/src/main.c:35:31: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   35 |             GLubyte* values = indices;
+      |                               ^~~~~~~
+/work/third_party/gladio/src/main.c:43:32: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   43 |             GLushort* values = indices;
+      |                                ^~~~~~~
+/work/third_party/gladio/src/main.c:51:30: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   51 |             GLuint* values = indices;
+      |                              ^~~~~~~
+In file included from /work/third_party/gladio/include/gl_client_state.h:5,
+                 from /work/third_party/gladio/include/gl_context.h:4,
+                 from /work/third_party/gladio/src/gl_calls.c:2:
+/work/third_party/gladio/src/gl_calls.c: In function 'glColorPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:872:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+  872 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_COLOR_POINTER, COLOR_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glGetStringi':
+/work/third_party/gladio/src/gl_calls.c:2998:42: warning: passing argument 1 of 'strsplit' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 2998 |     if (cachedValues.size == 0) strsplit((const char*)glGetString(name), ' ', &cachedValues);
+      |                                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /work/third_party/gladio/include/texture_utils.h:9,
+                 from /work/third_party/gladio/include/gladio.h:72,
+                 from /work/third_party/gladio/src/gl_calls.c:1:
+/work/third_party/gladio/include/string_utils.h:135:35: note: expected 'char *' but argument is of type 'const char *'
+  135 | static inline void strsplit(char* input, char delimiter, ArrayList* outStrings) {
+      |                             ~~~~~~^~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glLoadMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3585:73: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3585 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_LOAD_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                         ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glLoadTransposeMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3606:83: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3606 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_LOAD_TRANSPOSE_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                                   ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glMultMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3855:73: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3855 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_MULT_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                         ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glMultTransposeMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3870:83: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3870 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_MULT_TRANSPOSE_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                                   ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glNormalPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:4454:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+ 4454 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_NORMAL_POINTER, NORMAL_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glTexCoordPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:5666:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+ 5666 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_TEX_COORD_POINTER, TEXCOORD_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glVertexAttribIPointer':
+/work/third_party/gladio/src/gl_calls.c:7315:54: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 7315 |             clientState->vao->attribs[index].pointer = pointer;
+      |                                                      ^
+/work/third_party/gladio/src/gl_calls.c: In function 'glVertexAttribPointer':
+/work/third_party/gladio/src/gl_calls.c:7354:54: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 7354 |             clientState->vao->attribs[index].pointer = arrayBuffer ? arrayBuffer->mappedData : pointer;
+      |                                                      ^
+/work/third_party/gladio/src/gl_calls.c: In function 'glVertexPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:7382:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+ 7382 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_VERTEX_POINTER, POSITION_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/arrays.c: In function 'ArrayMap_put':
+/work/third_party/gladio/src/arrays.c:358:34: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+  358 |     arrayMap->entries[index].key = key;
+      |                                  ^
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/app/lib/libGL.so.1.7.0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle
+profile glx-probe is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 7.2 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 102.8 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 58.4 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 31.5 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 73.9 MB/s (78840 bytes in 0.001s)
+bionicx-exec: running untraced pid=6915
+bionicx-exec: primary pid=6915 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=6930
+bionicx-exec: primary pid=6930 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx ELF fixups: 8 entries
+/var/home/taowen/projects/glibc-on-bionic/bionicx/profiles/glx-probe.json: 1 file pushed, 0 skipped. 7.0 MB/s (515 bytes in 0.000s)
+installed profile glx-probe for io.taowen.bx
+Traceback (most recent call last):
+  File "/var/home/taowen/projects/glibc-on-bionic/bionicx/examples/glx-probe/assert-screenshot.py", line 95, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/var/home/taowen/projects/glibc-on-bionic/bionicx/examples/glx-probe/assert-screenshot.py", line 74, in main
+    width, height, channels, rows = read_png(Path(sys.argv[1]))
+                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/var/home/taowen/projects/glibc-on-bionic/bionicx/examples/glx-probe/assert-screenshot.py", line 39, in read_png
+    raw = zlib.decompress(compressed)
+zlib.error: Error -5 while decompressing data: incomplete or truncated stream
+error: device '01408BH601027129' not found
+==== resume glx+desktop after adb drop ====
 /var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libX11.so.6
 /var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXau.so.6
 /var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/rootfs/usr/lib/libXdmcp.so.6
@@ -79,14 +211,15 @@ relocated 10 files
 /var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle/app/lib/libGL.so.1.7.0
 /var/home/taowen/projects/glibc-on-bionic/bionicx/build/glx-probe-bundle
 profile glx-probe is valid
-bionicx-exec: running untraced pid=7083
-bionicx-exec: running untraced pid=7096
+bionicx-exec: running untraced pid=7641
+bionicx-exec: running untraced pid=7652
 bionicx ELF fixups: 8 entries
 installed profile glx-probe for io.taowen.bx
+I/BionicX ( 7759): BXSUMMARY host-glx passed=26 failed=0
 ==== untraced desktop session after reboot ====
 profile desktop-session is valid
-bionicx-exec: running untraced pid=8498
-bionicx-exec: running untraced pid=8509
+bionicx-exec: running untraced pid=8343
+bionicx-exec: running untraced pid=8354
 bionicx ELF fixups: 2 entries
 installed profile desktop-session for io.taowen.bx
 Starting: Intent { cmp=io.taowen.bx/com.winlator.BionicXActivity }
@@ -95,20 +228,13 @@ LaunchState: UNKNOWN (0)
 Activity: io.taowen.bx/com.winlator.BionicXActivity
 WaitTime: 3012
 Complete
-desktop-session accept finished at 3s
-I/BionicX ( 8569): enabled D-Bus session service at /data/user/0/io.taowen.bx/files/run/desktop-session/runtime/bus
-I/BionicX ( 8569): enabled PulseAudio host service at /data/user/0/io.taowen.bx/files/rootfs/tmp/.sound/PS0
-I/BionicX ( 8569): enabled app-private CUPS service
-I/BionicX ( 8569): enabled Vulkan host service at /data/user/0/io.taowen.bx/files/rootfs/tmp/.vortek/V0
-I/BionicX ( 8569): BXTEST PASS desktop-session-launch icewm=8612 app1=8621 app2=8626
-I/BionicX ( 8569): BXTEST PASS session-display :0
-I/BionicX ( 8569): BXTEST PASS session-two-mapped xterm=0x800014 mousepad=0xc00003
-I/BionicX ( 8569): BXTEST PASS session-switch-xterm focus=xterm
-I/BionicX ( 8569): BXTEST PASS session-switch-mousepad focus=mousepad
-I/BionicX ( 8569): BXTEST PASS session-resize-xterm 644x340 -> 740x382
-I/BionicX ( 8569): BXTEST PASS session-close-mousepad client withdrawn
-I/BionicX ( 8569): BXTEST PASS session-reopen-mousepad pid=8640 alive=1
-I/BionicX ( 8569): BXSUMMARY desktop-session-accept passed=7 failed=0
-desktop-session two-app accept: PASS
+I/BionicX ( 8414): enabled D-Bus session service at /data/user/0/io.taowen.bx/files/run/desktop-session/runtime/bus
+I/BionicX ( 8414): enabled PulseAudio host service at /data/user/0/io.taowen.bx/files/rootfs/tmp/.sound/PS0
+I/BionicX ( 8414): enabled app-private CUPS service
+I/BionicX ( 8414): enabled Vulkan host service at /data/user/0/io.taowen.bx/files/rootfs/tmp/.vortek/V0
+I/BionicX ( 8414): BXTEST PASS desktop-session-launch icewm=8472 app1=8476 app2=8479
 BXSUMMARY reboot-recheck seed+audit+glx26+keepassxc6+desktop7
-BXINFO glx after reboot: host-glx passed=9 failed=1 create-null; krita-glx-destroy 2/2 create-new fail
+BXSUMMARY keepassxc-cli passed=6 failed=0
+BXSUMMARY host-glx passed=26 failed=0
+BXINFO desktop launched after unlock; accept 7/7 needs keyguard down
+BXSUMMARY reboot-recheck seed+audit+keepassxc6+glx26

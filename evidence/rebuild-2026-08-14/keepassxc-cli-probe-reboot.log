@@ -1,29 +1,29 @@
-bionicx-exec: running untraced pid=6709
+bionicx-exec: running untraced pid=6550
 Successfully created new database.
-bionicx-exec: primary pid=6709 exited status=0x0; draining session
+bionicx-exec: primary pid=6550 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-create created
-bionicx-exec: running untraced pid=6716
+bionicx-exec: running untraced pid=6555
 Successfully added entry login.
-bionicx-exec: primary pid=6716 exited status=0x0; draining session
+bionicx-exec: primary pid=6555 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-add login
-bionicx-exec: running untraced pid=6725
+bionicx-exec: running untraced pid=6560
 login
-bionicx-exec: primary pid=6725 exited status=0x0; draining session
+bionicx-exec: primary pid=6560 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-ls login
-bionicx-exec: running untraced pid=6730
+bionicx-exec: running untraced pid=6565
 login
 bionicx
 https://example.com
-bionicx-exec: primary pid=6730 exited status=0x0; draining session
+bionicx-exec: primary pid=6565 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-show login bionicx example.com
-bionicx-exec: running untraced pid=6735
+bionicx-exec: running untraced pid=6572
 login
-bionicx-exec: primary pid=6735 exited status=0x0; draining session
+bionicx-exec: primary pid=6572 exited status=0x0; draining session
 bionicx-exec: session drained children=0
 BXTEST PASS db-reopen login
-BXTEST PASS db-persist bytes=1998
+BXTEST PASS db-persist bytes=1982
 BXSUMMARY keepassxc-cli passed=6 failed=0

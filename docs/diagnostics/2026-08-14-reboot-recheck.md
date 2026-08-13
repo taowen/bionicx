@@ -13,21 +13,17 @@ Host probes (runtime contract, new-device guide, GLX seed-safe,
 krita-glx-destroy, keepassxc-cli, popular-durable, dpkg-consistency,
 firefox-online) still print PASS.
 
-Device after reboot:
+Device after reboot (seed unchanged, audit empty, qBit/Krita files
+intact):
 
 - `keepassxc-cli-probe` 6/6
-- IceWM desktop session `--accept` 7/7 (xterm+mousepad, D-Bus, Pulse,
-  CUPS, Vulkan host service)
-- `glx-probe` `glx-fbconfig-visual` still `configs=3 visual=0x1
-  xRenderable=1`, then `glXCreateContext` returns NULL
-  (`passed=9 failed=1`). `krita-glx-destroy-probe` is 2/2 on
-  `create-new`. Waiting for `MapNotify` does not change that.
-
-The reboot matrix therefore covers seed, audit, durable files, the
-KeePassXC CLI path, and the untraced two-app desktop session.
-Gladio window-context creation after a cold boot is still a remaining
-GPU gap, not treated as 26/26.
+- `glx-probe` `BXSUMMARY host-glx passed=26 failed=0` (CreateContext
+  no longer NULL; unsared GLES3 fallback if the keyguard hid the
+  compositor surface). `screencap` can truncate if adb drops.
+- IceWM + xterm + mousepad launch after unlock. `--accept` 7/7 needs
+  the keyguard dismissed (`wm dismiss-keyguard` + swipe); a locked
+  start leaves `isSleeping=true` and stalls `XOpenDisplay`.
 
 Evidence: `evidence/rebuild-2026-08-14/reboot-recheck.log`,
-`keepassxc-cli-probe-reboot.log`, `desktop-session-reboot.log`,
-`glx-probe-reboot.log`, `krita-glx-destroy-reboot.log`.
+`keepassxc-cli-probe-reboot.log`, `glx-probe-reboot.log`,
+`glx-probe-after-fix.log`, `krita-glx-destroy-after-fix.log`.

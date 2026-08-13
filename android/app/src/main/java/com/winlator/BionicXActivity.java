@@ -272,7 +272,10 @@ public final class BionicXActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (xServerView != null) xServerView.onResume();
+        if (xServerView != null) {
+            xServerView.onResume();
+            xServerView.requestRender();
+        }
         if (environment != null) environment.onResume();
     }
 

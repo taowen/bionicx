@@ -93,8 +93,12 @@ then commit and push the smallest complete change.
   `bxapt install --reinstall bsdextrautils`, `remove ristretto`, and
   `set packages/trixie-popular.txt`
   (`evidence/rebuild-2026-08-14/dpkg-consistency.log`).
-- [ ] Run the complete controlled test matrix and real application workflows
+- [x] Run the complete controlled test matrix and real application workflows
   after an Android force-stop and device reboot, with diagnostics disabled.
+  Seed, empty `dpkg --audit`, qBit/Krita files, `keepassxc-cli` 6/6 and
+  `glx-probe` 26/26 survive reboot (`evidence/rebuild-2026-08-14/reboot-recheck.log`,
+  `glx-probe-reboot.log`). Unlock the keyguard or Gladio creates an unsared
+  GLES3 context (`docs/diagnostics/2026-08-14-glx-create-context.md`).
 - [x] Document remaining Android-kernel limitations honestly and provide a
   reproducible build/install/desktop-use guide for a new device.
 - [ ] Declare the goal complete only when Debian popular applications, WPS and

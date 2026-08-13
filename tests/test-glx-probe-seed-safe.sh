@@ -14,6 +14,18 @@ grep -F 'passed=26' \
     "$repo_dir/examples/glx-probe/install-and-run.sh" >/dev/null
 grep -F 'MapNotify' \
     "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
+grep -F 'awaitEglContext' \
+    "$repo_dir/android/app/src/main/java/com/winlator/renderer/GLRenderer.java" \
+    >/dev/null
+grep -F 'deadline.tv_sec += 2' \
+    "$repo_dir/android/app/src/main/cpp/gladiorenderer/src/gl_context.c" \
+    >/dev/null
+grep -F 'requestRender' \
+    "$repo_dir/android/app/src/main/java/com/winlator/BionicXActivity.java" \
+    >/dev/null
+grep -F 'retry without share' \
+    "$repo_dir/android/app/src/main/cpp/gladiorenderer/src/gl_context.c" \
+    >/dev/null
 grep -F 'fbconfig_count == 3' \
     "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
 grep -F 'GLX_VISUAL_ID' \

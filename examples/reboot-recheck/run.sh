@@ -64,6 +64,11 @@ echo "BXINFO force-stop done"
 "${adb[@]}" reboot
 echo "BXINFO reboot issued"
 "${adb[@]}" wait-for-device
+"${adb[@]}" shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+"${adb[@]}" shell svc power stayon true >/dev/null 2>&1 || true
+"${adb[@]}" shell settings put system screen_off_timeout 1800000 >/dev/null 2>&1 || true
+"${adb[@]}" shell wm dismiss-keyguard >/dev/null 2>&1 || true
+"${adb[@]}" shell input swipe 960 1000 960 200 400 >/dev/null 2>&1 || true
 ready=0
 for _ in $(seq 1 90); do
     if "${adb[@]}" shell run-as "$package_id" \
@@ -74,6 +79,11 @@ for _ in $(seq 1 90); do
     sleep 2
 done
 [[ "$ready" -eq 1 ]]
+"${adb[@]}" shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+"${adb[@]}" shell svc power stayon true >/dev/null 2>&1 || true
+"${adb[@]}" shell settings put system screen_off_timeout 1800000 >/dev/null 2>&1 || true
+"${adb[@]}" shell wm dismiss-keyguard >/dev/null 2>&1 || true
+"${adb[@]}" shell input swipe 960 1000 960 200 400 >/dev/null 2>&1 || true
 # Package manager can still reject run-as push for a few seconds.
 sleep 5
 echo "BXTEST PASS run-as-after-reboot"
@@ -112,13 +122,12 @@ ANDROID_SERIAL="$serial" \
 grep -Fq "BXSUMMARY keepassxc-cli passed=6 failed=0" \
     "$evidence/keepassxc-cli-probe-reboot.log"
 
-# GLX after a cold reboot can fail CreateContext (Gladio). Record the
-# summary; desktop-session is the required untraced real-app check.
 ANDROID_SERIAL="$serial" \
 BIONICX_SCREENSHOT="$evidence/glx-probe-reboot.png" \
     "$repo_dir/examples/glx-probe/install-and-run.sh" \
-    | tee "$evidence/glx-probe-reboot.log" || true
-grep -E 'BXSUMMARY host-glx' "$evidence/glx-probe-reboot.log" || true
+    | tee "$evidence/glx-probe-reboot.log"
+grep -Fq "BXSUMMARY host-glx passed=26 failed=0" \
+    "$evidence/glx-probe-reboot.log"
 
 echo "==== untraced desktop session after reboot ===="
 ANDROID_SERIAL="$serial" \

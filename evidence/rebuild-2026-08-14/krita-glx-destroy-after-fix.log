@@ -1,0 +1,12 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/krita-glx-destroy-probe-bundle/app/lib/libGL.so.1.7.0
+profile krita-glx-destroy-probe is valid
+bionicx-exec: running untraced pid=20340
+bionicx-exec: running untraced pid=20351
+bionicx ELF fixups: 4 entries
+installed profile krita-glx-destroy-probe for io.taowen.bx
+I/BionicX (20442): BXTEST PASS destroy-null no-op
+I/BionicX (20442): BXTEST PASS choose-fbconfig
+I/BionicX (20442): BXTEST PASS create-new
+I/BionicX (20442): BXTEST PASS destroy-created ok
+I/BionicX (20442): BXSUMMARY krita-glx-destroy passed=4 failed=0
+I/BionicX (20442): krita-glx-destroy-probe exited with 0

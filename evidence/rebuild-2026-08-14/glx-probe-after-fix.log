@@ -1,0 +1,27 @@
+I/BionicX (21082): BXTEST PASS glx-display connected
+I/BionicX (21082): BXTEST PASS glx-extension opcode=145 event=0 error=128
+I/BionicX (21082): BXTEST PASS glx-version version=1.4
+I/BionicX (21082): BXTEST PASS glx-visual-config-wire visuals=1 properties=18 visual=0x1 rgba=1 depth=24
+I/BionicX (21082): BXTEST PASS glx-fbconfig-visual configs=3 visual=0x1 xVisual=0x1 xRenderable=1
+I/BionicX (21082): BXTEST PASS glx-es-profile-extension GLX_ARB_create_context GLX_ARB_get_proc_address GLX_EXT_create_context_es_profile
+I/BionicX (21082): BXTEST PASS glx-pbuffer drawable=0x400001 size=7x5
+I/BionicX (21082): BXTEST PASS glx-visual RGBA double-buffered
+I/BionicX (21082): BXTEST PASS glx-visual-config-api rgba=1 double=1 red=8 depth=24 type=0x8002
+I/BionicX (21082): BXTEST PASS glx-context current
+I/BionicX (21082): BXTEST PASS glx-gl-proc-address OpenGL ES 3.2 Gladio
+I/BionicX (21082): BXTEST PASS host-gl-bgra-texture-extension GL_EXT_texture_format_BGRA8888
+I/BionicX (21082): BXTEST PASS host-gl-numeric-version version=3.2
+I/BionicX (21082): BXTEST PASS host-gl-shader-precision range=127..127 precision=23
+I/BionicX (21082): BXTEST PASS host-gl-integer64 maxElementIndex=2147483647
+I/BionicX (21082): BXTEST PASS host-gl-indexed-integer maxComputeWorkGroupsX=65535
+I/BionicX (21082): BXTEST PASS host-gl-max-viewport-dimensions maximum=16384x16384
+I/BionicX (21082): BXTEST PASS host-gl-integer-vertex-attrib id=14 integer=1 size=2 type=0x1404 buffer=14 glError=0x0
+I/BionicX (21082): BXTEST PASS host-gl-required-format-msaa formats=9 minimumMaxSamples=4
+I/BionicX (21082): BXTEST PASS host-gl-transform-feedback-object id=1
+I/BionicX (21082): BXTEST PASS host-gl-program-binary-roundtrip sourceLinked=1 length=1559 received=1559 format=0x8740 restored=1
+I/BionicX (21082): BXTEST PASS host-gl-modern-integer-shader vertex=1 fragment=1 linked=1
+I/BionicX (21082): BXTEST PASS host-gl-identity vendor=BionicX Gladio renderer=Gladio version=OpenGL ES 3.2 Gladio
+I/BionicX (21082): BXTEST PASS host-gl-bgra-render-target status=0x8cd5 pixel=32,128,223,255 glError=0x0
+I/BionicX (21082): BXTEST PASS host-gl-pixels center=242,26,13,255 corner=13,38,191,255
+I/BionicX (21082): BXTEST PASS glx-present glError=0x0
+I/BionicX (21082): BXSUMMARY host-glx passed=26 failed=0
