@@ -1,22 +1,30 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "xterm",
   "name": "XTerm (Debian trixie ARM64)",
-  "display": {"dpi": 144, "socket": "filesystem"},
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
   "launch": {
-    "mode": "loader",
-    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-    "libraryPath": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
     "executable": "${RUNTIME}/usr/bin/xterm",
     "workingDirectory": "${HOME}",
     "arguments": [
       "-ut",
-      "-fa", "DejaVu Sans Mono",
-      "-fs", "18",
-      "-geometry", "120x34+0+0",
-      "-title", "BionicX Debian Terminal",
-      "-e", "${RUNTIME}/usr/bin/bash", "--noprofile", "--norc", "-i"
+      "-fa",
+      "DejaVu Sans Mono",
+      "-fs",
+      "18",
+      "-geometry",
+      "120x34+0+0",
+      "-title",
+      "BionicX Debian Terminal",
+      "-e",
+      "${RUNTIME}/usr/bin/bash",
+      "--noprofile",
+      "--norc",
+      "-i"
     ],
     "environment": {
       "DISPLAY": "${DISPLAY}",

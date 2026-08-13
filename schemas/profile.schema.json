@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "id", "launch"],
   "properties": {
-    "schemaVersion": {"const": 2},
+    "schemaVersion": {"const": 3},
     "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
     "name": {"type": "string", "minLength": 1},
     "display": {
@@ -27,9 +27,6 @@
       "additionalProperties": false,
       "required": ["executable"],
       "properties": {
-        "mode": {"enum": ["direct", "loader"]},
-        "loader": {"type": "string"},
-        "libraryPath": {"type": "string"},
         "executable": {"type": "string", "minLength": 1},
         "workingDirectory": {"type": "string", "minLength": 1},
         "argv0": {"type": "string"},
@@ -41,13 +38,7 @@
           "propertyNames": {"pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
           "additionalProperties": {"type": "string"}
         }
-      },
-      "allOf": [
-        {
-          "if": {"properties": {"mode": {"const": "loader"}}},
-          "then": {"required": ["loader", "libraryPath"]}
-        }
-      ]
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "glx-probe",
   "name": "Host GPU GLX probe",
   "display": {
@@ -8,10 +8,7 @@
     "socket": "filesystem"
   },
   "launch": {
-    "mode": "loader",
     "executable": "${APP}/bin/glx-probe",
-    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
     "workingDirectory": "${APP}",
     "arguments": [],
     "environment": {
@@ -19,7 +16,6 @@
       "GLADIO_X11_SOCKET": "/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0",
       "HOME": "${HOME}",
       "TMPDIR": "${TMP}",
-      "LD_LIBRARY_PATH": "${APP}/lib:${RUNTIME}/usr/lib",
       "LANG": "C"
     }
   }

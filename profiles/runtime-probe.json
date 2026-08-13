@@ -1,16 +1,19 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "runtime-probe",
   "name": "BionicX glibc/kernel/X11 runtime probe",
-  "display": {"dpi": 144, "socket": "filesystem"},
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
   "launch": {
-    "mode": "loader",
-    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
     "executable": "${APP}/bin/runtime-probe",
     "workingDirectory": "${APP}",
-    "arguments": ["--duration", "8"],
+    "arguments": [
+      "--duration",
+      "8"
+    ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",

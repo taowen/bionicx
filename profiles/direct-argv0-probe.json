@@ -1,17 +1,20 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
-  "id": "loader-argv0-probe",
-  "name": "BionicX glibc loader argv0 probe",
-  "display": {"dpi": 144, "socket": "filesystem"},
+  "schemaVersion": 3,
+  "id": "direct-argv0-probe",
+  "name": "BionicX glibc direct argv0 probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
   "launch": {
-    "mode": "loader",
-    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
     "executable": "${APP}/bin/runtime-probe",
     "workingDirectory": "${APP}",
     "argv0": "bionicx-controlled-argv0",
-    "arguments": ["--duration", "2"],
+    "arguments": [
+      "--duration",
+      "2"
+    ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",

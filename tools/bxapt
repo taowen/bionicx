@@ -8,7 +8,7 @@ dns_servers="${BIONICX_DNS_SERVERS:-}"
 
 usage() {
     echo "usage: tools/bxapt [--serial SERIAL] [--dns ADDRESSES] COMMAND [ARG ...]" >&2
-    echo "commands: update, install, remove, set, deb, apt, dpkg, query, run" >&2
+    echo "commands: update, install, remove, set, deb, fixup, normalize, apt, dpkg, query, run" >&2
     exit "${1:-2}"
 }
 
@@ -126,6 +126,12 @@ case "$command_name" in
         fi
         arguments=()
         ;;
+    fixup) [[ $# -eq 0 ]] || usage; arguments=() ;;
+    normalize)
+        [[ $# -eq 1 && "$1" =~ ^[a-z0-9][a-z0-9._-]{0,63}$ ]] || usage
+        normalize_tree="$files/apps/$1"
+        arguments=()
+        ;;
     apt) arguments=("$@") ;;
     dpkg|query) arguments=("$@") ;;
     run)
@@ -169,8 +175,6 @@ run_binary() {
     fi
     local launcher=(
         "$files/bin/bionicx-exec"
-        --loader "$root/usr/lib/ld-linux-aarch64.so.1"
-        --library-path "$runtime_libs"
         --cwd "$root"
     )
     local assignment
@@ -182,9 +186,9 @@ run_binary() {
 }
 
 fixup_elf() {
+    local tree="${1:-$root}"
     binary="$root/bin/sh"
-    arguments=("$run_dir/rootfs-elf-fixup.sh" "$root"
-        "$root/usr/lib/ld-linux-aarch64.so.1")
+    arguments=("$run_dir/rootfs-elf-fixup.sh" "$tree" "$root")
     run_binary
 }
 
@@ -192,6 +196,16 @@ dpkg_arguments() {
     arguments=(--force-not-root --force-script-chrootless \
         --root="$root" --admindir="$root/var/lib/dpkg" "${arguments[@]}")
 }
+
+if [[ "$command_name" == fixup ]]; then
+    fixup_elf
+    exit
+fi
+if [[ "$command_name" == normalize ]]; then
+    run_as test -d "$normalize_tree"
+    fixup_elf "$normalize_tree"
+    exit
+fi
 
 if [[ "$command_name" == deb ]]; then
     device_deb="$run_dir/incoming/${host_deb##*/}"

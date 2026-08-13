@@ -1,23 +1,25 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
-  "id": "wps-compat-probe",
-  "name": "BionicX WPS compatibility probe",
-  "display": {"dpi": 144, "socket": "filesystem"},
+  "schemaVersion": 3,
+  "id": "command-runtime-probe",
+  "name": "BionicX command runtime probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
   "launch": {
-    "mode": "loader",
-    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
     "executable": "${APP}/bin/runtime-probe",
     "workingDirectory": "${APP}",
-    "arguments": ["--duration", "2"],
+    "arguments": [
+      "--duration",
+      "2"
+    ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",
       "TMPDIR": "${TMP}",
       "LANG": "en_US.UTF-8",
       "LOCPATH": "${RUNTIME}/usr/lib/locale",
-      "LD_LIBRARY_PATH": "${RUNTIME}/usr/lib",
       "BIONICX_TEST_ANDROID_SHELL": "1"
     }
   }

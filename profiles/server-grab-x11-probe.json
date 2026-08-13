@@ -1,16 +1,18 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "server-grab-x11-probe",
   "name": "BionicX cross-client X11 server-grab probe",
-  "display": {"dpi": 144, "socket": "filesystem"},
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
   "launch": {
-    "mode": "loader",
-    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
     "executable": "${APP}/bin/server-grab-x11-probe",
     "workingDirectory": "${APP}",
-    "arguments": ["4"],
+    "arguments": [
+      "4"
+    ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",

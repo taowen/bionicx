@@ -1,16 +1,19 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "font-xft-probe",
   "name": "BionicX Fontconfig and Xft probe",
-  "display": {"dpi": 144, "socket": "filesystem"},
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
   "launch": {
-    "mode": "loader",
-    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-    "libraryPath": "${APP}/lib:${RUNTIME}/usr/lib",
     "executable": "${APP}/bin/font-xft-probe",
     "workingDirectory": "${APP}",
-    "arguments": ["${APP}/share/fonts", "8"],
+    "arguments": [
+      "${APP}/share/fonts",
+      "8"
+    ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",

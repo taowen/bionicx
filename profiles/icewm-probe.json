@@ -1,13 +1,13 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "icewm-probe",
   "name": "BionicX IceWM managed desktop probe",
-  "display": {"dpi": 144, "socket": "filesystem"},
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
   "launch": {
-    "mode": "loader",
-    "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-    "libraryPath": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
     "executable": "${APP}/bin/icewm-session",
     "workingDirectory": "${APP}",
     "environment": {
@@ -17,10 +17,9 @@
       "LANG": "en_US.UTF-8",
       "LOCPATH": "${RUNTIME}/usr/lib/locale",
       "BIONICX_APP": "${APP}",
-      "BIONICX_LOADER": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
-      "BIONICX_LIBRARY_PATH": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
+      "BIONICX_RUNTIME": "${RUNTIME}",
       "ICEWM_PRIVCFG": "${APP}/share/icewm",
-      "FONTCONFIG_PATH": "${APP}/etc/fonts",
+      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
       "FONTCONFIG_FILE": "fonts.conf",
       "IMLIB2_LOADER_PATH": "${RUNTIME}/usr/lib/aarch64-linux-gnu/imlib2/loaders"
     }

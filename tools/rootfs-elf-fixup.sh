@@ -3,17 +3,19 @@ set -eu
 
 if [ "${1:-}" = --files ]; then
     shift
-    root=$1
-    loader=$2
+    tree=$1
+    runtime=$2
     ledger=$3
     shift 3
+    loader="${BIONICX_INTERPRETER:-$runtime/usr/lib/ld-linux-aarch64.so.1}"
+    deploy_root="${BIONICX_DEPLOY_ROOT:-$runtime}"
     if [ -n "${BIONICX_ROOT_ALIAS:-}" ]; then
         root_alias=$BIONICX_ROOT_ALIAS
     else
-        case "$root" in
-            /data/user/0/*) root_alias="/data/data/${root#/data/user/0/}" ;;
-            /data/data/*) root_alias="/data/user/0/${root#/data/data/}" ;;
-            *) root_alias=$root ;;
+        case "$runtime" in
+            /data/user/0/*) root_alias="/data/data/${runtime#/data/user/0/}" ;;
+            /data/data/*) root_alias="/data/user/0/${runtime#/data/data/}" ;;
+            *) root_alias=$runtime ;;
         esac
     fi
     run_patchelf() {
@@ -21,12 +23,39 @@ if [ "${1:-}" = --files ]; then
             "$BIONICX_PATCHELF" "$@"
             return
         fi
-        "$loader" --library-path \
-            "$root/usr/lib:$root/usr/lib/aarch64-linux-gnu" \
-            "$root/usr/bin/patchelf" "$@"
+        "$runtime/usr/bin/patchelf" "$@"
+    }
+    run_readelf() {
+        if [ -n "${BIONICX_READELF:-}" ]; then
+            "$BIONICX_READELF" "$@"
+            return
+        fi
+        "$runtime/usr/bin/readelf" "$@"
+    }
+    update_patchelf() {
+        temporary="$1.bionicx-new.$$"
+        file=$1
+        shift
+        run_patchelf "$@" --output "$temporary" "$file"
+        mv "$temporary" "$file"
     }
     for file do
+        relative=${file#"$tree"}
+        current_interpreter=$(run_patchelf --print-interpreter "$file" \
+            2>/dev/null || true)
+        if [ -n "$current_interpreter" ] && \
+                [ "$current_interpreter" != "$loader" ]; then
+            update_patchelf "$file" --set-interpreter "$loader"
+            printf '%s\tPT_INTERP\t%s\t%s\n' "$relative" \
+                "$current_interpreter" "$loader" >> "$ledger"
+        fi
+
         current_rpath=$(run_patchelf --print-rpath "$file" 2>/dev/null || true)
+        legacy_rpath=0
+        if [ -n "$current_rpath" ] && run_readelf -d "$file" 2>/dev/null | \
+                grep -q '(RPATH)'; then
+            legacy_rpath=1
+        fi
         rewritten_rpath=
         changed=0
         old_ifs=$IFS
@@ -34,10 +63,10 @@ if [ "${1:-}" = --files ]; then
         set -f
         for entry in $current_rpath; do
             case "$entry" in
-                "$root$root_alias"/*) entry=${entry#"$root"}; changed=1 ;;
-                "$root_alias$root"/*) entry=${entry#"$root_alias"}; changed=1 ;;
-                "$root"/*|"$root_alias"/*) ;;
-                /*) entry="$root$entry"; changed=1 ;;
+                "$runtime$root_alias"/*) entry=${entry#"$runtime"}; changed=1 ;;
+                "$root_alias$runtime"/*) entry=${entry#"$root_alias"}; changed=1 ;;
+                "$runtime"/*|"$root_alias"/*) ;;
+                /*) entry="$deploy_root$entry"; changed=1 ;;
             esac
             if [ -n "$rewritten_rpath" ]; then
                 rewritten_rpath="$rewritten_rpath:$entry"
@@ -47,37 +76,41 @@ if [ "${1:-}" = --files ]; then
         done
         set +f
         IFS=$old_ifs
-        if [ "$changed" -eq 1 ]; then
-            run_patchelf --set-rpath "$rewritten_rpath" "$file"
+        if [ "$changed" -eq 1 ] || [ "$legacy_rpath" -eq 1 ]; then
+            update_patchelf "$file" --set-rpath "$rewritten_rpath"
             current_rpath=$rewritten_rpath
         fi
 
+        if [ "$legacy_rpath" -eq 1 ]; then
+            printf '%s\tDT_RPATH\tDT_RUNPATH\n' "$relative" >> "$ledger"
+        fi
+
         case "$current_rpath" in
-            *"$root"*|*"$root_alias"*)
-                relative=${file#"$root"}
-                printf '%s\t%s\n' "$relative" "$current_rpath" >> "$ledger"
+            *"$runtime"*|*"$root_alias"*)
+                printf '%s\tRUNPATH\t%s\n' "$relative" \
+                    "$current_rpath" >> "$ledger"
                 ;;
         esac
     done
     exit
 fi
 
-[ "$#" -eq 2 ] || {
-    echo "usage: rootfs-elf-fixup.sh ROOT INTERPRETER" >&2
+[ "$#" -ge 1 ] && [ "$#" -le 2 ] || {
+    echo "usage: rootfs-elf-fixup.sh TREE [RUNTIME_ROOT]" >&2
     exit 2
 }
-root=$1
-loader=$2
-ledger_dir="$root/var/lib/bionicx"
+tree=$1
+runtime=${2:-$tree}
+ledger_dir="${BIONICX_LEDGER_DIR:-$tree/var/lib/bionicx}"
 ledger="$ledger_dir/elf-fixups.tsv.tmp"
 mkdir -p "$ledger_dir"
 : > "$ledger"
 
 for directory in usr opt bin sbin lib lib64; do
-    [ -d "$root/$directory" ] || continue
-    find "$root/$directory" -type f \( -perm /111 -o -name '*.so' \
+    [ -d "$tree/$directory" ] || continue
+    find "$tree/$directory" -type f \( -perm /111 -o -name '*.so' \
         -o -name '*.so.*' \) -exec /bin/sh "$0" --files \
-        "$root" "$loader" "$ledger" {} +
+        "$tree" "$runtime" "$ledger" {} +
 done
 sort -u "$ledger" -o "$ledger"
 mv "$ledger" "$ledger_dir/elf-fixups.tsv"

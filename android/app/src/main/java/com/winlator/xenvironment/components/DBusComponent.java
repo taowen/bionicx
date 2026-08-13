@@ -43,9 +43,6 @@ public final class DBusComponent extends EnvironmentComponent {
 
         ProcessBuilder builder = new ProcessBuilder(Arrays.asList(
                 executor.getAbsolutePath(),
-                "--loader", new File(rootfs, "usr/lib/ld-linux-aarch64.so.1").getAbsolutePath(),
-                "--library-path", new File(rootfs, "usr/lib") + ":"
-                        + new File(rootfs, "usr/lib/aarch64-linux-gnu"),
                 "--cwd", home.getAbsolutePath(),
                 "--env", "HOME=" + home.getAbsolutePath(),
                 "--env", "TMPDIR=" + parent.getAbsolutePath(),

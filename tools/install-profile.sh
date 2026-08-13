@@ -40,16 +40,18 @@ if [[ -n "$app_root" ]]; then
         "files/apps/$profile_id" -mindepth 1 -delete >/dev/null
     tar -C "$app_root" -cf - . | \
         "${adb[@]}" shell run-as "$package" tar -C "files/apps/$profile_id" -xf -
+    ADB="$adb_bin" "$repo_dir/tools/bxapt" --serial "$serial" \
+        normalize "$profile_id"
 fi
 if [[ -n "$runtime_root" ]]; then
     [[ -d "$runtime_root" ]] || { echo "missing runtime root: $runtime_root" >&2; exit 1; }
-    rootfs_id_file="$runtime_root/.bionicx-desktop-rootfs-id"
+    rootfs_id_file="$runtime_root/.bionicx-rootfs-seed-id"
     local_rootfs_id=""
     remote_rootfs_id=""
     if [[ -f "$rootfs_id_file" ]]; then
         local_rootfs_id="$(tr -d '\r\n' < "$rootfs_id_file")"
         remote_rootfs_id="$("${adb[@]}" shell run-as "$package" \
-            cat files/rootfs/.bionicx-desktop-rootfs-id 2>/dev/null | tr -d '\r\n' || true)"
+            cat files/rootfs/.bionicx-rootfs-seed-id 2>/dev/null | tr -d '\r\n' || true)"
     fi
     if [[ -n "$local_rootfs_id" && "$local_rootfs_id" == "$remote_rootfs_id" ]]; then
         echo "reusing shared rootfs $local_rootfs_id"

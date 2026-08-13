@@ -1,27 +1,43 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "thunderbird",
   "name": "Thunderbird (Debian trixie ARM64)",
-  "display": {"dpi": 144, "socket": "filesystem"},
-  "hostServices": ["dbus"],
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "hostServices": [
+    "dbus"
+  ],
   "launch": {
-    "mode": "direct",
     "executable": "${RUNTIME}/usr/lib/thunderbird/thunderbird",
     "workingDirectory": "${RUNTIME}/usr/lib/thunderbird",
-    "arguments": ["--no-remote", "--new-instance", "--profile", "${HOME}", "--offline"],
+    "arguments": [
+      "--no-remote",
+      "--new-instance",
+      "--profile",
+      "${HOME}",
+      "--offline"
+    ],
     "environment": {
-      "DISPLAY": "${DISPLAY}", "HOME": "${HOME}", "TMPDIR": "${TMP}",
-      "XDG_RUNTIME_DIR": "${TMP}/runtime", "XDG_CONFIG_HOME": "${HOME}/.config",
-      "XDG_CACHE_HOME": "${HOME}/.cache", "XDG_DATA_HOME": "${HOME}/.local/share",
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "XDG_RUNTIME_DIR": "${TMP}/runtime",
+      "XDG_CONFIG_HOME": "${HOME}/.config",
+      "XDG_CACHE_HOME": "${HOME}/.cache",
+      "XDG_DATA_HOME": "${HOME}/.local/share",
       "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
-      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts", "FONTCONFIG_FILE": "fonts.conf",
+      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
+      "FONTCONFIG_FILE": "fonts.conf",
       "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
       "SSL_CERT_FILE": "${RUNTIME}/etc/ssl/certs/ca-certificates.crt",
-      "MOZ_ENABLE_WAYLAND": "0", "MOZILLA_FIVE_HOME": "${RUNTIME}/usr/lib/thunderbird",
+      "MOZ_ENABLE_WAYLAND": "0",
+      "MOZILLA_FIVE_HOME": "${RUNTIME}/usr/lib/thunderbird",
       "NO_AT_BRIDGE": "1",
-      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin", "LANG": "C.UTF-8",
-      "LD_LIBRARY_PATH": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu:${RUNTIME}/usr/lib/thunderbird"
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
+      "LANG": "C.UTF-8"
     }
   }
 }

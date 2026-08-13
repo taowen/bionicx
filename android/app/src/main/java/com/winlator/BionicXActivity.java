@@ -140,13 +140,6 @@ public final class BionicXActivity extends Activity {
             command.add(executor.getPath());
             if (profile.diagnoseSignals) command.add("--diagnose-signals");
             if (profile.debugStop) command.add("--debug-stop");
-            if (profile.mode.equals("loader")) {
-                command.add("--loader");
-                command.add(profile.expand(this, profile.loader));
-                command.add("--library-path");
-                command.add(profile.expand(this, profile.libraryPath));
-            }
-            else command.add("--direct");
             command.add("--cwd");
             command.add(profile.expand(this, profile.workingDirectory));
             if (!profile.argv0.isEmpty()) {
@@ -159,17 +152,14 @@ public final class BionicXActivity extends Activity {
                 command.add(variable.getKey() + "="
                         + profile.expand(this, variable.getValue()));
             }
-            // --library-path only affects the first image loaded by ld.so.
-            // Export the same search path by default so a glibc parent can
-            // exec package-installed glibc children without a chroot/PRoot.
-            // Profiles remain free to override it (for application-private
-            // libraries such as WPS or Chrome).
-            if (profile.mode.equals("loader")
-                    && !profile.environment.containsKey("LD_LIBRARY_PATH")) {
-                command.add("--env");
-                command.add("LD_LIBRARY_PATH="
-                        + profile.expand(this, profile.libraryPath));
-            }
+            String executable = profile.expand(this, profile.executable);
+            File executableFile = new File(executable);
+            command.add("--env");
+            command.add("LD_LIBRARY_PATH="
+                    + profile.expand(this, "${RUNTIME}/usr/lib") + ":"
+                    + profile.expand(this, "${RUNTIME}/usr/lib/aarch64-linux-gnu") + ":"
+                    + new File(getFilesDir(), "apps/" + profile.id + "/lib") + ":"
+                    + executableFile.getParent());
             List<String> servers = new NetworkHelper(this).getIPv4DnsServers();
             Log.i(TAG, "runtime DNS servers=" + servers.size());
             command.add("--env");
@@ -188,8 +178,6 @@ public final class BionicXActivity extends Activity {
             command.add("LD_PRELOAD="
                     + new File(getFilesDir(), "lib/libbionicx-runtime.so").getPath());
             command.add("--");
-            String executable = profile.expand(this, profile.executable);
-            File executableFile = new File(executable);
             if (!executableFile.isFile())
                 throw new IOException("application is not installed: " + executable);
             Os.chmod(executable, 0700);

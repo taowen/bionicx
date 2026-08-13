@@ -25,17 +25,12 @@
  * runs untraced.  This is not syscall translation, chroot, or PRoot.
  */
 
-enum launch_mode { MODE_DIRECT, MODE_LOADER };
-
 struct assignment {
     const char *value;
     int unset;
 };
 
 struct options {
-    enum launch_mode mode;
-    const char *loader;
-    const char *library_path;
     const char *cwd;
     const char *argv0;
     struct assignment *assignments;
@@ -80,11 +75,6 @@ static void usage(FILE *stream, const char *program) {
     fprintf(stream,
             "Usage: %s [options] -- PROGRAM [ARG...]\n"
             "\n"
-            "Modes:\n"
-            "  --direct                 exec PROGRAM and use its PT_INTERP (default)\n"
-            "  --loader PATH            exec glibc ld.so explicitly\n"
-            "  --library-path PATH      pass --library-path to ld.so\n"
-            "\n"
             "Process setup:\n"
             "  --cwd PATH               working directory\n"
             "  --env NAME=VALUE         set an environment variable (repeatable)\n"
@@ -119,25 +109,13 @@ static const char *take_value(int argc, char **argv, int *index,
 
 static int parse_options(int argc, char **argv, struct options *options) {
     memset(options, 0, sizeof(*options));
-    options->mode = MODE_DIRECT;
-
     for (int i = 1; i < argc; ++i) {
         const char *arg = argv[i];
         if (strcmp(arg, "--") == 0) {
             options->command_index = i + 1;
             break;
         }
-        if (strcmp(arg, "--direct") == 0) options->mode = MODE_DIRECT;
-        else if (strcmp(arg, "--loader") == 0) {
-            options->loader = take_value(argc, argv, &i, arg);
-            if (options->loader == NULL) return -1;
-            options->mode = MODE_LOADER;
-        }
-        else if (strcmp(arg, "--library-path") == 0) {
-            options->library_path = take_value(argc, argv, &i, arg);
-            if (options->library_path == NULL) return -1;
-        }
-        else if (strcmp(arg, "--cwd") == 0) {
+        if (strcmp(arg, "--cwd") == 0) {
             options->cwd = take_value(argc, argv, &i, arg);
             if (options->cwd == NULL) return -1;
         }
@@ -173,11 +151,6 @@ static int parse_options(int argc, char **argv, struct options *options) {
         fprintf(stderr, "bionicx-exec: missing PROGRAM after --\n");
         return -1;
     }
-    if (options->mode == MODE_LOADER && options->loader == NULL) return -1;
-    if (options->mode == MODE_LOADER && options->library_path == NULL) {
-        fprintf(stderr, "bionicx-exec: loader mode requires --library-path\n");
-        return -1;
-    }
     return 0;
 }
 
@@ -203,28 +176,15 @@ static char **build_child_argv(int argc, char **argv,
                                const struct options *options,
                                const char **exec_path) {
     int target_count = argc - options->command_index;
-    size_t prefix = options->mode == MODE_LOADER
-            ? (options->argv0 != NULL ? 5 : 3) : 0;
-    char **child = calloc(prefix + (size_t)target_count + 1, sizeof(*child));
+    char **child = calloc((size_t)target_count + 1, sizeof(*child));
     if (child == NULL) return NULL;
 
     size_t out = 0;
-    if (options->mode == MODE_LOADER) {
-        *exec_path = options->loader;
-        child[out++] = (char *)options->loader;
-        child[out++] = (char *)"--library-path";
-        child[out++] = (char *)options->library_path;
-        if (options->argv0 != NULL) {
-            child[out++] = (char *)"--argv0";
-            child[out++] = (char *)options->argv0;
-        }
-    }
-    else *exec_path = argv[options->command_index];
+    *exec_path = argv[options->command_index];
 
     for (int i = 0; i < target_count; ++i)
         child[out++] = argv[options->command_index + i];
-    if (options->mode == MODE_DIRECT && options->argv0 != NULL)
-        child[0] = (char *)options->argv0;
+    if (options->argv0 != NULL) child[0] = (char *)options->argv0;
     child[out] = NULL;
     return child;
 }

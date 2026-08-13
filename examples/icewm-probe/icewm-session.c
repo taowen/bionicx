@@ -19,23 +19,9 @@ static void sleep_milliseconds(long milliseconds) {
 }
 
 static pid_t launch(const char* executable, char* const arguments[]) {
-    const char* loader = getenv("BIONICX_LOADER");
-    const char* library_path = getenv("BIONICX_LIBRARY_PATH");
-    if (loader == NULL || library_path == NULL) return -1;
-
     pid_t child = fork();
     if (child != 0) return child;
-    size_t argument_count = 0;
-    while (arguments[argument_count] != NULL) argument_count++;
-    char** loader_arguments = calloc(argument_count + 5, sizeof(char*));
-    if (loader_arguments == NULL) _exit(125);
-    loader_arguments[0] = (char*)loader;
-    loader_arguments[1] = "--library-path";
-    loader_arguments[2] = (char*)library_path;
-    loader_arguments[3] = (char*)executable;
-    for (size_t index = 1; index <= argument_count; index++)
-        loader_arguments[index + 3] = arguments[index];
-    execv(loader, loader_arguments);
+    execv(executable, arguments);
     _exit(126);
 }
 
@@ -47,10 +33,11 @@ static int wait_success(pid_t child) {
 
 int main(void) {
     const char* app = getenv("BIONICX_APP");
-    if (app == NULL) return 2;
+    const char* runtime = getenv("BIONICX_RUNTIME");
+    if (app == NULL || runtime == NULL) return 2;
     char icewm[1024];
     char client[1024];
-    snprintf(icewm, sizeof(icewm), "%s/bin/icewm", app);
+    snprintf(icewm, sizeof(icewm), "%s/usr/bin/icewm", runtime);
     snprintf(client, sizeof(client), "%s/bin/icewm-window", app);
 
     char* wm_arguments[] = {icewm, "--sync", "--trace=conf,prog", NULL};

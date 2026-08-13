@@ -20,15 +20,12 @@ import java.util.Map;
 
 /** Immutable, validated launch description for one glibc application. */
 public final class AppProfile {
-    public static final int SCHEMA_VERSION = 2;
+    public static final int SCHEMA_VERSION = 3;
 
     public final String id;
     public final String name;
     public final int displayDpi;
     public final String socketMode;
-    public final String mode;
-    public final String loader;
-    public final String libraryPath;
     public final String executable;
     public final String workingDirectory;
     public final String argv0;
@@ -43,7 +40,7 @@ public final class AppProfile {
         if (schema != SCHEMA_VERSION)
             throw new JSONException("unsupported schemaVersion: " + schema);
         if (root.has("compatibility"))
-            throw new JSONException("compatibility modules are not part of schema 2");
+            throw new JSONException("compatibility modules are not part of schema 3");
         id = requireId(root.getString("id"));
         name = root.optString("name", id);
 
@@ -57,11 +54,9 @@ public final class AppProfile {
             throw new JSONException("display.socket must be abstract or filesystem");
 
         JSONObject launch = root.getJSONObject("launch");
-        mode = launch.optString("mode", "loader");
-        if (!mode.equals("loader") && !mode.equals("direct"))
-            throw new JSONException("launch.mode must be loader or direct");
-        loader = launch.optString("loader", "");
-        libraryPath = launch.optString("libraryPath", "");
+        if (launch.has("mode") || launch.has("loader")
+                || launch.has("libraryPath"))
+            throw new JSONException("schema 3 always launches normalized ELF directly");
         executable = requirePath(launch.getString("executable"), "executable");
         workingDirectory = requirePath(
                 launch.optString("workingDirectory", "${APP}"),
@@ -69,8 +64,6 @@ public final class AppProfile {
         argv0 = launch.optString("argv0", "");
         diagnoseSignals = launch.optBoolean("diagnoseSignals", false);
         debugStop = launch.optBoolean("debugStop", false);
-        if (mode.equals("loader") && (loader.isEmpty() || libraryPath.isEmpty()))
-            throw new JSONException("loader mode needs loader and libraryPath");
 
         arguments = stringList(launch.optJSONArray("arguments"));
         hostServices = stringList(root.optJSONArray("hostServices"));
@@ -87,7 +80,8 @@ public final class AppProfile {
                 String key = keys.next();
                 if (!key.matches("[A-Za-z_][A-Za-z0-9_]*"))
                     throw new JSONException("invalid environment name: " + key);
-                if (key.equals("LD_PRELOAD") || key.equals("BIONICX_ROOTFS")
+                if (key.equals("LD_PRELOAD") || key.equals("LD_LIBRARY_PATH")
+                        || key.equals("BIONICX_ROOTFS")
                         || key.equals("BIONICX_TMPDIR")
                         || key.equals("BIONICX_DNS_SERVERS"))
                     throw new JSONException("reserved runtime environment name: " + key);

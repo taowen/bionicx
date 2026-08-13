@@ -1,32 +1,29 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "wps-office",
   "name": "WPS Office Writer (AArch64)",
-  "display": {"dpi": 144, "socket": "filesystem"},
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
   "launch": {
-    "mode": "direct",
-    "executable": "${APP}/opt/kingsoft/wps-office/office6/wps",
-    "workingDirectory": "${APP}/opt/kingsoft/wps-office/office6",
+    "executable": "${RUNTIME}/opt/kingsoft/wps-office/office6/wps",
+    "workingDirectory": "${RUNTIME}/opt/kingsoft/wps-office/office6",
     "argv0": "wps",
     "environment": {
       "DISPLAY": "${DISPLAY}",
-      "GLADIO_X11_SOCKET": "/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0",
       "HOME": "${HOME}",
       "TMPDIR": "${TMP}",
       "XDG_RUNTIME_DIR": "${TMP}/runtime",
       "GCONV_PATH": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gconv",
-      "FONTCONFIG_PATH": "${APP}/etc/fonts",
+      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
       "FONTCONFIG_FILE": "fonts.conf",
       "LANG": "C",
       "QT_QPA_PLATFORM": "xcb",
       "QT_X11_NO_MITSHM": "1",
-      "QT_OPENGL": "software",
-      "LIBGL_ALWAYS_SOFTWARE": "1",
-      "PATH": "${APP}/bin:/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin",
-      "BIONICX_OPEN_PDF": "${APP}/opt/kingsoft/wps-office/office6/wpspdf",
-      "LD_LIBRARY_PATH": "${APP}/opt/kingsoft/wps-office/office6:${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
-      "QT_QPA_PLATFORM": "xcb"
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
+      "BIONICX_OPEN_PDF": "${RUNTIME}/opt/kingsoft/wps-office/office6/wpspdf"
     }
   }
 }

@@ -1,14 +1,22 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "firefox-esr",
   "name": "Firefox ESR (Debian trixie ARM64)",
-  "display": {"dpi": 144, "socket": "filesystem"},
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
   "launch": {
-    "mode": "direct",
     "executable": "${RUNTIME}/usr/lib/firefox-esr/firefox-esr",
     "workingDirectory": "${RUNTIME}/usr/lib/firefox-esr",
-    "arguments": ["--no-remote", "--new-instance", "--profile", "${HOME}", "${APP}/fixtures/bionicx-page.html"],
+    "arguments": [
+      "--no-remote",
+      "--new-instance",
+      "--profile",
+      "${HOME}",
+      "${APP}/fixtures/bionicx-page.html"
+    ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",
@@ -26,8 +34,7 @@
       "MOZILLA_FIVE_HOME": "${RUNTIME}/usr/lib/firefox-esr",
       "NO_AT_BRIDGE": "1",
       "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
-      "LANG": "C.UTF-8",
-      "LD_LIBRARY_PATH": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu:${RUNTIME}/usr/lib/firefox-esr"
+      "LANG": "C.UTF-8"
     }
   }
 }
