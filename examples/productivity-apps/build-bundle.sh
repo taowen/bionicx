@@ -17,6 +17,8 @@ cp "$repo_dir/examples/productivity-apps/fixtures/bionicx-artwork.svg" \
     "$output_dir/app/fixtures/"
 cp "$repo_dir/examples/productivity-apps/fixtures/gimprc" \
     "$output_dir/app/fixtures/"
+cp "$repo_dir/examples/productivity-apps/fixtures/firefox-online-user.js" \
+    "$output_dir/app/fixtures/"
 python3 "$repo_dir/examples/productivity-apps/build-image-fixture.py" \
     "$output_dir/app/fixtures/bionicx-image.ppm"
 python3 "$repo_dir/examples/productivity-apps/build-odt-fixture.py" \

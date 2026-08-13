@@ -1,0 +1,44 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/productivity-apps-bundle
+profile krita is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 18.0 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 79.4 MB/s (9272 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 57.3 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 28.1 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 98.2 MB/s (78696 bytes in 0.001s)
+bionicx-exec: running untraced pid=21730
+bionicx-exec: primary pid=21730 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=21741
+bionicx ELF fixups: 0 entries
+bionicx-exec: primary pid=21741 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/profiles/krita.json: 1 file pushed, 0 skipped. 11.4 MB/s (1053 bytes in 0.000s)
+installed profile krita for io.taowen.bx
+Starting: Intent { cmp=io.taowen.bx/com.winlator.BionicXActivity }
+Status: ok
+LaunchState: COLD
+Activity: io.taowen.bx/com.winlator.BionicXActivity
+TotalTime: 226
+WaitTime: 228
+Complete
+screenshot /tmp/grok-goal-3794b08cb732/implementer/krita.png bytes=38745
+I/ActivityTaskManager( 2312): START u0 {flg=0x10000000 cmp=io.taowen.bx/com.winlator.BionicXActivity} with LAUNCH_MULTIPLE from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+V/WindowManagerShell( 2659): Transition requested: android.os.BinderProxy@4672bd TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=1135 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=io.taowen.bx/com.winlator.BionicXActivity } baseActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} topActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} origActivity=null realActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} numActivities=1 lastActiveTime=97973001 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@22a0b2} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{760d803 com.winlator.BionicXActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+V/WindowManager( 2312): Sent Transition #490 createdAt=08-13 23:24:24.744 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=1135 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=io.taowen.bx/com.winlator.BionicXActivity } baseActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} topActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} origActivity=null realActivity=ComponentInfo{io.taowen.bx/com.winlator.BionicXActivity} numActivities=1 lastActiveTime=97973001 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{b3d0efc Task{b540115 #1135 type=standard A=10194:io.taowen.bx}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{6785985 com.winlator.BionicXActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+I/ActivityManager( 2312): Start proc 21781:io.taowen.bx/u0a194 for next-top-activity {io.taowen.bx/com.winlator.BionicXActivity}
+I/BionicX (21781): profile=krita display=1920x1080@144 socket=filesystem
+I/BionicX (21781): enabled D-Bus session service at /data/user/0/io.taowen.bx/files/run/krita/runtime/bus
+I/BionicX (21781): dbus: bionicx-exec: running untraced pid=21809
+I/BionicX (21781): runtime DNS servers=1
+I/BionicX (21781): launching Krita (Debian trixie ARM64): [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --cwd, /data/user/0/io.taowen.bx/files/homes/krita, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/krita, --env, TMPDIR=/data/user/0/io.taowen.bx/cache, --env, XDG_RUNTIME_DIR=/data/user/0/io.taowen.bx/files/run/krita/runtime, --env, XDG_CONFIG_HOME=/data/user/0/io.taowen.bx/files/homes/krita/.config, --env, XDG_CACHE_HOME=/data/user/0/io.taowen.bx/files/homes/krita/.cache, --env, XDG_DATA_HOME=/data/user/0/io.taowen.bx/files/homes/krita/.local/share, --env, XDG_DATA_DIRS=/data/user/0/io.taowen.bx/files/rootfs/usr/local/share:/data/user/0/io.taowen.bx/files/rootfs/usr/share, --env, QT_QPA_PLATFORM=xcb, --env, QT_PLUGIN_PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/qt5/plugins, --env, QT_XKB_CONFIG_ROOT=/data/user/0/io.taowen.bx/files/rootfs/usr/share/X11/xkb, --env, NO_AT_BRIDGE=1, --env, PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/bin:/data/user/0/io.taowen.bx/files/rootfs/bin:/product/bin:/system/bin, --env, LANG=C.UTF-8, --env, BIONICX_DNS_SERVERS=172.19.0.2, --env, BIONICX_ROOTFS=/data/user/0/io.taowen.bx/files/rootfs, --env, BIONICX_TMPDIR=/data/user/0/io.taowen.bx/cache, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/rootfs/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, FONTCONFIG_SYSROOT=/data/user/0/io.taowen.bx/files/rootfs, --env, DBUS_SESSION_BUS_ADDRESS=unix:path=/data/user/0/io.taowen.bx/files/run/krita/runtime/bus, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-runtime.so, --, /data/user/0/io.taowen.bx/files/rootfs/usr/bin/krita, /data/user/0/io.taowen.bx/files/apps/krita/fixtures/bionicx-image.ppm]
+D/CoreBackPreview( 2312): Window{3863471 u0 io.taowen.bx/com.winlator.BionicXActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@9b20c30, mPriority=0, mIsAnimationCallback=false}
+I/BionicX (21781): bionicx-exec: running untraced pid=21816
+I/ActivityTaskManager( 2312): Displayed io.taowen.bx/com.winlator.BionicXActivity for user 0: +226ms
+I/BionicX (21781): qt.glx: qglx_findConfig: Failed to finding matching FBConfig for QSurfaceFormat(version 3.3, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 0, redBufferSize 1, greenBufferSize 1, blueBufferSize 1, alphaBufferSize 0, stencilBufferSize 0, samples -1, swapBehavior QSurfaceFormat::SingleBuffer, swapInterval 0, colorSpace QSurfaceFormat::DefaultColorSpace, profile  QSurfaceFormat::CompatibilityProfile)
+I/BionicX (21781): qt.glx: qglx_findConfig: Failed to finding matching FBConfig for QSurfaceFormat(version 3.3, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 0, redBufferSize 1, greenBufferSize 1, blueBufferSize 1, alphaBufferSize 0, stencilBufferSize 0, samples -1, swapBehavior QSurfaceFormat::SingleBuffer, swapInterval 0, colorSpace QSurfaceFormat::DefaultColorSpace, profile  QSurfaceFormat::CompatibilityProfile)
+I/BionicX (21781): qt.glx: qglx_findConfig: Failed to finding matching FBConfig for QSurfaceFormat(version 3.3, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize 0, redBufferSize 1, greenBufferSize 1, blueBufferSize 1, alphaBufferSize 0, stencilBufferSize 0, samples -1, swapBehavior QSurfaceFormat::SingleBuffer, swapInterval 0, colorSpace QSurfaceFormat::DefaultColorSpace, profile  QSurfaceFormat::CompatibilityProfile)
+I/BionicX (21781): bionicx-exec: primary pid=21816 exited status=0xb; draining session
+I/BionicX (21781): bionicx-exec: session drained children=0
+I/BionicX (21781): krita exited with 139
+I/Zygote  ( 1300): Process 21635 exited due to signal 9 (Killed)
+I/Zygote  ( 1300): Process 21928 exited due to signal 9 (Killed)

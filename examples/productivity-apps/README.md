@@ -6,10 +6,11 @@ It adds no per-application shared-library copies.
 
 ```sh
 examples/productivity-apps/build-bundle.sh
-tools/install-profile.sh --profile profiles/firefox-esr.json \
-  --app-root build/productivity-apps-bundle/app \
-  --runtime-root build/productivity-apps-bundle/rootfs
+ANDROID_SERIAL=<serial> examples/popular-apps/install-and-run.sh firefox-esr-online
 ```
+
+Install with `--app-root` only. The fixture bundle has no Debian rootfs
+and must not replace the shared device seed.
 
 The deterministic fixtures cover browser rendering/network navigation, ODF
 editing/save/reopen, two-page PDF rendering/navigation, raster image editing,

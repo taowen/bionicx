@@ -25,9 +25,11 @@ video output and PulseAudio-to-AAudio path in the same process:
 ```sh
 examples/popular-apps/build-bundle.sh
 tools/bxapt --serial <serial> set packages/trixie-popular.txt
-tools/install-profile.sh --profile profiles/gimp.json \
-  --app-root build/popular-apps-bundle/app --serial <serial>
+ANDROID_SERIAL=<serial> examples/popular-apps/install-and-run.sh qbittorrent
 ```
+
+Install with `--app-root` only. A fixture bundle must not replace the
+shared device seed.
 
 Use `profiles/inkscape.json`, `profiles/vlc.json`, `profiles/geany.json`,
 `profiles/filezilla.json`, `profiles/thunderbird.json`, `profiles/krita.json`,
