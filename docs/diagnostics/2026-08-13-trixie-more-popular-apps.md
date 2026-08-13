@@ -42,7 +42,7 @@ Evidence:
 ## General gaps exposed
 
 Geany compiles `/usr/share/geany` into the binary and provides no Unix runtime
-override. `libbionicx-android-tmp.so` therefore gained an opt-in
+override. `libbionicx-rootfs.so` therefore gained an opt-in
 `BIONICX_ROOTFS` mapping for ordinary `/usr`, `/etc` and `/var` file APIs. This
 keeps the Debian package unchanged and is reusable by other packages with FHS
 data paths.

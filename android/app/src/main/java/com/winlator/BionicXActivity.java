@@ -175,7 +175,7 @@ public final class BionicXActivity extends Activity {
                 command.add("--env");
                 command.add("BIONICX_DNS_SERVERS=" + String.join(",", servers));
             }
-            if (profile.compatibility.contains("android-tmp")
+            if (profile.compatibility.contains("rootfs")
                     && !profile.environment.containsKey("BIONICX_TMPDIR")) {
                 command.add("--env");
                 command.add("BIONICX_TMPDIR="

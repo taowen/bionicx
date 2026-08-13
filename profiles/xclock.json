@@ -4,7 +4,7 @@
   "id": "xclock",
   "name": "XClock (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
-  "compatibility": ["android-tmp"],
+  "compatibility": ["rootfs"],
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",

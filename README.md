@@ -48,6 +48,7 @@ Requirements: Linux, Android SDK/NDK, JDK 17, Podman, Python 3, patchelf, and AD
 ```sh
 git submodule update --init
 tools/build.sh
+tests/test-rootfs-compat.sh
 examples/hello/build-bundle.sh
 
 ANDROID_SERIAL=<serial> adb install -r build/bionicx-debug.apk

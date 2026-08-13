@@ -5,7 +5,7 @@
   "name": "FileZilla (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
   "hostServices": ["dbus"],
-  "compatibility": ["android-seccomp", "android-dns", "android-tmp"],
+  "compatibility": ["android-seccomp", "android-dns", "rootfs"],
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",

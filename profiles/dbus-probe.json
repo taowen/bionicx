@@ -5,7 +5,7 @@
   "name": "D-Bus session probe (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
   "hostServices": ["dbus"],
-  "compatibility": ["android-seccomp", "android-tmp"],
+  "compatibility": ["android-seccomp", "rootfs"],
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",

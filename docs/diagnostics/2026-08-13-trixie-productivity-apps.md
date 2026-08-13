@@ -16,7 +16,7 @@ objects against the Debian GLIBC 2.41 floor.
   shared-memory fd over an abstract Unix socket with `SCM_RIGHTS`; pixels are
   not copied through a fake protocol.
 - LibreOffice stores its single-instance Unix socket below the literal
-  `/tmp`, ignoring `TMPDIR`.  The `android-tmp` compatibility module relocates
+  `/tmp`, ignoring `TMPDIR`.  The `rootfs` compatibility module relocates
   only that FHS path into the app-private Android cache directory.
 - Writer startup exercised XRender radial gradients.  Document interaction
   then exposed core `ChangeActivePointerGrab` and XKB `GetIndicatorState`.

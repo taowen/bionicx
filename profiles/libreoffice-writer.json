@@ -4,7 +4,7 @@
   "id": "libreoffice-writer",
   "name": "LibreOffice Writer (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
-  "compatibility": ["android-seccomp", "android-dns", "android-tmp"],
+  "compatibility": ["android-seccomp", "android-dns", "rootfs"],
   "launch": {
     "mode": "direct",
     "executable": "${RUNTIME}/usr/lib/libreoffice/program/soffice.bin",

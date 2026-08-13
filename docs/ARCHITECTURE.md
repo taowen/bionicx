@@ -7,7 +7,8 @@ Every path exposed to a profile is app-private:
 ```text
 files/
   bin/bionicx-exec
-  lib/libbionicx-<module>.so
+  lib/libbionicx-rootfs.so
+  lib/libbionicx-<other-module>.so
   profiles/active.json
   apps/<id>/                 ${APP}
   homes/<id>/                ${HOME}
@@ -27,12 +28,15 @@ ELF files separately for each application. After package configuration, `/opt`
 application payloads are split from the shared system image into profile trees.
 
 The Debian snapshot timestamp, base-image digest and external package hashes
-are immutable build inputs. The host keeps one content-addressed canonical
-system tree and uses hard links in inspectable bundles; `install-profile.sh`
-compares its content ID before transfer. Android does not run apt, systemd or
-package maintainer scripts. This is a deployed userspace layout, not a chroot:
-absolute FHS paths still require environment settings or narrow compatibility
-work in the executor.
+are immutable inputs. The host-built image remains the reproducible seed for
+CI and large cohorts. On Android, `bxapt` can run the rootfs's real apt and dpkg
+as the application UID, using the same signed snapshot, package database,
+maintainer scripts and triggers. It adds packages to the shared rootfs instead
+of constructing another per-application library closure.
+
+This is a deployed userspace layout, not a chroot. The opt-in `rootfs`
+compatibility module maps the supported FHS paths into the app-private tree and
+preserves that mapping across package helper and interpreter execution.
 
 ## 2. ELF handoff
 
@@ -112,6 +116,19 @@ Compatibility belongs at observable ABI boundaries and is opt-in. The WPS
 module currently provides process-local SysV semaphores and Android-aware
 `popen/pclose`. A new application should not inherit it unless traces prove it
 needs those semantics.
+
+The `rootfs` module is the shared Debian execution boundary. Its public surface
+is one preload, while its implementation is split by responsibility:
+
+- `rootfs-path.c` maps supported FHS and temporary paths, libc temporary-file
+  APIs, and pathname Unix sockets;
+- `rootfs-exec.c` keeps rootfs PATH entries across child processes and executes
+  scripts through their actual rootfs shebang interpreter;
+- `rootfs-metadata.c` maps mode/ownership operations and defines the app-UID
+  ownership policy used by rootless dpkg maintainer scripts.
+
+Profiles request this boundary as `"compatibility": ["rootfs"]`. There is no
+legacy module alias or fallback name.
 
 Future modules can cover narrow filesystem, IPC, or desktop-service gaps, but
 the project does not aim to translate arbitrary Linux syscalls.

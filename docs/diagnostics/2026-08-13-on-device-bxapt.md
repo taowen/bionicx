@@ -35,7 +35,7 @@ continues to run package maintainer scripts and triggers.
 
 ## Compatibility gaps exposed
 
-This test added general app-private FHS behavior to `android-tmp`:
+This test added general app-private FHS behavior to `rootfs`:
 
 - `mkstemp`, `mkostemp`, their suffix variants, `mkdtemp`, and `chdir` redirect
   literal `/tmp` paths. apt needs these for detached signature inputs.

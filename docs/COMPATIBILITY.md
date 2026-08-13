@@ -44,8 +44,8 @@
 - The application and every ELF/plugin it may load.
 - A mutually compatible glibc loader and shared-library closure.
 - Fonts, locales, icon themes, MIME data, and other data files it assumes.
-- Relocation of absolute interpreters, socket prefixes, helper paths, and FHS
-  paths that cannot exist in the Android app sandbox.
+- A `rootfs` profile when the application needs mapped absolute interpreters,
+  package helpers, literal temporary paths or supported FHS data paths.
 
 ## Kernel and Android constraints
 
@@ -60,7 +60,9 @@ domain, app seccomp filter, page size, and Android filesystem. In particular:
   fallback is retained and regression-tested; process-shared and PI robust
   mutexes remain unsupported without kernel registration. BionicX does not
   hide this requirement with long-lived ptrace syscall emulation.
-- `/bin/sh`, `/tmp` and `/proc` details may differ. An app-private D-Bus
+- `/proc` and FHS paths outside the explicitly mapped rootfs set may differ.
+  The `rootfs` module maps `/bin`, `/sbin`, `/usr`, `/etc`, `/var` and `/tmp`,
+  but it is not a mount namespace or a general syscall translator. An app-private D-Bus
   session daemon is available to opted-in profiles, but a system bus, systemd,
   desktop portals and optional activated services may differ or be absent.
 - Executing extracted app-data files currently relies on the experimental APK's

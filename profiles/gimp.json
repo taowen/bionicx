@@ -4,7 +4,7 @@
   "id": "gimp",
   "name": "GIMP 3 (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
-  "compatibility": ["android-seccomp", "android-dns", "android-tmp"],
+  "compatibility": ["android-seccomp", "android-dns", "rootfs"],
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
