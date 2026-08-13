@@ -1,0 +1,52 @@
+#!/bin/sh
+# Map KeePassXC first, then unlock the fixture over D-Bus.
+# Opening --keyfile on the command line constructs DatabaseWidget before
+# bringToFront() and dies in QWidgetPrivate::showChildren (NULL d_ptr).
+# Opening the same file after the MainWindow is mapped does not.
+set -eu
+
+keyfile=""
+database=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --keyfile)
+            keyfile="${2:-}"
+            shift
+            [ $# -gt 0 ] && shift
+            ;;
+        --*)
+            if [ $# -ge 2 ]; then
+                shift 2
+            else
+                shift
+            fi
+            ;;
+        *)
+            database="$1"
+            shift
+            ;;
+    esac
+done
+
+keepassxc &
+child=$!
+
+i=0
+while [ "$i" -lt 80 ]; do
+    if dbus-send --session --dest=org.keepassxc.KeePassXC.MainWindow \
+            --type=method_call --print-reply /keepassxc \
+            org.freedesktop.DBus.Peer.Ping >/dev/null 2>&1; then
+        break
+    fi
+    i=$((i + 1))
+    sleep 0.1
+done
+
+if [ -n "$database" ]; then
+    dbus-send --session --type=method_call \
+        --dest=org.keepassxc.KeePassXC.MainWindow /keepassxc \
+        org.keepassxc.KeePassXC.MainWindow.openDatabase \
+        "string:$database" "string:" "string:$keyfile"
+fi
+
+wait "$child"

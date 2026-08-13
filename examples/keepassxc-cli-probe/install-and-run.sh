@@ -40,7 +40,15 @@ check() {
 }
 
 "${adb[@]}" shell run-as "$package_id" mkdir -p \
-    files/apps/keepassxc/fixtures files/homes/keepassxc
+    files/apps/keepassxc/bin files/apps/keepassxc/fixtures files/homes/keepassxc
+tmp_open="/data/local/tmp/bionicx-keepassxc-deferred-open"
+"${adb[@]}" push "$repo_dir/examples/keepassxc-cli-probe/keepassxc-deferred-open" \
+    "$tmp_open" >/dev/null
+"${adb[@]}" shell run-as "$package_id" cp "$tmp_open" \
+    files/apps/keepassxc/bin/keepassxc-deferred-open
+"${adb[@]}" shell run-as "$package_id" chmod 755 \
+    files/apps/keepassxc/bin/keepassxc-deferred-open
+"${adb[@]}" shell rm "$tmp_open"
 "${adb[@]}" shell run-as "$package_id" rm -f \
     files/apps/keepassxc/fixtures/bionicx.kdbx
 tmp="/data/local/tmp/bionicx-keepassxc.key"

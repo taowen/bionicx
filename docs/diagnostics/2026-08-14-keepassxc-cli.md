@@ -10,13 +10,16 @@ reopen, and a non-empty `.kdbx`. Device result:
 BXSUMMARY keepassxc-cli passed=6 failed=0
 ```
 
-The GUI profile opens that same file with `--keyfile`.
+The GUI profile opens that same file with `--keyfile` **after** the
+MainWindow is mapped (`keepassxc-deferred-open` + D-Bus `openDatabase`).
 
-## Still failing
+## Command-line `--keyfile` still 139
 
-Untraced `keepassxc` still exits 139 after the controlled path below
-passes. The remaining crash is past XTEST, plugin `dlopen`, and the first
-`glClear` after makeCurrent.
+`keepassxc --keyfile … file.kdbx` constructs `DatabaseWidget` in
+`main()` and only then `bringToFront()`. That first `show()` of the
+already-unlocked tree dies in `QWidgetPrivate::showChildren` (NULL
+`d_ptr`). Welcome, the unlock form, and unlocking a mapped window do
+not. The profile therefore maps first and opens over D-Bus.
 
 ## Controlled follow-up
 

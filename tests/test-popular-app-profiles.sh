@@ -21,6 +21,9 @@ grep -F '"dbus"' "$repo_dir/profiles/qbittorrent.json" >/dev/null
 grep -F '"dbus"' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F 'bionicx.kdbx' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F -- '--keyfile' "$repo_dir/profiles/keepassxc.json" >/dev/null
+grep -F 'keepassxc-deferred-open' "$repo_dir/profiles/keepassxc.json" >/dev/null
+grep -F 'keepassxc-deferred-open' \
+    "$repo_dir/examples/popular-apps/build-bundle.sh" >/dev/null
 grep -F 'keepassxc-cli-probe' \
     "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
 grep -F 'GLADIO_X11_SOCKET' "$repo_dir/profiles/keepassxc.json" >/dev/null

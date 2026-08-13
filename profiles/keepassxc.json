@@ -11,9 +11,10 @@
     "dbus"
   ],
   "launch": {
-    "executable": "${RUNTIME}/usr/bin/keepassxc",
+    "executable": "${RUNTIME}/bin/sh",
     "workingDirectory": "${HOME}",
     "arguments": [
+      "${APP}/bin/keepassxc-deferred-open",
       "--keyfile",
       "${APP}/fixtures/bionicx.key",
       "${APP}/fixtures/bionicx.kdbx"

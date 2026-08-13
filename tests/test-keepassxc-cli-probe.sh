@@ -25,6 +25,9 @@ grep -F '630DCD29' \
     "$repo_dir/examples/keepassxc-cli-probe/fixtures/bionicx.key" >/dev/null
 grep -F 'bionicx.kdbx' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F -- '--keyfile' "$repo_dir/profiles/keepassxc.json" >/dev/null
+grep -F 'keepassxc-deferred-open' "$repo_dir/profiles/keepassxc.json" >/dev/null
+grep -F 'openDatabase' \
+    "$repo_dir/examples/keepassxc-cli-probe/keepassxc-deferred-open" >/dev/null
 grep -F 'keepassxc-cli-probe' \
     "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
 grep -F 'GLADIO_X11_SOCKET' "$repo_dir/profiles/keepassxc.json" >/dev/null
