@@ -10,7 +10,8 @@ files="/data/user/0/$package_id/files"
 adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
 adb=("$adb_bin" -s "$serial")
 
-if [[ ! -x "$repo_dir/build/x11-send-key" ]]; then
+if [[ ! -x "$repo_dir/build/x11-send-key" ||
+        "$repo_dir/examples/wps/x11-send-key.c" -nt "$repo_dir/build/x11-send-key" ]]; then
     builder="$("$repo_dir/tools/ensure-glibc-builder.sh")"
     mkdir -p "$repo_dir/build"
     podman run --rm --network host --userns=keep-id \
@@ -26,11 +27,15 @@ tmp="/data/local/tmp/x11-send-key-$$"
 "${adb[@]}" shell run-as "$package_id" cp "$tmp" files/bin/x11-send-key
 "${adb[@]}" shell rm -f "$tmp"
 
+quoted=()
+for arg in "$@"; do
+    quoted+=("$(printf '%q' "$arg")")
+done
 result="$("${adb[@]}" shell run-as "$package_id" \
     "$files/bin/bionicx-exec" --cwd "$root" \
     --env "LD_PRELOAD=$files/lib/libbionicx-runtime.so" \
     --env "BIONICX_ROOTFS=$root" \
     --env "DISPLAY=:0" \
-    -- "$files/bin/x11-send-key" "$@" 2>&1 || true)"
+    -- "$files/bin/x11-send-key" "${quoted[@]}" 2>&1 || true)"
 printf '%s\n' "$result"
 grep -Fq "BXTEST PASS x11-send-key" <<<"$result"

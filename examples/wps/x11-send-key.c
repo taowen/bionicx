@@ -1,5 +1,6 @@
 #define _DEFAULT_SOURCE
 #define _POSIX_C_SOURCE 200809L
+#include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/XTest.h>
 #include <X11/keysym.h>
@@ -7,6 +8,81 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+static void click_xy(Display *d, int screen, int x, int y) {
+    /*
+     * XTEST delay is milliseconds after the previous queued event.
+     * CurrentTime/0 on motion+press+release delivers the click at the
+     * previous pointer, so Qt never sees the intended widget.
+     */
+    XTestFakeMotionEvent(d, screen, x, y, 0);
+    XTestFakeButtonEvent(d, 1, True, 40);
+    XTestFakeButtonEvent(d, 1, False, 40);
+}
+
+static char *window_title(Display *d, Window window) {
+    Atom net_wm_name = XInternAtom(d, "_NET_WM_NAME", False);
+    Atom actual = None;
+    int format = 0;
+    unsigned long count = 0;
+    unsigned long remaining = 0;
+    unsigned char *value = NULL;
+    if (XGetWindowProperty(d, window, net_wm_name, 0, 256, False,
+                           AnyPropertyType, &actual, &format, &count,
+                           &remaining, &value) == Success &&
+            value != NULL && format == 8 && count > 0) {
+        char *title = calloc(count + 1, 1);
+        if (title != NULL)
+            memcpy(title, value, count);
+        XFree(value);
+        return title;
+    }
+    if (value != NULL)
+        XFree(value);
+    char *legacy = NULL;
+    if (XFetchName(d, window, &legacy) && legacy != NULL) {
+        char *title = strdup(legacy);
+        XFree(legacy);
+        return title;
+    }
+    return NULL;
+}
+
+static int click_named_window(Display *d, const char *needle, double fx,
+                              double fy) {
+    int screen = DefaultScreen(d);
+    Window root = RootWindow(d, screen);
+    Window root_ret = None;
+    Window parent = None;
+    Window *children = NULL;
+    unsigned int child_count = 0;
+    if (!XQueryTree(d, root, &root_ret, &parent, &children, &child_count))
+        return 1;
+    int rc = 1;
+    for (unsigned int i = 0; i < child_count; ++i) {
+        XWindowAttributes attributes;
+        if (!XGetWindowAttributes(d, children[i], &attributes) ||
+                attributes.map_state != IsViewable)
+            continue;
+        char *title = window_title(d, children[i]);
+        if (title == NULL || strstr(title, needle) == NULL) {
+            free(title);
+            continue;
+        }
+        int x = attributes.x + (int)(fx * (double)attributes.width);
+        int y = attributes.y + (int)(fy * (double)attributes.height);
+        printf("BXINFO click-window title=%s geometry=%dx%d+%d+%d xy=%d,%d\n",
+               title, attributes.width, attributes.height, attributes.x,
+               attributes.y, x, y);
+        click_xy(d, screen, x, y);
+        free(title);
+        rc = 0;
+        break;
+    }
+    if (children != NULL)
+        XFree(children);
+    return rc;
+}
 
 static void tap(Display *d, KeyCode code) {
     XTestFakeKeyEvent(d, code, True, CurrentTime);
@@ -81,7 +157,7 @@ int main(int argc, char **argv) {
         fprintf(stderr,
                 "usage: x11-send-key escape|return|tab|space|f5|"
                 "ctrl-a|ctrl-c|ctrl-v|ctrl-s|ctrl-p|end|type TEXT|"
-                "click X Y\n");
+                "click X Y|click-frac FX FY|click-window TITLE FX FY\n");
         return 2;
     }
     Display *d = XOpenDisplay(NULL);
@@ -122,11 +198,20 @@ int main(int argc, char **argv) {
     else if (strcmp(argv[1], "type") == 0 && argc >= 3)
         rc = type_ascii(d, focus, argv[2]);
     else if (strcmp(argv[1], "click") == 0 && argc >= 4) {
-        int x = atoi(argv[2]);
-        int y = atoi(argv[3]);
-        XTestFakeMotionEvent(d, DefaultScreen(d), x, y, CurrentTime);
-        XTestFakeButtonEvent(d, 1, True, CurrentTime);
-        XTestFakeButtonEvent(d, 1, False, CurrentTime);
+        click_xy(d, DefaultScreen(d), atoi(argv[2]), atoi(argv[3]));
+    } else if (strcmp(argv[1], "click-frac") == 0 && argc >= 4) {
+        int screen = DefaultScreen(d);
+        int width = DisplayWidth(d, screen);
+        int height = DisplayHeight(d, screen);
+        int x = (int)(atof(argv[2]) * (double)width);
+        int y = (int)(atof(argv[3]) * (double)height);
+        printf("BXINFO click-frac display=%dx%d xy=%d,%d\n",
+               width, height, x, y);
+        click_xy(d, screen, x, y);
+    } else if (strcmp(argv[1], "click-window") == 0 && argc >= 5) {
+        rc = click_named_window(d, argv[2], atof(argv[3]), atof(argv[4]));
+        if (rc != 0)
+            fprintf(stderr, "no viewable window title contains %s\n", argv[2]);
     } else {
         fprintf(stderr, "unknown command\n");
         rc = 2;

@@ -46,7 +46,9 @@ launch() {
     sleep 1
     send click 1680 180 || true   # guest popup close
     sleep 1
-    send click 680 430 || true    # formula-check Close
+    # System Check is a 699x327+50+50 dialog; display-absolute clicks miss
+    # on 2640x1216. Click the Close control by window title.
+    send click-window "System Check" 0.88 0.90 || true
     sleep 1
     send escape || true
     sleep 1
@@ -57,7 +59,9 @@ launch() {
 copy_home() {
     local src="$1" dest="$2"
     "${adb[@]}" shell run-as "$package_id" mkdir -p \
-        files/homes/wps-office/Documents
+        files/homes/wps-office/Documents \
+        files/homes/wps-office/Desktop \
+        files/homes/wps-office/Downloads
     "${adb[@]}" shell run-as "$package_id" cp "$src" "$dest"
 }
 

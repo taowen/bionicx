@@ -4,6 +4,15 @@ set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 grep -F 'XTestFakeKeyEvent' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
 grep -F 'XTestFakeButtonEvent' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
+grep -F 'XTestFakeButtonEvent(d, 1, True, 40)' \
+    "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
+grep -F 'click-frac' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
+grep -F 'click-window' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
+grep -F 'click-window "System Check"' \
+    "$repo_dir/examples/wps/run-workflows.sh" >/dev/null
+grep -F "printf '%q'" "$repo_dir/examples/wps/send-key.sh" >/dev/null
+grep -F 'files/homes/wps-office/Desktop' \
+    "$repo_dir/examples/wps/run-workflows.sh" >/dev/null
 grep -F 'ctrl-s' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
 grep -F 'ctrl-c' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
 grep -F 'ctrl-v' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
