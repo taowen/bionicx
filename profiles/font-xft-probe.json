@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "font-xft-probe",
   "name": "BionicX Fontconfig and Xft probe",
   "display": {"dpi": 144, "socket": "filesystem"},

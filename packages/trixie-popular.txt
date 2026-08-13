@@ -1,0 +1,39 @@
+# Shared Debian 13 (trixie) ARM64 desktop and application cohort.
+# bxapt installs this as one dependency-resolved transaction.
+
+# Desktop session and terminal
+dbus
+icewm
+xterm
+
+# Browser, office and communication
+firefox-esr
+libreoffice-writer
+thunderbird
+
+# File and document tools
+evince
+filezilla
+geany
+mousepad
+ristretto
+thunar
+
+# Creative and media tools
+gimp
+inkscape
+krita
+vlc
+
+# Network and security tools
+keepassxc
+qbittorrent
+
+# Explicit WPS metadata omissions and Qt/X11 runtime boundary
+bsdextrautils
+libxkbcommon-x11-0
+libxslt1.1
+qt6-qpa-plugins
+
+# Device-side ELF normalization after package transactions
+patchelf

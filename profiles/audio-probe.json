@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "audio-probe",
   "name": "glibc X11 + Android audio probe",
   "display": {"dpi": 144, "socket": "filesystem"},

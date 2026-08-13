@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "session-x11-probe",
   "name": "BionicX detached glibc X11 session probe",
   "display": {"dpi": 144, "socket": "filesystem"},

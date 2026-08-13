@@ -8,7 +8,7 @@ dns_servers="${BIONICX_DNS_SERVERS:-}"
 
 usage() {
     echo "usage: tools/bxapt [--serial SERIAL] [--dns ADDRESSES] COMMAND [ARG ...]" >&2
-    echo "commands: update, install, remove, apt, dpkg" >&2
+    echo "commands: update, install, remove, set, deb, apt, dpkg, query, run" >&2
     exit "${1:-2}"
 }
 
@@ -33,7 +33,17 @@ runtime_libs="$root/usr/lib:$root/usr/lib/aarch64-linux-gnu"
 perl_libs="$root/etc/perl:$root/usr/share/perl5:$root/usr/lib/aarch64-linux-gnu/perl-base:$root/usr/lib/aarch64-linux-gnu/perl/5.40:$root/usr/share/perl/5.40"
 
 run_as() {
-    "${adb_command[@]}" shell run-as "$package_id" "$@"
+    local command="run-as $(shell_quote "$package_id")"
+    local argument
+    for argument in "$@"; do
+        command+=" $(shell_quote "$argument")"
+    done
+    "${adb_command[@]}" shell "$command"
+}
+
+shell_quote() {
+    local value="${1//\'/\'\\\'\'}"
+    printf "'%s'" "$value"
 }
 
 discover_dns() {
@@ -55,9 +65,10 @@ upload_private() {
 prepare_state() {
     run_as test -x "$files/bin/bionicx-exec"
     run_as test -x "$root/usr/bin/apt-get"
-    run_as test -r "$files/lib/libbionicx-rootfs.so"
+    run_as test -r "$files/lib/libbionicx-runtime.so"
     run_as mkdir -p \
         "$run_dir/apt.conf.d" "$files/homes/bxapt" \
+        "$run_dir/incoming" \
         "$root/var/lib/apt/lists/partial" \
         "$root/var/cache/apt/archives/partial" \
         "$root/var/log/apt"
@@ -66,6 +77,8 @@ prepare_state() {
     sed -e "s|@ROOT@|$root|g" -e "s|@FILES@|$files|g" \
         "$repo_dir/tools/bxapt.conf.in" > "$repo_dir/build/bxapt.conf"
     upload_private "$repo_dir/build/bxapt.conf" "$run_dir/apt.conf"
+    upload_private "$repo_dir/tools/rootfs-elf-fixup.sh" \
+        "$run_dir/rootfs-elf-fixup.sh"
     run_as cp "$root/etc/apt/sources.list.d/debian.sources" \
         "$run_dir/sources.sources"
 }
@@ -80,35 +93,65 @@ case "$command_name" in
         [[ $# -ge 1 ]] || usage
         arguments=(remove -y "$@")
         ;;
+    set)
+        [[ $# -eq 1 && -f "$1" ]] || usage
+        packages=()
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            line="${line%%#*}"
+            read -r package extra <<< "$line"
+            [[ -n "${package:-}" ]] || continue
+            if [[ -n "${extra:-}" ||
+                    ! "$package" =~ ^[a-z0-9][a-z0-9+.-]*(:arm64)?$ ]]; then
+                echo "invalid package declaration: $line" >&2
+                exit 2
+            fi
+            packages+=("$package")
+        done < "$1"
+        [[ ${#packages[@]} -gt 0 ]] || {
+            echo "empty package set: $1" >&2
+            exit 2
+        }
+        arguments=(install -y --no-install-recommends "${packages[@]}")
+        ;;
+    deb)
+        [[ $# -eq 2 && -f "$1" && "$2" =~ ^[0-9a-fA-F]{64}$ ]] || usage
+        host_deb="$(realpath "$1")"
+        expected_sha256="${2,,}"
+        actual_sha256="$(sha256sum "$host_deb" | cut -d' ' -f1)"
+        if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+            echo "checksum mismatch for $host_deb" >&2
+            echo "expected: $expected_sha256" >&2
+            echo "actual:   $actual_sha256" >&2
+            exit 1
+        fi
+        arguments=()
+        ;;
     apt) arguments=("$@") ;;
-    dpkg) arguments=("$@") ;;
+    dpkg|query) arguments=("$@") ;;
+    run)
+        [[ $# -ge 1 ]] || usage
+        if [[ "$1" == /* ]]; then
+            binary="$root$1"
+        else
+            binary="$root/usr/bin/$1"
+        fi
+        shift
+        arguments=("$@")
+        ;;
     *) usage ;;
 esac
 
 discover_dns
 prepare_state
 
-binary="$root/usr/bin/apt-get"
-if [[ "$command_name" == dpkg ]]; then
-    binary="$root/usr/bin/dpkg"
-    arguments=(--force-not-root --force-script-chrootless \
-        --root="$root" --admindir="$root/var/lib/dpkg" "${arguments[@]}")
-fi
-
-preloads=("$files/lib/libbionicx-rootfs.so")
-if [[ -n "$dns_servers" ]]; then
-    preloads+=("$files/lib/libbionicx-android-dns.so")
-fi
-preload_value="$(IFS=:; echo "${preloads[*]}")"
-
 environment=(
-    "APT_CONFIG=$run_dir/apt.conf"
     "DPKG_DATADIR=$root/usr/share/dpkg"
     "DPKG_ROOT=$root"
     "LD_LIBRARY_PATH=$runtime_libs"
-    "LD_PRELOAD=$preload_value"
+    "LD_PRELOAD=$files/lib/libbionicx-runtime.so"
     "BIONICX_ROOTFS=$root"
     "BIONICX_TMPDIR=$run_dir"
+    "BIONICX_REWRITE_ABSOLUTE_SYMLINKS=1"
     "BIONICX_DNS_SERVERS=$dns_servers"
     "SEQUOIA_CRYPTO_POLICY=$root/usr/share/apt/default-sequoia.config"
     "PERL5LIB=$perl_libs"
@@ -119,14 +162,63 @@ environment=(
     "TMPDIR=$run_dir"
 )
 
-launcher=(
-    "$files/bin/bionicx-exec"
-    --loader "$root/usr/lib/ld-linux-aarch64.so.1"
-    --library-path "$runtime_libs"
-    --cwd "$root"
-)
-for assignment in "${environment[@]}"; do
-    launcher+=(--env "$assignment")
-done
-launcher+=(-- "$binary" "${arguments[@]}")
-run_as "${launcher[@]}"
+run_binary() {
+    local command_arguments=("${arguments[@]}")
+    if [[ "$binary" == "$root/usr/bin/apt-get" ]]; then
+        command_arguments=(-c "$run_dir/apt.conf" "${command_arguments[@]}")
+    fi
+    local launcher=(
+        "$files/bin/bionicx-exec"
+        --loader "$root/usr/lib/ld-linux-aarch64.so.1"
+        --library-path "$runtime_libs"
+        --cwd "$root"
+    )
+    local assignment
+    for assignment in "${environment[@]}"; do
+        launcher+=(--env "$assignment")
+    done
+    launcher+=(-- "$binary" "${command_arguments[@]}")
+    run_as "${launcher[@]}"
+}
+
+fixup_elf() {
+    binary="$root/bin/sh"
+    arguments=("$run_dir/rootfs-elf-fixup.sh" "$root"
+        "$root/usr/lib/ld-linux-aarch64.so.1")
+    run_binary
+}
+
+dpkg_arguments() {
+    arguments=(--force-not-root --force-script-chrootless \
+        --root="$root" --admindir="$root/var/lib/dpkg" "${arguments[@]}")
+}
+
+if [[ "$command_name" == deb ]]; then
+    device_deb="$run_dir/incoming/${host_deb##*/}"
+    upload_private "$host_deb" "$device_deb"
+    trap 'run_as rm -f "$device_deb" >/dev/null 2>&1 || true' EXIT
+
+    binary="$root/usr/bin/dpkg"
+    arguments=(--unpack "$device_deb")
+    dpkg_arguments
+    run_binary
+
+    binary="$root/usr/bin/apt-get"
+    arguments=(-f install -y --no-install-recommends)
+    run_binary
+    fixup_elf
+    exit
+fi
+
+binary="${binary:-$root/usr/bin/apt-get}"
+if [[ "$command_name" == dpkg ]]; then
+    binary="$root/usr/bin/dpkg"
+    dpkg_arguments
+elif [[ "$command_name" == query ]]; then
+    binary="$root/usr/bin/dpkg-query"
+    arguments=(--admindir="$root/var/lib/dpkg" "${arguments[@]}")
+fi
+run_binary
+case "$command_name" in
+    install|set) fixup_elf ;;
+esac

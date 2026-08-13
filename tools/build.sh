@@ -31,6 +31,7 @@ if [[ ! -x "$java17_home/bin/java" ]]; then
 fi
 
 mkdir -p "$assets_dir/bin" "$assets_dir/lib" "$assets_dir/profiles" "$repo_dir/build"
+find "$assets_dir/lib" -maxdepth 1 -type f ! -name .gitkeep -delete
 "$bionic_cc" -Oz -Wall -Wextra -Werror \
     "$repo_dir/native/executor/bionicx-exec.c" \
     -o "$assets_dir/bin/bionicx-exec"
@@ -38,8 +39,8 @@ mkdir -p "$assets_dir/bin" "$assets_dir/lib" "$assets_dir/profiles" "$repo_dir/b
     "$repo_dir/native/tools/bionicx-relocate.c" \
     -o "$repo_dir/build/bionicx-relocate"
 
-# Compatibility modules execute inside the glibc process and must themselves
-# be glibc ELFs.  The container is a build tool only; it is never used on Android.
+# The mandatory runtime contract executes inside every glibc process and must
+# itself be a glibc ELF. The container is only a cross-build tool.
 podman run --rm --pull=newer --network host \
     --volume "$repo_dir:/work:Z" --workdir /work \
     docker.io/library/debian:trixie-slim \
@@ -48,29 +49,17 @@ podman run --rm --pull=newer --network host \
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             gcc-aarch64-linux-gnu libc6-dev-arm64-cross >/dev/null
         aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
-            native/compat/wps-compat.c \
-            -o android/app/src/main/assets/bionicx/lib/libbionicx-wps.so \
-            -ldl -pthread
-        aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
-            native/compat/sigsys-report.c \
+            native/diagnostics/sigsys-report.c \
             -o android/app/src/main/assets/bionicx/lib/libbionicx-sigsys-report.so
         aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
-            native/compat/android-seccomp.c \
-            -o android/app/src/main/assets/bionicx/lib/libbionicx-android-seccomp.so
-        aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
-            native/compat/android-dns.c \
-            -o android/app/src/main/assets/bionicx/lib/libbionicx-android-dns.so \
-            -ldl
-        aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
-            native/compat/rootfs-path.c \
-            native/compat/rootfs-exec.c \
-            native/compat/rootfs-metadata.c \
-            -o android/app/src/main/assets/bionicx/lib/libbionicx-rootfs.so \
-            -ldl
-        aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
-            native/compat/chrome.c \
-            -o android/app/src/main/assets/bionicx/lib/libbionicx-chrome.so \
-            -ldl
+            native/runtime/android-kernel.c \
+            native/runtime/dns.c \
+            native/runtime/fhs-path.c \
+            native/runtime/fhs-exec.c \
+            native/runtime/fhs-metadata.c \
+            native/runtime/identity.c \
+            -o android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so \
+            -Wl,-z,now -ldl
     '
 
 cp "$repo_dir/profiles/hello.json" "$assets_dir/profiles/default.json"
@@ -81,11 +70,7 @@ cp "$android_dir/app/build/outputs/apk/debug/app-debug.apk" \
     "$repo_dir/build/bionicx-debug.apk"
 
 sha256sum "$assets_dir/bin/bionicx-exec" \
-    "$assets_dir/lib/libbionicx-wps.so" \
     "$assets_dir/lib/libbionicx-sigsys-report.so" \
-    "$assets_dir/lib/libbionicx-android-seccomp.so" \
-    "$assets_dir/lib/libbionicx-android-dns.so" \
-    "$assets_dir/lib/libbionicx-rootfs.so" \
-    "$assets_dir/lib/libbionicx-chrome.so" \
+    "$assets_dir/lib/libbionicx-runtime.so" \
     "$repo_dir/build/bionicx-relocate" \
     "$repo_dir/build/bionicx-debug.apk"

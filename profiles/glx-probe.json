@@ -1,13 +1,12 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "glx-probe",
   "name": "Host GPU GLX probe",
   "display": {
     "dpi": 144,
     "socket": "filesystem"
   },
-  "compatibility": [],
   "launch": {
     "mode": "loader",
     "executable": "${APP}/bin/glx-probe",

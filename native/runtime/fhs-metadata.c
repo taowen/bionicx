@@ -1,4 +1,4 @@
-#include "rootfs-internal.h"
+#include "runtime-internal.h"
 
 #include <dlfcn.h>
 

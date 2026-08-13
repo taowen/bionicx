@@ -1,21 +1,23 @@
-#include "rootfs-internal.h"
+#include "runtime-internal.h"
 
 #include <dlfcn.h>
 
 /* Redirect Linux FHS paths into app-private Android directories. */
 const char *bionicx_redirect_path(const char *path, char buffer[PATH_MAX]) {
-    const char *target = getenv("BIONICX_TMPDIR");
-    const char *suffix = NULL;
     if (path == NULL) return NULL;
-    if (target != NULL && target[0] == '/' &&
-            (strcmp(path, "/tmp") == 0 || strncmp(path, "/tmp/", 5) == 0)) {
+    const char *target = NULL;
+    const char *suffix = NULL;
+    if (strcmp(path, "/tmp") == 0 || strncmp(path, "/tmp/", 5) == 0) {
+        target = bionicx_getenv("BIONICX_TMPDIR");
+        if (target == NULL || target[0] != '/') return path;
         suffix = path + 4;
     } else if (strcmp(path, "/usr") == 0 || strncmp(path, "/usr/", 5) == 0 ||
             strcmp(path, "/bin") == 0 || strncmp(path, "/bin/", 5) == 0 ||
             strcmp(path, "/sbin") == 0 || strncmp(path, "/sbin/", 6) == 0 ||
             strcmp(path, "/etc") == 0 || strncmp(path, "/etc/", 5) == 0 ||
+            strcmp(path, "/opt") == 0 || strncmp(path, "/opt/", 5) == 0 ||
             strcmp(path, "/var") == 0 || strncmp(path, "/var/", 5) == 0) {
-        target = getenv("BIONICX_ROOTFS");
+        target = bionicx_getenv("BIONICX_ROOTFS");
         if (target == NULL || target[0] != '/') return path;
         suffix = path;
     } else {
@@ -27,6 +29,35 @@ const char *bionicx_redirect_path(const char *path, char buffer[PATH_MAX]) {
         return NULL;
     }
     return buffer;
+}
+
+static const char *redirect_symlink_target(const char *target,
+                                           char buffer[PATH_MAX]) {
+    const char *rewrite = bionicx_getenv("BIONICX_REWRITE_ABSOLUTE_SYMLINKS");
+    if (rewrite == NULL || strcmp(rewrite, "1") != 0 || target == NULL ||
+            target[0] != '/')
+        return target;
+    return bionicx_redirect_path(target, buffer);
+}
+
+int symlink(const char *target, const char *link_path) {
+    static int (*next)(const char *, const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "symlink");
+    char target_buffer[PATH_MAX], link_buffer[PATH_MAX];
+    const char *actual_target = redirect_symlink_target(target, target_buffer);
+    const char *actual_link = bionicx_redirect_path(link_path, link_buffer);
+    if (actual_target == NULL || actual_link == NULL) return -1;
+    return next(actual_target, actual_link);
+}
+
+int symlinkat(const char *target, int directory, const char *link_path) {
+    static int (*next)(const char *, int, const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "symlinkat");
+    char target_buffer[PATH_MAX], link_buffer[PATH_MAX];
+    const char *actual_target = redirect_symlink_target(target, target_buffer);
+    const char *actual_link = bionicx_redirect_path(link_path, link_buffer);
+    if (actual_target == NULL || actual_link == NULL) return -1;
+    return next(actual_target, directory, actual_link);
 }
 
 mode_t bionicx_optional_mode(int flags, va_list arguments) {
@@ -108,6 +139,51 @@ FILE *fopen64(const char *path, const char *mode) {
     return actual != NULL ? next(actual, mode) : NULL;
 }
 
+DIR *opendir(const char *path) {
+    static DIR *(*next)(const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "opendir");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    return actual != NULL ? next(actual) : NULL;
+}
+
+char *realpath(const char *path, char *resolved_path) {
+    static char *(*next)(const char *, char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "realpath");
+    char redirected[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, redirected);
+    if (actual == NULL) return NULL;
+
+    char physical[PATH_MAX];
+    char *result = next(actual, resolved_path == NULL ? NULL : physical);
+    if (result == NULL) return NULL;
+
+    const char *root = bionicx_getenv("BIONICX_ROOTFS");
+    size_t root_length = root != NULL ? strlen(root) : 0;
+    char canonical_root[PATH_MAX];
+    const char *root_prefix = root;
+    if (root != NULL && next(root, canonical_root) != NULL) {
+        root_prefix = canonical_root;
+        root_length = strlen(canonical_root);
+    }
+    const char *visible = result;
+    if (actual != path && root_prefix != NULL && root_length > 0 &&
+            strncmp(result, root_prefix, root_length) == 0 &&
+            (result[root_length] == '/' || result[root_length] == '\0'))
+        visible = result + root_length;
+
+    if (resolved_path == NULL) {
+        if (visible != result) memmove(result, visible, strlen(visible) + 1);
+        return result;
+    }
+    strcpy(resolved_path, visible);
+    return resolved_path;
+}
+
+char *canonicalize_file_name(const char *path) {
+    return realpath(path, NULL);
+}
+
 int access(const char *path, int mode) {
     static int (*next)(const char *, int);
     if (next == NULL) next = dlsym(RTLD_NEXT, "access");
@@ -132,6 +208,14 @@ int stat(const char *path, struct stat *value) {
     return actual != NULL ? next(actual, value) : -1;
 }
 
+int stat64(const char *path, struct stat64 *value) {
+    static int (*next)(const char *, struct stat64 *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "stat64");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    return actual != NULL ? next(actual, value) : -1;
+}
+
 int lstat(const char *path, struct stat *value) {
     static int (*next)(const char *, struct stat *);
     if (next == NULL) next = dlsym(RTLD_NEXT, "lstat");
@@ -140,9 +224,26 @@ int lstat(const char *path, struct stat *value) {
     return actual != NULL ? next(actual, value) : -1;
 }
 
+int lstat64(const char *path, struct stat64 *value) {
+    static int (*next)(const char *, struct stat64 *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "lstat64");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    return actual != NULL ? next(actual, value) : -1;
+}
+
 int fstatat(int directory, const char *path, struct stat *value, int flags) {
     static int (*next)(int, const char *, struct stat *, int);
     if (next == NULL) next = dlsym(RTLD_NEXT, "fstatat");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    return actual != NULL ? next(directory, actual, value, flags) : -1;
+}
+
+int fstatat64(int directory, const char *path, struct stat64 *value,
+              int flags) {
+    static int (*next)(int, const char *, struct stat64 *, int);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "fstatat64");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
     return actual != NULL ? next(directory, actual, value, flags) : -1;
@@ -162,6 +263,38 @@ int unlinkat(int directory, const char *path, int flags) {
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
     return actual != NULL ? next(directory, actual, flags) : -1;
+}
+
+int rename(const char *old_path, const char *new_path) {
+    static int (*next)(const char *, const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "rename");
+    char old_buffer[PATH_MAX], new_buffer[PATH_MAX];
+    const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
+    const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
+    if (actual_old == NULL || actual_new == NULL) return -1;
+    return next(actual_old, actual_new);
+}
+
+int renameat(int old_directory, const char *old_path, int new_directory,
+             const char *new_path) {
+    static int (*next)(int, const char *, int, const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "renameat");
+    char old_buffer[PATH_MAX], new_buffer[PATH_MAX];
+    const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
+    const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
+    if (actual_old == NULL || actual_new == NULL) return -1;
+    return next(old_directory, actual_old, new_directory, actual_new);
+}
+
+int renameat2(int old_directory, const char *old_path, int new_directory,
+              const char *new_path, unsigned int flags) {
+    static int (*next)(int, const char *, int, const char *, unsigned int);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "renameat2");
+    char old_buffer[PATH_MAX], new_buffer[PATH_MAX];
+    const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
+    const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
+    if (actual_old == NULL || actual_new == NULL) return -1;
+    return next(old_directory, actual_old, new_directory, actual_new, flags);
 }
 
 int chdir(const char *path) {

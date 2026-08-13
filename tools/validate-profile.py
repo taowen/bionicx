@@ -18,8 +18,10 @@ try:
 except (OSError, json.JSONDecodeError) as error:
     fail(str(error))
 
-if profile.get("schemaVersion") != 1:
-    fail("schemaVersion must be 1")
+if profile.get("schemaVersion") != 2:
+    fail("schemaVersion must be 2")
+if "compatibility" in profile:
+    fail("compatibility modules were removed; every profile uses the runtime contract")
 if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", profile.get("id", "")):
     fail("id must be a safe lowercase identifier")
 launch = profile.get("launch")
@@ -44,6 +46,9 @@ if not isinstance(dpi, int) or not 72 <= dpi <= 400:
 for name in launch.get("environment", {}):
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
         fail(f"invalid environment variable: {name}")
+    if name in {"LD_PRELOAD", "BIONICX_ROOTFS", "BIONICX_TMPDIR",
+                "BIONICX_DNS_SERVERS"}:
+        fail(f"launch.environment may not override reserved runtime variable {name}")
 host_services = profile.get("hostServices", [])
 if not isinstance(host_services, list) or any(
         service not in ("dbus", "pulseaudio", "vulkan") for service in host_services):

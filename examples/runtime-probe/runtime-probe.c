@@ -504,7 +504,21 @@ int main(int argc, char **argv) {
              gnu_get_libc_version(), (long)getpid(), sysconf(_SC_PAGESIZE));
     check("runtime-identity", true, detail);
     check("pthread-create-join", test_pthread(), "");
-    check("pthread-robust-mutex", test_robust_mutex_isolated(detail, sizeof(detail)), detail);
+    pthread_mutexattr_t robust_attributes;
+    int robust_status = pthread_mutexattr_init(&robust_attributes);
+    if (robust_status == 0) {
+        robust_status = pthread_mutexattr_setrobust(
+                &robust_attributes, PTHREAD_MUTEX_ROBUST);
+        pthread_mutexattr_destroy(&robust_attributes);
+    }
+    if (robust_status == ENOTSUP) {
+        capability("pthread-robust-mutex", "unavailable", robust_status);
+    } else {
+        check("pthread-robust-mutex",
+              robust_status == 0 &&
+                      test_robust_mutex_isolated(detail, sizeof(detail)),
+              detail);
+    }
     check("fork-wait", test_fork_wait(), "");
     check("eventfd-epoll", test_eventfd_epoll(), "");
     check("timerfd-poll", test_timerfd(), "");

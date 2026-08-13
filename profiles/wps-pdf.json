@@ -1,15 +1,12 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "wps-office",
   "name": "WPS PDF (AArch64)",
   "display": {
     "dpi": 144,
     "socket": "filesystem"
   },
-  "compatibility": [
-    "wps"
-  ],
   "launch": {
     "mode": "direct",
     "executable": "${APP}/opt/kingsoft/wps-office/office6/wpspdf",
@@ -30,7 +27,7 @@
       "QT_OPENGL": "software",
       "LIBGL_ALWAYS_SOFTWARE": "1",
       "LD_LIBRARY_PATH": "${APP}/opt/kingsoft/wps-office/office6:${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu",
-      "LD_PRELOAD": "${RUNTIME}/usr/lib/aarch64-linux-gnu/libfreetype.so.6"
+      "QT_QPA_PLATFORM": "xcb"
     }
   }
 }

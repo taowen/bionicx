@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "thunar",
   "name": "Thunar (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},

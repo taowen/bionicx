@@ -13,13 +13,15 @@ and emit `BXCAP`: raw `set_robust_list`, user namespaces, SysV shared memory,
 and POSIX shared memory. A SIGSYS therefore becomes evidence instead of taking
 down the diagnostic process.
 
+All probes use the mandatory runtime contract. Android does not provide glibc
+robust-list owner-death semantics, so robust mutex setup is reported as
+`BXCAP ... unavailable` and returns `ENOTSUP`; it is not emulated.
+
 ```sh
 examples/runtime-probe/build-bundle.sh
 ANDROID_SERIAL=<serial> examples/runtime-probe/install-and-run.sh
 adb -s <serial> logcat -d -s BionicX | grep -E 'BX(TEST|CAP|SUMMARY)'
 ```
 
-`profiles/wps-compat-probe.json` runs the same binary with the WPS compatibility
-module and adds an Android-shell `popen` check. It deliberately sets a glibc
-`LD_LIBRARY_PATH` in the parent so the compatibility layer must sanitize the
-environment before executing Bionic `/system/bin/sh`.
+`profiles/wps-compat-probe.json` is retained as a controlled command-launch
+fixture, but it uses the same runtime contract as every other profile.

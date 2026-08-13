@@ -1,10 +1,9 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "firefox-esr",
   "name": "Firefox ESR (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
-  "compatibility": ["android-seccomp", "android-dns"],
   "launch": {
     "mode": "direct",
     "executable": "${RUNTIME}/usr/lib/firefox-esr/firefox-esr",

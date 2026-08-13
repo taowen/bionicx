@@ -20,7 +20,7 @@ import java.util.Map;
 
 /** Immutable, validated launch description for one glibc application. */
 public final class AppProfile {
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
 
     public final String id;
     public final String name;
@@ -36,13 +36,14 @@ public final class AppProfile {
     public final boolean debugStop;
     public final List<String> arguments;
     public final Map<String, String> environment;
-    public final List<String> compatibility;
     public final List<String> hostServices;
 
     private AppProfile(JSONObject root) throws JSONException {
         int schema = root.getInt("schemaVersion");
         if (schema != SCHEMA_VERSION)
             throw new JSONException("unsupported schemaVersion: " + schema);
+        if (root.has("compatibility"))
+            throw new JSONException("compatibility modules are not part of schema 2");
         id = requireId(root.getString("id"));
         name = root.optString("name", id);
 
@@ -72,7 +73,6 @@ public final class AppProfile {
             throw new JSONException("loader mode needs loader and libraryPath");
 
         arguments = stringList(launch.optJSONArray("arguments"));
-        compatibility = stringList(root.optJSONArray("compatibility"));
         hostServices = stringList(root.optJSONArray("hostServices"));
         for (String service : hostServices) {
             if (!service.equals("dbus") && !service.equals("pulseaudio")
@@ -87,6 +87,10 @@ public final class AppProfile {
                 String key = keys.next();
                 if (!key.matches("[A-Za-z_][A-Za-z0-9_]*"))
                     throw new JSONException("invalid environment name: " + key);
+                if (key.equals("LD_PRELOAD") || key.equals("BIONICX_ROOTFS")
+                        || key.equals("BIONICX_TMPDIR")
+                        || key.equals("BIONICX_DNS_SERVERS"))
+                    throw new JSONException("reserved runtime environment name: " + key);
                 environment.put(key, env.getString(key));
             }
         }

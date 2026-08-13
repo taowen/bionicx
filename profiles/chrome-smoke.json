@@ -1,10 +1,9 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "chrome",
   "name": "Google Chrome stable ARM64 smoke test",
   "display": {"dpi": 144, "socket": "filesystem"},
-  "compatibility": ["android-seccomp", "android-dns", "chrome"],
   "launch": {
     "mode": "direct",
     "executable": "${APP}/opt/google/chrome/chrome",

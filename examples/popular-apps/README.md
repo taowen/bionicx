@@ -1,6 +1,6 @@
 # Popular creative and media application cohort
 
-This cohort adds six real Debian 13 trixie ARM64 applications to the same
+This cohort adds nine real Debian 13 trixie ARM64 applications to the same
 pinned apt/dpkg runtime used by Chrome, WPS, IceWM, xterm and the XFCE cohort:
 
 - GIMP 3 exercises a large GTK image-editing application and plugin runtime.
@@ -9,22 +9,29 @@ pinned apt/dpkg runtime used by Chrome, WPS, IceWM, xterm and the XFCE cohort:
 - Geany exercises GTK editing, syntax highlighting and file persistence.
 - FileZilla exercises wxWidgets, TLS/network configuration and a dense UI.
 - Thunderbird exercises Mozilla's large GTK/X11 and multi-process runtime.
+- Krita exercises a large Qt painting application, image codecs and durable
+  image editing.
+- qBittorrent exercises a modern Qt network client and persistent transfer
+  metadata.
+- KeePassXC exercises encrypted database creation, unlock and clipboard use.
 
-The bundle generates deterministic PNG, SVG, YUV4MPEG2, raw I420, PCM WAV and
-AVI fixtures without downloading per-application dependency trees. The AVI is
+The fixture builder generates deterministic PNG, SVG, YUV4MPEG2, raw I420, PCM
+WAV, AVI and torrent fixtures. It never builds or copies a rootfs; install the
+declared packages into the phone's shared rootfs first. The AVI is
 muxed directly in Python from 90 I420 frames and a 48 kHz stereo tone. VLC
 therefore exercises one real AVI demux, raw-video decoder, PCM decoder, X11
 video output and PulseAudio-to-AAudio path in the same process:
 
 ```sh
 examples/popular-apps/build-bundle.sh
+tools/bxapt --serial <serial> set packages/trixie-popular.txt
 tools/install-profile.sh --profile profiles/gimp.json \
-  --app-root build/popular-apps-bundle/app \
-  --runtime-root build/popular-apps-bundle/rootfs
+  --app-root build/popular-apps-bundle/app --serial <serial>
 ```
 
 Use `profiles/inkscape.json`, `profiles/vlc.json`, `profiles/geany.json`,
-`profiles/filezilla.json` or `profiles/thunderbird.json` for the other
+`profiles/filezilla.json`, `profiles/thunderbird.json`, `profiles/krita.json`,
+`profiles/qbittorrent.json` or `profiles/keepassxc.json` for the other
 applications.
 An accepted integration must launch untraced under the ordinary Android app
 UID and complete a visible application-specific workflow.

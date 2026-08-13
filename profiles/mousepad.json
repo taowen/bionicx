@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "mousepad",
   "name": "Mousepad (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},

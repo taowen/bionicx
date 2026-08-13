@@ -1,11 +1,10 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "vulkan-probe",
   "name": "Host Vulkan probe",
   "display": {"dpi": 144, "socket": "filesystem"},
   "hostServices": ["vulkan"],
-  "compatibility": [],
   "launch": {
     "mode": "loader",
     "executable": "${APP}/bin/vulkan-probe",

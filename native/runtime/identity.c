@@ -1,0 +1,94 @@
+#define _GNU_SOURCE
+#include <dlfcn.h>
+#include <errno.h>
+#include <grp.h>
+#include <limits.h>
+#include <pwd.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+static int synthetic_user(uid_t uid, struct passwd *value, char *buffer,
+                          size_t length, struct passwd **result) {
+    const char *home = getenv("HOME");
+    if (home == NULL || home[0] != '/') home = "/tmp";
+    const char *fields[] = {"bionicx", "x", "BionicX Android app", home,
+                            "/bin/sh"};
+    size_t required = 0;
+    for (size_t i = 0; i < sizeof(fields) / sizeof(fields[0]); ++i)
+        required += strlen(fields[i]) + 1;
+    if (length < required) return ERANGE;
+    char *cursor = buffer;
+#define COPY_FIELD(member, index) do { \
+    value->member = cursor; \
+    size_t field_length = strlen(fields[index]) + 1; \
+    memcpy(cursor, fields[index], field_length); \
+    cursor += field_length; \
+} while (0)
+    COPY_FIELD(pw_name, 0);
+    COPY_FIELD(pw_passwd, 1);
+    COPY_FIELD(pw_gecos, 2);
+    COPY_FIELD(pw_dir, 3);
+    COPY_FIELD(pw_shell, 4);
+#undef COPY_FIELD
+    value->pw_uid = uid;
+    value->pw_gid = getegid();
+    *result = value;
+    return 0;
+}
+
+int getpwuid_r(uid_t uid, struct passwd *value, char *buffer, size_t length,
+               struct passwd **result) {
+    static int (*next)(uid_t, struct passwd *, char *, size_t,
+                       struct passwd **);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "getpwuid_r");
+    int status = next(uid, value, buffer, length, result);
+    if ((status != 0 || *result == NULL) && uid == geteuid())
+        return synthetic_user(uid, value, buffer, length, result);
+    return status;
+}
+
+struct passwd *getpwuid(uid_t uid) {
+    static __thread struct passwd value;
+    static __thread char buffer[PATH_MAX];
+    struct passwd *result = NULL;
+    int status = getpwuid_r(uid, &value, buffer, sizeof(buffer), &result);
+    if (status != 0) errno = status;
+    return status == 0 ? result : NULL;
+}
+
+static int synthetic_group(gid_t gid, struct group *value, char *buffer,
+                           size_t length, struct group **result) {
+    static __thread char *members[] = {NULL};
+    const char name[] = "bionicx";
+    const char password[] = "x";
+    if (length < sizeof(name) + sizeof(password)) return ERANGE;
+    memcpy(buffer, name, sizeof(name));
+    memcpy(buffer + sizeof(name), password, sizeof(password));
+    value->gr_name = buffer;
+    value->gr_passwd = buffer + sizeof(name);
+    value->gr_gid = gid;
+    value->gr_mem = members;
+    *result = value;
+    return 0;
+}
+
+int getgrgid_r(gid_t gid, struct group *value, char *buffer, size_t length,
+               struct group **result) {
+    static int (*next)(gid_t, struct group *, char *, size_t, struct group **);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "getgrgid_r");
+    int status = next(gid, value, buffer, length, result);
+    if ((status != 0 || *result == NULL) && gid == getegid())
+        return synthetic_group(gid, value, buffer, length, result);
+    return status;
+}
+
+struct group *getgrgid(gid_t gid) {
+    static __thread struct group value;
+    static __thread char buffer[PATH_MAX];
+    struct group *result = NULL;
+    int status = getgrgid_r(gid, &value, buffer, sizeof(buffer), &result);
+    if (status != 0) errno = status;
+    return status == 0 ? result : NULL;
+}

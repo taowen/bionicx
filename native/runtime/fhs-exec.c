@@ -1,4 +1,4 @@
-#include "rootfs-internal.h"
+#include "runtime-internal.h"
 
 #include <dlfcn.h>
 
@@ -54,8 +54,8 @@ static char **script_arguments(const char *path, char *const arguments[],
 }
 
 static void ensure_rootfs_path(void) {
-    const char *root = getenv("BIONICX_ROOTFS");
-    const char *current = getenv("PATH");
+    const char *root = bionicx_getenv("BIONICX_ROOTFS");
+    const char *current = bionicx_getenv("PATH");
     if (root == NULL || root[0] != '/' ||
             (current != NULL && strncmp(current, root, strlen(root)) == 0))
         return;
@@ -116,7 +116,7 @@ int execvp(const char *path, char *const arguments[]) {
     if (actual == NULL) return -1;
     ensure_rootfs_path();
     if (actual == path && strchr(path, '/') == NULL) {
-        const char *root = getenv("BIONICX_ROOTFS");
+        const char *root = bionicx_getenv("BIONICX_ROOTFS");
         static const char *directories[] = {
             "/usr/sbin", "/usr/bin", "/sbin", "/bin"
         };

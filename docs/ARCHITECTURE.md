@@ -7,8 +7,7 @@ Every path exposed to a profile is app-private:
 ```text
 files/
   bin/bionicx-exec
-  lib/libbionicx-rootfs.so
-  lib/libbionicx-<other-module>.so
+  lib/libbionicx-runtime.so
   profiles/active.json
   apps/<id>/                 ${APP}
   homes/<id>/                ${HOME}
@@ -20,12 +19,11 @@ Application and runtime trees are separate so several applications can share
 one audited glibc closure while keeping their configuration and mutable home
 directories isolated from each other.
 
-Chrome, WPS and IceWM are installed together by ordinary `apt`/`dpkg` inside a
-pinned ARM64 Debian 13 (trixie) build container. This preserves package
-dependency semantics, maintainer-script output, multiarch paths, shared data
-and `/var/lib/dpkg`; it replaces the earlier model that inferred a flat set of
-ELF files separately for each application. After package configuration, `/opt`
-application payloads are split from the shared system image into profile trees.
+The device owns one Debian 13 (trixie) rootfs and one dpkg database. Debian
+packages and hash-pinned external `.deb` files are installed by the rootfs's
+real apt/dpkg through `bxapt`; `/opt`, package data and dependencies remain in
+that shared tree. Profiles never carry a dependency closure or private system
+library copy.
 
 The Debian snapshot timestamp, base-image digest and external package hashes
 are immutable inputs. The host-built image remains the reproducible seed for
@@ -34,9 +32,9 @@ as the application UID, using the same signed snapshot, package database,
 maintainer scripts and triggers. It adds packages to the shared rootfs instead
 of constructing another per-application library closure.
 
-This is a deployed userspace layout, not a chroot. The opt-in `rootfs`
-compatibility module maps the supported FHS paths into the app-private tree and
-preserves that mapping across package helper and interpreter execution.
+This is a deployed userspace layout, not a chroot. Every Debian process enters
+one mandatory runtime contract (`libbionicx-runtime.so`) which defines the
+Android-kernel, FHS, identity and DNS boundary consistently.
 
 ## 2. ELF handoff
 
@@ -69,10 +67,11 @@ from accidentally consuming glibc loader configuration.
 
 ## 3. Profile contract
 
-Profiles are versioned JSON documents. The Android host validates the ID,
-launch mode, environment names, DPI, socket mode, and compatibility module
-names. Values may use `${FILES}`, `${APP}`, `${RUNTIME}`, `${HOME}`, `${TMP}`,
-and `${DISPLAY}`.
+Profiles are versioned JSON documents. Schema version 2 validates the ID,
+launch mode, environment names, DPI, socket mode and host services. Values may
+use `${FILES}`, `${APP}`, `${RUNTIME}`, `${HOME}`, `${TMP}`, and `${DISPLAY}`.
+There is no compatibility-module field: profiles cannot change the runtime
+ABI boundary. `LD_PRELOAD` and `BIONICX_*` runtime variables are reserved.
 
 The profile is configuration, not an installer. Bundle acquisition, license
 acceptance, recursive dependency resolution, interpreter relocation, and
@@ -110,28 +109,20 @@ client before enabling it as the Chrome/WPS GPU acceptance path. CPU rendering
 remains a required fallback and is tested independently, so a direct-rendering
 failure cannot be masked by toolkit screenshots.
 
-## 5. Compatibility modules
+## 5. Runtime contract
 
-Compatibility belongs at observable ABI boundaries and is opt-in. The WPS
-module currently provides process-local SysV semaphores and Android-aware
-`popen/pclose`. A new application should not inherit it unless traces prove it
-needs those semantics.
+`libbionicx-runtime.so` is mandatory for applications, D-Bus and package
+helpers. Its implementation is split only for source ownership:
 
-The `rootfs` module is the shared Debian execution boundary. Its public surface
-is one preload, while its implementation is split by responsibility:
+- `android-kernel.c` defines Android seccomp/syscall behavior;
+- `fhs-path.c`, `fhs-exec.c` and `fhs-metadata.c` map the single shared rootfs;
+- `identity.c` exposes the current Android app UID/GID to glibc software;
+- `dns.c` supplies the Android network's active resolvers.
 
-- `rootfs-path.c` maps supported FHS and temporary paths, libc temporary-file
-  APIs, and pathname Unix sockets;
-- `rootfs-exec.c` keeps rootfs PATH entries across child processes and executes
-  scripts through their actual rootfs shebang interpreter;
-- `rootfs-metadata.c` maps mode/ownership operations and defines the app-UID
-  ownership policy used by rootless dpkg maintainer scripts.
-
-Profiles request this boundary as `"compatibility": ["rootfs"]`. There is no
-legacy module alias or fallback name.
-
-Future modules can cover narrow filesystem, IPC, or desktop-service gaps, but
-the project does not aim to translate arbitrary Linux syscalls.
+These are not selectable plugins and cannot vary by application. Unsupported
+kernel capabilities are explicit. In particular robust pthread mutexes return
+`ENOTSUP`, while ordinary pthread creation is required and integration-tested.
+Application-specific preload libraries and fallback module names are absent.
 
 ## 6. Desktop services
 

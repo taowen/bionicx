@@ -1,10 +1,9 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "wps-compat-probe",
   "name": "BionicX WPS compatibility probe",
   "display": {"dpi": 144, "socket": "filesystem"},
-  "compatibility": ["wps"],
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",

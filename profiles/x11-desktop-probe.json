@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "x11-desktop-probe",
   "name": "BionicX X11 desktop extension probe",
   "display": {"dpi": 144, "socket": "filesystem"},

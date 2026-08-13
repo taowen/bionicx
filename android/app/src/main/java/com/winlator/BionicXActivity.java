@@ -54,6 +54,11 @@ public final class BionicXActivity extends Activity {
         try {
             profile = AppProfile.load(this);
             profile.createPrivateDirectories(this);
+            File executor = extractAsset("bionicx/bin/bionicx-exec",
+                    new File(getFilesDir(), "bin/bionicx-exec"));
+            Os.chmod(executor.getPath(), 0700);
+            extractAsset("bionicx/lib/libbionicx-runtime.so",
+                    new File(getFilesDir(), "lib/libbionicx-runtime.so"));
             startXServer();
             new Thread(this::launchProfile, "bionicx-launcher").start();
         }
@@ -128,8 +133,7 @@ public final class BionicXActivity extends Activity {
 
     private void launchProfile() {
         try {
-            File executor = extractAsset("bionicx/bin/bionicx-exec",
-                    new File(getFilesDir(), "bin/bionicx-exec"));
+            File executor = new File(getFilesDir(), "bin/bionicx-exec");
             Os.chmod(executor.getPath(), 0700);
 
             List<String> command = new ArrayList<>();
@@ -151,8 +155,6 @@ public final class BionicXActivity extends Activity {
             }
 
             for (Map.Entry<String, String> variable : profile.environment.entrySet()) {
-                if (!profile.compatibility.isEmpty()
-                        && variable.getKey().equals("LD_PRELOAD")) continue;
                 command.add("--env");
                 command.add(variable.getKey() + "="
                         + profile.expand(this, variable.getValue()));
@@ -168,43 +170,23 @@ public final class BionicXActivity extends Activity {
                 command.add("LD_LIBRARY_PATH="
                         + profile.expand(this, profile.libraryPath));
             }
-            if (profile.compatibility.contains("android-dns")
-                    && !profile.environment.containsKey("BIONICX_DNS_SERVERS")) {
-                List<String> servers = new NetworkHelper(this).getIPv4DnsServers();
-                Log.i(TAG, "discovered " + servers.size() + " IPv4 DNS server(s)");
-                command.add("--env");
-                command.add("BIONICX_DNS_SERVERS=" + String.join(",", servers));
-            }
-            if (profile.compatibility.contains("rootfs")
-                    && !profile.environment.containsKey("BIONICX_TMPDIR")) {
-                command.add("--env");
-                command.add("BIONICX_TMPDIR="
-                        + profile.expand(this, "${CACHE}"));
-            }
+            List<String> servers = new NetworkHelper(this).getIPv4DnsServers();
+            Log.i(TAG, "runtime DNS servers=" + servers.size());
+            command.add("--env");
+            command.add("BIONICX_DNS_SERVERS=" + String.join(",", servers));
+            command.add("--env");
+            command.add("BIONICX_ROOTFS=" + profile.expand(this, "${RUNTIME}"));
+            command.add("--env");
+            command.add("BIONICX_TMPDIR=" + profile.expand(this, "${CACHE}"));
             if (profile.hostServices.contains("dbus")
                     && !profile.environment.containsKey("DBUS_SESSION_BUS_ADDRESS")) {
                 command.add("--env");
                 command.add("DBUS_SESSION_BUS_ADDRESS=unix:path="
                         + profile.expand(this, "${TMP}/runtime/bus"));
             }
-            if (!profile.compatibility.isEmpty()) {
-                List<String> preloads = new ArrayList<>();
-                for (String module : profile.compatibility) {
-                    if (!module.matches("[a-z0-9][a-z0-9_-]*"))
-                        throw new IOException("invalid compatibility module: " + module);
-                    File library = extractAsset(
-                            "bionicx/lib/libbionicx-" + module + ".so",
-                            new File(getFilesDir(),
-                                    "lib/libbionicx-" + module + ".so"));
-                    preloads.add(library.getPath());
-                }
-                String configured = profile.environment.containsKey("LD_PRELOAD")
-                        ? profile.expand(this, profile.environment.get("LD_PRELOAD"))
-                        : "";
-                if (!configured.isEmpty()) preloads.add(configured);
-                command.add("--env");
-                command.add("LD_PRELOAD=" + String.join(":", preloads));
-            }
+            command.add("--env");
+            command.add("LD_PRELOAD="
+                    + new File(getFilesDir(), "lib/libbionicx-runtime.so").getPath());
             command.add("--");
             String executable = profile.expand(this, profile.executable);
             File executableFile = new File(executable);

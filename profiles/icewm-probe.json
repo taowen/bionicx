@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "icewm-probe",
   "name": "BionicX IceWM managed desktop probe",
   "display": {"dpi": 144, "socket": "filesystem"},

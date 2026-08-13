@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "loader-argv0-probe",
   "name": "BionicX glibc loader argv0 probe",
   "display": {"dpi": 144, "socket": "filesystem"},

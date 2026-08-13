@@ -1,11 +1,10 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "dbus-probe",
   "name": "D-Bus session probe (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
   "hostServices": ["dbus"],
-  "compatibility": ["android-seccomp", "rootfs"],
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
@@ -18,7 +17,6 @@
     ],
     "environment": {
       "HOME": "${HOME}", "TMPDIR": "${CACHE}",
-      "BIONICX_ROOTFS": "${RUNTIME}",
       "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
       "LANG": "C.UTF-8"
     }

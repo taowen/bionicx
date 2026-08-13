@@ -1,11 +1,10 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "thunderbird",
   "name": "Thunderbird (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
   "hostServices": ["dbus"],
-  "compatibility": ["android-seccomp", "android-dns", "rootfs"],
   "launch": {
     "mode": "direct",
     "executable": "${RUNTIME}/usr/lib/thunderbird/thunderbird",
@@ -20,7 +19,6 @@
       "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
       "SSL_CERT_FILE": "${RUNTIME}/etc/ssl/certs/ca-certificates.crt",
       "MOZ_ENABLE_WAYLAND": "0", "MOZILLA_FIVE_HOME": "${RUNTIME}/usr/lib/thunderbird",
-      "BIONICX_ROOTFS": "${RUNTIME}",
       "NO_AT_BRIDGE": "1",
       "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin", "LANG": "C.UTF-8",
       "LD_LIBRARY_PATH": "${RUNTIME}/usr/lib:${RUNTIME}/usr/lib/aarch64-linux-gnu:${RUNTIME}/usr/lib/thunderbird"

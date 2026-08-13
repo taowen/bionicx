@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
-import java.util.Map;
 
 /** App-private glibc D-Bus session daemon from the shared Debian rootfs. */
 public final class DBusComponent extends EnvironmentComponent {
@@ -30,7 +29,11 @@ public final class DBusComponent extends EnvironmentComponent {
         File rootfs = environment.getRootFS().getRootDir();
         File daemon = new File(rootfs, "usr/bin/dbus-daemon");
         File config = new File(rootfs, "usr/share/dbus-1/session.conf");
-        if (!daemon.isFile() || !config.isFile())
+        File files = rootfs.getParentFile();
+        File executor = new File(files, "bin/bionicx-exec");
+        File runtime = new File(files, "lib/libbionicx-runtime.so");
+        if (!daemon.isFile() || !config.isFile() || !executor.isFile()
+                || !runtime.isFile())
             throw new IllegalStateException("D-Bus package is absent from rootfs");
         File parent = socket.getParentFile();
         if (!parent.isDirectory() && !parent.mkdirs())
@@ -39,17 +42,25 @@ public final class DBusComponent extends EnvironmentComponent {
             throw new IllegalStateException("cannot remove stale D-Bus socket");
 
         ProcessBuilder builder = new ProcessBuilder(Arrays.asList(
+                executor.getAbsolutePath(),
+                "--loader", new File(rootfs, "usr/lib/ld-linux-aarch64.so.1").getAbsolutePath(),
+                "--library-path", new File(rootfs, "usr/lib") + ":"
+                        + new File(rootfs, "usr/lib/aarch64-linux-gnu"),
+                "--cwd", home.getAbsolutePath(),
+                "--env", "HOME=" + home.getAbsolutePath(),
+                "--env", "TMPDIR=" + parent.getAbsolutePath(),
+                "--env", "LD_LIBRARY_PATH=" + new File(rootfs, "usr/lib") + ":"
+                        + new File(rootfs, "usr/lib/aarch64-linux-gnu"),
+                "--env", "LD_PRELOAD=" + runtime.getAbsolutePath(),
+                "--env", "BIONICX_ROOTFS=" + rootfs.getAbsolutePath(),
+                "--env", "BIONICX_TMPDIR=" + parent.getAbsolutePath(),
+                "--",
                 daemon.getAbsolutePath(),
                 "--nofork", "--nopidfile", "--nosyslog",
                 "--address=unix:path=" + socket.getAbsolutePath(),
                 "--config-file=" + config.getAbsolutePath()));
         builder.directory(home);
         builder.redirectErrorStream(true);
-        Map<String, String> variables = builder.environment();
-        variables.put("HOME", home.getAbsolutePath());
-        variables.put("TMPDIR", parent.getAbsolutePath());
-        variables.put("LD_LIBRARY_PATH", new File(rootfs, "usr/lib") + ":"
-                + new File(rootfs, "usr/lib/aarch64-linux-gnu"));
         try {
             process = builder.start();
             logThread = new Thread(() -> pump(process), "bionicx-dbus-log");

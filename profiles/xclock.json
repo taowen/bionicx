@@ -1,10 +1,9 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "xclock",
   "name": "XClock (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
-  "compatibility": ["rootfs"],
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",

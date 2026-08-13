@@ -1,10 +1,9 @@
 {
   "$schema": "../schemas/profile.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "gimp",
   "name": "GIMP 3 (Debian trixie ARM64)",
   "display": {"dpi": 144, "socket": "filesystem"},
-  "compatibility": ["android-seccomp", "android-dns", "rootfs"],
   "launch": {
     "mode": "loader",
     "loader": "${RUNTIME}/usr/lib/ld-linux-aarch64.so.1",
