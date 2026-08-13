@@ -1,0 +1,13 @@
+===== xterm =====
+name=xterm alive=1 bytes=15567 
+===== thunar =====
+name=thunar alive=1 bytes=34538 
+===== mousepad =====
+name=mousepad alive=1 bytes=26580 
+===== ristretto =====
+name=ristretto alive=1 bytes=48030 
+===== evince =====
+name=evince alive=0 bytes=10693 I/BionicX ( 6495): evince exited with 134 
+===== geany =====
+name=geany alive=1 bytes=57704 
+DONE
