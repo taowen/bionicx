@@ -226,6 +226,17 @@ environment=(
     "TMPDIR=$run_dir"
 )
 
+# dpkg intentionally runs maintainer scripts without a kernel chroot because
+# the Android app UID cannot call chroot(2). Give apt/dpkg and their children
+# the same logical uid/gid 0 contract that the runtime's virtual chroot would
+# establish, while retaining the app's real kernel credentials. Generic
+# `bxapt run` commands and application profiles must continue to observe the
+# ordinary Android UID.
+case "$command_name" in
+    run|query) ;;
+    *) environment+=("BIONICX_VIRTUAL_ROOT=1") ;;
+esac
+
 run_binary() {
     local command_arguments=("${arguments[@]}")
     if [[ "$binary" == "$root/usr/bin/apt-get" ]]; then

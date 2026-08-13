@@ -32,6 +32,13 @@ as the application UID, using the same signed snapshot, package database,
 maintainer scripts and triggers. It adds packages to the shared rootfs instead
 of constructing another per-application library closure.
 
+The package transaction has a logical Debian uid/gid 0 while the kernel still
+sees the ordinary Android application credentials. In that virtual-root
+namespace glibc consults only the rootfs passwd/group databases; Android's uid
+fallback remains available to normal application processes but cannot occupy
+Debian's system-account range. This identity switch is scoped to apt/dpkg and
+is not exported by `bxapt run` or an application profile.
+
 Package installation is split at the real dpkg transaction boundary: apt first
 downloads the resolved set, dpkg unpacks it, BionicX normalizes the new ELFs,
 then apt configures packages and runs triggers. This ensures maintainer-script

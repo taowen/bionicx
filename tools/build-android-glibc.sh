@@ -41,6 +41,7 @@ definition_hash="$({
     printf '%s\n' "$glibc_version" "$glibc_sha256" "$package_commit"
     sha256sum "$repo_dir/tools/container/Containerfile.glibc-arm64" \
         "$repo_dir/runtime/glibc/2.41/zz-bionicx-robust-fallback.patch" \
+        "$repo_dir/runtime/glibc/2.41/zz-android-group-members.patch" \
         "$0" | cut -d ' ' -f1
 } | sha256sum | cut -c1-16)"
 result_dir="$cache_dir/android-glibc-$definition_hash"
@@ -112,6 +113,8 @@ mv "$linux_dir/aarch64/syscall.S" "$linux_dir/aarch64/syscallS.S"
 
 cp "$temporary/package"/android_passwd_group.{c,h} \
     "$temporary/package"/android_system_user_ids.h "$temporary/source/nss/"
+apply_source_patch \
+    "$repo_dir/runtime/glibc/2.41/zz-android-group-members.patch"
 bash "$temporary/package/gen-android-ids.sh" "$source_prefix" \
     "$temporary/source/nss/android_ids.h" \
     "$temporary/package/android_system_user_ids.h"
