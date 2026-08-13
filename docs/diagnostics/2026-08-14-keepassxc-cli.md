@@ -40,3 +40,19 @@ An unmapped 64×64 window used to make Gladio skip display-buffer creation
 
 The GUI profile now uses Gladio the same way as Krita. `qglx_findConfig`
 no longer fires; the process still dies with status 0xb.
+
+## Diagnosed 139
+
+`bionicx-exec --diagnose-signals` on the same X server:
+
+```text
+signal=11 code=1 address=0x20 x0=0x0
+pc libQt5Widgets.so.5.15.15+0x1cf15c
+lr libQt5Widgets.so.5.15.15+0x1cf248
+```
+
+That is `QWidgetPrivate::showChildren(bool)` loading `child->d_ptr+0x20`
+when `d_ptr` is NULL. A generic `QMainWindow`+`QLabel` `show()` on the
+same xcb path (`examples/qt-widgets-show-probe`, no Gladio,
+`QT_XCB_GL_INTEGRATION=none`) does **not** crash. The bad child is
+KeePassXC-specific, not every Qt `show()`.

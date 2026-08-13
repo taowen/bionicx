@@ -1,0 +1,15 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/qt-gui-segv-probe-bundle/app/lib/libGL.so.1.7.0
+profile qt-gui-segv-probe is valid
+bionicx-exec: running untraced pid=24317
+bionicx-exec: running untraced pid=24328
+bionicx ELF fixups: 2 entries
+installed profile qt-gui-segv-probe for io.taowen.bx
+I/BionicX (24437): BXTEST PASS xtst-soname libXtst.so.6
+I/BionicX (24437): BXTEST PASS xinput-query XInputExtension
+I/BionicX (24437): BXTEST PASS xtest-query XTEST
+I/BionicX (24437): BXTEST PASS xtest-version 2.2
+I/BionicX (24437): BXTEST PASS xtest-fake-key A
+I/BionicX (24437): BXTEST PASS autotype-dlopen keepassxc-autotype-xcb
+I/BionicX (24437): BXTEST PASS qt-draw-after-current OpenGL ES 3.2 Gladio
+I/BionicX (24437): BXSUMMARY qt-gui-segv passed=7 failed=0
+I/BionicX (24437): qt-gui-segv-probe exited with 0

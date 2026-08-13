@@ -1,0 +1,8 @@
+I/BionicX (24077): profile=qt-widgets-show-probe display=1920x1080@144 socket=filesystem
+I/BionicX (24077): launching Qt Widgets show() probe: [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --cwd, /data/user/0/io.taowen.bx/files/apps/qt-widgets-show-probe, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/qt-widgets-show-probe, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/qt-widgets-show-probe, --env, QT_QPA_PLATFORM=xcb, --env, QT_XCB_GL_INTEGRATION=none, --env, QT_PLUGIN_PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/qt5/plugins, --env, QT_XKB_CONFIG_ROOT=/data/user/0/io.taowen.bx/files/rootfs/usr/share/X11/xkb, --env, QT_STYLE_OVERRIDE=Fusion, --env, NO_AT_BRIDGE=1, --env, LANG=C.UTF-8, --env, BIONICX_DNS_SERVERS=172.19.0.2, --env, BIONICX_ROOTFS=/data/user/0/io.taowen.bx/files/rootfs, --env, BIONICX_APP=/data/user/0/io.taowen.bx/files/apps/qt-widgets-show-probe, --env, BIONICX_TMPDIR=/data/user/0/io.taowen.bx/cache, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/rootfs/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, FONTCONFIG_SYSROOT=/data/user/0/io.taowen.bx/files/rootfs, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-runtime.so, --, /data/user/0/io.taowen.bx/files/apps/qt-widgets-show-probe/bin/qt-widgets-show-probe]
+I/BionicX (24077): QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/data/user/0/io.taowen.bx/files/run/qt-widgets-show-probe/runtime-u0_a194'
+I/BionicX (24077): BXTEST PASS qt-widgets-show visible
+I/BionicX (24077): BXTEST PASS qt-widgets-chrome visible
+I/BionicX (24077): BXTEST PASS qt-widgets-exec rc=0
+I/BionicX (24077): BXSUMMARY qt-widgets-show passed=3 failed=0
+I/BionicX (24077): qt-widgets-show-probe exited with 0

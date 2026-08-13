@@ -1,0 +1,27 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "qt-widgets-show-probe",
+  "name": "Qt Widgets show() probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "launch": {
+    "executable": "${APP}/bin/qt-widgets-show-probe",
+    "workingDirectory": "${APP}",
+    "arguments": [],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "QT_QPA_PLATFORM": "xcb",
+      "QT_XCB_GL_INTEGRATION": "none",
+      "QT_PLUGIN_PATH": "${RUNTIME}/usr/lib/aarch64-linux-gnu/qt5/plugins",
+      "QT_XKB_CONFIG_ROOT": "${RUNTIME}/usr/share/X11/xkb",
+      "QT_STYLE_OVERRIDE": "Fusion",
+      "NO_AT_BRIDGE": "1",
+      "LANG": "C.UTF-8"
+    }
+  }
+}
