@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+serial="${ANDROID_SERIAL:-}"
+package_id=io.taowen.bx
+
+usage() {
+    echo "usage: tools/bxapt [--serial SERIAL] COMMAND [APT-ARG ...]" >&2
+    echo "commands: update, install, remove, apt, dpkg" >&2
+    exit 2
+}
+
+if [[ "${1:-}" == --serial ]]; then
+    [[ $# -ge 3 ]] || usage
+    serial="$2"
+    shift 2
+fi
+[[ $# -ge 1 ]] || usage
+command_name="$1"
+shift
+
+adb=(adb)
+[[ -z "$serial" ]] || adb+=(-s "$serial")
+root=/data/user/0/$package_id/files/rootfs
+files=/data/user/0/$package_id/files
+runtime_libs="$root/usr/lib:$root/usr/lib/aarch64-linux-gnu"
+perl_libs="$root/etc/perl:$root/usr/share/perl5:$root/usr/lib/aarch64-linux-gnu/perl-base:$root/usr/lib/aarch64-linux-gnu/perl/5.40:$root/usr/share/perl/5.40"
+device_config="$files/run/bxapt/apt.conf"
+preloads="$files/lib/libbionicx-android-tmp.so"
+dns_servers="${BIONICX_DNS_SERVERS:-}"
+if [[ -z "$dns_servers" ]]; then
+    dns_servers="$("${adb[@]}" shell dumpsys connectivity 2>/dev/null |
+        sed -n 's/.*DnsAddresses: \[[^]]*\/\([0-9][0-9.]*\).*/\1/p' |
+        head -n 1)"
+fi
+if [[ -n "$dns_servers" ]]; then
+    preloads+=":$files/lib/libbionicx-android-dns.so"
+fi
+
+case "$command_name" in
+    update) arguments=(update) ;;
+    install) [[ $# -ge 1 ]] || usage; arguments=(install -y --no-install-recommends "$@") ;;
+    remove) [[ $# -ge 1 ]] || usage; arguments=(remove -y "$@") ;;
+    apt) arguments=("$@") ;;
+    dpkg) arguments=() ;;
+    *) usage ;;
+esac
+
+"${adb[@]}" shell run-as "$package_id" mkdir -p \
+    files/run/bxapt files/run/bxapt/apt.conf.d files/homes/bxapt \
+    files/rootfs/var/lib/apt/lists/partial \
+    files/rootfs/var/cache/apt/archives/partial \
+    files/rootfs/var/log/apt
+sed -e "s|@ROOT@|$root|g" -e "s|@FILES@|$files|g" \
+    "$repo_dir/tools/bxapt.conf.in" > \
+    "$repo_dir/build/bxapt.conf"
+"${adb[@]}" push "$repo_dir/build/bxapt.conf" /data/local/tmp/bxapt.conf >/dev/null
+"${adb[@]}" shell run-as "$package_id" cp /data/local/tmp/bxapt.conf \
+    files/run/bxapt/apt.conf
+"${adb[@]}" shell rm /data/local/tmp/bxapt.conf
+"${adb[@]}" shell run-as "$package_id" cp \
+    files/rootfs/etc/apt/sources.list.d/debian.sources \
+    files/run/bxapt/sources.sources
+
+binary="$root/usr/bin/apt-get"
+if [[ "$command_name" == dpkg ]]; then
+    binary="$root/usr/bin/dpkg"
+    arguments=(--force-not-root --force-script-chrootless \
+        --root="$root" --admindir="$root/var/lib/dpkg" "$@")
+fi
+
+"${adb[@]}" shell run-as "$package_id" "$files/bin/bionicx-exec" \
+    --loader "$root/usr/lib/ld-linux-aarch64.so.1" \
+    --library-path "$runtime_libs" \
+    --cwd "$root" \
+    --env "APT_CONFIG=$device_config" \
+    --env "DPKG_DATADIR=$root/usr/share/dpkg" \
+    --env "DPKG_ROOT=$root" \
+    --env "LD_LIBRARY_PATH=$runtime_libs" \
+    --env "LD_PRELOAD=$preloads" \
+    --env "BIONICX_ROOTFS=$root" \
+    --env "BIONICX_TMPDIR=$files/run/bxapt" \
+    --env "BIONICX_DNS_SERVERS=$dns_servers" \
+    --env "SEQUOIA_CRYPTO_POLICY=$root/usr/share/apt/default-sequoia.config" \
+    --env "PERL5LIB=$perl_libs" \
+    --env "DEBIAN_FRONTEND=noninteractive" \
+    --env "DEBCONF_NONINTERACTIVE_SEEN=true" \
+    --env "PATH=$root/usr/sbin:$root/usr/bin:$root/sbin:$root/bin:/system/bin" \
+    --env "HOME=$files/homes/bxapt" \
+    --env "TMPDIR=$files/run/bxapt" \
+    -- "$binary" "${arguments[@]}"

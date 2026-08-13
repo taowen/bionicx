@@ -88,13 +88,35 @@ cross-client `GrabKeyboard`, `UngrabKeyboard`, owner-events routing, contention,
 and disconnect cleanup.
 
 Chrome, WPS, IceWM and xterm consume one content-addressed Debian 13 (trixie)
-desktop rootfs. A pinned ARM64 Debian image installs all four with ordinary `apt` and
-`dpkg`, including maintainer scripts, triggers, package data and the dpkg
-database. The Debian archive snapshot, OCI digest and proprietary application
-package hashes are fixed inputs. Application `/opt` payloads are split into
-profile-private trees after installation; Android never runs apt. Host bundles
-hard-link the canonical system tree, and the device installer skips transfer
-when its content ID is already installed.
+desktop rootfs. A pinned ARM64 Debian image installs all four with ordinary
+`apt` and `dpkg`, including maintainer scripts, triggers, package data and the
+dpkg database. The Debian archive snapshot, OCI digest and proprietary
+application package hashes are fixed inputs. Application `/opt` payloads are
+split into profile-private trees after installation; host bundles hard-link the
+canonical system tree, and the device installer skips transfer when its content
+ID is already installed.
+
+## Install Debian packages on Android
+
+`bxapt` is a thin ADB launcher for the real Debian `apt-get` and `dpkg` already
+inside the shared rootfs. Dependency resolution, signatures, package state,
+maintainer scripts and triggers remain Debian implementations; BionicX only
+provides app-private FHS paths and rootless process execution.
+
+```sh
+tools/bxapt --serial <serial> update
+tools/bxapt --serial <serial> install hello
+tools/bxapt --serial <serial> dpkg -s hello
+tools/bxapt --serial <serial> remove hello
+```
+
+The launcher reads the active IPv4 DNS server from Android connectivity state,
+uses the snapshot sources and archive keys shipped by the pinned rootfs, and
+runs as the ordinary `io.taowen.bx` UID. It does not use `xsu`, PRoot, Termux,
+chroot, or an alternate resolver. The device clock must be correct for OpenPGP
+validity checks. `profiles/xclock.json` is the first package-added GUI example:
+install `x11-apps` with `bxapt`, install the profile without replacing the
+runtime root, and launch BionicX.
 
 The xterm profile is the first package-installed terminal boundary. It starts
 Debian bash through a real PTY and verifies Android-injected keyboard input,

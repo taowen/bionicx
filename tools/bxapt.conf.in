@@ -1,0 +1,28 @@
+APT::Architecture "arm64";
+APT::Architectures { "arm64"; };
+Dir "@ROOT@";
+Dir::State "var/lib/apt";
+Dir::State::status "@ROOT@/var/lib/dpkg/status";
+Dir::Cache "var/cache/apt";
+Dir::Log "var/log/apt";
+Dir::Etc "etc/apt";
+Dir::Etc::sourcelist "@FILES@/run/bxapt/sources.sources";
+Dir::Etc::sourceparts "-";
+Dir::Etc::main "/dev/null";
+Dir::Etc::parts "@FILES@/run/bxapt/apt.conf.d";
+Dir::Bin::methods "usr/lib/apt/methods";
+Dir::Bin::dpkg "@ROOT@/usr/bin/dpkg";
+Dir::Bin::sqv "@ROOT@/usr/bin/sqv";
+Dir::Bin::solvers "usr/lib/apt/solvers";
+Dir::Bin::planners "usr/lib/apt/planners";
+DPkg::Options {
+  "--force-not-root";
+  "--force-script-chrootless";
+  "--root=@ROOT@";
+  "--admindir=@ROOT@/var/lib/dpkg";
+};
+APT::Sandbox::User "";
+Acquire::Languages "none";
+Acquire::ForceIPv4 "true";
+Acquire::http::Pipeline-Depth "0";
+Acquire::http::No-Cache "true";
