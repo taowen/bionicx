@@ -1,0 +1,18 @@
+==== seed ====
+ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+==== status ====
+dpkg-query: no packages found matching dbus-user-session
+dbus 1.16.2-2 ii 
+dbus-bin 1.16.2-2 ii 
+dbus-daemon 1.16.2-2 ii 
+dbus-session-bus-common 1.16.2-2 ii 
+dbus-system-bus-common 1.16.2-2 ii 
+hello 2.10-5 ii 
+icewm 3.7.4-1 ii 
+x11-apps 7.7+11+b2 ii 
+xterm 398-1 ii 
+==== accounts ====
+messagebus:x:999:999:System Message Bus:/nonexistent:/usr/sbin/nologin
+messagebus:x:999:
+==== audit ====
+==== apps libc ====
