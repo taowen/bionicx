@@ -32,6 +32,13 @@ as the application UID, using the same signed snapshot, package database,
 maintainer scripts and triggers. It adds packages to the shared rootfs instead
 of constructing another per-application library closure.
 
+Package installation is split at the real dpkg transaction boundary: apt first
+downloads the resolved set, dpkg unpacks it, BionicX normalizes the new ELFs,
+then apt configures packages and runs triggers. This ensures maintainer-script
+helpers use the same loader contract as applications. The seed includes
+Debian's standalone sysusers implementation for rootfs account creation without
+a running systemd or Android root privileges.
+
 This is a deployed userspace layout, not a chroot. Every Debian process enters
 one mandatory runtime contract (`libbionicx-runtime.so`) which defines the
 Android-kernel, FHS, identity and DNS boundary consistently.

@@ -43,7 +43,8 @@ for name in launch.get("environment", {}):
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
         fail(f"invalid environment variable: {name}")
     if name in {"LD_PRELOAD", "LD_LIBRARY_PATH", "BIONICX_ROOTFS", "BIONICX_TMPDIR",
-                "BIONICX_DNS_SERVERS"}:
+                "BIONICX_DNS_SERVERS", "FONTCONFIG_PATH", "FONTCONFIG_FILE",
+                "FONTCONFIG_SYSROOT"}:
         fail(f"launch.environment may not override reserved runtime variable {name}")
 host_services = profile.get("hostServices", [])
 if not isinstance(host_services, list) or any(

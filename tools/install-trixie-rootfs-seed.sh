@@ -34,7 +34,7 @@ apt-get -o Acquire::http::Pipeline-Depth=0 \
 apt-get -o Acquire::http::Pipeline-Depth=0 \
     -o Acquire::http::No-Cache=true install -y --no-install-recommends \
     apt binutils ca-certificates coreutils dash debian-archive-keyring dpkg \
-    findutils grep patchelf sed
+    findutils grep patchelf sed systemd-standalone-sysusers
 dpkg --audit
 
 mkdir -p /bionicx/metadata

@@ -11,6 +11,10 @@ const char *bionicx_redirect_path(const char *path, char buffer[PATH_MAX]) {
         target = bionicx_getenv("BIONICX_TMPDIR");
         if (target == NULL || target[0] != '/') return path;
         suffix = path + 4;
+    } else if (strcmp(path, "/run") == 0 || strncmp(path, "/run/", 5) == 0) {
+        target = bionicx_getenv("BIONICX_TMPDIR");
+        if (target == NULL || target[0] != '/') return path;
+        suffix = path;
     } else if (strcmp(path, "/usr") == 0 || strncmp(path, "/usr/", 5) == 0 ||
             strcmp(path, "/bin") == 0 || strncmp(path, "/bin/", 5) == 0 ||
             strcmp(path, "/sbin") == 0 || strncmp(path, "/sbin/", 6) == 0 ||
@@ -305,6 +309,22 @@ int chdir(const char *path) {
     return actual != NULL ? next(actual) : -1;
 }
 
+int mkdir(const char *path, mode_t mode) {
+    static int (*next)(const char *, mode_t);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "mkdir");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    return actual != NULL ? next(actual, mode) : -1;
+}
+
+int mkdirat(int directory, const char *path, mode_t mode) {
+    static int (*next)(int, const char *, mode_t);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "mkdirat");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    return actual != NULL ? next(directory, actual, mode) : -1;
+}
+
 static void copy_random_suffix(char *path, const char *actual,
                                int suffix_length) {
     size_t path_length = strlen(path);
@@ -422,4 +442,12 @@ int connect(int socket, const struct sockaddr *address, socklen_t length) {
     if (redirect_socket_address(address, length, &translated, &actual,
                                 &actual_length) < 0) return -1;
     return next(socket, actual, actual_length);
+}
+int chroot(const char *path) {
+    const char *root = bionicx_getenv("BIONICX_ROOTFS");
+    if (root != NULL && strcmp(path, root) == 0) {
+        return setenv("BIONICX_VIRTUAL_ROOT", "1", 1);
+    }
+    errno = EPERM;
+    return -1;
 }

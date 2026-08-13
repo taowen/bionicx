@@ -1,0 +1,16 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 21.3 MB/s (1533 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 68.8 MB/s (4405 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 12.5 MB/s (551 bytes in 0.000s)
+bionicx-exec: running untraced pid=4839
+The following packages have been unpacked but not yet configured.
+They must be configured using dpkg --configure or the configure
+menu option in dselect for them to work:
+ dbus                 simple interprocess messaging system (system message bus)
+
+The following packages are only half configured, probably due to problems
+configuring them the first time.  The configuration should be retried using
+dpkg --configure <package> or the configure menu option in dselect:
+ dbus-system-bus-common simple interprocess messaging system (system bus config
+
+bionicx-exec: primary pid=4839 exited status=0x0; draining session
+bionicx-exec: session drained children=0

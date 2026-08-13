@@ -26,8 +26,6 @@
       "XDG_CACHE_HOME": "${HOME}/.cache",
       "XDG_DATA_HOME": "${HOME}/.local/share",
       "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
-      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
-      "FONTCONFIG_FILE": "fonts.conf",
       "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
       "SSL_CERT_FILE": "${RUNTIME}/etc/ssl/certs/ca-certificates.crt",
       "MOZ_ENABLE_WAYLAND": "0",

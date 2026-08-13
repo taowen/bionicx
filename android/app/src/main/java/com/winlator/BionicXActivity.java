@@ -133,6 +133,9 @@ public final class BionicXActivity extends Activity {
 
     private void launchProfile() {
         try {
+            File runtimeRun = new File(getCacheDir(), "run");
+            if (!runtimeRun.isDirectory() && !runtimeRun.mkdirs())
+                throw new IOException("cannot create " + runtimeRun);
             File executor = new File(getFilesDir(), "bin/bionicx-exec");
             Os.chmod(executor.getPath(), 0700);
 
@@ -162,6 +165,13 @@ public final class BionicXActivity extends Activity {
             command.add("BIONICX_ROOTFS=" + profile.expand(this, "${RUNTIME}"));
             command.add("--env");
             command.add("BIONICX_TMPDIR=" + profile.expand(this, "${CACHE}"));
+            command.add("--env");
+            command.add("FONTCONFIG_PATH="
+                    + profile.expand(this, "${RUNTIME}/etc/fonts"));
+            command.add("--env");
+            command.add("FONTCONFIG_FILE=fonts.conf");
+            command.add("--env");
+            command.add("FONTCONFIG_SYSROOT=" + profile.expand(this, "${RUNTIME}"));
             if (profile.hostServices.contains("dbus")
                     && !profile.environment.containsKey("DBUS_SESSION_BUS_ADDRESS")) {
                 command.add("--env");

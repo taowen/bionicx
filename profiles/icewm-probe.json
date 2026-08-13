@@ -19,8 +19,6 @@
       "BIONICX_APP": "${APP}",
       "BIONICX_RUNTIME": "${RUNTIME}",
       "ICEWM_PRIVCFG": "${APP}/share/icewm",
-      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
-      "FONTCONFIG_FILE": "fonts.conf",
       "IMLIB2_LOADER_PATH": "${RUNTIME}/usr/lib/aarch64-linux-gnu/imlib2/loaders"
     }
   }

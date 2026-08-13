@@ -22,8 +22,6 @@
       "XDG_CACHE_HOME": "${HOME}/.cache",
       "XDG_DATA_HOME": "${HOME}/.local/share",
       "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
-      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
-      "FONTCONFIG_FILE": "fonts.conf",
       "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
       "GSETTINGS_BACKEND": "memory",
       "EV_BACKENDS_DIR": "${RUNTIME}/usr/lib/aarch64-linux-gnu/evince/4/backends",

@@ -15,11 +15,22 @@ int fchmodat(int directory, const char *path, mode_t mode, int flags) {
     if (next == NULL) next = dlsym(RTLD_NEXT, "fchmodat");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(directory, actual, mode, flags) : -1;
+    if (actual == NULL) return -1;
+    int result = next(directory, actual, mode, flags);
+#ifdef AT_EMPTY_PATH
+    if (result < 0 && errno == EINVAL && (flags & AT_EMPTY_PATH) != 0 &&
+            actual[0] == '\0') return fchmod(directory, mode);
+#endif
+#ifdef AT_SYMLINK_NOFOLLOW
+    if (result < 0 && errno == EINVAL &&
+            (flags & AT_SYMLINK_NOFOLLOW) != 0)
+        return next(directory, actual, mode, flags & ~AT_SYMLINK_NOFOLLOW);
+#endif
+    return result;
 }
 
 int bionicx_ignore_ownership_failure(int result) {
-    if (result < 0 && (errno == EPERM || errno == EACCES)) {
+    if (result < 0 && (errno == EPERM || errno == EACCES || errno == EINVAL)) {
         errno = 0;
         return 0;
     }

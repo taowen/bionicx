@@ -83,7 +83,10 @@ public final class AppProfile {
                 if (key.equals("LD_PRELOAD") || key.equals("LD_LIBRARY_PATH")
                         || key.equals("BIONICX_ROOTFS")
                         || key.equals("BIONICX_TMPDIR")
-                        || key.equals("BIONICX_DNS_SERVERS"))
+                        || key.equals("BIONICX_DNS_SERVERS")
+                        || key.equals("FONTCONFIG_PATH")
+                        || key.equals("FONTCONFIG_FILE")
+                        || key.equals("FONTCONFIG_SYSROOT"))
                     throw new JSONException("reserved runtime environment name: " + key);
                 environment.put(key, env.getString(key));
             }

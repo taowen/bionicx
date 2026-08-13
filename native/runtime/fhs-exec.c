@@ -16,6 +16,15 @@ struct shell_child {
 static pthread_mutex_t shell_children_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct shell_child shell_children[SHELL_CHILD_SLOTS];
 
+void *dlopen(const char *path, int flags) {
+    static void *(*next)(const char *, int);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "dlopen");
+    if (path == NULL) return next(NULL, flags);
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    return actual != NULL ? next(actual, flags) : NULL;
+}
+
 static char **script_arguments(const char *path, char *const arguments[],
                                char program[PATH_MAX],
                                char interpreter_argument[PATH_MAX]) {

@@ -1,0 +1,62 @@
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 21.5 MB/s (1533 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 55.2 MB/s (4405 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 8.4 MB/s (551 bytes in 0.000s)
+bionicx-exec: running untraced pid=5068
+bionicx-exec: primary pid=5068 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=5074
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Suggested packages:
+  libcryptsetup12 libtss2-rc0t64
+The following NEW packages will be installed:
+  systemd-standalone-sysusers
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+2 not fully installed or removed.
+Need to get 161 kB of archives.
+After this operation, 353 kB of additional disk space will be used.
+Get:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 systemd-standalone-sysusers arm64 257.13-1~deb13u1 [161 kB]
+Fetched 161 kB in 6s (28.0 kB/s)
+Download complete and in download only mode
+bionicx-exec: primary pid=5074 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=5099
+Selecting previously unselected package systemd-standalone-sysusers.
+(Reading database ... 9902 files and directories currently installed.)
+Preparing to unpack .../systemd-standalone-sysusers_257.13-1~deb13u1_arm64.deb ...
+Unpacking systemd-standalone-sysusers (257.13-1~deb13u1) ...
+bionicx-exec: primary pid=5099 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=5125
+bionicx ELF fixups: 895 entries
+bionicx-exec: primary pid=5125 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=14020
+Reading package lists...
+Building dependency tree...
+Reading state information...
+systemd-standalone-sysusers is already the newest version (257.13-1~deb13u1).
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+3 not fully installed or removed.
+After this operation, 0 B of additional disk space will be used.
+Setting up systemd-standalone-sysusers (257.13-1~deb13u1) ...
+Setting up dbus-system-bus-common (1.16.2-2) ...
+Creating group 'messagebus' with GID 999.
+Creating user 'messagebus' (System Message Bus) with UID 999 and GID 999.
+Failed to copy permissions from /data/user/0/io.taowen.bx/files/rootfs/etc/group to /data/user/0/io.taowen.bx/files/rootfs/etc/.#group03d996d1779db754: Invalid argument
+dpkg: error processing package dbus-system-bus-common (--configure):
+ installed dbus-system-bus-common package post-installation script subprocess returned error exit status 1
+dpkg: dependency problems prevent configuration of dbus:
+ dbus depends on dbus-system-bus-common (>= 1.16.2-2); however:
+  Package dbus-system-bus-common is not configured yet.
+
+dpkg: error processing package dbus (--configure):
+ dependency problems - leaving unconfigured
+Errors were encountered while processing:
+ dbus-system-bus-common
+ dbus
+bionicx ELF fixups: 894 entries
+E: Sub-process /data/user/0/io.taowen.bx/files/rootfs/usr/bin/dpkg returned an error code (1)
+bionicx-exec: primary pid=14020 exited status=0x6400; draining session
+bionicx-exec: session drained children=0

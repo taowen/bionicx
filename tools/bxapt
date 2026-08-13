@@ -67,7 +67,7 @@ prepare_state() {
     run_as test -r "$files/lib/libbionicx-runtime.so"
     run_as mkdir -p \
         "$run_dir/apt.conf.d" "$files/homes/bxapt" \
-        "$run_dir/incoming" \
+        "$run_dir/incoming" "$run_dir/run" \
         "$root/var/lib/apt/lists/partial" \
         "$root/var/cache/apt/archives/partial" \
         "$root/var/log/apt"
@@ -78,6 +78,8 @@ prepare_state() {
     upload_private "$repo_dir/build/bxapt.conf" "$run_dir/apt.conf"
     upload_private "$repo_dir/tools/rootfs-elf-fixup.sh" \
         "$run_dir/rootfs-elf-fixup.sh"
+    upload_private "$repo_dir/tools/bxapt-unpack.sh" \
+        "$run_dir/bxapt-unpack.sh"
     run_as cp "$root/etc/apt/sources.list.d/debian.sources" \
         "$run_dir/sources.sources"
 }
@@ -157,6 +159,9 @@ environment=(
     "BIONICX_TMPDIR=$run_dir"
     "BIONICX_REWRITE_ABSOLUTE_SYMLINKS=1"
     "BIONICX_DNS_SERVERS=$dns_servers"
+    "FONTCONFIG_PATH=$root/etc/fonts"
+    "FONTCONFIG_FILE=fonts.conf"
+    "FONTCONFIG_SYSROOT=$root"
     "SEQUOIA_CRYPTO_POLICY=$root/usr/share/apt/default-sequoia.config"
     "PERL5LIB=$perl_libs"
     "DEBIAN_FRONTEND=noninteractive"
@@ -214,6 +219,7 @@ if [[ "$command_name" == deb ]]; then
     arguments=(--unpack "$device_deb")
     dpkg_arguments
     run_binary
+    fixup_elf
 
     binary="$root/usr/bin/apt-get"
     arguments=(-f install -y --no-install-recommends)
@@ -229,6 +235,21 @@ if [[ "$command_name" == dpkg ]]; then
 elif [[ "$command_name" == query ]]; then
     binary="$root/usr/bin/dpkg-query"
     arguments=(--admindir="$root/var/lib/dpkg" "${arguments[@]}")
+fi
+if [[ "$command_name" == install || "$command_name" == set ]]; then
+    requested_arguments=("${arguments[@]}")
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --clear)
+    run_binary
+    binary="$root/usr/bin/apt-get"
+    arguments=("${requested_arguments[@]}" --download-only)
+    run_binary
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --unpack)
+    run_binary
+    fixup_elf
+    binary="$root/usr/bin/apt-get"
+    arguments=("${requested_arguments[@]}")
 fi
 run_binary
 case "$command_name" in

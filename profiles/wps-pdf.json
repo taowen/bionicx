@@ -17,8 +17,6 @@
       "TMPDIR": "${TMP}",
       "XDG_RUNTIME_DIR": "${TMP}/runtime",
       "GCONV_PATH": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gconv",
-      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
-      "FONTCONFIG_FILE": "fonts.conf",
       "LANG": "C",
       "QT_QPA_PLATFORM": "xcb",
       "QT_X11_NO_MITSHM": "1",

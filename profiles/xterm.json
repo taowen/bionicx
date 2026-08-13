@@ -33,8 +33,6 @@
       "XDG_RUNTIME_DIR": "${TMP}/runtime",
       "SHELL": "${RUNTIME}/usr/bin/bash",
       "TERM": "xterm-256color",
-      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
-      "FONTCONFIG_FILE": "fonts.conf",
       "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
       "LANG": "C.UTF-8"
     }

@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <pwd.h>
@@ -34,6 +35,26 @@ int main(int argc, char **argv) {
     if (argc != 3) return 2;
     const char *root = argv[1];
     const char *temporary = argv[2];
+
+    void *dlopen_handle = dlopen("/opt/bionicx-runtime-dlopen.so", RTLD_NOW);
+    if (dlopen_handle == NULL) fail("redirected dlopen");
+    int (*dlopen_probe)(void) = dlsym(dlopen_handle,
+                                      "bionicx_runtime_dlopen_probe");
+    if (dlopen_probe == NULL || dlopen_probe() != 42)
+        fail("redirected dlopen symbol");
+    dlclose(dlopen_handle);
+
+    pid_t chroot_child = fork();
+    if (chroot_child < 0) fail("fork chroot contract");
+    if (chroot_child == 0) {
+        if (chroot(root) != 0) _exit(125);
+        _exit(getuid() == 0 && geteuid() == 0 && getgid() == 0 &&
+                      getegid() == 0 ? 0 : 124);
+    }
+    int chroot_status = 0;
+    if (waitpid(chroot_child, &chroot_status, 0) != chroot_child ||
+            !WIFEXITED(chroot_status) || WEXITSTATUS(chroot_status) != 0)
+        fail("rootfs chroot execution");
     char path[PATH_MAX];
 
     snprintf(path, sizeof(path), "%s/etc", root);
@@ -150,8 +171,15 @@ int main(int argc, char **argv) {
     snprintf(path, sizeof(path), "%s%s", temporary, template + 4);
     if (access(path, F_OK) != 0) fail("mkstemp backing file");
 
+    if (mkdir("/run/bionicx-contract", 0700) != 0)
+        fail("redirected /run mkdir");
+    snprintf(path, sizeof(path), "%s/run/bionicx-contract", temporary);
+    if (access(path, F_OK) != 0) fail("redirected /run backing directory");
+
     if (chown("/etc/bionicx-probe", 0, 0) != 0)
         fail("rootless chown policy");
+    if (chown("/etc/bionicx-probe", 999, 999) != 0)
+        fail("unmapped Debian ownership policy");
 
     struct passwd *current_user = getpwuid(geteuid());
     if (current_user == NULL || current_user->pw_uid != geteuid())

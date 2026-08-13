@@ -9,7 +9,7 @@ temporary="/proc/$$/cwd/build/test-runtime-contract/tmp"
 
 mkdir -p "$test_dir" "$root" "$temporary"
 find "$test_dir" -mindepth 1 -delete
-mkdir -p "$root/etc" "$temporary"
+mkdir -p "$root/etc" "$root/opt" "$temporary/run"
 
 cc -shared -fPIC -O2 -Wall -Wextra -Werror \
     "$repo_dir/native/runtime/android-kernel.c" \
@@ -23,6 +23,9 @@ cc -shared -fPIC -O2 -Wall -Wextra -Werror \
 cc -O2 -Wall -Wextra -Werror \
     "$repo_dir/tests/fixtures/runtime-contract-probe.c" \
     -o "$test_dir/runtime-contract-probe"
+cc -shared -fPIC -O2 -Wall -Wextra -Werror \
+    "$repo_dir/tests/fixtures/runtime-dlopen.c" \
+    -o "$root/opt/bionicx-runtime-dlopen.so"
 
 BIONICX_ROOTFS="$root" \
 BIONICX_TMPDIR="$temporary" \

@@ -25,8 +25,6 @@
       "XDG_CACHE_HOME": "${HOME}/.cache",
       "XDG_DATA_HOME": "${HOME}/.local/share",
       "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
-      "FONTCONFIG_PATH": "${RUNTIME}/etc/fonts",
-      "FONTCONFIG_FILE": "fonts.conf",
       "QT_QPA_PLATFORM": "xcb",
       "QT_PLUGIN_PATH": "${RUNTIME}/usr/lib/aarch64-linux-gnu/qt5/plugins",
       "QT_XKB_CONFIG_ROOT": "${RUNTIME}/usr/share/X11/xkb",

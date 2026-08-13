@@ -9,6 +9,35 @@
 #include <string.h>
 #include <unistd.h>
 
+static int virtual_root(void) {
+    const char *value = getenv("BIONICX_VIRTUAL_ROOT");
+    return value != NULL && strcmp(value, "1") == 0;
+}
+
+uid_t getuid(void) {
+    static uid_t (*next)(void);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "getuid");
+    return virtual_root() ? 0 : next();
+}
+
+uid_t geteuid(void) {
+    static uid_t (*next)(void);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "geteuid");
+    return virtual_root() ? 0 : next();
+}
+
+gid_t getgid(void) {
+    static gid_t (*next)(void);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "getgid");
+    return virtual_root() ? 0 : next();
+}
+
+gid_t getegid(void) {
+    static gid_t (*next)(void);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "getegid");
+    return virtual_root() ? 0 : next();
+}
+
 static int synthetic_user(uid_t uid, struct passwd *value, char *buffer,
                           size_t length, struct passwd **result) {
     const char *home = getenv("HOME");
