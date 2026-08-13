@@ -1,35 +1,33 @@
-=== seed id ===
-ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
 === dpkg audit ===
-/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 10.5 MB/s (1092 bytes in 0.000s)
-/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 120.7 MB/s (9272 bytes in 0.000s)
-/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 85.3 MB/s (5904 bytes in 0.000s)
-/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 32.2 MB/s (2747 bytes in 0.000s)
-/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 23.0 MB/s (78840 bytes in 0.003s)
-bionicx-exec: running untraced pid=19277
-bionicx-exec: primary pid=19277 exited status=0x0; draining session
-bionicx-exec: session drained children=0
-bionicx-exec: running untraced pid=19285
-bionicx-exec: primary pid=19285 exited status=0x0; draining session
-bionicx-exec: session drained children=0
-=== declared packages ===
-/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 11.6 MB/s (1092 bytes in 0.000s)
-/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 84.4 MB/s (9272 bytes in 0.000s)
-/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 64.8 MB/s (5904 bytes in 0.000s)
-/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 43.0 MB/s (2747 bytes in 0.000s)
-/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 94.0 MB/s (78840 bytes in 0.001s)
-bionicx-exec: running untraced pid=19340
-bionicx-exec: primary pid=19340 exited status=0x0; draining session
-bionicx-exec: session drained children=0
-bionicx-exec: running untraced pid=19349
-cups-daemon install ok installed 2.4.10-3+deb13u2
-firefox-esr install ok installed 140.13.0esr-1~deb13u1
-icewm install ok installed 3.7.4-1
-keepassxc install ok installed 2.7.10+dfsg1-1
-krita install ok installed 1:5.2.9+dfsg-1+deb13u1
-mousepad install ok installed 0.6.3-1
-qbittorrent install ok installed 5.1.0-2
-xterm install ok installed 398-1
-bionicx-exec: primary pid=19349 exited status=0x0; draining session
-bionicx-exec: session drained children=0
-=== per-app libc ===
+bionicx-exec: running untraced pid=9461
+bionicx-exec: running untraced pid=9469
+=== declared popular ===
+bionicx-exec: running untraced pid=9523
+bionicx-exec: running untraced pid=9531
+dbus ii 
+evince ii 
+filezilla ii 
+firefox-esr ii 
+geany ii 
+gimp ii 
+icewm ii 
+inkscape ii 
+keepassxc ii 
+krita ii 
+libreoffice-writer ii 
+mousepad ii 
+qbittorrent ii 
+ristretto ii 
+thunar ii 
+thunderbird ii 
+vlc ii 
+xterm ii 
+
+=== untraced launches after incremental install ===
+filezilla: alive, Quickconnect UI
+gimp: alive, Welcome to GIMP 3.0.4
+inkscape: alive, Inkscape on BionicX artwork
+thunderbird: alive, Account Setup
+vlc: ii, process lived (early splash shot)
+libreoffice-writer: ii, soffice.bin exited 127 (libreglo.so not found via $ORIGIN)
+dpkg --audit: empty

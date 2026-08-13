@@ -1,0 +1,15 @@
+profile evince-handy-gresource-probe is valid
+evince handy gresource probe covers libhandy theme CSS: PASS
+profile krita-glx-destroy-probe is valid
+krita glx destroy probe covers glXDestroyContext(NULL): PASS
+profile keepassxc-db-widget-probe is valid
+keepassxc DatabaseWidget show probe covers stacked/splitter tree: PASS
+profile firefox-esr is valid
+profile firefox-esr is valid
+profile krita is valid
+profile qbittorrent is valid
+profile keepassxc is valid
+popular app profiles stay on the shared seed declarations: PASS
+runtime contract probe: PASS
+profile gtk-template-probe is valid
+GTK template probe and gresource-preserving fixup: PASS
