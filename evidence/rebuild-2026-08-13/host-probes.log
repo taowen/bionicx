@@ -13,3 +13,11 @@ popular app profiles stay on the shared seed declarations: PASS
 runtime contract probe: PASS
 profile gtk-template-probe is valid
 GTK template probe and gresource-preserving fixup: PASS
+
+==== test-soffice-origin-probe ====
+soffice origin probe covers multiarch symlink $ORIGIN: PASS
+==== test-rootfs-elf-fixup ====
+rootfs ELF fixup: PASS
+==== test-gtk-template-probe ====
+profile gtk-template-probe is valid
+GTK template probe and gresource-preserving fixup: PASS

@@ -71,6 +71,30 @@ if [ "${1:-}" = --files ]; then
             *) return 1 ;;
         esac
     }
+    private_object_directory() {
+        directory=$1
+        [ -d "$directory" ] || return 1
+        for so in "$directory"/*; do
+            case "$so" in
+                *.so|*.so.*) ;;
+                *) continue ;;
+            esac
+            [ -e "$so" ] || continue
+            soname=${so##*/}
+            for sysdir in usr/lib usr/lib/aarch64-linux-gnu \
+                    lib lib/aarch64-linux-gnu; do
+                candidate="$runtime/$sysdir/$soname"
+                [ -e "$candidate" ] || continue
+                resolved=$(readlink -f "$candidate" 2>/dev/null ||
+                    printf '%s' "$candidate")
+                ours=$(readlink -f "$so" 2>/dev/null || printf '%s' "$so")
+                if [ "$resolved" != "$ours" ]; then
+                    return 1
+                fi
+            done
+        done
+        return 0
+    }
     update_patchelf() {
         temporary="$1.bionicx-new.$$"
         file=$1
@@ -109,6 +133,15 @@ if [ "${1:-}" = --files ]; then
                 grep -q '(RPATH)'; then
             legacy_rpath=1
         fi
+        owner_directory=${file%/*}
+        case "$owner_directory" in
+            "$runtime"/*)
+                object_directory="$deploy_root${owner_directory#"$runtime"}"
+                ;;
+            *)
+                object_directory=$owner_directory
+                ;;
+        esac
         rewritten_rpath=$system_runpath
         changed=0
         old_ifs=$IFS
@@ -121,6 +154,9 @@ if [ "${1:-}" = --files ]; then
                 "$runtime"/*|"$root_alias"/*) ;;
                 /*) entry="$deploy_root$entry"; changed=1 ;;
             esac
+            # A previous pass may have appended this directory. Drop it here
+            # and place it again after unique-provider resolution.
+            [ "$entry" = "$object_directory" ] && continue
             case ":$rewritten_rpath:" in
                 *":$entry:"*) ;;
                 *) rewritten_rpath="$rewritten_rpath:$entry" ;;
@@ -140,6 +176,28 @@ if [ "${1:-}" = --files ]; then
                     ;;
             esac
         done
+        # $ORIGIN expands to the path used to open the object. A multiarch
+        # symlink (LibreOffice libuno_cppuhelpergcc3.so.3) therefore searches
+        # usr/lib/aarch64-linux-gnu, not the private program/ tree that holds
+        # siblings such as libreglo.so. Record the real file's directory.
+        # Prepend that directory when every colliding system SONAME is only a
+        # symlink back here, so dladdr/getUnoIniUri see program/ rather than
+        # the symlink path. Append when the directory also ships a real
+        # system SONAME (WPS bundled FreeType) so Debian still wins.
+        case ":$rewritten_rpath:" in
+            *":$object_directory:"*) ;;
+            *)
+                if private_object_directory "$owner_directory"; then
+                    rewritten_rpath="$object_directory:$rewritten_rpath"
+                    printf '%s\tOBJECT_DIR\t%s\tprepend\n' "$relative" \
+                        "$object_directory" >> "$ledger"
+                else
+                    rewritten_rpath="$rewritten_rpath:$object_directory"
+                    printf '%s\tOBJECT_DIR\t%s\n' "$relative" \
+                        "$object_directory" >> "$ledger"
+                fi
+                ;;
+        esac
         if [ "$current_rpath" != "$rewritten_rpath" ] ||
                 [ "$changed" -eq 1 ] || [ "$legacy_rpath" -eq 1 ]; then
             update_patchelf "$file" --set-rpath "$rewritten_rpath"

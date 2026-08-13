@@ -89,10 +89,17 @@ sandbox and preventing detached clients from outliving their X server.
 
 The normalized `RUNPATH` is the only library-search contract. In addition to
 the fixed system directories and the ELF's relocated original entries, the
-normalizer adds the directory of a directly needed SONAME when that provider
-is unique in the shared rootfs. This preserves non-transitive namespace
-isolation while supporting vendor plug-ins whose direct dependencies live next
-to the vendor executable. Ambiguous providers are never guessed. `LD_LIBRARY_PATH`
+normalizer records the object's own directory as a concrete path — `$ORIGIN`
+expands to the pathname used to open the file, so a DSO reached through a
+multiarch symlink would otherwise search the symlink directory instead of its
+siblings. That directory is prepended when every colliding system SONAME is
+only a symlink back to the same file (LibreOffice `program/`, so `dladdr` and
+`getUnoIniUri` see the private tree). It is appended when the directory also
+ships a real system SONAME (WPS bundled FreeType), so Debian still wins. The
+normalizer also adds the directory of a directly needed SONAME when that
+provider is unique in the shared rootfs. This preserves non-transitive
+namespace isolation while supporting vendor plug-ins whose direct dependencies
+live next to the vendor executable. Ambiguous providers are never guessed. `LD_LIBRARY_PATH`
 is neither injected nor accepted, so an incomplete package normalization fails
 directly instead of being hidden by a process-global search path. The mandatory
 `LD_PRELOAD` is set in the child after the Bionic executor has started, keeping
