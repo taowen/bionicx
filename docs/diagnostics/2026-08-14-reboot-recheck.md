@@ -20,9 +20,10 @@ intact):
 - `glx-probe` `BXSUMMARY host-glx passed=26 failed=0` (CreateContext
   no longer NULL; unsared GLES3 fallback if the keyguard hid the
   compositor surface). `screencap` can truncate if adb drops.
-- IceWM + xterm + mousepad launch after unlock. `--accept` 7/7 needs
-  the keyguard dismissed (`wm dismiss-keyguard` + swipe); a locked
-  start leaves `isSleeping=true` and stalls `XOpenDisplay`.
+- IceWM `--accept` is 7/7 once the keyguard is dismissed (`wm
+  dismiss-keyguard` + swipe): xterm+mousepad map, switch, resize
+  644x340→740x382, close, reopen (`desktop-session-accept.log`). A
+  locked start leaves `isSleeping=true` and stalls `XOpenDisplay`.
 
 Evidence: `evidence/rebuild-2026-08-14/reboot-recheck.log`,
 `keepassxc-cli-probe-reboot.log`, `glx-probe-reboot.log`,

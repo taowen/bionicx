@@ -101,6 +101,10 @@ then commit and push the smallest complete change.
   GLES3 context (`docs/diagnostics/2026-08-14-glx-create-context.md`).
 - [x] Document remaining Android-kernel limitations honestly and provide a
   reproducible build/install/desktop-use guide for a new device.
-- [ ] Declare the goal complete only when Debian popular applications, WPS and
+- [x] Declare the goal complete only when Debian popular applications, WPS and
   Google Chrome meet their full functional acceptance criteria on the shared
-  rootfs.
+  rootfs. Shared seed `ed998c09…` plus `bxapt` declarations; IceWM accept 7/7
+  with D-Bus/Pulse/CUPS/Vulkan (`evidence/rebuild-2026-08-14/desktop-session-accept.log`);
+  WPS Writer/Sheets/Presentation/PDF; Firefox online+cold; Krita/qBit/KeePassXC
+  durable workflows; Chrome ANGLE Vulkan; GLX 26/26; dpkg consistency; reboot
+  recapture. Remaining kernel limits stay in `docs/NEW-DEVICE.md`.
