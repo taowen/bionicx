@@ -368,6 +368,80 @@ int renameat2(int old_directory, const char *old_path, int new_directory,
     return next(old_directory, actual_old, new_directory, actual_new, flags);
 }
 
+static int link_copy_forced(void) {
+    const char *force = bionicx_getenv("BIONICX_FORCE_LINK_COPY");
+    return force != NULL && strcmp(force, "1") == 0;
+}
+
+static int link_copy_errno(int error) {
+    return error == EACCES || error == EPERM || error == EOPNOTSUPP ||
+            error == ENOSYS || error == EXDEV;
+}
+
+/* Android app-data f2fs often denies link(2). dpkg backs up status with
+ * link(status, status-old); a same-directory copy is enough for that. */
+static int copy_regular_file(const char *old_path, const char *new_path,
+                             int follow) {
+    static int (*real_open)(const char *, int, ...);
+    static int (*real_unlink)(const char *);
+    if (real_open == NULL) real_open = dlsym(RTLD_NEXT, "open");
+    if (real_unlink == NULL) real_unlink = dlsym(RTLD_NEXT, "unlink");
+    int flags = O_RDONLY | O_CLOEXEC;
+    if (!follow) flags |= O_NOFOLLOW;
+    int input = real_open(old_path, flags);
+    if (input < 0) return -1;
+    struct stat info;
+    if (fstat(input, &info) != 0) {
+        close(input);
+        return -1;
+    }
+    if (!S_ISREG(info.st_mode)) {
+        close(input);
+        errno = EPERM;
+        return -1;
+    }
+    int output = real_open(new_path, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC,
+                           info.st_mode & 0777);
+    if (output < 0) {
+        close(input);
+        return -1;
+    }
+    char block[8192];
+    for (;;) {
+        ssize_t got = read(input, block, sizeof(block));
+        if (got == 0) break;
+        if (got < 0) {
+            int saved = errno;
+            close(input);
+            close(output);
+            real_unlink(new_path);
+            errno = saved;
+            return -1;
+        }
+        ssize_t sent = 0;
+        while (sent < got) {
+            ssize_t wrote = write(output, block + sent, (size_t)(got - sent));
+            if (wrote < 0) {
+                int saved = errno;
+                close(input);
+                close(output);
+                real_unlink(new_path);
+                errno = saved;
+                return -1;
+            }
+            sent += wrote;
+        }
+    }
+    close(input);
+    if (close(output) != 0) {
+        int saved = errno;
+        real_unlink(new_path);
+        errno = saved;
+        return -1;
+    }
+    return 0;
+}
+
 int link(const char *old_path, const char *new_path) {
     static int (*next)(const char *, const char *);
     if (next == NULL) next = dlsym(RTLD_NEXT, "link");
@@ -375,7 +449,11 @@ int link(const char *old_path, const char *new_path) {
     const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
     const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
     if (actual_old == NULL || actual_new == NULL) return -1;
-    return next(actual_old, actual_new);
+    if (link_copy_forced())
+        return copy_regular_file(actual_old, actual_new, 0);
+    int result = next(actual_old, actual_new);
+    if (result == 0 || !link_copy_errno(errno)) return result;
+    return copy_regular_file(actual_old, actual_new, 0);
 }
 
 int linkat(int old_directory, const char *old_path, int new_directory,
@@ -386,7 +464,22 @@ int linkat(int old_directory, const char *old_path, int new_directory,
     const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
     const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
     if (actual_old == NULL || actual_new == NULL) return -1;
-    return next(old_directory, actual_old, new_directory, actual_new, flags);
+    int follow = (flags & AT_SYMLINK_FOLLOW) != 0;
+    if (link_copy_forced()) {
+        if (old_directory != AT_FDCWD || new_directory != AT_FDCWD ||
+                (flags & AT_EMPTY_PATH) != 0) {
+            errno = EOPNOTSUPP;
+            return -1;
+        }
+        return copy_regular_file(actual_old, actual_new, follow);
+    }
+    int result = next(old_directory, actual_old, new_directory, actual_new,
+                      flags);
+    if (result == 0 || !link_copy_errno(errno)) return result;
+    if (old_directory != AT_FDCWD || new_directory != AT_FDCWD ||
+            (flags & AT_EMPTY_PATH) != 0)
+        return -1;
+    return copy_regular_file(actual_old, actual_new, follow);
 }
 
 int chdir(const char *path) {

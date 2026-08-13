@@ -188,6 +188,34 @@ int main(int argc, char **argv) {
     if (unlinkat(AT_FDCWD, "/etc/group.lock", 0) != 0)
         fail("redirected group lock unlinkat");
 
+    /* dpkg does link(status, status-old). Some Android f2fs app-data
+     * volumes deny hard links; the runtime must copy instead. */
+    if (setenv("BIONICX_FORCE_LINK_COPY", "1", 1) != 0)
+        fail("setenv BIONICX_FORCE_LINK_COPY");
+    if (link("/var/lib/dpkg/status", "/var/lib/dpkg/status-old") != 0)
+        fail("dpkg status-old copy fallback");
+    char status_path[PATH_MAX];
+    char status_old[PATH_MAX];
+    snprintf(status_path, sizeof(status_path), "%s/var/lib/dpkg/status", root);
+    snprintf(status_old, sizeof(status_old), "%s/var/lib/dpkg/status-old", root);
+    struct stat status_info, status_old_info;
+    if (lstat(status_path, &status_info) != 0 ||
+            lstat(status_old, &status_old_info) != 0)
+        fail("status-old lstat");
+    if (status_info.st_ino == status_old_info.st_ino)
+        fail("status-old must be a copy, not a hard link");
+    if (status_info.st_size != status_old_info.st_size)
+        fail("status-old copy size");
+    if (unlink("/var/lib/dpkg/status-old") != 0) fail("status-old unlink");
+    if (linkat(AT_FDCWD, "/var/lib/dpkg/status", AT_FDCWD,
+               "/var/lib/dpkg/status-old", 0) != 0)
+        fail("dpkg status-old linkat copy fallback");
+    if (lstat(status_old, &status_old_info) != 0) fail("status-old linkat lstat");
+    if (status_info.st_ino == status_old_info.st_ino)
+        fail("status-old linkat must be a copy");
+    if (unlink("/var/lib/dpkg/status-old") != 0) fail("status-old linkat unlink");
+    unsetenv("BIONICX_FORCE_LINK_COPY");
+
     FILE *group_stream = fopen("/etc/group", "r+");
     if (group_stream == NULL) fail("fopen /etc/group r+");
     if (fseek(group_stream, 0, SEEK_END) != 0 ||

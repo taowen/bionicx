@@ -64,6 +64,10 @@ grep -F 'dlopen_from_loaded_nss' \
     "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
 grep -F 'BIONICX_APP' \
     "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
+grep -F 'BIONICX_FORCE_LINK_COPY' \
+    "$repo_dir/native/runtime/fhs-path.c" >/dev/null
+grep -F 'dpkg status-old copy fallback' \
+    "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
 
 BIONICX_ROOTFS="$root" \
 BIONICX_APP="$test_dir/app" \

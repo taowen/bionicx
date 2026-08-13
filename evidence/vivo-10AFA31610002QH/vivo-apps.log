@@ -1,0 +1,381 @@
+BXINFO serial=10AFA31610002QH uid=uid=10381(u0_a381) gid=10381(u0_a381) groups=10381(u0_a381),1004(input),1007(log),1011(adb),1015(sdcard_rw),1028(sdcard_r),1078(ext_data_rw),1079(ext_obb_rw),3001(net_bt_admin),3002(net_bt),3003(inet),3006(net_bw_stats),3009(readproc),3011(uhid),3012(readtracefs),50381(all_a381) context=u:r:runas_app:s0:c125,c257,c512,c768
+BXINFO seed=ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+BXTEST PASS have-xterm
+BXTEST PASS have-evince
+BXTEST PASS have-keepassxc
+BXTEST PASS have-krita
+BXTEST PASS have-firefox-esr
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/xterm-bundle
+==== launch xterm ====
+profile xterm is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 18.1 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 120.1 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 48.6 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 28.6 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 71.1 MB/s (79008 bytes in 0.001s)
+bionicx-exec: running untraced pid=10495
+bionicx-exec: primary pid=10495 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=10507
+bionicx ELF fixups: 0 entries
+bionicx-exec: primary pid=10507 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/profiles/xterm.json: 1 file pushed, 0 skipped. 10.3 MB/s (903 bytes in 0.000s)
+installed profile xterm for io.taowen.bx
+Starting: Intent { cmp=io.taowen.bx/com.winlator.BionicXActivity }
+Status: ok
+LaunchState: COLD
+Activity: io.taowen.bx/com.winlator.BionicXActivity
+TotalTime: 210
+WaitTime: 213
+Complete
+BXSHOT xterm bytes=220079
+I/BionicX (10616): profile=xterm display=2640x1216@144 socket=filesystem
+I/BionicX (10616): runtime DNS servers=2
+I/BionicX (10616): launching XTerm (Debian trixie ARM64): [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --cwd, /data/user/0/io.taowen.bx/files/homes/xterm, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/xterm, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/xterm, --env, XDG_RUNTIME_DIR=/data/user/0/io.taowen.bx/files/run/xterm/runtime, --env, SHELL=/data/user/0/io.taowen.bx/files/rootfs/usr/bin/bash, --env, TERM=xterm-256color, --env, PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/bin:/data/user/0/io.taowen.bx/files/rootfs/bin:/product/bin:/system/bin, --env, LANG=C.UTF-8, --env, BIONICX_DNS_SERVERS=192.168.1.1,114.114.114.114, --env, BIONICX_ROOTFS=/data/user/0/io.taowen.bx/files/rootfs, --env, BIONICX_APP=/data/user/0/io.taowen.bx/files/apps/xterm, --env, BIONICX_TMPDIR=/data/user/0/io.taowen.bx/cache, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/rootfs/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, FONTCONFIG_SYSROOT=/data/user/0/io.taowen.bx/files/rootfs, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-runtime.so, --, /data/user/0/io.taowen.bx/files/rootfs/usr/bin/xterm, -ut, -fa, DejaVu Sans Mono, -fs, 18, -geometry, 120x34+0+0, -title, BionicX Debian Terminal, -e, /data/user/0/io.taowen.bx/files/rootfs/usr/bin/bash, --noprofile, --norc, -i]
+I/BionicX (10616): bionicx-exec: running untraced pid=10697
+I/ActivityTaskManager( 2013): Displayed io.taowen.bx/com.winlator.BionicXActivity for user 0: +210ms
+I/BionicX (10616): xterm: Cannot chmod /dev/pts/0 to 620 currently 600: Permission denied
+BXTEST PASS xterm-untraced
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/productivity-apps-bundle
+==== launch evince ====
+profile evince is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 10.2 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 119.7 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 70.8 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 35.8 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 73.2 MB/s (79008 bytes in 0.001s)
+bionicx-exec: running untraced pid=10939
+bionicx-exec: primary pid=10939 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=10952
+bionicx ELF fixups: 0 entries
+bionicx-exec: primary pid=10952 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/profiles/evince.json: 1 file pushed, 0 skipped. 14.8 MB/s (1196 bytes in 0.000s)
+installed profile evince for io.taowen.bx
+Starting: Intent { cmp=io.taowen.bx/com.winlator.BionicXActivity }
+Status: ok
+LaunchState: COLD
+Activity: io.taowen.bx/com.winlator.BionicXActivity
+TotalTime: 230
+WaitTime: 238
+Complete
+BXSHOT evince bytes=174044
+I/BionicX (11133): profile=evince display=2640x1216@144 socket=filesystem
+I/BionicX (11133): runtime DNS servers=2
+I/BionicX (11133): launching Evince (Debian trixie ARM64): [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --cwd, /data/user/0/io.taowen.bx/files/homes/evince, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/evince, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/evince, --env, XDG_RUNTIME_DIR=/data/user/0/io.taowen.bx/files/run/evince/runtime, --env, XDG_CONFIG_HOME=/data/user/0/io.taowen.bx/files/homes/evince/.config, --env, XDG_CACHE_HOME=/data/user/0/io.taowen.bx/files/homes/evince/.cache, --env, XDG_DATA_HOME=/data/user/0/io.taowen.bx/files/homes/evince/.local/share, --env, XDG_DATA_DIRS=/data/user/0/io.taowen.bx/files/rootfs/usr/local/share:/data/user/0/io.taowen.bx/files/rootfs/usr/share, --env, GSETTINGS_SCHEMA_DIR=/data/user/0/io.taowen.bx/files/rootfs/usr/share/glib-2.0/schemas, --env, GSETTINGS_BACKEND=memory, --env, EV_BACKENDS_DIR=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/evince/4/backends, --env, GDK_PIXBUF_MODULE_FILE=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache, --env, DBUS_SESSION_BUS_ADDRESS=disabled:, --env, NO_AT_BRIDGE=1, --env, PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/bin:/data/user/0/io.taowen.bx/files/rootfs/bin:/product/bin:/system/bin, --env, LANG=C.UTF-8, --env, BIONICX_DNS_SERVERS=192.168.1.1,114.114.114.114, --env, BIONICX_ROOTFS=/data/user/0/io.taowen.bx/files/rootfs, --env, BIONICX_APP=/data/user/0/io.taowen.bx/files/apps/evince, --env, BIONICX_TMPDIR=/data/user/0/io.taowen.bx/cache, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/rootfs/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, FONTCONFIG_SYSROOT=/data/user/0/io.taowen.bx/files/rootfs, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-runtime.so, --, /data/user/0/io.taowen.bx/files/rootfs/usr/bin/evince, /data/user/0/io.taowen.bx/files/apps/evince/fixtures/bionicx-pages.pdf]
+I/BionicX (11133): bionicx-exec: running untraced pid=11175
+I/ActivityTaskManager( 2013): Displayed io.taowen.bx/com.winlator.BionicXActivity for user 0: +230ms
+BXTEST PASS evince-untraced
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/popular-apps-bundle
+/work/third_party/gladio/src/main.c: In function 'getRangeIndices':
+/work/third_party/gladio/src/main.c:35:31: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   35 |             GLubyte* values = indices;
+      |                               ^~~~~~~
+/work/third_party/gladio/src/main.c:43:32: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   43 |             GLushort* values = indices;
+      |                                ^~~~~~~
+/work/third_party/gladio/src/main.c:51:30: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   51 |             GLuint* values = indices;
+      |                              ^~~~~~~
+In file included from /work/third_party/gladio/include/gl_client_state.h:5,
+                 from /work/third_party/gladio/include/gl_context.h:4,
+                 from /work/third_party/gladio/src/gl_calls.c:2:
+/work/third_party/gladio/src/gl_calls.c: In function 'glColorPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:872:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+  872 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_COLOR_POINTER, COLOR_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glGetStringi':
+/work/third_party/gladio/src/gl_calls.c:2998:42: warning: passing argument 1 of 'strsplit' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 2998 |     if (cachedValues.size == 0) strsplit((const char*)glGetString(name), ' ', &cachedValues);
+      |                                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /work/third_party/gladio/include/texture_utils.h:9,
+                 from /work/third_party/gladio/include/gladio.h:72,
+                 from /work/third_party/gladio/src/gl_calls.c:1:
+/work/third_party/gladio/include/string_utils.h:135:35: note: expected 'char *' but argument is of type 'const char *'
+  135 | static inline void strsplit(char* input, char delimiter, ArrayList* outStrings) {
+      |                             ~~~~~~^~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glLoadMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3585:73: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3585 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_LOAD_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                         ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glLoadTransposeMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3606:83: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3606 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_LOAD_TRANSPOSE_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                                   ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glMultMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3855:73: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3855 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_MULT_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                         ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glMultTransposeMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3870:83: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3870 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_MULT_TRANSPOSE_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                                   ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glNormalPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:4454:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+ 4454 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_NORMAL_POINTER, NORMAL_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glTexCoordPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:5666:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+ 5666 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_TEX_COORD_POINTER, TEXCOORD_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glVertexAttribIPointer':
+/work/third_party/gladio/src/gl_calls.c:7315:54: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 7315 |             clientState->vao->attribs[index].pointer = pointer;
+      |                                                      ^
+/work/third_party/gladio/src/gl_calls.c: In function 'glVertexAttribPointer':
+/work/third_party/gladio/src/gl_calls.c:7354:54: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 7354 |             clientState->vao->attribs[index].pointer = arrayBuffer ? arrayBuffer->mappedData : pointer;
+      |                                                      ^
+/work/third_party/gladio/src/gl_calls.c: In function 'glVertexPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:7382:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+ 7382 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_VERTEX_POINTER, POSITION_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/arrays.c: In function 'ArrayMap_put':
+/work/third_party/gladio/src/arrays.c:358:34: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+  358 |     arrayMap->entries[index].key = key;
+      |                                  ^
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/popular-apps-bundle/app/lib/libGL.so.1.7.0
+profile keepassxc is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 17.9 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 143.8 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 40.7 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 30.2 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 98.5 MB/s (79008 bytes in 0.001s)
+bionicx-exec: running untraced pid=11414
+bionicx-exec: primary pid=11414 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=11425
+bionicx ELF fixups: 2 entries
+bionicx-exec: primary pid=11425 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/profiles/keepassxc.json: 1 file pushed, 0 skipped. 16.2 MB/s (1233 bytes in 0.000s)
+installed profile keepassxc for io.taowen.bx
+/var/home/taowen/projects/glibc-on-bionic/bionicx/examples/keepassxc-cli-probe/keepassxc-deferred-open: 1 file pushed, 0 skipped. 9.6 MB/s (1262 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/examples/keepassxc-cli-probe/fixtures/bionicx.key: 1 file pushed, 0 skipped. 2.6 MB/s (259 bytes in 0.000s)
+bionicx-exec: running untraced pid=11492
+Successfully created new database.
+bionicx-exec: primary pid=11492 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-create created
+bionicx-exec: running untraced pid=11500
+Successfully added entry login.
+bionicx-exec: primary pid=11500 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-add login
+bionicx-exec: running untraced pid=11505
+login
+bionicx-exec: primary pid=11505 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-ls login
+bionicx-exec: running untraced pid=11513
+login
+bionicx
+https://example.com
+bionicx-exec: primary pid=11513 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-show login bionicx example.com
+bionicx-exec: running untraced pid=11523
+login
+bionicx-exec: primary pid=11523 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS db-reopen login
+BXTEST PASS db-persist bytes=1758
+BXSUMMARY keepassxc-cli passed=6 failed=0
+Starting: Intent { cmp=io.taowen.bx/com.winlator.BionicXActivity }
+Status: ok
+LaunchState: COLD
+Activity: io.taowen.bx/com.winlator.BionicXActivity
+TotalTime: 258
+WaitTime: 263
+Complete
+screenshot /var/home/taowen/projects/glibc-on-bionic/bionicx/evidence/vivo-10AFA31610002QH/keepassxc.png bytes=131218
+I/BionicX (11606): profile=keepassxc display=2640x1216@144 socket=filesystem
+I/BionicX (11606): enabled D-Bus session service at /data/user/0/io.taowen.bx/files/run/keepassxc/runtime/bus
+I/BionicX (11606): dbus: bionicx-exec: running untraced pid=11688
+I/BionicX (11606): runtime DNS servers=2
+I/BionicX (11606): launching KeePassXC (Debian trixie ARM64): [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --cwd, /data/user/0/io.taowen.bx/files/homes/keepassxc, --env, DISPLAY=:0, --env, GLADIO_X11_SOCKET=/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/keepassxc, --env, TMPDIR=/data/user/0/io.taowen.bx/cache, --env, XDG_RUNTIME_DIR=/data/user/0/io.taowen.bx/files/run/keepassxc/runtime, --env, XDG_CONFIG_HOME=/data/user/0/io.taowen.bx/files/homes/keepassxc/.config, --env, XDG_CACHE_HOME=/data/user/0/io.taowen.bx/files/homes/keepassxc/.cache, --env, XDG_DATA_HOME=/data/user/0/io.taowen.bx/files/homes/keepassxc/.local/share, --env, XDG_DATA_DIRS=/data/user/0/io.taowen.bx/files/rootfs/usr/local/share:/data/user/0/io.taowen.bx/files/rootfs/usr/share, --env, QT_QPA_PLATFORM=xcb, --env, QT_PLUGIN_PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/qt5/plugins, --env, QT_XKB_CONFIG_ROOT=/data/user/0/io.taowen.bx/files/rootfs/usr/share/X11/xkb, --env, NO_AT_BRIDGE=1, --env, PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/bin:/data/user/0/io.taowen.bx/files/rootfs/bin:/product/bin:/system/bin, --env, LANG=C.UTF-8, --env, BIONICX_DNS_SERVERS=192.168.1.1,114.114.114.114, --env, BIONICX_ROOTFS=/data/user/0/io.taowen.bx/files/rootfs, --env, BIONICX_APP=/data/user/0/io.taowen.bx/files/apps/keepassxc, --env, LD_LIBRARY_PATH=/data/user/0/io.taowen.bx/files/apps/keepassxc/lib, --env, BIONICX_TMPDIR=/data/user/0/io.taowen.bx/cache, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/rootfs/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, FONTCONFIG_SYSROOT=/data/user/0/io.taowen.bx/files/rootfs, --env, DBUS_SESSION_BUS_ADDRESS=unix:path=/data/user/0/io.taowen.bx/files/run/keepassxc/runtime/bus, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-runtime.so, --, /data/user/0/io.taowen.bx/files/rootfs/bin/sh, /data/user/0/io.taowen.bx/files/apps/keepassxc/bin/keepassxc-deferred-open, --keyfile, /data/user/0/io.taowen.bx/files/apps/keepassxc/fixtures/bionicx.key, /data/user/0/io.taowen.bx/files/apps/keepassxc/fixtures/bionicx.kdbx]
+I/BionicX (11606): bionicx-exec: running untraced pid=11705
+I/ActivityTaskManager( 2013): Displayed io.taowen.bx/com.winlator.BionicXActivity for user 0: +258ms
+BXTEST PASS keepassxc-untraced
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/productivity-apps-bundle
+/work/third_party/gladio/src/main.c: In function 'getRangeIndices':
+/work/third_party/gladio/src/main.c:35:31: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   35 |             GLubyte* values = indices;
+      |                               ^~~~~~~
+/work/third_party/gladio/src/main.c:43:32: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   43 |             GLushort* values = indices;
+      |                                ^~~~~~~
+/work/third_party/gladio/src/main.c:51:30: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   51 |             GLuint* values = indices;
+      |                              ^~~~~~~
+In file included from /work/third_party/gladio/include/gl_client_state.h:5,
+                 from /work/third_party/gladio/include/gl_context.h:4,
+                 from /work/third_party/gladio/src/gl_calls.c:2:
+/work/third_party/gladio/src/gl_calls.c: In function 'glColorPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:872:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+  872 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_COLOR_POINTER, COLOR_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glGetStringi':
+/work/third_party/gladio/src/gl_calls.c:2998:42: warning: passing argument 1 of 'strsplit' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 2998 |     if (cachedValues.size == 0) strsplit((const char*)glGetString(name), ' ', &cachedValues);
+      |                                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /work/third_party/gladio/include/texture_utils.h:9,
+                 from /work/third_party/gladio/include/gladio.h:72,
+                 from /work/third_party/gladio/src/gl_calls.c:1:
+/work/third_party/gladio/include/string_utils.h:135:35: note: expected 'char *' but argument is of type 'const char *'
+  135 | static inline void strsplit(char* input, char delimiter, ArrayList* outStrings) {
+      |                             ~~~~~~^~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glLoadMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3585:73: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3585 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_LOAD_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                         ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glLoadTransposeMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3606:83: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3606 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_LOAD_TRANSPOSE_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                                   ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glMultMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3855:73: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3855 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_MULT_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                         ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glMultTransposeMatrixf':
+/work/third_party/gladio/src/gl_calls.c:3870:83: warning: passing argument 3 of 'gl_send' discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 3870 |     gl_send(currentGLContext->serverRing, REQUEST_CODE_GL_MULT_TRANSPOSE_MATRIXF, m, 16 * sizeof(GLfloat));
+      |                                                                                   ^
+/work/third_party/gladio/include/gladio.h:115:71: note: expected 'void *' but argument is of type 'const GLfloat *' {aka 'const float *'}
+  115 | static inline bool gl_send(RingBuffer* ring, short requestCode, void* data, int size) {
+      |                                                                 ~~~~~~^~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glNormalPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:4454:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+ 4454 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_NORMAL_POINTER, NORMAL_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glTexCoordPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:5666:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+ 5666 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_TEX_COORD_POINTER, TEXCOORD_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/gl_calls.c: In function 'glVertexAttribIPointer':
+/work/third_party/gladio/src/gl_calls.c:7315:54: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 7315 |             clientState->vao->attribs[index].pointer = pointer;
+      |                                                      ^
+/work/third_party/gladio/src/gl_calls.c: In function 'glVertexAttribPointer':
+/work/third_party/gladio/src/gl_calls.c:7354:54: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+ 7354 |             clientState->vao->attribs[index].pointer = arrayBuffer ? arrayBuffer->mappedData : pointer;
+      |                                                      ^
+/work/third_party/gladio/src/gl_calls.c: In function 'glVertexPointer':
+/work/third_party/gladio/include/gl_vao.h:54:46: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+   54 |     clientState->vao->attribs[index].pointer = pointer; \
+      |                                              ^
+/work/third_party/gladio/src/gl_calls.c:7382:5: note: in expansion of macro 'GL_SEND_VERTEX_ARRAY'
+ 7382 |     GL_SEND_VERTEX_ARRAY(REQUEST_CODE_GL_VERTEX_POINTER, POSITION_ARRAY_INDEX);
+      |     ^~~~~~~~~~~~~~~~~~~~
+/work/third_party/gladio/src/arrays.c: In function 'ArrayMap_put':
+/work/third_party/gladio/src/arrays.c:358:34: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+  358 |     arrayMap->entries[index].key = key;
+      |                                  ^
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/productivity-apps-bundle/app/lib/libGL.so.1.7.0
+profile krita is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 12.9 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 142.5 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 69.0 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 51.1 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 95.0 MB/s (79008 bytes in 0.001s)
+bionicx-exec: running untraced pid=11868
+bionicx-exec: primary pid=11868 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=11884
+bionicx ELF fixups: 2 entries
+bionicx-exec: primary pid=11884 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/profiles/krita.json: 1 file pushed, 0 skipped. 17.0 MB/s (1137 bytes in 0.000s)
+installed profile krita for io.taowen.bx
+Starting: Intent { cmp=io.taowen.bx/com.winlator.BionicXActivity }
+Status: ok
+LaunchState: COLD
+Activity: io.taowen.bx/com.winlator.BionicXActivity
+TotalTime: 236
+WaitTime: 239
+Complete
+screenshot /var/home/taowen/projects/glibc-on-bionic/bionicx/evidence/vivo-10AFA31610002QH/krita.png bytes=159574
+I/BionicX (11968): profile=krita display=2640x1216@144 socket=filesystem
+I/BionicX (11968): enabled D-Bus session service at /data/user/0/io.taowen.bx/files/run/krita/runtime/bus
+I/BionicX (11968): dbus: bionicx-exec: running untraced pid=12019
+I/BionicX (11968): runtime DNS servers=2
+I/BionicX (11968): launching Krita (Debian trixie ARM64): [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --cwd, /data/user/0/io.taowen.bx/files/homes/krita, --env, DISPLAY=:0, --env, GLADIO_X11_SOCKET=/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/krita, --env, TMPDIR=/data/user/0/io.taowen.bx/cache, --env, XDG_RUNTIME_DIR=/data/user/0/io.taowen.bx/files/run/krita/runtime, --env, XDG_CONFIG_HOME=/data/user/0/io.taowen.bx/files/homes/krita/.config, --env, XDG_CACHE_HOME=/data/user/0/io.taowen.bx/files/homes/krita/.cache, --env, XDG_DATA_HOME=/data/user/0/io.taowen.bx/files/homes/krita/.local/share, --env, XDG_DATA_DIRS=/data/user/0/io.taowen.bx/files/rootfs/usr/local/share:/data/user/0/io.taowen.bx/files/rootfs/usr/share, --env, QT_QPA_PLATFORM=xcb, --env, QT_PLUGIN_PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/qt5/plugins, --env, QT_XKB_CONFIG_ROOT=/data/user/0/io.taowen.bx/files/rootfs/usr/share/X11/xkb, --env, NO_AT_BRIDGE=1, --env, PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/bin:/data/user/0/io.taowen.bx/files/rootfs/bin:/product/bin:/system/bin, --env, LANG=C.UTF-8, --env, BIONICX_DNS_SERVERS=192.168.1.1,114.114.114.114, --env, BIONICX_ROOTFS=/data/user/0/io.taowen.bx/files/rootfs, --env, BIONICX_APP=/data/user/0/io.taowen.bx/files/apps/krita, --env, LD_LIBRARY_PATH=/data/user/0/io.taowen.bx/files/apps/krita/lib, --env, BIONICX_TMPDIR=/data/user/0/io.taowen.bx/cache, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/rootfs/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, FONTCONFIG_SYSROOT=/data/user/0/io.taowen.bx/files/rootfs, --env, DBUS_SESSION_BUS_ADDRESS=unix:path=/data/user/0/io.taowen.bx/files/run/krita/runtime/bus, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-runtime.so, --, /data/user/0/io.taowen.bx/files/rootfs/usr/bin/krita, /data/user/0/io.taowen.bx/files/apps/krita/fixtures/bionicx-image.ppm]
+I/BionicX (11968): bionicx-exec: running untraced pid=12028
+I/ActivityTaskManager( 2013): Displayed io.taowen.bx/com.winlator.BionicXActivity for user 0: +236ms
+BXTEST PASS krita-untraced
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/productivity-apps-bundle
+profile firefox-esr is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 9.7 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 78.9 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 90.9 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 31.3 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 94.5 MB/s (79008 bytes in 0.001s)
+bionicx-exec: running untraced pid=12187
+bionicx-exec: primary pid=12187 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=12199
+bionicx ELF fixups: 0 entries
+bionicx-exec: primary pid=12199 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/profiles/firefox-esr-online.json: 1 file pushed, 0 skipped. 15.3 MB/s (1383 bytes in 0.000s)
+installed profile firefox-esr for io.taowen.bx
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/productivity-apps-bundle/app/fixtures/firefox-online-user.js: 1 file pushed, 0 skipped. 17.5 MB/s (1125 bytes in 0.000s)
+Starting: Intent { cmp=io.taowen.bx/com.winlator.BionicXActivity }
+Status: ok
+LaunchState: COLD
+Activity: io.taowen.bx/com.winlator.BionicXActivity
+TotalTime: 212
+WaitTime: 214
+Complete
+screenshot /var/home/taowen/projects/glibc-on-bionic/bionicx/evidence/vivo-10AFA31610002QH/firefox-esr.png bytes=221051
+I/BionicX (12276): profile=firefox-esr display=2640x1216@144 socket=filesystem
+I/BionicX (12276): runtime DNS servers=2
+I/BionicX (12276): launching Firefox ESR online (Debian trixie ARM64): [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --cwd, /data/user/0/io.taowen.bx/files/rootfs/usr/lib/firefox-esr, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/firefox-esr, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/firefox-esr, --env, XDG_RUNTIME_DIR=/data/user/0/io.taowen.bx/files/run/firefox-esr/runtime, --env, XDG_CONFIG_HOME=/data/user/0/io.taowen.bx/files/homes/firefox-esr/.config, --env, XDG_CACHE_HOME=/data/user/0/io.taowen.bx/files/homes/firefox-esr/.cache, --env, XDG_DATA_HOME=/data/user/0/io.taowen.bx/files/homes/firefox-esr/.local/share, --env, XDG_DATA_DIRS=/data/user/0/io.taowen.bx/files/rootfs/usr/local/share:/data/user/0/io.taowen.bx/files/rootfs/usr/share, --env, GDK_PIXBUF_MODULE_FILE=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache, --env, SSL_CERT_FILE=/data/user/0/io.taowen.bx/files/rootfs/etc/ssl/certs/ca-certificates.crt, --env, MOZ_ENABLE_WAYLAND=0, --env, MOZ_DISABLE_CONTENT_SANDBOX=1, --env, MOZ_DISABLE_SOCKET_PROCESS_SANDBOX=1, --env, MOZ_FORCE_DISABLE_E10S=1, --env, MOZILLA_FIVE_HOME=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/firefox-esr, --env, NO_AT_BRIDGE=1, --env, PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/bin:/data/user/0/io.taowen.bx/files/rootfs/bin:/product/bin:/system/bin, --env, LANG=C.UTF-8, --env, BIONICX_DNS_SERVERS=192.168.1.1,114.114.114.114, --env, BIONICX_ROOTFS=/data/user/0/io.taowen.bx/files/rootfs, --env, BIONICX_APP=/data/user/0/io.taowen.bx/files/apps/firefox-esr, --env, BIONICX_TMPDIR=/data/user/0/io.taowen.bx/cache, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/rootfs/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, FONTCONFIG_SYSROOT=/data/user/0/io.taowen.bx/files/rootfs, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-runtime.so, --, /data/user/0/io.taowen.bx/files/rootfs/usr/lib/firefox-esr/firefox-esr, --no-remote, --new-instance, --profile, /data/user/0/io.taowen.bx/files/homes/firefox-esr/online, https://example.com/]
+I/BionicX (12276): bionicx-exec: running untraced pid=12322
+I/ActivityTaskManager( 2013): Displayed io.taowen.bx/com.winlator.BionicXActivity for user 0: +212ms
+BXTEST PASS firefox-esr-untraced
+BXSUMMARY vivo-apps passed=5 failed=0

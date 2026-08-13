@@ -108,3 +108,18 @@ then commit and push the smallest complete change.
   WPS Writer/Sheets/Presentation/PDF; Firefox online+cold; Krita/qBit/KeePassXC
   durable workflows; Chrome ANGLE Vulkan; GLX 26/26; dpkg consistency; reboot
   recapture. Remaining kernel limits stay in `docs/NEW-DEVICE.md`.
+
+## Vivo V2509A (`10AFA31610002QH`)
+
+Goal: the same shared seed plus `bxapt` declarations must launch real
+package-installed GUIs untraced as ordinary UID `u0_a381`, with a screenshot
+of each window. Installing packages is not acceptance.
+
+- [x] `link(status, status-old)` copy fallback so `bxapt set` can commit on
+  f2fs app-data that denies hard links.
+- [x] `bxapt set packages/trixie-popular.txt` leaves xterm, evince, keepassxc,
+  krita and firefox-esr `ii`.
+- [x] Launch and screenshot xterm (`bash-5.2$`), evince (fixture PDF),
+  KeePassXC 2.7.10 and Firefox `example.com` untraced as `u0_a381`
+  (`examples/vivo-apps/run.sh`, `evidence/vivo-10AFA31610002QH/`).
+  Krita starts untraced then exits 139 on this Mali; that is not accepted.
