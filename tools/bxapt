@@ -104,6 +104,8 @@ prepare_state() {
         "$run_dir/rootfs-elf-fixup.sh"
     upload_private "$repo_dir/tools/bxapt-unpack.sh" \
         "$run_dir/bxapt-unpack.sh"
+    upload_private "$repo_dir/tools/bxapt-ldconfig.sh" \
+        "$run_dir/bxapt-ldconfig.sh"
     run_as cp "$root/etc/apt/sources.list.d/debian.sources" \
         "$run_dir/sources.sources"
 }
@@ -219,6 +221,7 @@ environment=(
     "BIONICX_UNPACK_MANIFEST=$unpack_manifest"
     "BIONICX_PACKAGE_SNAPSHOT=$package_snapshot"
     "BIONICX_REQUESTED_PACKAGES=$requested_state"
+    "BIONICX_REMAINING_DEBS=$run_dir/remaining-debs.txt"
     "BIONICX_APT_CONFIG=$run_dir/apt.conf"
     "FONTCONFIG_PATH=$root/etc/fonts"
     "FONTCONFIG_FILE=fonts.conf"
@@ -260,6 +263,13 @@ run_binary() {
     run_as "${launcher[@]}"
 }
 
+ensure_ldconfig_wrapper() {
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-ldconfig.sh" --install \
+        "$run_dir/bxapt-ldconfig.sh")
+    run_binary
+}
+
 fixup_elf() {
     local tree="${1:-$root}"
     binary="$root/bin/sh"
@@ -295,13 +305,102 @@ reconcile_package_state() {
 }
 
 clear_transaction_state() {
-    run_as rm -f "$package_snapshot" "$requested_state" "$unpack_manifest"
+    run_as rm -f "$package_snapshot" "$requested_state" "$unpack_manifest" \
+        "$run_dir/remaining-debs.txt" "$run_dir/remaining-debs.txt.next" \
+        "$run_dir/remaining-debs.txt.count"
+}
+
+remaining_deb_count() {
+    if run_as test -r "$run_dir/remaining-debs.txt.count"; then
+        run_as cat "$run_dir/remaining-debs.txt.count" | tr -d '\r\n\t '
+        return
+    fi
+    printf '0'
+}
+
+configure_unpacked() {
+    local allow_fail="${1:-}"
+    binary="$root/usr/bin/dpkg"
+    arguments=(--force-not-root --force-script-chrootless \
+        --root="$root" --admindir="$root/var/lib/dpkg" \
+        --abort-after=10000 --configure -a)
+    if [[ -n "$allow_fail" ]]; then
+        run_binary || true
+    else
+        run_binary
+    fi
+}
+
+remove_standalone_systemd_if_replacing() {
+    if ! run_as sh -c \
+            'for archive in "$1"/systemd_*.deb; do
+                 [ -e "$archive" ] && exit 0
+             done
+             exit 1' \
+            sh "$root/var/cache/apt/archives"; then
+        return 0
+    fi
+    binary="$root/usr/bin/dpkg-query"
+    arguments=(--admindir="$root/var/lib/dpkg" \
+        -W '-f=${db:Status-Abbrev}' systemd-standalone-sysusers)
+    local status=0
+    status="$(run_binary 2>/dev/null | tr -d '\r' | awk '{ print $1 }' || true)"
+    case "$status" in
+        ii|iU|iF|iH|iW|it)
+            echo "bxapt: removing systemd-standalone-sysusers (conflicts with systemd)" >&2
+            binary="$root/usr/bin/dpkg"
+            arguments=(--force-not-root --force-script-chrootless \
+                --root="$root" --admindir="$root/var/lib/dpkg" \
+                --remove --force-depends systemd-standalone-sysusers)
+            run_binary
+            ;;
+    esac
+}
+
+# Unpack archives in Pre-Depends waves: dpkg will not unpack a package whose
+# Pre-Depends are only unpacked, not configured. Normalize each wave before
+# configuring so maintainer scripts run relocated ELFs. apt-get -f install is
+# not used between waves because it would unpack the next wave without fixup.
+unpack_in_waves() {
+    run_as rm -f "$run_dir/remaining-debs.txt" \
+        "$run_dir/remaining-debs.txt.next" "$run_dir/remaining-debs.txt.count"
+    local prev=-1
+    local wave=0
+    local remaining
+    while true; do
+        binary="$root/bin/sh"
+        arguments=("$run_dir/bxapt-unpack.sh" --unpack-wave)
+        run_binary
+        remaining="$(remaining_deb_count)"
+        remaining="${remaining:-0}"
+        fixup_unpacked_elf
+        if [[ "${BIONICX_BXAPT_STOP_AFTER:-}" == unpack ]]; then
+            return 0
+        fi
+        if [[ "$remaining" -eq 0 ]]; then
+            configure_unpacked
+            return 0
+        fi
+        configure_unpacked allow_fail
+        if [[ "$remaining" -eq "$prev" ]]; then
+            echo "bxapt: unpack wave made no progress (remaining=$remaining)" >&2
+            exit 1
+        fi
+        prev=$remaining
+        wave=$((wave + 1))
+        if [[ "$wave" -ge 32 ]]; then
+            echo "bxapt: exceeded unpack wave limit (remaining=$remaining)" >&2
+            exit 1
+        fi
+    done
 }
 
 dpkg_arguments() {
     arguments=(--force-not-root --force-script-chrootless \
         --root="$root" --admindir="$root/var/lib/dpkg" "${arguments[@]}")
 }
+
+ensure_ldconfig_wrapper
 
 if [[ "$command_name" == fixup ]]; then
     fixup_elf
@@ -316,11 +415,21 @@ fi
 if [[ "$command_name" == recover ]]; then
     run_as test -s "$package_snapshot"
     run_as test -r "$requested_state"
-    run_as test -r "$unpack_manifest"
-    binary="$root/bin/sh"
-    arguments=("$run_dir/rootfs-elf-fixup.sh" --paths-from \
-        "$unpack_manifest" "$root" "$root")
+    # A failed one-shot unpack never reached ELF normalization, so already
+    # unpacked helpers still have the distro PT_INTERP. Fix the whole tree
+    # before configuring; the last unpack manifest is not enough.
+    fixup_elf
+    # Configure already-unpacked Pre-Depends parents, then download whatever
+    # the solver still needs and unpack those archives in waves.
+    configure_unpacked allow_fail
+    binary="$root/usr/bin/apt-get"
+    arguments=(-f install -y --no-install-recommends --download-only)
     run_binary
+    remove_standalone_systemd_if_replacing
+    unpack_in_waves
+    if [[ "${BIONICX_BXAPT_STOP_AFTER:-}" == unpack ]]; then
+        exit 0
+    fi
     binary="$root/usr/bin/apt-get"
     arguments=(-f install -y --no-install-recommends)
     run_binary
@@ -351,10 +460,8 @@ if [[ "$command_name" == deb ]]; then
     binary="$root/usr/bin/apt-get"
     arguments=(-f install -y --no-install-recommends --download-only)
     run_binary
-    binary="$root/bin/sh"
-    arguments=("$run_dir/bxapt-unpack.sh" --unpack)
-    run_binary
-    fixup_unpacked_elf
+    remove_standalone_systemd_if_replacing
+    unpack_in_waves
     binary="$root/usr/bin/apt-get"
     arguments=(-f install -y --no-install-recommends)
     run_binary
@@ -388,10 +495,8 @@ if [[ "$command_name" == install || "$command_name" == set ]]; then
     binary="$root/usr/bin/apt-get"
     arguments=("${requested_arguments[@]}" --download-only)
     run_binary
-    binary="$root/bin/sh"
-    arguments=("$run_dir/bxapt-unpack.sh" --unpack)
-    run_binary
-    fixup_unpacked_elf
+    remove_standalone_systemd_if_replacing
+    unpack_in_waves
     if [[ "${BIONICX_BXAPT_STOP_AFTER:-}" == unpack ]]; then
         # Leave transaction metadata in place so a later recover can finish
         # unpacked or half-configured packages. This is a test hook, not a

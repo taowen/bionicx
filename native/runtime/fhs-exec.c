@@ -3,6 +3,7 @@
 #include <dlfcn.h>
 #include <pthread.h>
 #include <signal.h>
+#include <spawn.h>
 #include <stdio.h>
 #include <sys/wait.h>
 
@@ -271,6 +272,63 @@ int execve(const char *path, char *const arguments[],
     free_runtime_environment(merged, owned_from);
     errno = saved_errno;
     return result;
+}
+
+int posix_spawn(pid_t *pid, const char *path,
+                const posix_spawn_file_actions_t *file_actions,
+                const posix_spawnattr_t *attrp,
+                char *const arguments[], char *const environment[]) {
+    static int (*next)(pid_t *, const char *,
+                       const posix_spawn_file_actions_t *,
+                       const posix_spawnattr_t *,
+                       char *const[], char *const[]);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "posix_spawn");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    if (actual == NULL) return errno != 0 ? errno : ENOENT;
+    size_t owned_from = 0;
+    char **merged = with_runtime_environment(environment, &owned_from);
+    if (environment != NULL && merged == NULL) return ENOMEM;
+    char *const *actual_environment = merged != NULL ? merged : environment;
+    char program[PATH_MAX], interpreter_argument[PATH_MAX];
+    char **script = script_arguments(actual, arguments, program,
+                                     interpreter_argument);
+    int result = script == NULL
+            ? next(pid, actual, file_actions, attrp, arguments,
+                   actual_environment)
+            : next(pid, program, file_actions, attrp, script,
+                   actual_environment);
+    free(script);
+    free_runtime_environment(merged, owned_from);
+    return result;
+}
+
+int posix_spawnp(pid_t *pid, const char *path,
+                 const posix_spawn_file_actions_t *file_actions,
+                 const posix_spawnattr_t *attrp,
+                 char *const arguments[], char *const environment[]) {
+    char buffer[PATH_MAX];
+    const char *actual = path;
+    if (strchr(path, '/') == NULL) {
+        const char *root = bionicx_getenv("BIONICX_ROOTFS");
+        static const char *directories[] = {
+            "/usr/sbin", "/usr/bin", "/sbin", "/bin"
+        };
+        if (root != NULL && root[0] == '/') {
+            for (size_t i = 0;
+                    i < sizeof(directories) / sizeof(directories[0]); ++i) {
+                int count = snprintf(buffer, sizeof(buffer), "%s%s/%s", root,
+                                     directories[i], path);
+                if (count > 0 && count < (int)sizeof(buffer) &&
+                        access(buffer, X_OK) == 0) {
+                    actual = buffer;
+                    break;
+                }
+            }
+        }
+    }
+    return posix_spawn(pid, actual, file_actions, attrp, arguments,
+                       environment);
 }
 
 int execvp(const char *path, char *const arguments[]) {

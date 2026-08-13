@@ -237,6 +237,24 @@ char *canonicalize_file_name(const char *path) {
     return realpath(path, NULL);
 }
 
+ssize_t readlink(const char *path, char *value, size_t size) {
+    static ssize_t (*next)(const char *, char *, size_t);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "readlink");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    return next(actual, value, size);
+}
+
+ssize_t readlinkat(int directory, const char *path, char *value, size_t size) {
+    static ssize_t (*next)(int, const char *, char *, size_t);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "readlinkat");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    return next(directory, actual, value, size);
+}
+
 int access(const char *path, int mode) {
     static int (*next)(const char *, int);
     if (next == NULL) next = dlsym(RTLD_NEXT, "access");

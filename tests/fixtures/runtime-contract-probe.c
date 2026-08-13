@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <sys/sem.h>
 #include <sys/types.h>
+#include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -285,6 +286,31 @@ int main(int argc, char **argv) {
             semctl(semaphore, 0, GETVAL) != 1 ||
             semctl(semaphore, 0, IPC_RMID) != 0)
         fail("cross-process System V semaphore");
+
+    char etc_link[PATH_MAX];
+    if (readlink("/etc", etc_link, sizeof(etc_link) - 1) >= 0)
+        fail("readlink /etc must use the rootfs directory, not a host symlink");
+
+    snprintf(path, sizeof(path), "%s/usr/bin/bionicx-spawn-marker", root);
+    write_file(path, "#!/bin/sh\nprintf spawned > /etc/bionicx-spawned\n", 0700);
+    pid_t spawn_pid = -1;
+    char *const spawn_arguments[] = {
+        (char *)"bionicx-spawn-marker", NULL
+    };
+    char *const spawn_environment[] = {
+        (char *)"PATH=/usr/bin:/bin",
+        (char *)"HOME=/tmp",
+        NULL
+    };
+    if (posix_spawn(&spawn_pid, "/usr/bin/bionicx-spawn-marker", NULL, NULL,
+                    spawn_arguments, spawn_environment) != 0)
+        fail("posix_spawn rootfs helper");
+    int spawn_status = 0;
+    if (waitpid(spawn_pid, &spawn_status, 0) != spawn_pid ||
+            !WIFEXITED(spawn_status) || WEXITSTATUS(spawn_status) != 0)
+        fail("posix_spawn helper status");
+    snprintf(path, sizeof(path), "%s/etc/bionicx-spawned", root);
+    if (access(path, F_OK) != 0) fail("posix_spawn wrote outside the rootfs");
 
     snprintf(path, sizeof(path), "%s/usr/bin/bionicx-script", root);
     write_file(path, "#!/bin/sh\nexit 23\n", 0700);

@@ -26,6 +26,53 @@ case "${1:-}" in
         "$root/usr/bin/dpkg" --force-not-root --force-script-chrootless \
             --root="$root" --admindir="$root/var/lib/dpkg" --unpack "$@"
         ;;
+    --unpack-wave)
+        remaining=${BIONICX_REMAINING_DEBS:?missing BIONICX_REMAINING_DEBS}
+        # Missing list: start from archives. Existing empty list: waves are done.
+        if [ ! -f "$remaining" ]; then
+            : > "$remaining"
+            for archive in "$archives"/*.deb; do
+                [ -e "$archive" ] || continue
+                printf '%s\n' "$archive" >> "$remaining"
+            done
+        fi
+        [ -s "$remaining" ] || {
+            : > "$manifest"
+            printf '0\n' > "$remaining.count"
+            exit 0
+        }
+        set --
+        while IFS= read -r archive || [ -n "$archive" ]; do
+            [ -n "$archive" ] && [ -e "$archive" ] || continue
+            set -- "$@" "$archive"
+        done < "$remaining"
+        [ "$#" -gt 0 ] || { : > "$manifest"; : > "$remaining"; exit 0; }
+        "$root/usr/bin/dpkg" --force-not-root --force-script-chrootless \
+            --root="$root" --admindir="$root/var/lib/dpkg" --unpack "$@" || true
+        : > "$manifest"
+        next="$remaining.next"
+        : > "$next"
+        for archive do
+            package="$("$root/usr/bin/dpkg-deb" -f "$archive" Package)"
+            [ -n "$package" ] || { printf '%s\n' "$archive" >> "$next"; continue; }
+            abbrev="$("$root/usr/bin/dpkg-query" --admindir="$root/var/lib/dpkg" \
+                -W '-f=${db:Status-Abbrev}' "$package" 2>/dev/null || true)"
+            case "$abbrev" in
+                iU*|iF*|iW*|it*|ii*|iH*)
+                    "$root/usr/bin/dpkg-deb" --fsys-tarfile "$archive" | \
+                        "$root/bin/tar" -tf - >> "$manifest"
+                    ;;
+                *)
+                    printf '%s\n' "$archive" >> "$next"
+                    ;;
+            esac
+        done
+        mv "$next" "$remaining"
+        count=$(wc -l < "$remaining")
+        count=$(printf '%s' "$count" | tr -d ' \t')
+        printf '%s\n' "$count" > "$remaining.count"
+        printf 'bionicx unpack wave remaining=%s\n' "$count"
+        ;;
     --snapshot)
         "$root/usr/bin/dpkg-query" --admindir="$root/var/lib/dpkg" \
             -W '-f=${Package} ${db:Status-Abbrev}\n' 2>/dev/null | \
@@ -71,7 +118,7 @@ EOF
         rm -f "$current" "$requested"
         ;;
     *)
-        echo "usage: bxapt-unpack.sh --clear|--unpack|--snapshot|--record-requested|--reconcile" >&2
+        echo "usage: bxapt-unpack.sh --clear|--unpack|--unpack-wave|--snapshot|--record-requested|--reconcile" >&2
         exit 2
         ;;
 esac
