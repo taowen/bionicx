@@ -1,0 +1,358 @@
+BXINFO declared 31 packages: dbus icewm xterm firefox-esr libreoffice-writer libreoffice-gtk3 libreoffice-math thunderbird evince filezilla geany mousepad ristretto thunar gimp inkscape krita vlc keepassxc qbittorrent bsdextrautils libxkbcommon-x11-0 libxslt1.1 qt6-qpa-plugins patchelf google-chrome-stable wps-office libwebp6 libtiff5 cups-daemon cups-client
+BXINFO seed
+ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+BXTEST PASS audit-dpkg-audit-before.log empty
+dbus install ok installed 1.16.2-2
+icewm install ok installed 3.7.4-1
+xterm install ok installed 398-1
+firefox-esr install ok installed 140.13.0esr-1~deb13u1
+libreoffice-writer install ok installed 4:25.2.3-2+deb13u6
+libreoffice-gtk3 install ok installed 4:25.2.3-2+deb13u6
+libreoffice-math install ok installed 4:25.2.3-2+deb13u6
+thunderbird install ok installed 1:140.13.0esr-2~deb13u1
+evince install ok installed 48.1-3+deb13u1
+filezilla install ok installed 3.68.1-1
+geany install ok installed 2.0-2
+mousepad install ok installed 0.6.3-1
+ristretto install ok installed 0.13.3-1
+thunar install ok installed 4.20.2-1+deb13u1
+gimp install ok installed 3.0.4-3+deb13u9
+inkscape install ok installed 1.4-6
+krita install ok installed 1:5.2.9+dfsg-1+deb13u1
+vlc install ok installed 3.0.23-0+deb13u1
+keepassxc install ok installed 2.7.10+dfsg1-1
+qbittorrent install ok installed 5.1.0-2
+bsdextrautils install ok installed 2.41-5
+libxkbcommon-x11-0 install ok installed 1.7.0-2
+libxslt1.1 install ok installed 1.1.35-1.2+deb13u3
+qt6-qpa-plugins install ok installed 6.8.2+dfsg-9+deb13u2
+patchelf install ok installed 0.18.0-1.4
+google-chrome-stable install ok installed 151.0.7922.108-1
+wps-office install ok installed 11.1.0.11720
+libwebp6 install ok installed 0.6.1-2.1+deb11u2
+libtiff5 install ok installed 4.2.0-1+deb11u5
+cups-daemon install ok installed 2.4.10-3+deb13u2
+cups-client install ok installed 2.4.10-3+deb13u2
+BXTEST PASS dpkg-declared-before.log all-ii count=31
+BXTEST PASS per-app-system-libs none
+==== reinstall declared leaf bsdextrautils ====
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 16.0 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 137.4 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 59.3 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 31.4 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 75.2 MB/s (78840 bytes in 0.001s)
+bionicx-exec: running untraced pid=28905
+bionicx-exec: primary pid=28905 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=28914
+bionicx-exec: primary pid=28914 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=28923
+bionicx-exec: primary pid=28923 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=28927
+bionicx-exec: primary pid=28927 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=28932
+bionicx-exec: primary pid=28932 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=28936
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 1 reinstalled, 0 to remove and 0 not upgraded.
+Need to get 93.8 kB of archives.
+After this operation, 0 B of additional disk space will be used.
+Get:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 bsdextrautils arm64 2.41-5 [93.8 kB]
+Fetched 93.8 kB in 1s (73.3 kB/s)
+Download complete and in download only mode
+bionicx-exec: primary pid=28936 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=28947
+bionicx-exec: primary pid=28947 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=28956
+(Reading database ... 64690 files and directories currently installed.)
+Preparing to unpack .../bsdextrautils_2.41-5_arm64.deb ...
+Unpacking bsdextrautils (2.41-5) over (2.41-5) ...
+bionicx unpack wave remaining=0
+bionicx-exec: primary pid=28956 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=28998
+bionicx ELF fixups: 3753 entries
+bionicx-exec: primary pid=28998 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29186
+Setting up bsdextrautils (2.41-5) ...
+Processing triggers for man-db (2.13.1-1) ...
+setpriv: keep process capabilities failed: Operation not permitted
+bionicx-exec: primary pid=29186 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29192
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+bionicx-exec: primary pid=29192 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=29223
+bsdextrautils was already set to manually installed.
+bionicx-exec: primary pid=29223 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS audit-dpkg-audit-after-reinstall.log empty
+dbus install ok installed 1.16.2-2
+icewm install ok installed 3.7.4-1
+xterm install ok installed 398-1
+firefox-esr install ok installed 140.13.0esr-1~deb13u1
+libreoffice-writer install ok installed 4:25.2.3-2+deb13u6
+libreoffice-gtk3 install ok installed 4:25.2.3-2+deb13u6
+libreoffice-math install ok installed 4:25.2.3-2+deb13u6
+thunderbird install ok installed 1:140.13.0esr-2~deb13u1
+evince install ok installed 48.1-3+deb13u1
+filezilla install ok installed 3.68.1-1
+geany install ok installed 2.0-2
+mousepad install ok installed 0.6.3-1
+ristretto install ok installed 0.13.3-1
+thunar install ok installed 4.20.2-1+deb13u1
+gimp install ok installed 3.0.4-3+deb13u9
+inkscape install ok installed 1.4-6
+krita install ok installed 1:5.2.9+dfsg-1+deb13u1
+vlc install ok installed 3.0.23-0+deb13u1
+keepassxc install ok installed 2.7.10+dfsg1-1
+qbittorrent install ok installed 5.1.0-2
+bsdextrautils install ok installed 2.41-5
+libxkbcommon-x11-0 install ok installed 1.7.0-2
+libxslt1.1 install ok installed 1.1.35-1.2+deb13u3
+qt6-qpa-plugins install ok installed 6.8.2+dfsg-9+deb13u2
+patchelf install ok installed 0.18.0-1.4
+google-chrome-stable install ok installed 151.0.7922.108-1
+wps-office install ok installed 11.1.0.11720
+libwebp6 install ok installed 0.6.1-2.1+deb11u2
+libtiff5 install ok installed 4.2.0-1+deb11u5
+cups-daemon install ok installed 2.4.10-3+deb13u2
+cups-client install ok installed 2.4.10-3+deb13u2
+BXTEST PASS dpkg-declared-after-reinstall.log all-ii count=31
+BXTEST PASS per-app-system-libs none
+==== remove declared ristretto ====
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 13.4 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 120.4 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 67.3 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 19.3 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 74.8 MB/s (78840 bytes in 0.001s)
+bionicx-exec: running untraced pid=31355
+bionicx-exec: primary pid=31355 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=31363
+bionicx-exec: primary pid=31363 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=31370
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following packages will be REMOVED:
+  ristretto
+0 upgraded, 0 newly installed, 1 to remove and 0 not upgraded.
+After this operation, 1281 kB disk space will be freed.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 64690 files and directories currently installed.)
+Removing ristretto (0.13.3-1) ...
+Processing triggers for hicolor-icon-theme (0.18-2) ...
+Processing triggers for man-db (2.13.1-1) ...
+setpriv: keep process capabilities failed: Operation not permitted
+Processing triggers for desktop-file-utils (0.28-1) ...
+bionicx-exec: primary pid=31370 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=31398
+bionicx ELF fixups: 3750 entries
+bionicx-exec: primary pid=31398 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS audit-dpkg-audit-after-remove.log empty
+BXTEST PASS ristretto absent
+dbus install ok installed 1.16.2-2
+icewm install ok installed 3.7.4-1
+xterm install ok installed 398-1
+firefox-esr install ok installed 140.13.0esr-1~deb13u1
+libreoffice-writer install ok installed 4:25.2.3-2+deb13u6
+libreoffice-gtk3 install ok installed 4:25.2.3-2+deb13u6
+libreoffice-math install ok installed 4:25.2.3-2+deb13u6
+thunderbird install ok installed 1:140.13.0esr-2~deb13u1
+evince install ok installed 48.1-3+deb13u1
+filezilla install ok installed 3.68.1-1
+geany install ok installed 2.0-2
+mousepad install ok installed 0.6.3-1
+thunar install ok installed 4.20.2-1+deb13u1
+gimp install ok installed 3.0.4-3+deb13u9
+inkscape install ok installed 1.4-6
+krita install ok installed 1:5.2.9+dfsg-1+deb13u1
+vlc install ok installed 3.0.23-0+deb13u1
+keepassxc install ok installed 2.7.10+dfsg1-1
+qbittorrent install ok installed 5.1.0-2
+bsdextrautils install ok installed 2.41-5
+libxkbcommon-x11-0 install ok installed 1.7.0-2
+libxslt1.1 install ok installed 1.1.35-1.2+deb13u3
+qt6-qpa-plugins install ok installed 6.8.2+dfsg-9+deb13u2
+patchelf install ok installed 0.18.0-1.4
+google-chrome-stable install ok installed 151.0.7922.108-1
+wps-office install ok installed 11.1.0.11720
+libwebp6 install ok installed 0.6.1-2.1+deb11u2
+libtiff5 install ok installed 4.2.0-1+deb11u5
+cups-daemon install ok installed 2.4.10-3+deb13u2
+cups-client install ok installed 2.4.10-3+deb13u2
+BXTEST PASS dpkg-declared-after-remove.log all-ii count=30
+BXTEST PASS per-app-system-libs none
+==== bxapt set restores ristretto ====
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/bxapt.conf: 1 file pushed, 0 skipped. 12.7 MB/s (1092 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/rootfs-elf-fixup.sh: 1 file pushed, 0 skipped. 116.9 MB/s (11852 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-unpack.sh: 1 file pushed, 0 skipped. 65.0 MB/s (5904 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/tools/bxapt-ldconfig.sh: 1 file pushed, 0 skipped. 30.9 MB/s (2747 bytes in 0.000s)
+/var/home/taowen/projects/glibc-on-bionic/bionicx/android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so: 1 file pushed, 0 skipped. 73.8 MB/s (78840 bytes in 0.001s)
+bionicx-exec: running untraced pid=1582
+bionicx-exec: primary pid=1582 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=1591
+bionicx-exec: primary pid=1591 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=1599
+bionicx-exec: primary pid=1599 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=1611
+bionicx-exec: primary pid=1611 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=1628
+bionicx-exec: primary pid=1628 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=1638
+Reading package lists...
+Building dependency tree...
+Reading state information...
+dbus is already the newest version (1.16.2-2).
+icewm is already the newest version (3.7.4-1).
+xterm is already the newest version (398-1).
+firefox-esr is already the newest version (140.13.0esr-1~deb13u1).
+libreoffice-writer is already the newest version (4:25.2.3-2+deb13u6).
+libreoffice-gtk3 is already the newest version (4:25.2.3-2+deb13u6).
+libreoffice-math is already the newest version (4:25.2.3-2+deb13u6).
+thunderbird is already the newest version (1:140.13.0esr-2~deb13u1).
+evince is already the newest version (48.1-3+deb13u1).
+filezilla is already the newest version (3.68.1-1).
+geany is already the newest version (2.0-2).
+mousepad is already the newest version (0.6.3-1).
+thunar is already the newest version (4.20.2-1+deb13u1).
+gimp is already the newest version (3.0.4-3+deb13u9).
+inkscape is already the newest version (1.4-6).
+krita is already the newest version (1:5.2.9+dfsg-1+deb13u1).
+vlc is already the newest version (3.0.23-0+deb13u1).
+keepassxc is already the newest version (2.7.10+dfsg1-1).
+qbittorrent is already the newest version (5.1.0-2).
+bsdextrautils is already the newest version (2.41-5).
+libxkbcommon-x11-0 is already the newest version (1.7.0-2).
+libxslt1.1 is already the newest version (1.1.35-1.2+deb13u3).
+qt6-qpa-plugins is already the newest version (6.8.2+dfsg-9+deb13u2).
+patchelf is already the newest version (0.18.0-1.4).
+Suggested packages:
+  heif-gdk-pixbuf libavif-gdk-pixbuf libjxl-gdk-pixbuf webp-pixbuf-loader
+Recommended packages:
+  tumbler
+The following NEW packages will be installed:
+  ristretto
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Need to get 246 kB of archives.
+After this operation, 1281 kB of additional disk space will be used.
+Get:1 http://snapshot.debian.org/archive/debian/20260811T000000Z trixie/main arm64 ristretto arm64 0.13.3-1 [246 kB]
+Fetched 246 kB in 2s (122 kB/s)
+Download complete and in download only mode
+bionicx-exec: primary pid=1638 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=1714
+bionicx-exec: primary pid=1714 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=1746
+Selecting previously unselected package ristretto.
+(Reading database ... 64617 files and directories currently installed.)
+Preparing to unpack .../ristretto_0.13.3-1_arm64.deb ...
+Unpacking ristretto (0.13.3-1) ...
+Processing triggers for desktop-file-utils (0.28-1) ...
+Processing triggers for hicolor-icon-theme (0.18-2) ...
+Processing triggers for man-db (2.13.1-1) ...
+setpriv: keep process capabilities failed: Operation not permitted
+bionicx unpack wave remaining=0
+bionicx-exec: primary pid=1746 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=1819
+bionicx ELF fixups: 3753 entries
+bionicx-exec: primary pid=1819 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=2105
+Setting up ristretto (0.13.3-1) ...
+bionicx-exec: primary pid=2105 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=2112
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+bionicx-exec: primary pid=2112 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+bionicx-exec: running untraced pid=2124
+ristretto set to automatically installed.
+dbus was already set to manually installed.
+icewm was already set to manually installed.
+xterm was already set to manually installed.
+firefox-esr was already set to manually installed.
+libreoffice-writer was already set to manually installed.
+libreoffice-gtk3 was already set to manually installed.
+libreoffice-math was already set to manually installed.
+thunderbird was already set to manually installed.
+evince was already set to manually installed.
+filezilla was already set to manually installed.
+geany was already set to manually installed.
+mousepad was already set to manually installed.
+thunar was already set to manually installed.
+gimp was already set to manually installed.
+inkscape was already set to manually installed.
+krita was already set to manually installed.
+vlc was already set to manually installed.
+keepassxc was already set to manually installed.
+qbittorrent was already set to manually installed.
+bsdextrautils was already set to manually installed.
+libxkbcommon-x11-0 was already set to manually installed.
+libxslt1.1 was already set to manually installed.
+qt6-qpa-plugins was already set to manually installed.
+patchelf was already set to manually installed.
+ristretto set to manually installed.
+bionicx-exec: primary pid=2124 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS audit-dpkg-audit-after-set.log empty
+dbus install ok installed 1.16.2-2
+icewm install ok installed 3.7.4-1
+xterm install ok installed 398-1
+firefox-esr install ok installed 140.13.0esr-1~deb13u1
+libreoffice-writer install ok installed 4:25.2.3-2+deb13u6
+libreoffice-gtk3 install ok installed 4:25.2.3-2+deb13u6
+libreoffice-math install ok installed 4:25.2.3-2+deb13u6
+thunderbird install ok installed 1:140.13.0esr-2~deb13u1
+evince install ok installed 48.1-3+deb13u1
+filezilla install ok installed 3.68.1-1
+geany install ok installed 2.0-2
+mousepad install ok installed 0.6.3-1
+ristretto install ok installed 0.13.3-1
+thunar install ok installed 4.20.2-1+deb13u1
+gimp install ok installed 3.0.4-3+deb13u9
+inkscape install ok installed 1.4-6
+krita install ok installed 1:5.2.9+dfsg-1+deb13u1
+vlc install ok installed 3.0.23-0+deb13u1
+keepassxc install ok installed 2.7.10+dfsg1-1
+qbittorrent install ok installed 5.1.0-2
+bsdextrautils install ok installed 2.41-5
+libxkbcommon-x11-0 install ok installed 1.7.0-2
+libxslt1.1 install ok installed 1.1.35-1.2+deb13u3
+qt6-qpa-plugins install ok installed 6.8.2+dfsg-9+deb13u2
+patchelf install ok installed 0.18.0-1.4
+google-chrome-stable install ok installed 151.0.7922.108-1
+wps-office install ok installed 11.1.0.11720
+libwebp6 install ok installed 0.6.1-2.1+deb11u2
+libtiff5 install ok installed 4.2.0-1+deb11u5
+cups-daemon install ok installed 2.4.10-3+deb13u2
+cups-client install ok installed 2.4.10-3+deb13u2
+BXTEST PASS dpkg-declared-after-set.log all-ii count=31
+BXTEST PASS per-app-system-libs none
+BXSUMMARY dpkg-consistency install/reinstall/remove all-declared

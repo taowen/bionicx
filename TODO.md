@@ -78,13 +78,21 @@ then commit and push the smallest complete change.
 - [x] Rebuild and rerun the accepted xterm, IceWM, Thunar, Mousepad, Ristretto,
   LibreOffice Writer, Evince, GIMP, Inkscape, VLC, Geany, FileZilla and
   Thunderbird profiles from the same clean seed and package declarations.
-- [ ] Add further popular ARM64 trixie applications only when they extend
+- [x] Add further popular ARM64 trixie applications only when they extend
   coverage of a shared capability rather than introducing a per-app runtime.
+  Existing GTK/Qt/Mozilla/GLX/Vulkan/CUPS/Pulse/IceWM coverage already maps
+  the shared contracts; Transmission, Audacious, HexChat, Blender and similar
+  names were not added (`docs/diagnostics/2026-08-14-no-further-popular-apps.md`).
 
 ## Release checkpoint
 
-- [ ] Verify install, upgrade/reinstall and removal leave one consistent dpkg
+- [x] Verify install, upgrade/reinstall and removal leave one consistent dpkg
   database and no duplicated system libraries across every declared app.
+  31 declared packages (popular + Chrome/WPS/`libwebp6`/`libtiff5` + CUPS)
+  stay `ii` with empty `dpkg --audit` and no per-app `libc.so.6` through
+  `bxapt install --reinstall bsdextrautils`, `remove ristretto`, and
+  `set packages/trixie-popular.txt`
+  (`evidence/rebuild-2026-08-14/dpkg-consistency.log`).
 - [ ] Run the complete controlled test matrix and real application workflows
   after an Android force-stop and device reboot, with diagnostics disabled.
 - [x] Document remaining Android-kernel limitations honestly and provide a
