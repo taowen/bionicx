@@ -9,7 +9,9 @@ from the GPU, and swaps the drawable into the embedded X server window.
 Before context creation it verifies GLX discovery and version negotiation, then
 sends a raw GLX 1.2 `GetVisualConfigs` request and validates the positional
 18-property wire reply used by Chromium's ANGLE GLX backend.
-It also covers FBConfig visual metadata, pbuffers, ordinary `gl*` entry points
+It also covers the three tagged FBConfigs (double-buffer plus two
+SingleBuffer Qt configs): every advertised config must carry the X visual
+id and `GLX_X_RENDERABLE`. It covers pbuffers, ordinary `gl*` entry points
 returned from `glXGetProcAddress`, shader precision, and indexed/64-bit
 capability queries used by real GL loaders. The string and numeric OpenGL ES
 versions are checked independently so loader-visible metadata cannot drift.

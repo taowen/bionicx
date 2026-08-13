@@ -26,3 +26,10 @@ compositor blue/red still pass; the summary is 25/26 because
 cold and warm start. Untraced Chrome Vulkan still shows `WEBGL_OK`, Example
 Domain, a 1600x900 resize, and a force-stop cold start on
 `/vendor/lib64/hw/vulkan.adreno.so` with no VirGL.
+
+The `visual=0x0` line was a probe short-circuit: `fbconfig_count == 1`
+skipped `glXGetFBConfigAttrib` after the server started advertising the
+three Qt FBConfigs. The probe now requires all three (id 1 double-buffer,
+id 2/3 SingleBuffer) to carry the X visual and `GLX_X_RENDERABLE`. Cold
+and warm recapture on the same seed: `BXSUMMARY host-glx passed=26 failed=0`
+with `configs=3 visual=0x1 xRenderable=1`.

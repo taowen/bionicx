@@ -156,20 +156,53 @@ int main(void) {
     int fbconfig_count = 0;
     GLXFBConfig *fbconfigs = glXGetFBConfigs(display, screen,
                                              &fbconfig_count);
+    /* Winlator advertises three tagged FBConfigs for Qt: double-buffer
+     * id=1, SingleBuffer id=2, and a zero depth/stencil/alpha SingleBuffer
+     * id=3. Earlier logs of visual=0x0 were a probe short-circuit on
+     * count==1, not a missing server property. */
+    const int expected_ids[] = {1, 2, 3};
+    const int expected_double[] = {1, 0, 0};
     int fb_visual_id = 0;
     int fb_x_renderable = 0;
     XVisualInfo *fb_visual = fbconfigs && fbconfig_count > 0
             ? glXGetVisualFromFBConfig(display, fbconfigs[0]) : NULL;
-    bool fbconfig_ok = fbconfigs && fbconfig_count == 1 && fb_visual
-            && glXGetFBConfigAttrib(display, fbconfigs[0], GLX_VISUAL_ID,
-                                    &fb_visual_id) == Success
-            && glXGetFBConfigAttrib(display, fbconfigs[0], GLX_X_RENDERABLE,
-                                    &fb_x_renderable) == Success
-            && fb_visual_id == (int)XVisualIDFromVisual(fb_visual->visual)
-            && fb_x_renderable == True;
+    VisualID x_visual_id = fb_visual
+            ? XVisualIDFromVisual(fb_visual->visual) : 0;
+    bool fbconfig_ok = fbconfigs && fbconfig_count == 3 && fb_visual
+            && x_visual_id != 0;
+    for (int i = 0; fbconfig_ok && i < 3; i++) {
+        int id = 0;
+        int visual_id = 0;
+        int renderable = 0;
+        int double_buffer = 0;
+        if (glXGetFBConfigAttrib(display, fbconfigs[i], GLX_FBCONFIG_ID,
+                                 &id) != Success
+                || glXGetFBConfigAttrib(display, fbconfigs[i], GLX_VISUAL_ID,
+                                        &visual_id) != Success
+                || glXGetFBConfigAttrib(display, fbconfigs[i],
+                                        GLX_X_RENDERABLE,
+                                        &renderable) != Success
+                || glXGetFBConfigAttrib(display, fbconfigs[i],
+                                        GLX_DOUBLEBUFFER,
+                                        &double_buffer) != Success
+                || id != expected_ids[i]
+                || visual_id != (int)x_visual_id
+                || renderable != True
+                || double_buffer != expected_double[i]) {
+            fbconfig_ok = false;
+        }
+        if (i == 0) {
+            fb_visual_id = visual_id;
+            fb_x_renderable = renderable;
+        }
+        printf("BXINFO glx-fbconfig[%d] id=%d visual=0x%x xRenderable=%d "
+               "double=%d\n",
+               i, id, visual_id, renderable, double_buffer);
+    }
     snprintf(details, sizeof(details),
-             "configs=%d visual=0x%x xRenderable=%d",
-             fbconfig_count, fb_visual_id, fb_x_renderable);
+             "configs=%d visual=0x%x xVisual=0x%lx xRenderable=%d",
+             fbconfig_count, fb_visual_id, (unsigned long)x_visual_id,
+             fb_x_renderable);
     result("glx-fbconfig-visual", fbconfig_ok, details);
     fbconfig_ok ? passed++ : failed++;
 

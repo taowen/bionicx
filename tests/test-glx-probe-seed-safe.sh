@@ -12,4 +12,21 @@ if grep -F -- '--runtime-root' \
 fi
 grep -F 'passed=26' \
     "$repo_dir/examples/glx-probe/install-and-run.sh" >/dev/null
+grep -F 'fbconfig_count == 3' \
+    "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
+grep -F 'GLX_VISUAL_ID' \
+    "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
+grep -F 'GLX_X_RENDERABLE' \
+    "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
+grep -F 'expected_ids' \
+    "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
+grep -F 'GLX_VISUAL_ID' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/GLXExtension.java" \
+    >/dev/null
+grep -F 'GLX_X_RENDERABLE' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/GLXExtension.java" \
+    >/dev/null
+grep -F 'SINGLE_FBCONFIG_ID' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/GLXExtension.java" \
+    >/dev/null
 echo "glx-probe install stays on the shared seed: PASS"
