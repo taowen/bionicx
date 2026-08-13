@@ -23,6 +23,9 @@ grep -F 'bionicx.kdbx' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F -- '--keyfile' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F 'keepassxc-cli-probe' \
     "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
+grep -F 'GLADIO_X11_SOCKET' "$repo_dir/profiles/keepassxc.json" >/dev/null
+grep -F 'build-gladio.sh' \
+    "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
 grep -F 'firefox-esr' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'krita' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'qbittorrent' "$repo_dir/packages/trixie-popular.txt" >/dev/null

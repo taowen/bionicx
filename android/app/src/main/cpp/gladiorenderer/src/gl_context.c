@@ -123,7 +123,12 @@ static void setCurrentRenderWindow(GLContext* context, int windowId) {
     short width;
     short height;
     getWindowSize(&context->jmethods, windowId, &width, &height);
-    if (width == 0 || height == 0) return;
+    /* Qt/Krita makeCurrent on a just-created window before MapWindow.
+     * A 0x0 target leaves FBO 0 incomplete (GL_INVALID_FRAMEBUFFER_OPERATION
+     * 0x506 on the first glClear). Use a placeholder until the real size
+     * arrives on the next makeCurrent/swap. */
+    if (width == 0) width = 64;
+    if (height == 0) height = 64;
 
     bool resized = currentRenderer->displaySize[0] != width || currentRenderer->displaySize[1] != height;
     currentRenderer->displaySize[0] = width;

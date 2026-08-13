@@ -22,6 +22,10 @@ case "$profile_name" in
     qbittorrent|keepassxc)
         bundle_dir="${BIONICX_POPULAR_BUNDLE:-$repo_dir/build/popular-apps-bundle}"
         "$repo_dir/examples/popular-apps/build-bundle.sh" "$bundle_dir"
+        if [[ "$profile_name" == keepassxc ]]; then
+            mkdir -p "$bundle_dir/app/lib"
+            "$repo_dir/tools/build-gladio.sh" "$bundle_dir/app/lib"
+        fi
         ;;
     *)
         echo "unknown profile: $profile_name" >&2

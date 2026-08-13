@@ -17,6 +17,7 @@ import com.winlator.xserver.extensions.XInputExtension;
 import com.winlator.xserver.extensions.XKeyboardExtension;
 import com.winlator.xserver.extensions.XRandRExtension;
 import com.winlator.xserver.extensions.XRenderExtension;
+import com.winlator.xserver.extensions.XTestExtension;
 
 import java.nio.charset.Charset;
 import java.util.EnumMap;
@@ -195,6 +196,13 @@ public class XServer {
         }
     }
 
+    public void injectRawKey(byte keycode, boolean press) {
+        try (XLock lock = lock(Lockable.WINDOW_MANAGER, Lockable.INPUT_DEVICE)) {
+            if (press) keyboard.setKeyPress(keycode, 0);
+            else keyboard.setKeyRelease(keycode);
+        }
+    }
+
     public void addClient(XClient client) {
         synchronized (clients) {
             clients.add(client);
@@ -268,6 +276,7 @@ public class XServer {
             new XRandRExtension(this, opcode--),
             new XInputExtension(this, opcode--),
             new XKeyboardExtension(this, opcode--),
+            new XTestExtension(this, opcode--),
             new GLXExtension(this, opcode--)
         };
     }

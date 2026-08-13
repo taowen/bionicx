@@ -1,0 +1,22 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "qt-gui-segv-probe",
+  "name": "Qt GUI SIGSEGV probe (XTEST + draw)",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "launch": {
+    "executable": "${APP}/bin/qt-gui-segv-probe",
+    "workingDirectory": "${APP}",
+    "arguments": [],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "GLADIO_X11_SOCKET": "/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LANG": "C"
+    }
+  }
+}

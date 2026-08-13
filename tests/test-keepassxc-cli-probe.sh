@@ -27,6 +27,7 @@ grep -F 'bionicx.kdbx' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F -- '--keyfile' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F 'keepassxc-cli-probe' \
     "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
+grep -F 'GLADIO_X11_SOCKET' "$repo_dir/profiles/keepassxc.json" >/dev/null
 if grep -F -- '--runtime-root' \
         "$repo_dir/examples/keepassxc-cli-probe/install-and-run.sh" \
         >/dev/null; then
