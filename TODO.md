@@ -23,11 +23,12 @@ then commit and push the smallest complete change.
   a clean seed using a package that creates system users/groups. Require an
   empty `dpkg --audit`, correct account files, correct apt marks and a pruned
   ELF ledger after every final state.
-- [ ] Rebuild and publish the reproducible seed with the fixed Android glibc
+- [x] Rebuild and publish the reproducible seed with the fixed Android glibc
   identity namespace, then reconstruct the shared device rootfs only through
   the pinned seed plus `bxapt` declarations. The identity-fixed seed is on
   `01408BH601027129` (`ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2`);
-  the popular/WPS/Chrome cohort has not been reinstalled through `bxapt set`.
+  `bxapt set packages/trixie-popular.txt` plus hash-pinned Chrome/WPS/`libtiff5`
+  brought the declared cohort to `ii` (`evidence/rebuild-2026-08-13/bxapt-reconstruct.log`).
 
 ## P1: shared desktop services
 
@@ -55,11 +56,11 @@ then commit and push the smallest complete change.
 
 ## P2: WPS completeness
 
-- [ ] Build a controlled formula-glyph and Fontconfig-family probe for the
+- [x] Build a controlled formula-glyph and Fontconfig-family probe for the
   identities WPS checks. Implement deterministic aliases only after verifying
   glyph coverage; do not bundle proprietary fonts or merely suppress the
   warning.
-- [ ] Rerun Writer, Sheets, Presentation and PDF workflows from a clean shared
+- [x] Rerun Writer, Sheets, Presentation and PDF workflows from a clean shared
   rootfs, including open/edit/save/cold-reopen, clipboard, export, print and
   full-screen presentation.
 
@@ -69,7 +70,7 @@ then commit and push the smallest complete change.
   acceptance on a device with working connectivity.
 - [ ] Complete real workflows for Krita, qBittorrent and KeePassXC, including
   durable file/database state and the relevant network or graphics path.
-- [ ] Rebuild and rerun the accepted xterm, IceWM, Thunar, Mousepad, Ristretto,
+- [x] Rebuild and rerun the accepted xterm, IceWM, Thunar, Mousepad, Ristretto,
   LibreOffice Writer, Evince, GIMP, Inkscape, VLC, Geany, FileZilla and
   Thunderbird profiles from the same clean seed and package declarations.
 - [ ] Add further popular ARM64 trixie applications only when they extend
@@ -81,7 +82,7 @@ then commit and push the smallest complete change.
   database and no duplicated system libraries across every declared app.
 - [ ] Run the complete controlled test matrix and real application workflows
   after an Android force-stop and device reboot, with diagnostics disabled.
-- [ ] Document remaining Android-kernel limitations honestly and provide a
+- [x] Document remaining Android-kernel limitations honestly and provide a
   reproducible build/install/desktop-use guide for a new device.
 - [ ] Declare the goal complete only when Debian popular applications, WPS and
   Google Chrome meet their full functional acceptance criteria on the shared

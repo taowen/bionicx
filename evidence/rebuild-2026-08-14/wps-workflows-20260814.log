@@ -1,0 +1,337 @@
+BXINFO marker=BionicX_WF_20260814 seed-check
+ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/wps-writer-workflow.json
+profile wps-office is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/wps-writer-workflow.json: 1 file pushed, 0 skipped. 11.2 MB/s (922 bytes in 0.000s)
+installed profile wps-office for io.taowen.bx
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 210.5 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=4994
+BXTEST PASS x11-send-key focus=0x40002b cmd=click
+bionicx-exec: primary pid=4994 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 206.6 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5021
+BXTEST PASS x11-send-key focus=0x400022 cmd=click
+bionicx-exec: primary pid=5021 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 191.7 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5121
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=5121 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 204.1 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5198
+BXTEST PASS x11-send-key focus=0x400022 cmd=escape
+bionicx-exec: primary pid=5198 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 200.6 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5261
+BXTEST PASS x11-send-key focus=0x4 cmd=click
+bionicx-exec: primary pid=5261 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 201.1 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5329
+BXTEST PASS x11-send-key focus=0x400013 cmd=end
+bionicx-exec: primary pid=5329 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 202.7 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5384
+BXTEST PASS x11-send-key focus=0x400013 cmd=return
+bionicx-exec: primary pid=5384 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 176.7 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5395
+BXTEST PASS x11-send-key focus=0x400013 cmd=type
+bionicx-exec: primary pid=5395 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 200.7 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5405
+BXTEST PASS x11-send-key focus=0x400013 cmd=return
+bionicx-exec: primary pid=5405 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 209.5 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5428
+BXTEST PASS x11-send-key focus=0x400013 cmd=type
+bionicx-exec: primary pid=5428 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 201.5 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5438
+BXTEST PASS x11-send-key focus=0x400013 cmd=ctrl-a
+bionicx-exec: primary pid=5438 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 199.0 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5476
+BXTEST PASS x11-send-key focus=0x400013 cmd=ctrl-c
+bionicx-exec: primary pid=5476 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 143.3 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5500
+BXTEST PASS x11-send-key focus=0x400013 cmd=end
+bionicx-exec: primary pid=5500 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 206.7 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5511
+BXTEST PASS x11-send-key focus=0x400013 cmd=return
+bionicx-exec: primary pid=5511 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 174.9 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5535
+BXTEST PASS x11-send-key focus=0x400013 cmd=ctrl-v
+bionicx-exec: primary pid=5535 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 210.9 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5554
+BXTEST PASS x11-send-key focus=0x400013 cmd=ctrl-s
+bionicx-exec: primary pid=5554 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXSHOT wps-writer-edited.png bytes=153894
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 211.0 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5680
+BXTEST PASS x11-send-key focus=0x400013 cmd=ctrl-p
+bionicx-exec: primary pid=5680 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXSHOT wps-writer-print-dialog.png bytes=214890
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 205.4 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=5726
+BXTEST PASS x11-send-key focus=0x4000d4 cmd=return
+bionicx-exec: primary pid=5726 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXSHOT wps-writer-printed.png bytes=153894
+BXTEST PASS wps-docx archive=BionicX-WF-Writer.docx members=16 paragraphs=8
+BXCONTENT BionicX Writer 20260813
+BXCONTENT Calibri_bold_ok
+BXCONTENT BionicX_WF_20260814
+BXCONTENT BionicX_WF_20260814_clip
+BXCONTENT BionicX Writer 20260813
+BXCONTENT Calibri_bold_ok
+BXCONTENT BionicX_WF_20260814
+BXCONTENT BionicX_WF_20260814_clip
+BXFORMAT bold Calibri_bold_ok
+BXFORMAT bold BionicX_WF_20260814
+BXFORMAT bold BionicX_WF_20260814_clip
+BXFORMAT bold Calibri_bold_ok
+BXFORMAT bold BionicX_WF_20260814
+BXFORMAT bold BionicX_WF_20260814_clip
+profile wps-office is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/wps-writer-workflow.json: 1 file pushed, 0 skipped. 12.9 MB/s (922 bytes in 0.000s)
+installed profile wps-office for io.taowen.bx
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 203.3 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6186
+BXTEST PASS x11-send-key focus=0x400027 cmd=click
+bionicx-exec: primary pid=6186 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 201.6 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6213
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=6213 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 252.7 MB/s (131793 bytes in 0.000s)
+bionicx-exec: running untraced pid=6250
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=6250 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 237.2 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6290
+BXTEST PASS x11-send-key focus=0x400013 cmd=escape
+bionicx-exec: primary pid=6290 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 209.7 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6311
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=6311 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXSHOT wps-writer-cold-reopen.png bytes=153418
+BXTEST PASS wps-docx archive=BionicX-WF-Writer.docx members=16 paragraphs=8
+BXCONTENT BionicX Writer 20260813
+BXCONTENT Calibri_bold_ok
+BXCONTENT BionicX_WF_20260814
+BXCONTENT BionicX_WF_20260814_clip
+BXCONTENT BionicX Writer 20260813
+BXCONTENT Calibri_bold_ok
+BXCONTENT BionicX_WF_20260814
+BXCONTENT BionicX_WF_20260814_clip
+BXFORMAT bold Calibri_bold_ok
+BXFORMAT bold BionicX_WF_20260814
+BXFORMAT bold BionicX_WF_20260814_clip
+BXFORMAT bold Calibri_bold_ok
+BXFORMAT bold BionicX_WF_20260814
+BXFORMAT bold BionicX_WF_20260814_clip
+BXTEST PASS wps-writer-workflow marker=BionicX_WF_20260814
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/wps-sheets-workflow.json
+profile wps-office is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/wps-sheets-workflow.json: 1 file pushed, 0 skipped. 9.8 MB/s (805 bytes in 0.000s)
+installed profile wps-office for io.taowen.bx
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 206.3 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6574
+BXTEST PASS x11-send-key focus=0x400038 cmd=click
+bionicx-exec: primary pid=6574 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 203.2 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6590
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=6590 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 199.3 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6608
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=6608 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 206.1 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6626
+BXTEST PASS x11-send-key focus=0x400013 cmd=escape
+bionicx-exec: primary pid=6626 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 210.7 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6638
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=6638 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 198.0 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6652
+BXTEST PASS x11-send-key focus=0x400013 cmd=return
+bionicx-exec: primary pid=6652 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 171.6 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6673
+BXTEST PASS x11-send-key focus=0x400013 cmd=return
+bionicx-exec: primary pid=6673 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 214.5 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6682
+BXTEST PASS x11-send-key focus=0x400013 cmd=return
+bionicx-exec: primary pid=6682 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 201.6 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6692
+BXTEST PASS x11-send-key focus=0x400013 cmd=type
+bionicx-exec: primary pid=6692 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 199.4 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6705
+BXTEST PASS x11-send-key focus=0x400013 cmd=ctrl-s
+bionicx-exec: primary pid=6705 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXSHOT wps-sheets-edited.png bytes=129056
+BXTEST PASS wps-xlsx archive=BionicX-WF-Sheets.xlsx members=16 cells=4
+BXCELL A1 value=12 formula=
+BXCELL A2 value=30 formula=
+BXCELL A3 value=42 formula=SUM(A1:A2)
+BXCELL H21 value=20260814 formula=
+profile wps-office is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/wps-sheets-workflow.json: 1 file pushed, 0 skipped. 9.9 MB/s (805 bytes in 0.000s)
+installed profile wps-office for io.taowen.bx
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 127.0 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6944
+BXTEST PASS x11-send-key focus=0x400038 cmd=click
+bionicx-exec: primary pid=6944 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 258.0 MB/s (131793 bytes in 0.000s)
+bionicx-exec: running untraced pid=6960
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=6960 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 198.4 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6978
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=6978 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 201.6 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=6991
+BXTEST PASS x11-send-key focus=0x400013 cmd=escape
+bionicx-exec: primary pid=6991 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 198.3 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7007
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=7007 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXSHOT wps-sheets-cold-reopen.png bytes=129379
+BXTEST PASS wps-xlsx archive=BionicX-WF-Sheets.xlsx members=16 cells=4
+BXCELL A1 value=12 formula=
+BXCELL A2 value=30 formula=
+BXCELL A3 value=42 formula=SUM(A1:A2)
+BXCELL H21 value=20260814 formula=
+BXTEST PASS wps-sheets-workflow formula=SUM
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/wps-slides-workflow.json
+profile wps-office is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/wps-slides-workflow.json: 1 file pushed, 0 skipped. 15.0 MB/s (807 bytes in 0.000s)
+installed profile wps-office for io.taowen.bx
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 205.1 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7205
+BXTEST PASS x11-send-key focus=0x40002c cmd=click
+bionicx-exec: primary pid=7205 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 211.3 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7238
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=7238 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 202.4 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7253
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=7253 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 240.7 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7267
+BXTEST PASS x11-send-key focus=0x400013 cmd=escape
+bionicx-exec: primary pid=7267 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 181.0 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7284
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=7284 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXSHOT wps-slides-open.png bytes=157075
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 190.0 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7311
+BXTEST PASS x11-send-key focus=0x400013 cmd=f5
+bionicx-exec: primary pid=7311 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXSHOT wps-slides-slideshow.png bytes=65544
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 228.3 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7360
+BXTEST PASS x11-send-key focus=0x40007e cmd=escape
+bionicx-exec: primary pid=7360 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 183.4 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7385
+BXTEST PASS x11-send-key focus=0x4 cmd=ctrl-s
+bionicx-exec: primary pid=7385 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXTEST PASS wps-pptx archive=BionicX-WF-Slides.pptx members=57 slide1_text_runs=2
+BXSLIDE run=1 text=BionicX Presentation
+BXSLIDE run=2 text=glibc and X11 on Android
+profile wps-office is valid
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/wps-slides-workflow.json: 1 file pushed, 0 skipped. 11.7 MB/s (807 bytes in 0.000s)
+installed profile wps-office for io.taowen.bx
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 198.6 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7644
+BXTEST PASS x11-send-key focus=0x40002c cmd=click
+bionicx-exec: primary pid=7644 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 205.0 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7658
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=7658 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 200.7 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7673
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=7673 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 199.8 MB/s (131793 bytes in 0.001s)
+bionicx-exec: running untraced pid=7691
+BXTEST PASS x11-send-key focus=0x400013 cmd=escape
+bionicx-exec: primary pid=7691 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+/var/home/taowen/projects/glibc-on-bionic/bionicx/build/x11-send-key: 1 file pushed, 0 skipped. 262.8 MB/s (131793 bytes in 0.000s)
+bionicx-exec: running untraced pid=7705
+BXTEST PASS x11-send-key focus=0x400013 cmd=click
+bionicx-exec: primary pid=7705 exited status=0x0; draining session
+bionicx-exec: session drained children=0
+BXSHOT wps-slides-cold-reopen.png bytes=157075
+BXTEST PASS wps-pptx archive=BionicX-WF-Slides.pptx members=57 slide1_text_runs=2
+BXSLIDE run=1 text=BionicX Presentation
+BXSLIDE run=2 text=glibc and X11 on Android
+BXTEST PASS wps-slides-workflow slideshow
+BXTEST PASS wps-writer-export bytes=16846 pdf=b'%PDF-'
