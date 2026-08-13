@@ -1,0 +1,6 @@
+seed=ed998c095a1b9384b1f022d06101ac3fc3c61761ac751546bd84edca298e44e2
+
+chrome-status=Package: google-chrome-stable
+Status: install ok installed
+Priority: optional
+Section: web

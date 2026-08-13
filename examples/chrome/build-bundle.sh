@@ -10,7 +10,10 @@ case "$output_dir/" in
 esac
 
 find "$output_dir" -mindepth 1 -delete 2>/dev/null || true
-mkdir -p "$output_dir/app/lib" "$output_dir/app/share/vulkan/icd.d"
+mkdir -p "$output_dir/app/lib" "$output_dir/app/share/vulkan/icd.d" \
+    "$output_dir/app/share/chrome-vulkan"
+cp "$repo_dir/examples/chrome/webgl-fixture.html" \
+    "$output_dir/app/share/chrome-vulkan/webgl-fixture.html"
 "$repo_dir/tools/build-vortek.sh" "$output_dir/app/lib"
 printf '%s\n' \
     '{' \

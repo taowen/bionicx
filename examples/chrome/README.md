@@ -6,9 +6,11 @@ are ordinary entries in the same dpkg database; no Chrome rootfs or `/opt`
 bundle exists.
 
 The required `--no-sandbox` remains in both profiles. `chrome-smoke.json` uses
-the host GLES path through Gladio. `chrome-vulkan.json` uses the Vortek bridge;
-`build-bundle.sh` builds only that host-driver bridge and ICD metadata, never
-Chrome or Debian libraries.
+the host GLES path through Gladio. `chrome-vulkan.json` uses the Vortek bridge
+and a local WebGL fixture; `--single-process` is required because a
+multiprocess renderer currently dies on an FD-ownership check.
+`build-bundle.sh` builds only that host-driver bridge, ICD metadata and the
+fixture, never Chrome or Debian libraries.
 
 ```sh
 tools/bxapt --serial <serial> deb <google-chrome-stable_arm64.deb> <sha256>

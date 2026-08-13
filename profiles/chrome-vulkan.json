@@ -16,6 +16,8 @@
     "argv0": "${RUNTIME}/opt/google/chrome/google-chrome",
     "arguments": [
       "--no-sandbox",
+      "--single-process",
+      "--hide-crash-restore-bubble",
       "--disable-breakpad",
       "--disable-crashpad-for-testing",
       "--disable-dev-shm-usage",
@@ -24,14 +26,14 @@
       "--window-position=0,0",
       "--window-size=1920,1080",
       "--start-maximized",
-      "--user-data-dir=${HOME}/profile-vulkan",
+      "--user-data-dir=${HOME}/profile-vulkan-webgl",
       "--ozone-platform=x11",
       "--ui-toolkit=gtk",
       "--use-gl=angle",
       "--use-angle=vulkan",
       "--disable-features=SkiaGraphite",
       "--enable-logging=stderr",
-      "about:blank"
+      "file://${APP}/share/chrome-vulkan/webgl-fixture.html"
     ],
     "environment": {
       "DISPLAY": "${DISPLAY}",

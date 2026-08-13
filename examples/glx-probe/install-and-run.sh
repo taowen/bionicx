@@ -9,9 +9,11 @@ adb=("$adb_bin")
 [[ -z "$serial" ]] || adb+=( -s "$serial" )
 
 "$repo_dir/examples/glx-probe/build-bundle.sh" "$bundle_dir"
+# App-only install. The compact hello rootfs in the bundle must not replace
+# the device seed; libc/loader come from the shared rootfs after normalize.
 install=("$repo_dir/tools/install-profile.sh"
     --profile "$repo_dir/profiles/glx-probe.json"
-    --app-root "$bundle_dir/app" --runtime-root "$bundle_dir/rootfs")
+    --app-root "$bundle_dir/app")
 [[ -z "$serial" ]] || install+=(--serial "$serial")
 "${install[@]}"
 "${adb[@]}" logcat -c
