@@ -1,0 +1,22 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "krita-glx-destroy-probe",
+  "name": "Krita GLX DestroyContext(NULL) probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "launch": {
+    "executable": "${APP}/bin/krita-glx-destroy-probe",
+    "workingDirectory": "${APP}",
+    "arguments": [],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "GLADIO_X11_SOCKET": "/data/data/io.taowen.bx/files/rootfs/tmp/.X11-unix/X0",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LANG": "C"
+    }
+  }
+}
