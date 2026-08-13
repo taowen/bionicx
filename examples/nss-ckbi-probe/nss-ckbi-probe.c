@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <dlfcn.h>
 #include <errno.h>
+#include <link.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -68,6 +69,16 @@ int main(void) {
     snprintf(gred_nss3, sizeof(gred_nss3), "%s/libnss3.so", gred);
     void *nss = dlopen(gred_nss3, RTLD_NOW);
     check("dlopen-libnss3", nss != NULL, nss ? gred_nss3 : dlerror());
+    void *softokn = dlopen("libsoftokn3.so", RTLD_NOW);
+    const char *softokn_path = NULL;
+    if (softokn != NULL) {
+        struct link_map *map = NULL;
+        if (dlinfo(softokn, RTLD_DI_LINKMAP, &map) == 0 && map != NULL)
+            softokn_path = map->l_name;
+    }
+    check("gred-softokn-soname",
+          softokn_path != NULL && strstr(softokn_path, "firefox-esr") != NULL,
+          softokn_path != NULL ? softokn_path : "unresolved");
     if (nss == NULL) {
         printf("BXSUMMARY nss-ckbi passed=%d failed=%d\n", passed, failed);
         return 1;
@@ -103,9 +114,16 @@ int main(void) {
     char sqlspec[530];
     snprintf(sqlspec, sizeof(sqlspec), "sql:%s", sqldir);
     int sql_ok = 0;
+    void *(*PK11_GetInternalKeySlot)(void) =
+            dlsym(nss, "PK11_GetInternalKeySlot");
+    int (*PK11_NeedUserInit)(void *) = dlsym(nss, "PK11_NeedUserInit");
+    int (*PK11_InitPin)(void *, const char *, const char *) =
+            dlsym(nss, "PK11_InitPin");
+    void (*PK11_FreeSlot)(void *) = dlsym(nss, "PK11_FreeSlot");
+
     if (NSS_Initialize != NULL) {
-        /* NSS_INIT_OPTIMIZESPACE = 0x20, matching Firefox PSM. */
-        sql_ok = NSS_Initialize(sqlspec, "", "", "secmod.db", 0x20) == 0;
+        /* Firefox psm::InitializeNSS uses NOROOTINIT|OPTIMIZESPACE (0x30). */
+        sql_ok = NSS_Initialize(sqlspec, "", "", "secmod.db", 0x30) == 0;
         char sql_detail[32];
         if (sql_ok) {
             snprintf(sql_detail, sizeof(sql_detail), "sql-ok");
@@ -114,6 +132,31 @@ int main(void) {
                      PORT_GetError != NULL ? PORT_GetError() : 0);
         }
         check("nss-sql-init", sql_ok, sql_detail);
+        int pin_ok = 0;
+        char pin_detail[32] = "skipped";
+        if (sql_ok && PK11_GetInternalKeySlot != NULL &&
+                PK11_InitPin != NULL && PK11_FreeSlot != NULL) {
+            void *slot = PK11_GetInternalKeySlot();
+            if (slot == NULL) {
+                snprintf(pin_detail, sizeof(pin_detail), "no-slot err=%d",
+                         PORT_GetError != NULL ? PORT_GetError() : 0);
+            } else {
+                int need = PK11_NeedUserInit != NULL
+                        && PK11_NeedUserInit(slot);
+                if (need)
+                    pin_ok = PK11_InitPin(slot, NULL, NULL) == 0;
+                else
+                    pin_ok = 1;
+                if (pin_ok)
+                    snprintf(pin_detail, sizeof(pin_detail),
+                             need ? "init-pin" : "ready");
+                else
+                    snprintf(pin_detail, sizeof(pin_detail), "pin-err=%d",
+                             PORT_GetError != NULL ? PORT_GetError() : 0);
+                PK11_FreeSlot(slot);
+            }
+        }
+        check("psm-key-slot", pin_ok, pin_detail);
         if (sql_ok && NSS_Shutdown != NULL) NSS_Shutdown();
     } else {
         check("nss-sql-init", 0, "NSS_Initialize missing");

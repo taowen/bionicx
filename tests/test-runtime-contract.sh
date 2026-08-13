@@ -33,6 +33,26 @@ cp "$root/opt/bionicx-runtime-dlopen.so" \
 cc -shared -fPIC -O2 -Wall -Wextra -Werror \
     "$repo_dir/tests/fixtures/runtime-dlopen.c" \
     -o "$test_dir/lib/libbionicx-app-dlopen.so"
+# Firefox loads GreD libnss3, then PR_LoadLibrary("libsoftokn3.so"). The
+# system multiarch copy must not win once NSS_Initialize is already mapped.
+mkdir -p "$test_dir/gred"
+cc -shared -fPIC -O2 -Wall -Wextra -Werror \
+    "$repo_dir/tests/fixtures/runtime-nss-initialize.c" \
+    -o "$test_dir/gred/libnss3.so"
+cc -shared -fPIC -O2 -Wall -Wextra -Werror \
+    -DBIONICX_SOFTOKN_MARKER=1 \
+    "$repo_dir/tests/fixtures/runtime-softokn-marker.c" \
+    -o "$test_dir/gred/libsoftokn3.so"
+cc -shared -fPIC -O2 -Wall -Wextra -Werror \
+    -DBIONICX_SOFTOKN_MARKER=2 \
+    "$repo_dir/tests/fixtures/runtime-softokn-marker.c" \
+    -o "$root/usr/lib/aarch64-linux-gnu/libsoftokn3.so"
+
+# GreD libnss3 must win over the multiarch libsoftokn3.so for bare dlopen.
+grep -F 'libsoftokn3 must come from GreD' \
+    "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
+grep -F 'dlopen_from_loaded_nss' \
+    "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
 
 BIONICX_ROOTFS="$root" \
 BIONICX_TMPDIR="$temporary" \

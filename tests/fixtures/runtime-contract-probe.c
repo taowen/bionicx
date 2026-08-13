@@ -61,6 +61,21 @@ int main(int argc, char **argv) {
         fail("app-lib soname dlopen symbol");
     dlclose(app_handle);
 
+    /* temporary is .../tmp; GreD fixtures sit at .../gred. */
+    char gred_nss3[PATH_MAX];
+    if (snprintf(gred_nss3, sizeof(gred_nss3), "%s/../gred/libnss3.so",
+                 temporary) >= (int)sizeof(gred_nss3))
+        fail("gred nss3 path");
+    void *nss3 = dlopen(gred_nss3, RTLD_NOW);
+    if (nss3 == NULL) fail("gred libnss3");
+    void *softokn = dlopen("libsoftokn3.so", RTLD_NOW);
+    if (softokn == NULL) fail("nss-adjacent libsoftokn3");
+    int (*softokn_marker)(void) = dlsym(softokn, "bionicx_softokn_marker");
+    if (softokn_marker == NULL || softokn_marker() != 1)
+        fail("libsoftokn3 must come from GreD next to libnss3");
+    dlclose(softokn);
+    dlclose(nss3);
+
     pid_t chroot_child = fork();
     if (chroot_child < 0) fail("fork chroot contract");
     if (chroot_child == 0) {

@@ -18,6 +18,12 @@ grep -F 'nss-sql-init' \
     "$repo_dir/examples/nss-ckbi-probe/nss-ckbi-probe.c" >/dev/null
 grep -F 'NSS_Initialize' \
     "$repo_dir/examples/nss-ckbi-probe/nss-ckbi-probe.c" >/dev/null
+grep -F 'gred-softokn-soname' \
+    "$repo_dir/examples/nss-ckbi-probe/nss-ckbi-probe.c" >/dev/null
+grep -F 'psm-key-slot' \
+    "$repo_dir/examples/nss-ckbi-probe/nss-ckbi-probe.c" >/dev/null
+grep -F '0x30' \
+    "$repo_dir/examples/nss-ckbi-probe/nss-ckbi-probe.c" >/dev/null
 grep -F 'BIONICX_DNS_SERVERS' \
     "$repo_dir/examples/nss-ckbi-probe/install-and-run.sh" >/dev/null
 grep -F 'libnssckbi.so' \

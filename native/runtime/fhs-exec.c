@@ -1,6 +1,7 @@
 #include "runtime-internal.h"
 
 #include <dlfcn.h>
+#include <link.h>
 #include <pthread.h>
 #include <signal.h>
 #include <spawn.h>
@@ -17,13 +18,66 @@ struct shell_child {
 static pthread_mutex_t shell_children_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct shell_child shell_children[SHELL_CHILD_SLOTS];
 
+static int (*real_access_fn(void))(const char *, int) {
+    static int (*real_access)(const char *, int);
+    if (real_access == NULL) real_access = dlsym(RTLD_NEXT, "access");
+    return real_access;
+}
+
+static void *dlopen_from_directory(const char *directory, const char *soname,
+                                   int flags, void *(*next)(const char *, int)) {
+    int (*real_access)(const char *, int) = real_access_fn();
+    if (real_access == NULL || directory == NULL || directory[0] != '/')
+        return NULL;
+    char candidate[PATH_MAX];
+    int count = snprintf(candidate, sizeof(candidate), "%s/%s",
+                         directory, soname);
+    if (count < 0 || count >= (int)sizeof(candidate)) return NULL;
+    if (real_access(candidate, F_OK) == 0) return next(candidate, flags);
+    return NULL;
+}
+
+struct nss3_directory {
+    char path[PATH_MAX];
+};
+
+static int record_nss3_directory(struct dl_phdr_info *info, size_t size,
+                                 void *data) {
+    (void)size;
+    struct nss3_directory *found = data;
+    if (info->dlpi_name == NULL || info->dlpi_name[0] != '/') return 0;
+    const char *slash = strrchr(info->dlpi_name, '/');
+    const char *base = slash != NULL ? slash + 1 : info->dlpi_name;
+    if (strcmp(base, "libnss3.so") != 0) return 0;
+    if (snprintf(found->path, sizeof(found->path), "%s",
+                 info->dlpi_name) >= (int)sizeof(found->path))
+        return 0;
+    char *dir_end = strrchr(found->path, '/');
+    if (dir_end == NULL) {
+        found->path[0] = '\0';
+        return 0;
+    }
+    *dir_end = '\0';
+    return 1;
+}
+
+/* Firefox maps GreD libnss3.so first, then PR_LoadLibrary("libsoftokn3.so").
+ * A bare SONAME would otherwise hit the Debian multiarch copy, which is a
+ * different NSS build and returns CKR_DEVICE_ERROR from PSM. */
+static void *dlopen_from_loaded_nss(const char *soname, int flags,
+                                    void *(*next)(const char *, int)) {
+    struct nss3_directory found = { .path = "" };
+    dl_iterate_phdr(record_nss3_directory, &found);
+    if (found.path[0] == '\0') return NULL;
+    return dlopen_from_directory(found.path, soname, flags, next);
+}
+
 static void *dlopen_from_executable_lib(const char *soname, int flags,
                                         void *(*next)(const char *, int)) {
     static ssize_t (*real_readlink)(const char *, char *, size_t);
-    static int (*real_access)(const char *, int);
+    int (*real_access)(const char *, int) = real_access_fn();
     if (real_readlink == NULL)
         real_readlink = dlsym(RTLD_NEXT, "readlink");
-    if (real_access == NULL) real_access = dlsym(RTLD_NEXT, "access");
     if (real_readlink == NULL || real_access == NULL) return NULL;
 
     char exe[PATH_MAX];
@@ -56,6 +110,11 @@ void *dlopen(const char *path, int flags) {
      * address, so glibc ignores the executable RUNPATH. Search the
      * Debian multiarch directories ourselves. */
     if (strchr(path, '/') == NULL) {
+        void *from_nss = dlopen_from_loaded_nss(path, flags, next);
+        if (from_nss != NULL) return from_nss;
+        const char *gred = bionicx_getenv("MOZILLA_FIVE_HOME");
+        void *from_gred = dlopen_from_directory(gred, path, flags, next);
+        if (from_gred != NULL) return from_gred;
         const char *root = bionicx_captured_rootfs();
         if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
         if (root != NULL && root[0] == '/') {
