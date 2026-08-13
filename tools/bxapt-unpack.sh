@@ -26,6 +26,32 @@ case "${1:-}" in
         "$root/usr/bin/dpkg" --force-not-root --force-script-chrootless \
             --root="$root" --admindir="$root/var/lib/dpkg" --unpack "$@"
         ;;
+    --remove-conflicts)
+        # Seed ships systemd-standalone-sysusers. Full systemd Provides
+        # systemd-sysusers and Conflicts with that standalone package.
+        # Apt cannot even --download-only while that conflict is installed,
+        # so callers may set BIONICX_REPLACING_SYSTEMD=1 before archives exist.
+        found=
+        for archive in "$archives"/systemd_*.deb; do
+            [ -e "$archive" ] || continue
+            found=1
+            break
+        done
+        if [ -z "$found" ] && [ "${BIONICX_REPLACING_SYSTEMD:-}" != 1 ]; then
+            exit 0
+        fi
+        abbrev="$("$root/usr/bin/dpkg-query" --admindir="$root/var/lib/dpkg" \
+            -W '-f=${db:Status-Abbrev}' systemd-standalone-sysusers \
+            2>/dev/null || true)"
+        case "$abbrev" in
+            iU*|iF*|iW*|it*|ii*|iH*)
+                "$root/usr/bin/dpkg" --force-not-root --force-script-chrootless \
+                    --root="$root" --admindir="$root/var/lib/dpkg" \
+                    --remove --force-depends systemd-standalone-sysusers
+                printf 'bionicx removed systemd-standalone-sysusers\n'
+                ;;
+        esac
+        ;;
     --unpack-wave)
         remaining=${BIONICX_REMAINING_DEBS:?missing BIONICX_REMAINING_DEBS}
         # Missing list: start from archives. Existing empty list: waves are done.
@@ -118,7 +144,7 @@ EOF
         rm -f "$current" "$requested"
         ;;
     *)
-        echo "usage: bxapt-unpack.sh --clear|--unpack|--unpack-wave|--snapshot|--record-requested|--reconcile" >&2
+        echo "usage: bxapt-unpack.sh --clear|--unpack|--unpack-wave|--remove-conflicts|--snapshot|--record-requested|--reconcile" >&2
         exit 2
         ;;
 esac

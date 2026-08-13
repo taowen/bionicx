@@ -264,10 +264,14 @@ run_binary() {
 }
 
 ensure_ldconfig_wrapper() {
+    local saved_binary="${binary:-}"
+    local saved_arguments=("${arguments[@]}")
     binary="$root/bin/sh"
     arguments=("$run_dir/bxapt-ldconfig.sh" --install \
         "$run_dir/bxapt-ldconfig.sh")
     run_binary
+    binary="$saved_binary"
+    arguments=("${saved_arguments[@]}")
 }
 
 fixup_elf() {
@@ -331,30 +335,22 @@ configure_unpacked() {
     fi
 }
 
-remove_standalone_systemd_if_replacing() {
-    if ! run_as sh -c \
-            'for archive in "$1"/systemd_*.deb; do
-                 [ -e "$archive" ] && exit 0
-             done
-             exit 1' \
-            sh "$root/var/cache/apt/archives"; then
-        return 0
+mark_systemd_replacement() {
+    local package
+    for package in "${requested_packages[@]+"${requested_packages[@]}"}"; do
+        case "$package" in
+            systemd|systemd-sysv) environment+=("BIONICX_REPLACING_SYSTEMD=1"); return ;;
+        esac
+    done
+    if [[ "$command_name" == recover ]]; then
+        environment+=("BIONICX_REPLACING_SYSTEMD=1")
     fi
-    binary="$root/usr/bin/dpkg-query"
-    arguments=(--admindir="$root/var/lib/dpkg" \
-        -W '-f=${db:Status-Abbrev}' systemd-standalone-sysusers)
-    local status=0
-    status="$(run_binary 2>/dev/null | tr -d '\r' | awk '{ print $1 }' || true)"
-    case "$status" in
-        ii|iU|iF|iH|iW|it)
-            echo "bxapt: removing systemd-standalone-sysusers (conflicts with systemd)" >&2
-            binary="$root/usr/bin/dpkg"
-            arguments=(--force-not-root --force-script-chrootless \
-                --root="$root" --admindir="$root/var/lib/dpkg" \
-                --remove --force-depends systemd-standalone-sysusers)
-            run_binary
-            ;;
-    esac
+}
+
+remove_standalone_systemd_if_replacing() {
+    binary="$root/bin/sh"
+    arguments=("$run_dir/bxapt-unpack.sh" --remove-conflicts)
+    run_binary
 }
 
 # Unpack archives in Pre-Depends waves: dpkg will not unpack a package whose
@@ -401,6 +397,7 @@ dpkg_arguments() {
 }
 
 ensure_ldconfig_wrapper
+mark_systemd_replacement
 
 if [[ "$command_name" == fixup ]]; then
     fixup_elf
@@ -422,6 +419,7 @@ if [[ "$command_name" == recover ]]; then
     # Configure already-unpacked Pre-Depends parents, then download whatever
     # the solver still needs and unpack those archives in waves.
     configure_unpacked allow_fail
+    remove_standalone_systemd_if_replacing
     binary="$root/usr/bin/apt-get"
     arguments=(-f install -y --no-install-recommends --download-only)
     run_binary
@@ -492,6 +490,7 @@ if [[ "$command_name" == install || "$command_name" == set ]]; then
     binary="$root/bin/sh"
     arguments=("$run_dir/bxapt-unpack.sh" --clear)
     run_binary
+    remove_standalone_systemd_if_replacing
     binary="$root/usr/bin/apt-get"
     arguments=("${requested_arguments[@]}" --download-only)
     run_binary

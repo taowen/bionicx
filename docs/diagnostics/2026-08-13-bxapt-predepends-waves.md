@@ -35,5 +35,17 @@ redirects `posix_spawn` / `posix_spawnp` and `readlink` / `readlinkat`.
 `tests/test-runtime-contract.sh` covers both.
 
 The seed ships `systemd-standalone-sysusers`. Unpacking full `systemd`
-conflicts with that virtual package; `bxapt` removes the standalone package
-when a `systemd_*.deb` is in the archive set.
+conflicts with that virtual package; `bxapt-unpack.sh --remove-conflicts`
+removes the standalone package when a `systemd_*.deb` is in the archive set.
+`tests/test-bxapt-remove-conflicts.sh` mocks that contract.
+
+`ensure_ldconfig_wrapper` must save and restore `bxapt`'s `arguments` array.
+Clobbering it made `query`/`run`/`install` execute the wrapper install line
+instead of the requested command.
+
+On `01408BH601027129` after `bxapt install systemd systemd-sysv
+libreoffice-writer`: those three are `ii`, `systemd-standalone-sysusers` is
+`un`, and the popular/Chrome/WPS declared set is `ii` except `evince`,
+`inkscape` and `mousepad`. `dpkg --audit` is the `dictionaries-common`
+postinst (`ispell-autobuildhash` / Android `sh` + `LD_PRELOAD`) and its
+dependents. No `libc.so.6` under `files/apps`.
