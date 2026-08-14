@@ -1,8 +1,8 @@
 {
   "$schema": "../schemas/profile.schema.json",
   "schemaVersion": 3,
-  "id": "vulkan-probe",
-  "name": "Host Vulkan probe",
+  "id": "vulkan-wsi",
+  "name": "Host Vulkan WSI probe",
   "display": {
     "dpi": 144,
     "socket": "filesystem"
@@ -11,7 +11,7 @@
     "vulkan"
   ],
   "launch": {
-    "executable": "${APP}/bin/vulkan-present",
+    "executable": "${APP}/bin/vulkan-wsi",
     "workingDirectory": "${APP}",
     "arguments": [],
     "environment": {

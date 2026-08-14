@@ -1,8 +1,8 @@
 {
   "$schema": "../schemas/profile.schema.json",
   "schemaVersion": 3,
-  "id": "vulkan-probe",
-  "name": "Host Vulkan probe",
+  "id": "vulkan-present",
+  "name": "Host Vulkan present probe",
   "display": {
     "dpi": 144,
     "socket": "filesystem"

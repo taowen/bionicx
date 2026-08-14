@@ -26,12 +26,18 @@ podman run --rm --network host --userns=keep-id \
     --volume "$repo_dir:/work:Z" --workdir /work \
     "$builder_image" sh -eu -c '
         app_dir="'"$container_output"'/app"
-        aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
-            -DVK_USE_PLATFORM_XLIB_KHR -DVK_USE_PLATFORM_XCB_KHR \
-            examples/vulkan-probe/vulkan-probe.c \
-            -Wl,-rpath,'"'"'$ORIGIN/../lib'"'"' \
-            -o "$app_dir/bin/vulkan-probe" \
-            -lvulkan -lX11-xcb -lX11 -lxcb -lpthread
+        compile() {
+            aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
+                -DVK_USE_PLATFORM_XLIB_KHR -DVK_USE_PLATFORM_XCB_KHR \
+                examples/vulkan-probe/common.c \
+                "examples/vulkan-probe/$1.c" \
+                -Wl,-rpath,'"'"'$ORIGIN/../lib'"'"' \
+                -o "$app_dir/bin/$1" \
+                -lvulkan -lX11-xcb -lX11 -lxcb $2
+        }
+        compile vulkan-wsi ""
+        compile vulkan-present -lpthread
+        compile vulkan-lifetime ""
         cp -L /usr/lib/aarch64-linux-gnu/libvulkan.so.1 "$app_dir/lib/"
         cp -L /usr/lib/aarch64-linux-gnu/libX11-xcb.so.1 "$app_dir/lib/"
     '
@@ -47,7 +53,7 @@ cat > "$output_dir/app/share/vulkan/icd.d/vortek_icd.json" <<'EOF'
 EOF
 
 "$repo_dir/tools/resolve-elf-deps.py" \
-    --entry "$output_dir/app/bin/vulkan-probe" \
+    --entry "$output_dir/app/bin/vulkan-present" \
     --search-root "$output_dir/app/lib" \
     --search-root "$output_dir/rootfs/usr/lib" \
     --json "$output_dir/vulkan-probe-dependency-closure.json"

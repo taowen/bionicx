@@ -12,8 +12,9 @@ AHardwareBuffer, so the ICD advertises BGRA, allocates client images as
 ordinary DEVICE_LOCAL images in the requested format, and
 `vkCmdBlitImage`s into an RGBA window AHB for the GLES compositor.
 
-`vulkan-probe` is 9/9 on this device. `host-vulkan-window` /
-`host-vulkan-surface` / `host-vulkan-swapchain` require the X11 BGRA
+`vulkan-wsi` / `vulkan-present` / `vulkan-lifetime` are 5+3+1 on this
+device. `vulkan-wsi-window` / `vulkan-wsi-surface` /
+`vulkan-present-swapchain` require the X11 BGRA
 visual, advertised `VK_FORMAT_B8G8R8A8_UNORM`, and swapchain `format=44`.
 Untraced `chrome-vulkan.json` paints the fixture green and
 reports `WEBGL_OK vendor=Google Inc. (ARM) renderer=ANGLE (ARM, Vulkan
