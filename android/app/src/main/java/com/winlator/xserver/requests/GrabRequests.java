@@ -108,8 +108,12 @@ public abstract class GrabRequests {
         Cursor cursor = cursorId == 0 ? null
                 : client.xServer.cursorManager.getCursor(cursorId);
         if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
+        // GDK/xfsettingsd install passive button grabs with GrabModeSync
+        // (keyboardMode 0). Keyboard freeze is not implemented; accept
+        // the request and deliver asynchronously. Confine remains an error.
         if ((pointerMode != 0 && pointerMode != 1)
-                || keyboardMode != 1 || confineTo != 0) {
+                || (keyboardMode != 0 && keyboardMode != 1)
+                || confineTo != 0) {
             Log.w(TAG, "unsupported GrabButton modes pointer=" + pointerMode
                     + " keyboard=" + keyboardMode
                     + " confineTo=" + Integer.toUnsignedString(confineTo)
