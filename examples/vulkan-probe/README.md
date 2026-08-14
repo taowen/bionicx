@@ -7,8 +7,10 @@ the manifest (`../../../lib/libvulkan_vortek.so`), and the probe also
 app-private Unix socket to the Bionic Android host, which loads the system
 Vulkan loader and the device's native vendor driver.
 
-The probe verifies loader and instance discovery, physical-device identity,
-queue families, device memory, and both Xlib and XCB WSI paths. It creates a
+The probe reports nine stages: loader/ICD/WSI extensions, the X11 BGRA
+visual, physical-device honesty, Xlib+XCB surfaces, surface BGRA/FIFO,
+BGRA swapchain, graphics pipeline, present, and swapchain lifetime.
+It creates a
 real X window through Xlib, binds both surface APIs to its XID, then creates a
 logical device and swapchain, imports the window's
 `AHardwareBuffer`, uploads interleaved vertices, indices and a fragment tint

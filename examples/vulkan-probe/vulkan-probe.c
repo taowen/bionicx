@@ -99,35 +99,24 @@ int main(void) {
     uint32_t loader_version = VK_API_VERSION_1_0;
     VkResult status = vkEnumerateInstanceVersion(&loader_version);
     char details[512];
-    snprintf(details, sizeof(details), "status=%d version=%u.%u.%u",
-             status, VK_VERSION_MAJOR(loader_version),
-             VK_VERSION_MINOR(loader_version), VK_VERSION_PATCH(loader_version));
-    result("host-vulkan-loader", status == VK_SUCCESS, details);
-
     void *icd = dlopen("libvulkan_vortek.so", RTLD_NOW | RTLD_LOCAL);
     const char *icd_how = "soname";
     if (icd == NULL) {
         icd = dlopen("lib/libvulkan_vortek.so", RTLD_NOW | RTLD_LOCAL);
         icd_how = "app-relative";
     }
-    snprintf(details, sizeof(details), "via=%s %s", icd_how,
-             icd != NULL ? "open" : dlerror());
-    result("host-vulkan-icd-library", icd != NULL, details);
+    bool icd_ok = icd != NULL;
     if (icd != NULL) dlclose(icd);
 
     uint32_t extension_count = 0;
-    status = vkEnumerateInstanceExtensionProperties(
+    VkResult extension_status = vkEnumerateInstanceExtensionProperties(
             NULL, &extension_count, NULL);
-    snprintf(details, sizeof(details), "status=%d extensions=%u",
-             status, extension_count);
-    result("host-vulkan-instance-extensions",
-           status == VK_SUCCESS && extension_count > 0, details);
-
     VkExtensionProperties *extensions = calloc(
             extension_count, sizeof(*extensions));
     uint32_t returned_extension_count = extension_count;
-    status = vkEnumerateInstanceExtensionProperties(
-            NULL, &returned_extension_count, extensions);
+    if (extension_status == VK_SUCCESS)
+        extension_status = vkEnumerateInstanceExtensionProperties(
+                NULL, &returned_extension_count, extensions);
     bool has_surface = false;
     bool has_xlib_surface = false;
     bool has_xcb_surface = false;
@@ -139,24 +128,18 @@ int main(void) {
         has_xcb_surface |= strcmp(extensions[i].extensionName,
                                   VK_KHR_XCB_SURFACE_EXTENSION_NAME) == 0;
     }
-    char names[192] = {0};
-    size_t used = 0;
-    for (uint32_t i = 0; i < returned_extension_count && used + 2 < sizeof(names);
-            ++i) {
-        used += (size_t)snprintf(names + used, sizeof(names) - used, "%s%s",
-                                 used ? "," : "", extensions[i].extensionName);
-    }
-    snprintf(details, sizeof(details),
-             "status=%d returned=%u surface=%u xlib=%u names=%s",
-             status, returned_extension_count, has_surface, has_xlib_surface,
-             names);
-    result("host-vulkan-xlib-extensions",
-           status == VK_SUCCESS && has_surface && has_xlib_surface, details);
-    snprintf(details, sizeof(details), "status=%d xcb=%u",
-             status, has_xcb_surface);
-    result("host-vulkan-xcb-extension",
-           status == VK_SUCCESS && has_xcb_surface, details);
     free(extensions);
+    snprintf(details, sizeof(details),
+             "status=%d version=%u.%u.%u icd=%s extensions=%u surface=%u xlib=%u xcb=%u",
+             status, VK_VERSION_MAJOR(loader_version),
+             VK_VERSION_MINOR(loader_version), VK_VERSION_PATCH(loader_version),
+             icd_ok ? icd_how : "missing", returned_extension_count,
+             has_surface, has_xlib_surface, has_xcb_surface);
+    result("host-vulkan-loader",
+           status == VK_SUCCESS && icd_ok
+                   && extension_status == VK_SUCCESS && extension_count > 0
+                   && has_surface && has_xlib_surface && has_xcb_surface,
+           details);
 
     Display *display = XOpenDisplay(NULL);
     Window window = 0;
@@ -167,22 +150,8 @@ int main(void) {
         XMapWindow(display, window);
         XSync(display, False);
     }
-    snprintf(details, sizeof(details), "display=%s window=0x%lx size=640x360",
-             display ? "open" : "closed", (unsigned long)window);
-    result("host-vulkan-xlib-window", display && window != 0, details);
     VisualID window_visual = 0;
     VisualID root_visual = 0;
-    if (display && window) {
-        XWindowAttributes attributes;
-        if (XGetWindowAttributes(display, window, &attributes))
-            window_visual = XVisualIDFromVisual(attributes.visual);
-        root_visual = XVisualIDFromVisual(
-                DefaultVisual(display, DefaultScreen(display)));
-    }
-    snprintf(details, sizeof(details), "window=0x%lx root=0x%lx",
-             (unsigned long)window_visual, (unsigned long)root_visual);
-    result("host-vulkan-root-visual",
-           window_visual != 0 && window_visual == root_visual, details);
     unsigned long red_mask = 0;
     unsigned long green_mask = 0;
     unsigned long blue_mask = 0;
@@ -192,19 +161,27 @@ int main(void) {
         XWindowAttributes attributes;
         if (XGetWindowAttributes(display, window, &attributes)
                 && attributes.visual) {
+            window_visual = XVisualIDFromVisual(attributes.visual);
             red_mask = attributes.visual->red_mask;
             green_mask = attributes.visual->green_mask;
             blue_mask = attributes.visual->blue_mask;
             depth = attributes.depth;
             visual_class = attributes.visual->class;
         }
+        root_visual = XVisualIDFromVisual(
+                DefaultVisual(display, DefaultScreen(display)));
     }
     snprintf(details, sizeof(details),
-             "class=%d depth=%d red=0x%lx green=0x%lx blue=0x%lx",
+             "display=%s window=0x%lx visual=0x%lx root=0x%lx class=%d depth=%d "
+             "red=0x%lx green=0x%lx blue=0x%lx",
+             display ? "open" : "closed", (unsigned long)window,
+             (unsigned long)window_visual, (unsigned long)root_visual,
              visual_class, depth, red_mask, green_mask, blue_mask);
     /* ANGLE maps this TrueColor layout to VK_FORMAT_B8G8R8A8_UNORM. */
-    result("host-vulkan-x11-bgra-visual",
-           visual_class == TrueColor && depth >= 24
+    result("host-vulkan-window",
+           display && window != 0
+                   && window_visual != 0 && window_visual == root_visual
+                   && visual_class == TrueColor && depth >= 24
                    && red_mask == 0xff0000UL
                    && green_mask == 0x00ff00UL
                    && blue_mask == 0x0000ffUL,
@@ -232,19 +209,20 @@ int main(void) {
     };
     VkInstance instance = VK_NULL_HANDLE;
     status = vkCreateInstance(&create_info, NULL, &instance);
-    snprintf(details, sizeof(details), "status=%d handle=%s",
-             status, instance != VK_NULL_HANDLE ? "valid" : "null");
-    result("host-vulkan-create-instance",
-           status == VK_SUCCESS && instance != VK_NULL_HANDLE, details);
-    if (status != VK_SUCCESS || instance == VK_NULL_HANDLE) goto done;
+    if (status != VK_SUCCESS || instance == VK_NULL_HANDLE) {
+        snprintf(details, sizeof(details), "instance=%d handle=null", status);
+        result("host-vulkan-device", false, details);
+        goto done;
+    }
 
     uint32_t physical_count = 0;
     status = vkEnumeratePhysicalDevices(instance, &physical_count, NULL);
-    snprintf(details, sizeof(details), "status=%d devices=%u",
-             status, physical_count);
-    result("host-vulkan-physical-devices",
-           status == VK_SUCCESS && physical_count > 0, details);
-    if (status != VK_SUCCESS || physical_count == 0) goto destroy_instance;
+    if (status != VK_SUCCESS || physical_count == 0) {
+        snprintf(details, sizeof(details), "devices=%d count=%u",
+                 status, physical_count);
+        result("host-vulkan-device", false, details);
+        goto destroy_instance;
+    }
 
     VkPhysicalDevice physical_device = VK_NULL_HANDLE;
     uint32_t one_device = 1;
@@ -256,25 +234,16 @@ int main(void) {
             && physical_device != VK_NULL_HANDLE) {
         vkGetPhysicalDeviceProperties(physical_device, &properties);
     }
-    snprintf(details, sizeof(details),
-             "status=%d name=%s api=%u.%u.%u vendor=0x%04x device=0x%04x",
-             status, properties.deviceName,
-             VK_VERSION_MAJOR(properties.apiVersion),
-             VK_VERSION_MINOR(properties.apiVersion),
-             VK_VERSION_PATCH(properties.apiVersion),
-             properties.vendorID, properties.deviceID);
-    result("host-vulkan-device-properties",
-           physical_device != VK_NULL_HANDLE && properties.deviceName[0],
-           details);
 
     uint32_t device_extension_count = 0;
-    status = vkEnumerateDeviceExtensionProperties(
+    VkResult device_extension_status = vkEnumerateDeviceExtensionProperties(
             physical_device, NULL, &device_extension_count, NULL);
     VkExtensionProperties *device_extensions_available = calloc(
             device_extension_count, sizeof(*device_extensions_available));
     uint32_t returned_device_extension_count = device_extension_count;
-    if (status == VK_SUCCESS && returned_device_extension_count > 0) {
-        status = vkEnumerateDeviceExtensionProperties(
+    if (device_extension_status == VK_SUCCESS
+            && returned_device_extension_count > 0) {
+        device_extension_status = vkEnumerateDeviceExtensionProperties(
                 physical_device, NULL, &returned_device_extension_count,
                 device_extensions_available);
     }
@@ -287,14 +256,6 @@ int main(void) {
                 device_extensions_available[i].extensionName,
                 VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME) == 0;
     }
-    snprintf(details, sizeof(details),
-             "status=%d returned=%u swapchain=%u fragmentShadingRate=%u",
-             status, returned_device_extension_count, has_swapchain,
-             has_fragment_shading_rate);
-    result("host-vulkan-device-extension-honesty",
-           status == VK_SUCCESS && has_swapchain
-                   && !has_fragment_shading_rate,
-           details);
     free(device_extensions_available);
 
     uint32_t queue_count = 0;
@@ -312,10 +273,6 @@ int main(void) {
             break;
         }
     }
-    snprintf(details, sizeof(details), "families=%u graphics=%u",
-             queue_count, graphics_family);
-    result("host-vulkan-queue-families",
-           queue_count > 0 && graphics_family != UINT32_MAX, details);
     free(queue_families);
 
     VkPhysicalDeviceMemoryProperties memory;
@@ -324,11 +281,22 @@ int main(void) {
     uint64_t heap_bytes = 0;
     for (uint32_t i = 0; i < memory.memoryHeapCount; ++i)
         heap_bytes += memory.memoryHeaps[i].size;
-    snprintf(details, sizeof(details), "types=%u heaps=%u bytes=%llu",
-             memory.memoryTypeCount, memory.memoryHeapCount,
-             (unsigned long long)heap_bytes);
-    result("host-vulkan-memory",
-           memory.memoryTypeCount > 0 && memory.memoryHeapCount > 0
+    snprintf(details, sizeof(details),
+             "name=%s api=%u.%u.%u vendor=0x%04x swapchain=%u fsr=%u "
+             "families=%u graphics=%u types=%u heaps=%u",
+             properties.deviceName,
+             VK_VERSION_MAJOR(properties.apiVersion),
+             VK_VERSION_MINOR(properties.apiVersion),
+             VK_VERSION_PATCH(properties.apiVersion),
+             properties.vendorID, has_swapchain, has_fragment_shading_rate,
+             queue_count, graphics_family, memory.memoryTypeCount,
+             memory.memoryHeapCount);
+    result("host-vulkan-device",
+           physical_device != VK_NULL_HANDLE && properties.deviceName[0]
+                   && device_extension_status == VK_SUCCESS && has_swapchain
+                   && !has_fragment_shading_rate
+                   && queue_count > 0 && graphics_family != UINT32_MAX
+                   && memory.memoryTypeCount > 0 && memory.memoryHeapCount > 0
                    && heap_bytes > 0,
            details);
 
@@ -342,12 +310,6 @@ int main(void) {
             ? vkCreateXlibSurfaceKHR(instance, &surface_create_info,
                                      NULL, &surface)
             : VK_ERROR_INITIALIZATION_FAILED;
-    snprintf(details, sizeof(details), "status=%d handle=%s window=0x%lx",
-             status, surface != VK_NULL_HANDLE ? "valid" : "null",
-             (unsigned long)window);
-    result("host-vulkan-xlib-surface",
-           status == VK_SUCCESS && surface != VK_NULL_HANDLE, details);
-
     VkSurfaceKHR xcb_surface = VK_NULL_HANDLE;
     xcb_connection_t *xcb_connection = display
             ? XGetXCBConnection(display) : NULL;
@@ -360,15 +322,6 @@ int main(void) {
             ? vkCreateXcbSurfaceKHR(instance, &xcb_surface_create_info,
                                     NULL, &xcb_surface)
             : VK_ERROR_INITIALIZATION_FAILED;
-    snprintf(details, sizeof(details), "status=%d handle=%s window=0x%lx",
-             xcb_surface_status,
-             xcb_surface != VK_NULL_HANDLE ? "valid" : "null",
-             (unsigned long)window);
-    result("host-vulkan-xcb-surface",
-           xcb_surface_status == VK_SUCCESS
-                   && xcb_surface != VK_NULL_HANDLE,
-           details);
-
     VkBool32 surface_supported = VK_FALSE;
     VkResult support_status = surface != VK_NULL_HANDLE
             ? vkGetPhysicalDeviceSurfaceSupportKHR(
@@ -380,22 +333,23 @@ int main(void) {
                     XVisualIDFromVisual(DefaultVisual(display,
                                                       DefaultScreen(display))))
             : VK_FALSE;
-    snprintf(details, sizeof(details), "status=%d surface=%u xlib=%u",
-             support_status, surface_supported, xlib_supported);
-    result("host-vulkan-presentation-support",
-           support_status == VK_SUCCESS && surface_supported
-                   && xlib_supported,
-           details);
     VkBool32 xcb_supported = xcb_connection
             ? vkGetPhysicalDeviceXcbPresentationSupportKHR(
                     physical_device, graphics_family, xcb_connection,
                     (xcb_visualid_t)XVisualIDFromVisual(
                             DefaultVisual(display, DefaultScreen(display))))
             : VK_FALSE;
-    snprintf(details, sizeof(details), "family=%u xcb=%u",
-             graphics_family, xcb_supported);
-    result("host-vulkan-xcb-presentation-support",
-           xcb_supported == VK_TRUE, details);
+    snprintf(details, sizeof(details),
+             "xlib=%d xcb=%d window=0x%lx surface=%u xlibPresent=%u xcbPresent=%u",
+             status, xcb_surface_status, (unsigned long)window,
+             surface_supported, xlib_supported, xcb_supported);
+    result("host-vulkan-wsi",
+           status == VK_SUCCESS && surface != VK_NULL_HANDLE
+                   && xcb_surface_status == VK_SUCCESS
+                   && xcb_surface != VK_NULL_HANDLE
+                   && support_status == VK_SUCCESS && surface_supported
+                   && xlib_supported && xcb_supported == VK_TRUE,
+           details);
 
     VkSurfaceCapabilitiesKHR capabilities;
     memset(&capabilities, 0, sizeof(capabilities));
@@ -403,20 +357,6 @@ int main(void) {
             ? vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
                     physical_device, surface, &capabilities)
             : VK_ERROR_SURFACE_LOST_KHR;
-    snprintf(details, sizeof(details),
-             "status=%d extent=%ux%u images=%u..%u usage=0x%x",
-             status, capabilities.currentExtent.width,
-             capabilities.currentExtent.height, capabilities.minImageCount,
-             capabilities.maxImageCount, capabilities.supportedUsageFlags);
-    result("host-vulkan-surface-capabilities",
-           status == VK_SUCCESS && capabilities.currentExtent.width == 640
-                   && capabilities.currentExtent.height == 360
-                   && capabilities.minImageCount >= 2
-                   && capabilities.minImageCount > 0
-                   && (capabilities.supportedUsageFlags
-                       & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-           details);
-
     uint32_t format_count = 0;
     status = surface != VK_NULL_HANDLE
             ? vkGetPhysicalDeviceSurfaceFormatsKHR(
@@ -428,18 +368,9 @@ int main(void) {
         status = vkGetPhysicalDeviceSurfaceFormatsKHR(
                 physical_device, surface, &returned_format_count, formats);
     }
-    snprintf(details, sizeof(details), "status=%d advertised=%u returned=%u",
-             status, format_count, returned_format_count);
-    result("host-vulkan-surface-formats",
-           status == VK_SUCCESS && format_count > 0
-                   && returned_format_count > 0,
-           details);
     bool has_bgra = false;
     for (uint32_t i = 0; i < returned_format_count; ++i)
         has_bgra |= formats[i].format == VK_FORMAT_B8G8R8A8_UNORM;
-    snprintf(details, sizeof(details), "bgra=%u advertised=%u",
-             has_bgra, returned_format_count);
-    result("host-vulkan-angle-bgra", has_bgra, details);
 
     uint32_t mode_count = 0;
     status = surface != VK_NULL_HANDLE
@@ -456,10 +387,19 @@ int main(void) {
     for (uint32_t i = 0; i < returned_mode_count; ++i)
         has_fifo |= modes[i] == VK_PRESENT_MODE_FIFO_KHR;
     snprintf(details, sizeof(details),
-             "status=%d advertised=%u returned=%u fifo=%u",
-             status, mode_count, returned_mode_count, has_fifo);
-    result("host-vulkan-present-modes",
-           status == VK_SUCCESS && mode_count > 0 && has_fifo, details);
+             "extent=%ux%u images=%u..%u usage=0x%x formats=%u bgra=%u fifo=%u",
+             capabilities.currentExtent.width, capabilities.currentExtent.height,
+             capabilities.minImageCount, capabilities.maxImageCount,
+             capabilities.supportedUsageFlags, format_count, has_bgra, has_fifo);
+    result("host-vulkan-surface",
+           status == VK_SUCCESS && capabilities.currentExtent.width == 640
+                   && capabilities.currentExtent.height == 360
+                   && capabilities.minImageCount >= 2
+                   && (capabilities.supportedUsageFlags
+                       & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                   && format_count > 0 && has_bgra
+                   && mode_count > 0 && has_fifo,
+           details);
 
     float queue_priority = 1.0f;
     VkDeviceQueueCreateInfo queue_create_info = {
@@ -483,19 +423,9 @@ int main(void) {
             ? vkCreateDevice(physical_device, &device_create_info,
                              NULL, &device)
             : VK_ERROR_INITIALIZATION_FAILED;
-    snprintf(details, sizeof(details), "status=%d handle=%s family=%u",
-             status, device != VK_NULL_HANDLE ? "valid" : "null",
-             graphics_family);
-    result("host-vulkan-logical-device",
-           status == VK_SUCCESS && device != VK_NULL_HANDLE, details);
-
     VkQueue queue = VK_NULL_HANDLE;
     if (device != VK_NULL_HANDLE)
         vkGetDeviceQueue(device, graphics_family, 0, &queue);
-    snprintf(details, sizeof(details), "handle=%s family=%u index=0",
-             queue != VK_NULL_HANDLE ? "valid" : "null", graphics_family);
-    result("host-vulkan-device-queue", queue != VK_NULL_HANDLE, details);
-
     VkSurfaceFormatKHR selected_format = {
         .format = VK_FORMAT_B8G8R8A8_UNORM,
         .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
@@ -537,18 +467,6 @@ int main(void) {
             ? vkCreateSwapchainKHR(device, &swapchain_create_info,
                                    NULL, &swapchain)
             : VK_ERROR_INITIALIZATION_FAILED;
-    snprintf(details, sizeof(details),
-             "status=%d handle=%s format=%d extent=%ux%u images=%u",
-             status, swapchain != VK_NULL_HANDLE ? "valid" : "null",
-             selected_format.format, swapchain_create_info.imageExtent.width,
-             swapchain_create_info.imageExtent.height,
-             swapchain_create_info.minImageCount);
-    result("host-vulkan-swapchain",
-           status == VK_SUCCESS && swapchain != VK_NULL_HANDLE
-                   && preferred_format
-                   && selected_format.format == VK_FORMAT_B8G8R8A8_UNORM,
-           details);
-
     uint32_t swapchain_image_count = 0;
     if (swapchain != VK_NULL_HANDLE)
         status = vkGetSwapchainImagesKHR(
@@ -562,10 +480,19 @@ int main(void) {
         status = vkGetSwapchainImagesKHR(
                 device, swapchain, &returned_image_count, swapchain_images);
     }
-    snprintf(details, sizeof(details), "status=%d advertised=%u returned=%u",
-             status, swapchain_image_count, returned_image_count);
-    result("host-vulkan-swapchain-images",
-           status == VK_SUCCESS && returned_image_count > 0, details);
+    snprintf(details, sizeof(details),
+             "device=%s queue=%s format=%d extent=%ux%u images=%u returned=%u",
+             device != VK_NULL_HANDLE ? "valid" : "null",
+             queue != VK_NULL_HANDLE ? "valid" : "null",
+             selected_format.format, swapchain_create_info.imageExtent.width,
+             swapchain_create_info.imageExtent.height,
+             swapchain_image_count, returned_image_count);
+    result("host-vulkan-swapchain",
+           device != VK_NULL_HANDLE && queue != VK_NULL_HANDLE
+                   && swapchain != VK_NULL_HANDLE && preferred_format
+                   && selected_format.format == VK_FORMAT_B8G8R8A8_UNORM
+                   && status == VK_SUCCESS && returned_image_count >= 2,
+           details);
 
     VkImageView image_view = VK_NULL_HANDLE;
     VkImageViewCreateInfo image_view_info = {
@@ -636,11 +563,6 @@ int main(void) {
             : render_pass_status;
     snprintf(details, sizeof(details), "view=%d renderPass=%d framebuffer=%d",
              image_view_status, render_pass_status, framebuffer_status);
-    result("host-vulkan-render-target",
-           image_view_status == VK_SUCCESS
-                   && render_pass_status == VK_SUCCESS
-                   && framebuffer_status == VK_SUCCESS,
-           details);
 
     size_t vertex_code_size = 0;
     size_t fragment_code_size = 0;
@@ -670,10 +592,6 @@ int main(void) {
     free(fragment_code);
     snprintf(details, sizeof(details), "vertex=%d fragment=%d",
              vertex_module_status, fragment_module_status);
-    result("host-vulkan-shader-modules",
-           vertex_module_status == VK_SUCCESS
-                   && fragment_module_status == VK_SUCCESS,
-           details);
 
     const Vertex vertices[3] = {
         {{0.0f, -0.72f}, {0.90f, 0.08f, 0.04f}},
@@ -731,12 +649,10 @@ int main(void) {
              vertex_buffer_status, vertex_memory_type,
              vertex_allocate_status, vertex_bind_status, vertex_map_status,
              sizeof(vertices));
-    result("host-vulkan-vertex-upload",
-           vertex_buffer_status == VK_SUCCESS
-                   && vertex_allocate_status == VK_SUCCESS
-                   && vertex_bind_status == VK_SUCCESS
-                   && vertex_map_status == VK_SUCCESS,
-           details);
+    bool vertex_ok = vertex_buffer_status == VK_SUCCESS
+            && vertex_allocate_status == VK_SUCCESS
+            && vertex_bind_status == VK_SUCCESS
+            && vertex_map_status == VK_SUCCESS;
 
     const uint16_t indices[3] = {0, 1, 2};
     const float tint[4] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -754,10 +670,8 @@ int main(void) {
              "index=%d indexBytes=%zu uniform=%d uniformBytes=%zu",
              index_upload_status, sizeof(indices), uniform_upload_status,
              sizeof(tint));
-    result("host-vulkan-index-uniform-upload",
-           index_upload_status == VK_SUCCESS
-                   && uniform_upload_status == VK_SUCCESS,
-           details);
+    bool uploads_ok = index_upload_status == VK_SUCCESS
+            && uniform_upload_status == VK_SUCCESS;
 
     const uint8_t texture_pixels[16] = {
         255, 255, 255, 255, 255, 255, 255, 255,
@@ -850,14 +764,12 @@ int main(void) {
              texture_memory_type, texture_allocate_status,
              texture_bind_status, texture_view_status,
              texture_sampler_status);
-    result("host-vulkan-sampled-image",
-           texture_staging_status == VK_SUCCESS
-                   && texture_image_status == VK_SUCCESS
-                   && texture_allocate_status == VK_SUCCESS
-                   && texture_bind_status == VK_SUCCESS
-                   && texture_view_status == VK_SUCCESS
-                   && texture_sampler_status == VK_SUCCESS,
-           details);
+    bool sampled_ok = texture_staging_status == VK_SUCCESS
+            && texture_image_status == VK_SUCCESS
+            && texture_allocate_status == VK_SUCCESS
+            && texture_bind_status == VK_SUCCESS
+            && texture_view_status == VK_SUCCESS
+            && texture_sampler_status == VK_SUCCESS;
 
     VkDescriptorSetLayoutBinding descriptor_bindings[2] = {
         {
@@ -947,12 +859,10 @@ int main(void) {
              descriptor_layout_status, descriptor_pool_status,
              descriptor_allocate_status,
              descriptor_set != VK_NULL_HANDLE ? "valid" : "null");
-    result("host-vulkan-uniform-descriptor",
-           descriptor_layout_status == VK_SUCCESS
-                   && descriptor_pool_status == VK_SUCCESS
-                   && descriptor_allocate_status == VK_SUCCESS
-                   && descriptor_set != VK_NULL_HANDLE,
-           details);
+    bool descriptor_ok = descriptor_layout_status == VK_SUCCESS
+            && descriptor_pool_status == VK_SUCCESS
+            && descriptor_allocate_status == VK_SUCCESS
+            && descriptor_set != VK_NULL_HANDLE;
 
     VkPipelineLayoutCreateInfo layout_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -1070,10 +980,9 @@ int main(void) {
     snprintf(details, sizeof(details), "layout=%d pipeline=%d handle=%s",
              layout_status, pipeline_status,
              pipeline != VK_NULL_HANDLE ? "valid" : "null");
-    result("host-vulkan-graphics-pipeline",
-           layout_status == VK_SUCCESS && pipeline_status == VK_SUCCESS
-                   && pipeline != VK_NULL_HANDLE,
-           details);
+    bool pipeline_ok = layout_status == VK_SUCCESS
+            && pipeline_status == VK_SUCCESS
+            && pipeline != VK_NULL_HANDLE;
 
     VkCommandPool command_pool = VK_NULL_HANDLE;
     VkCommandPoolCreateInfo pool_create_info = {
@@ -1096,11 +1005,22 @@ int main(void) {
             ? vkAllocateCommandBuffers(
                     device, &command_allocate_info, &command_buffer)
             : pool_status;
-    snprintf(details, sizeof(details), "pool=%d allocate=%d handle=%s",
-             pool_status, command_status,
-             command_buffer != VK_NULL_HANDLE ? "valid" : "null");
-    result("host-vulkan-command-buffer",
-           pool_status == VK_SUCCESS && command_status == VK_SUCCESS
+    snprintf(details, sizeof(details),
+             "target=%d/%d/%d shaders=%d/%d vertex=%u uploads=%d sampled=%d "
+             "descriptor=%d pipeline=%d cmd=%d/%d",
+             image_view_status, render_pass_status, framebuffer_status,
+             vertex_module_status, fragment_module_status, vertex_ok,
+             uploads_ok, sampled_ok, descriptor_ok, pipeline_ok,
+             pool_status, command_status);
+    result("host-vulkan-pipeline",
+           image_view_status == VK_SUCCESS
+                   && render_pass_status == VK_SUCCESS
+                   && framebuffer_status == VK_SUCCESS
+                   && vertex_module_status == VK_SUCCESS
+                   && fragment_module_status == VK_SUCCESS
+                   && vertex_ok && uploads_ok && sampled_ok && descriptor_ok
+                   && pipeline_ok
+                   && pool_status == VK_SUCCESS && command_status == VK_SUCCESS
                    && command_buffer != VK_NULL_HANDLE,
            details);
 
@@ -1112,9 +1032,6 @@ int main(void) {
             : VK_ERROR_INITIALIZATION_FAILED;
     snprintf(details, sizeof(details), "status=%d index=%u count=%u",
              acquire_status, image_index, returned_image_count);
-    result("host-vulkan-acquire",
-           acquire_status == VK_SUCCESS && image_index < returned_image_count,
-           details);
 
     VkResult record_status = VK_ERROR_INITIALIZATION_FAILED;
     if (command_buffer != VK_NULL_HANDLE
@@ -1205,8 +1122,6 @@ int main(void) {
     snprintf(details, sizeof(details),
              "status=%d background=26,191,64 triangle=230,20,10",
              record_status);
-    result("host-vulkan-record-bind2-indexed-descriptor",
-           record_status == VK_SUCCESS, details);
 
     VkSemaphore present_semaphore = VK_NULL_HANDLE;
     VkSemaphoreCreateInfo semaphore_create_info = {
@@ -1219,10 +1134,6 @@ int main(void) {
     snprintf(details, sizeof(details), "status=%d handle=%s",
              semaphore_status,
              present_semaphore != VK_NULL_HANDLE ? "valid" : "null");
-    result("host-vulkan-present-semaphore",
-           semaphore_status == VK_SUCCESS
-                   && present_semaphore != VK_NULL_HANDLE,
-           details);
 
     VkSubmitInfo submit_info = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -1239,8 +1150,6 @@ int main(void) {
             : VK_ERROR_INITIALIZATION_FAILED;
     snprintf(details, sizeof(details), "submit=%d signal=present-semaphore",
              submit_status);
-    result("host-vulkan-submit-graphics", submit_status == VK_SUCCESS,
-           details);
 
     VkPresentInfoKHR present_info = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -1257,9 +1166,18 @@ int main(void) {
             : VK_ERROR_INITIALIZATION_FAILED;
     XSync(display, False);
     snprintf(details, sizeof(details),
-             "status=%d index=%u background=26,191,64 triangle=230,20,10",
-             present_status, image_index);
-    result("host-vulkan-present", present_status == VK_SUCCESS, details);
+             "status=%d acquire=%d record=%d semaphore=%d submit=%d index=%u "
+             "bind2=null background=26,191,64 triangle=230,20,10",
+             present_status, acquire_status, record_status, semaphore_status,
+             submit_status, image_index);
+    result("host-vulkan-present",
+           acquire_status == VK_SUCCESS && image_index < returned_image_count
+                   && record_status == VK_SUCCESS
+                   && semaphore_status == VK_SUCCESS
+                   && present_semaphore != VK_NULL_HANDLE
+                   && submit_status == VK_SUCCESS
+                   && present_status == VK_SUCCESS,
+           details);
 
     if (present_status == VK_SUCCESS) {
         present_info.waitSemaphoreCount = 0;
@@ -1280,13 +1198,10 @@ int main(void) {
                                     VK_NULL_HANDLE, VK_NULL_HANDLE,
                                     &second_index)
             : VK_ERROR_INITIALIZATION_FAILED;
-    snprintf(details, sizeof(details),
-             "status=%d first=%u second=%u count=%u",
-             second_acquire, image_index, second_index, returned_image_count);
-    result("host-vulkan-swapchain-acquire-rotate",
-           second_acquire == VK_SUCCESS && returned_image_count >= 2
-                   && second_index != image_index
-                   && second_index < returned_image_count, details);
+    bool rotate_ok = second_acquire == VK_SUCCESS
+            && returned_image_count >= 2
+            && second_index != image_index
+            && second_index < returned_image_count;
 
     if (display && window) {
         XResizeWindow(display, window, 800, 400);
@@ -1304,15 +1219,9 @@ int main(void) {
                                     VK_NULL_HANDLE, VK_NULL_HANDLE,
                                     &stale_index)
             : VK_ERROR_INITIALIZATION_FAILED;
-    snprintf(details, sizeof(details),
-             "caps=%d extent=%ux%u acquire=%d",
-             resized_caps, resized.currentExtent.width,
-             resized.currentExtent.height, stale_acquire);
-    result("host-vulkan-swapchain-resize-outdated",
-           resized_caps == VK_SUCCESS
-                   && (stale_acquire == VK_ERROR_OUT_OF_DATE_KHR
-                       || resized.currentExtent.width != 640),
-           details);
+    bool outdated_ok = resized_caps == VK_SUCCESS
+            && (stale_acquire == VK_ERROR_OUT_OF_DATE_KHR
+                || resized.currentExtent.width != 640);
 
     VkSwapchainKHR recreated = VK_NULL_HANDLE;
     swapchain_create_info.oldSwapchain = swapchain;
@@ -1342,13 +1251,8 @@ int main(void) {
         if (recreated_acquire == VK_SUCCESS)
             vkQueuePresentKHR(queue, &present_info);
     }
-    snprintf(details, sizeof(details),
-             "create=%d images=%u acquire=%d index=%u",
-             recreate_status, recreated_count, recreated_acquire,
-             recreated_index);
-    result("host-vulkan-swapchain-recreate",
-           recreate_status == VK_SUCCESS && recreated_count >= 2
-                   && recreated_acquire == VK_SUCCESS, details);
+    bool recreate_ok = recreate_status == VK_SUCCESS && recreated_count >= 2
+            && recreated_acquire == VK_SUCCESS;
 
     if (display && window) {
         XResizeWindow(display, window, 640, 360);
@@ -1363,11 +1267,18 @@ int main(void) {
     if (surface != VK_NULL_HANDLE)
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
                 physical_device, surface, &remapped);
-    snprintf(details, sizeof(details), "extent=%ux%u",
+    snprintf(details, sizeof(details),
+             "rotate=%u first=%u second=%u outdated=%u extent=%ux%u acquire=%d "
+             "recreate=%u images=%u remap=%ux%u",
+             rotate_ok, image_index, second_index, outdated_ok,
+             resized.currentExtent.width, resized.currentExtent.height,
+             stale_acquire, recreate_ok, recreated_count,
              remapped.currentExtent.width, remapped.currentExtent.height);
-    result("host-vulkan-swapchain-foreground",
-           remapped.currentExtent.width > 0
-                   && remapped.currentExtent.height > 0, details);
+    result("host-vulkan-swapchain-lifetime",
+           rotate_ok && outdated_ok && recreate_ok
+                   && remapped.currentExtent.width > 0
+                   && remapped.currentExtent.height > 0,
+           details);
 
     if (device != VK_NULL_HANDLE) vkDeviceWaitIdle(device);
     if (present_semaphore != VK_NULL_HANDLE)

@@ -5,25 +5,33 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-probe.json"
 grep -F 'minImageCount >= 2' \
     "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
-grep -F 'host-vulkan-icd-library' \
-    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
-grep -F 'host-vulkan-swapchain-acquire-rotate' \
-    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
-grep -F 'host-vulkan-swapchain-resize-outdated' \
-    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
-grep -F 'host-vulkan-swapchain-recreate' \
-    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
-grep -F 'host-vulkan-swapchain-foreground' \
-    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
-grep -F 'passed=43' \
-    "$repo_dir/examples/vulkan-probe/install-and-run.sh" >/dev/null
-grep -F 'host-vulkan-angle-bgra' \
-    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
-grep -F 'host-vulkan-root-visual' \
-    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
-grep -F 'host-vulkan-x11-bgra-visual' \
-    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
+for name in host-vulkan-loader host-vulkan-window host-vulkan-device \
+            host-vulkan-wsi host-vulkan-surface host-vulkan-swapchain \
+            host-vulkan-pipeline host-vulkan-present \
+            host-vulkan-swapchain-lifetime; do
+    grep -F "$name" "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
+done
+grep -Fq 'passed=9' "$repo_dir/examples/vulkan-probe/install-and-run.sh"
+# Fragmented one-bug-one-name checks stay folded into the nine stages.
+for name in host-vulkan-icd-library host-vulkan-angle-bgra \
+            host-vulkan-root-visual host-vulkan-x11-bgra-visual \
+            host-vulkan-swapchain-acquire-rotate \
+            host-vulkan-swapchain-resize-outdated \
+            host-vulkan-swapchain-recreate \
+            host-vulkan-swapchain-foreground; do
+    if grep -F "result(\"$name\"" \
+            "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null; then
+        echo "stale fragmented probe name still reported: $name" >&2
+        exit 1
+    fi
+done
 grep -F 'preferred_format' \
+    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
+grep -F 'vkCmdBindVertexBuffers2' \
+    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
+grep -F 'red_mask == 0xff0000UL' \
+    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
+grep -F 'VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME' \
     "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
 if grep -F 'selected_format = formats[0]' \
         "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null; then
