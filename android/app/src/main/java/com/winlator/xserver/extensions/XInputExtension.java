@@ -581,7 +581,7 @@ public class XInputExtension extends Extension {
                             XOutputStream outputStream)
             throws IOException, XRequestError {
         int windowId = inputStream.readInt();
-        int timestamp = inputStream.readInt();
+        inputStream.readInt(); // timestamp is advisory
         int cursorId = inputStream.readInt();
         int deviceId = inputStream.readUnsignedShort();
         int mode = inputStream.readUnsignedByte();
@@ -596,7 +596,11 @@ public class XInputExtension extends Extension {
         Cursor cursor = cursorId == 0 ? null
                 : xServer.cursorManager.getCursor(cursorId);
         if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
-        if (timestamp != 0 || mode != 1 || pairedDeviceMode != 1
+        // GDK passes the last event time and often XIGrabModeSync.
+        // Freeze is not implemented; accept the grab and deliver
+        // asynchronously.
+        if ((mode != 0 && mode != 1)
+                || (pairedDeviceMode != 0 && pairedDeviceMode != 1)
                 || maskWords > 8
                 || maskWords * 4 > client.getRemainingRequestLength()) {
             throw new BadImplementation();
@@ -650,12 +654,11 @@ public class XInputExtension extends Extension {
 
     private void ungrabDevice(XClient client, XInputStream inputStream)
             throws XRequestError {
-        int timestamp = inputStream.readInt();
+        inputStream.readInt(); // timestamp is advisory
         int deviceId = inputStream.readUnsignedShort();
         inputStream.skip(2);
         if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID)
             throw new BadValue(deviceId);
-        if (timestamp != 0) throw new BadImplementation();
         if (deviceId == MASTER_POINTER_ID) {
             boolean owned = xServer.grabManager.getClient() == client;
             xServer.grabManager.deactivatePointerGrab(client);
