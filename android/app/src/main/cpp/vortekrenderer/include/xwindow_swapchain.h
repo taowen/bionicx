@@ -35,6 +35,8 @@ extern XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphi
 extern void XWindowSwapchain_destroy(VkDevice device, XWindowSwapchain* swapchain);
 extern VkResult XWindowSwapchain_acquireNextImage(XWindowSwapchain* swapchain, uint64_t timeout, VkSemaphore signalSemaphore, VkFence fence, uint32_t* imageIndex);
 extern void XWindowSwapchain_presentImage(XWindowSwapchain* swapchain);
-extern void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex);
+extern void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex,
+                                               uint32_t waitSemaphoreCount,
+                                               const VkSemaphore* waitSemaphores);
 
 #endif

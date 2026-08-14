@@ -2107,30 +2107,14 @@ void vt_handle_vkQueuePresentKHR(VkContext* context) {
                                     context->inputBuffer, &context->memoryPool);
     VkQueue queue = VkObject_fromId(queueId);
 
-    VkResult result = VK_SUCCESS;
-    if (presentInfo.waitSemaphoreCount > 0) {
-        VkPipelineStageFlags waitStages[presentInfo.waitSemaphoreCount];
-        for (uint32_t i = 0; i < presentInfo.waitSemaphoreCount; i++)
-            waitStages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-
-        VkSubmitInfo submitInfo = {0};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.waitSemaphoreCount = presentInfo.waitSemaphoreCount;
-        submitInfo.pWaitSemaphores = presentInfo.pWaitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
-        result = vulkanWrapper.vkQueueSubmit(queue, 1, &submitInfo,
-                                             VK_NULL_HANDLE);
-    }
-
-    if (result == VK_SUCCESS)
-        result = vulkanWrapper.vkQueueWaitIdle(queue);
-    if (result == VK_ERROR_DEVICE_LOST) context->status = result;
-    if (result != VK_SUCCESS) return;
-
+    /* Do not vkQueueWaitIdle here. Chrome leaves timeline waits on the
+     * same queue; blocking the RPC thread prevents vkSignalSemaphore. */
+    (void)queue;
     for (int i = 0; i < presentInfo.swapchainCount; i++) {
         uint32_t index = presentInfo.pImageIndices ? presentInfo.pImageIndices[i] : 0;
         XWindowSwapchain_presentImageIndex(
-                (XWindowSwapchain*)presentInfo.pSwapchains[i], index);
+                (XWindowSwapchain*)presentInfo.pSwapchains[i], index,
+                presentInfo.waitSemaphoreCount, presentInfo.pWaitSemaphores);
     }
 }
 

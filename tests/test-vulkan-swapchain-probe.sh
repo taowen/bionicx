@@ -97,4 +97,17 @@ grep -F '80, 240' \
     "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
 grep -F 'host-vulkan-present status=0' \
     "$repo_dir/examples/vulkan-probe/install-and-run.sh" >/dev/null
+grep -F 'timeline-present' \
+    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
+grep -F 'VK_SEMAPHORE_TYPE_TIMELINE' \
+    "$repo_dir/examples/vulkan-probe/vulkan-probe.c" >/dev/null
+grep -F 'Do not vkQueueWaitIdle here' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" \
+    >/dev/null
+if grep -F 'vulkanWrapper.vkQueueWaitIdle' \
+        "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
+        >/dev/null; then
+    echo "swapchain present must not vkQueueWaitIdle" >&2
+    exit 1
+fi
 echo "vulkan swapchain probe and host minImageCount=2: PASS"

@@ -1,4 +1,5 @@
 #include <dlfcn.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -13,6 +14,19 @@
 
 static unsigned passed;
 static unsigned failed;
+static volatile int timeline_present_done;
+
+static void *timeline_present_watchdog(void *unused) {
+    (void)unused;
+    for (int i = 0; i < 40; ++i) {
+        if (timeline_present_done) return NULL;
+        usleep(100000);
+    }
+    printf("BXTEST FAIL host-vulkan-present "
+           "timeline-present hung after vkQueueWaitIdle\n");
+    fflush(stdout);
+    _exit(2);
+}
 
 typedef struct Vertex {
     float position[2];
@@ -410,12 +424,18 @@ int main(void) {
     };
     const char *device_extensions[] = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
+    };
+    VkPhysicalDeviceTimelineSemaphoreFeatures timeline_features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
+        .timelineSemaphore = VK_TRUE,
     };
     VkDeviceCreateInfo device_create_info = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .pNext = &timeline_features,
         .queueCreateInfoCount = 1,
         .pQueueCreateInfos = &queue_create_info,
-        .enabledExtensionCount = 1,
+        .enabledExtensionCount = 2,
         .ppEnabledExtensionNames = device_extensions,
     };
     VkDevice device = VK_NULL_HANDLE;
@@ -1165,18 +1185,79 @@ int main(void) {
             ? vkQueuePresentKHR(queue, &present_info)
             : VK_ERROR_INITIALIZATION_FAILED;
     XSync(display, False);
+
+    /* Chrome/ANGLE leave timeline waits on the same queue, then present.
+     * Present used to vkQueueWaitIdle on the RPC thread, so the later
+     * vkSignalSemaphore never ran. Reproduce that handshake here. */
+    VkSemaphore timeline = VK_NULL_HANDLE;
+    VkSemaphoreTypeCreateInfo timeline_type = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+        .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+        .initialValue = 0,
+    };
+    VkSemaphoreCreateInfo timeline_info = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        .pNext = &timeline_type,
+    };
+    VkResult timeline_create = device != VK_NULL_HANDLE
+            ? vkCreateSemaphore(device, &timeline_info, NULL, &timeline)
+            : VK_ERROR_INITIALIZATION_FAILED;
+    uint64_t timeline_wait_value = 1;
+    VkPipelineStageFlags timeline_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    VkTimelineSemaphoreSubmitInfo timeline_submit = {
+        .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
+        .waitSemaphoreValueCount = 1,
+        .pWaitSemaphoreValues = &timeline_wait_value,
+    };
+    VkSubmitInfo timeline_wait_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = &timeline_submit,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &timeline,
+        .pWaitDstStageMask = &timeline_stage,
+    };
+    VkResult timeline_wait_status = timeline_create == VK_SUCCESS
+            && queue != VK_NULL_HANDLE
+            ? vkQueueSubmit(queue, 1, &timeline_wait_info, VK_NULL_HANDLE)
+            : timeline_create;
+    pthread_t watchdog;
+    timeline_present_done = 0;
+    if (pthread_create(&watchdog, NULL, timeline_present_watchdog, NULL) == 0)
+        pthread_detach(watchdog);
+    if (timeline_wait_status == VK_SUCCESS && present_status == VK_SUCCESS) {
+        VkPresentInfoKHR idle_present = present_info;
+        idle_present.waitSemaphoreCount = 0;
+        idle_present.pWaitSemaphores = NULL;
+        vkQueuePresentKHR(queue, &idle_present);
+    }
+    VkSemaphoreSignalInfo timeline_signal_info = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO,
+        .semaphore = timeline,
+        .value = 1,
+    };
+    VkResult timeline_signal = timeline_wait_status == VK_SUCCESS
+            ? vkSignalSemaphore(device, &timeline_signal_info)
+            : timeline_wait_status;
+    timeline_present_done = 1;
+    bool timeline_present_ok = timeline_create == VK_SUCCESS
+            && timeline_wait_status == VK_SUCCESS
+            && timeline_signal == VK_SUCCESS;
+
     snprintf(details, sizeof(details),
              "status=%d acquire=%d record=%d semaphore=%d submit=%d index=%u "
-             "bind2=null background=26,191,64 triangle=230,20,10",
+             "bind2=null background=26,191,64 triangle=230,20,10 "
+             "timeline-present=%d signal=%d",
              present_status, acquire_status, record_status, semaphore_status,
-             submit_status, image_index);
+             submit_status, image_index, timeline_wait_status,
+             timeline_signal);
     result("host-vulkan-present",
            acquire_status == VK_SUCCESS && image_index < returned_image_count
                    && record_status == VK_SUCCESS
                    && semaphore_status == VK_SUCCESS
                    && present_semaphore != VK_NULL_HANDLE
                    && submit_status == VK_SUCCESS
-                   && present_status == VK_SUCCESS,
+                   && present_status == VK_SUCCESS
+                   && timeline_present_ok,
            details);
 
     if (present_status == VK_SUCCESS) {
@@ -1283,6 +1364,8 @@ int main(void) {
     if (device != VK_NULL_HANDLE) vkDeviceWaitIdle(device);
     if (present_semaphore != VK_NULL_HANDLE)
         vkDestroySemaphore(device, present_semaphore, NULL);
+    if (timeline != VK_NULL_HANDLE)
+        vkDestroySemaphore(device, timeline, NULL);
     if (command_pool != VK_NULL_HANDLE)
         vkDestroyCommandPool(device, command_pool, NULL);
     if (pipeline != VK_NULL_HANDLE)

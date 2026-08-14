@@ -292,22 +292,33 @@ VkResult XWindowSwapchain_acquireNextImage(XWindowSwapchain* swapchain, uint64_t
 }
 
 void XWindowSwapchain_presentImage(XWindowSwapchain* swapchain) {
-    XWindowSwapchain_presentImageIndex(swapchain, 0);
+    XWindowSwapchain_presentImageIndex(swapchain, 0, 0, NULL);
 }
 
-void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex) {
+void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex,
+                                        uint32_t waitSemaphoreCount,
+                                        const VkSemaphore* waitSemaphores) {
     if (imageIndex < (uint32_t)swapchain->imageCount)
         swapchain->presented = (int)imageIndex;
     /* Mali does not make PRESENT_SRC AHB contents visible to CPU/GLES
-     * without an explicit host-read barrier. */
-    if (swapchain->commandBuffer && swapchain->queue && swapchain->images
+     * without an explicit host-read barrier. Do not vkQueueWaitIdle:
+     * in-flight timeline waits on this queue must not block later RPCs. */
+    VkCommandBuffer commandBuffer = swapchain->commandBuffer;
+    if (swapchain->commandPool && swapchain->queue && swapchain->images
             && imageIndex < (uint32_t)swapchain->imageCount
             && swapchain->presentTarget.image) {
-        vulkanWrapper.vkResetCommandBuffer(swapchain->commandBuffer, 0);
+        VkCommandBufferAllocateInfo allocInfo = {0};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = swapchain->commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = 1;
+        if (vulkanWrapper.vkAllocateCommandBuffers(swapchain->device, &allocInfo,
+                                                   &commandBuffer) != VK_SUCCESS)
+            commandBuffer = swapchain->commandBuffer;
         VkCommandBufferBeginInfo beginInfo = {0};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        if (vulkanWrapper.vkBeginCommandBuffer(swapchain->commandBuffer,
+        if (vulkanWrapper.vkBeginCommandBuffer(commandBuffer,
                                                &beginInfo) == VK_SUCCESS) {
             VkImageSubresourceRange range = {0};
             range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -333,7 +344,7 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
             barriers[1].image = swapchain->presentTarget.image;
             barriers[1].subresourceRange = range;
             vulkanWrapper.vkCmdPipelineBarrier(
-                    swapchain->commandBuffer,
+                    commandBuffer,
                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0, 0, NULL, 0, NULL, 2, barriers);
@@ -346,7 +357,7 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
             blit.dstSubresource = blit.srcSubresource;
             blit.dstOffsets[1] = blit.srcOffsets[1];
             vulkanWrapper.vkCmdBlitImage(
-                    swapchain->commandBuffer,
+                    commandBuffer,
                     swapchain->images[imageIndex].image,
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     swapchain->presentTarget.image,
@@ -358,7 +369,7 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
             hostBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             hostBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
             vulkanWrapper.vkCmdPipelineBarrier(
-                    swapchain->commandBuffer,
+                    commandBuffer,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
                     VK_PIPELINE_STAGE_HOST_BIT,
                     0, 0, NULL, 0, NULL, 1, &hostBarrier);
@@ -371,18 +382,25 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
             presentBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
             presentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             vulkanWrapper.vkCmdPipelineBarrier(
-                    swapchain->commandBuffer,
+                    commandBuffer,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
                     VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                     0, 0, NULL, 0, NULL, 1, &presentBarrier);
-            vulkanWrapper.vkEndCommandBuffer(swapchain->commandBuffer);
+            vulkanWrapper.vkEndCommandBuffer(commandBuffer);
+            VkPipelineStageFlags waitStages[8];
+            uint32_t waitCount = waitSemaphoreCount;
+            if (waitCount > 8) waitCount = 8;
+            for (uint32_t i = 0; i < waitCount; i++)
+                waitStages[i] = VK_PIPELINE_STAGE_TRANSFER_BIT;
             VkSubmitInfo submitInfo = {0};
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.waitSemaphoreCount = waitCount;
+            submitInfo.pWaitSemaphores = waitCount ? waitSemaphores : NULL;
+            submitInfo.pWaitDstStageMask = waitCount ? waitStages : NULL;
             submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &swapchain->commandBuffer;
+            submitInfo.pCommandBuffers = &commandBuffer;
             vulkanWrapper.vkQueueSubmit(swapchain->queue, 1, &submitInfo,
                                         VK_NULL_HANDLE);
-            vulkanWrapper.vkQueueWaitIdle(swapchain->queue);
         }
     }
     (*swapchain->jmethods->env)->CallVoidMethod(swapchain->jmethods->env, swapchain->jmethods->obj,

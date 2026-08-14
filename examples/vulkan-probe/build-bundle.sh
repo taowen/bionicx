@@ -31,7 +31,7 @@ podman run --rm --network host --userns=keep-id \
             examples/vulkan-probe/vulkan-probe.c \
             -Wl,-rpath,'"'"'$ORIGIN/../lib'"'"' \
             -o "$app_dir/bin/vulkan-probe" \
-            -lvulkan -lX11-xcb -lX11 -lxcb
+            -lvulkan -lX11-xcb -lX11 -lxcb -lpthread
         cp -L /usr/lib/aarch64-linux-gnu/libvulkan.so.1 "$app_dir/lib/"
         cp -L /usr/lib/aarch64-linux-gnu/libX11-xcb.so.1 "$app_dir/lib/"
     '

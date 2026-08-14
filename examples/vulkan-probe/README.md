@@ -20,7 +20,9 @@ sampler, builds SPIR-V shaders and a graphics pipeline, then records an indexed
 render pass with a red triangle over a green background. Vertex binding uses
 Vulkan 1.3 `vkCmdBindVertexBuffers2` with its optional size and stride arrays
 set to `NULL`, so the RPC bridge must preserve pointer presence exactly. It
-presents it through a semaphore without a prior queue idle, then checks
+presents it through a semaphore without a prior queue idle, then submits a
+timeline wait, presents again, and signals the timeline (Chrome's present
+handshake; the RPC thread must not `vkQueueWaitIdle`), then checks
 the final pixels in an Android compositor screenshot. It then acquires a
 second swapchain image (must not reuse the presented index), resizes the
 X window and expects `VK_ERROR_OUT_OF_DATE_KHR`, recreates with

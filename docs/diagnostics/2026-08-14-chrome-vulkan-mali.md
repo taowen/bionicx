@@ -21,13 +21,13 @@ reports `WEBGL_OK vendor=Google Inc. (ARM) renderer=ANGLE (ARM, Vulkan
 The fixture now uses `WEBGL_debug_renderer_info` so a masked
 `WebKit WebGL` string cannot pass as Vulkan.
 
-Chrome's GPU watchdog kills the child every 30s (`exit_code=512`)
-because Vortek RPC shader/pipeline work does not ping as a native
-GPU would. The profile sets `--disable-gpu-watchdog` on argv and
-`CHROME_EXTRA_FLAGS` so the child keeps it. Present blit then
-restores the client image to `PRESENT_SRC` so ANGLE's next frame
-does not hang Mali. After 52s the green canvas and `WEBGL_OK` string
-remain; ownership is 0.
+`host-vulkan-present` now submits a timeline wait, presents, then
+`vkSignalSemaphore`. The old present path called `vkQueueWaitIdle` on
+the RPC thread, so the signal never ran and the probe hung. Present
+now only GPU-waits the blit on the present semaphores. Chrome's 30s
+`exit_code=512` was that deadlock plus the GPU watchdog. The profile
+still sets `--disable-gpu-watchdog` for slow Vortek shader compiles.
+After 52s the green canvas and `WEBGL_OK` string remain; ownership is 0.
 
 See `evidence/vivo-10AFA31610002QH/vulkan-probe.png` and
 `evidence/vivo-10AFA31610002QH/chrome-vulkan.png`.
