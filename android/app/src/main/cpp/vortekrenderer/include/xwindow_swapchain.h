@@ -1,6 +1,7 @@
 #ifndef VORTEK_XWINDOW_SWAPCHAIN_H
 #define VORTEK_XWINDOW_SWAPCHAIN_H
 
+#include <pthread.h>
 #include <android/hardware_buffer.h>
 
 #include "vortek.h"
@@ -24,6 +25,11 @@ typedef struct XWindowSwapchain {
     VkCommandBuffer commandBuffer;
     VkFence blitFence;
     int blitInFlight;
+    int pendingIndex;
+    int destroying;
+    int hasWaiter;
+    pthread_mutex_t lock;
+    pthread_t waiter;
     JMethods* jmethods;
     uint32_t acquireIndex;
     int presented;

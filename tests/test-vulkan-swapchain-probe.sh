@@ -110,11 +110,14 @@ if grep -F 'vulkanWrapper.vkQueueWaitIdle' \
     echo "swapchain present must not vkQueueWaitIdle" >&2
     exit 1
 fi
-grep -F 'vkGetFenceStatus' \
-    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
-    >/dev/null
 grep -F 'blitInFlight' \
     "$repo_dir/android/app/src/main/cpp/vortekrenderer/include/xwindow_swapchain.h" \
+    >/dev/null
+grep -F 'pendingIndex' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/include/xwindow_swapchain.h" \
+    >/dev/null
+grep -F 'flush_pending_blit' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
     >/dev/null
 if grep -F 'vkAllocateCommandBuffers(swapchain->device' \
         "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \

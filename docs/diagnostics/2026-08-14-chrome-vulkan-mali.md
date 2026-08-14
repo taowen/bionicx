@@ -30,7 +30,10 @@ showed up as `vulkan-frames`: after the timeline wait, 2048 presents
 each submitted a blit on the same queue. Mali's `vkQueueSubmit` blocked
 the RPC thread once the queue filled, so `vkSignalSemaphore` never
 ran and the compositor stayed on the first green frame. Present now
-mailboxes: one blit in flight, extra presents skip. Chrome's 30s
+mailboxes: one blit in flight, extra presents skip, and a waiter
+blits the latest skipped image once the fence signals. The blit does
+not wait on the client's present semaphores (Chrome parks timeline
+waits there). Chrome's 30s
 `exit_code=512` was the WaitIdle deadlock plus the GPU watchdog. The
 profile still sets `--disable-gpu-watchdog` for slow Vortek shader
 compiles. After 52s the green canvas and `WEBGL_OK` string remain;

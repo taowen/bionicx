@@ -1,6 +1,11 @@
 #include "xwindow_swapchain.h"
 #include "vulkan_helper.h"
 
+static void submit_blit(XWindowSwapchain* swapchain, uint32_t imageIndex,
+                        uint32_t waitSemaphoreCount,
+                        const VkSemaphore* waitSemaphores);
+static void *flush_pending_blit(void *arg);
+
 void getWindowExtent(JMethods* jmethods, int windowId, VkExtent2D* extent) {
     extent->width = (*jmethods->env)->CallIntMethod(jmethods->env, jmethods->obj, jmethods->getWindowWidth, windowId);
     extent->height = (*jmethods->env)->CallIntMethod(jmethods->env, jmethods->obj, jmethods->getWindowHeight, windowId);
@@ -208,6 +213,8 @@ XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphicsQueue
     swapchain->jmethods = jmethods;
     swapchain->acquireIndex = 0;
     swapchain->presented = -1;
+    swapchain->pendingIndex = -1;
+    pthread_mutex_init(&swapchain->lock, NULL);
 
     VkResult result;
     for (int i = 0; i < swapchain->imageCount; i++) {
@@ -246,9 +253,16 @@ error:
 
 void XWindowSwapchain_destroy(VkDevice device, XWindowSwapchain* swapchain) {
     if (!swapchain) return;
-    if (swapchain->blitInFlight && swapchain->blitFence)
+    pthread_mutex_lock(&swapchain->lock);
+    swapchain->destroying = 1;
+    swapchain->pendingIndex = -1;
+    pthread_mutex_unlock(&swapchain->lock);
+    if (swapchain->hasWaiter)
+        pthread_join(swapchain->waiter, NULL);
+    else if (swapchain->blitInFlight && swapchain->blitFence)
         vulkanWrapper.vkWaitForFences(device, 1, &swapchain->blitFence,
                                       VK_TRUE, 1000000000ull);
+    pthread_mutex_destroy(&swapchain->lock);
     if (swapchain->blitFence)
         vulkanWrapper.vkDestroyFence(device, swapchain->blitFence, NULL);
     if (swapchain->commandPool)
@@ -300,40 +314,25 @@ VkResult XWindowSwapchain_acquireNextImage(XWindowSwapchain* swapchain, uint64_t
     return VK_SUCCESS;
 }
 
-void XWindowSwapchain_presentImage(XWindowSwapchain* swapchain) {
-    XWindowSwapchain_presentImageIndex(swapchain, 0, 0, NULL);
+static void request_window_update(XWindowSwapchain* swapchain, JNIEnv* env) {
+    if (!swapchain->jmethods || !env)
+        return;
+    (*env)->CallVoidMethod(env, swapchain->jmethods->obj,
+                           swapchain->jmethods->updateWindowContent,
+                           swapchain->windowId);
 }
 
-void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex,
-                                        uint32_t waitSemaphoreCount,
-                                        const VkSemaphore* waitSemaphores) {
-    if (imageIndex < (uint32_t)swapchain->imageCount)
-        swapchain->presented = (int)imageIndex;
-    /* Mali does not make PRESENT_SRC AHB contents visible to CPU/GLES
-     * without an explicit host-read barrier. Do not vkQueueWaitIdle:
-     * in-flight timeline waits on this queue must not block later RPCs.
-     * Mailbox: one blit in flight. Extra presents after a timeline wait
-     * would fill the queue and block vkQueueSubmit on the RPC thread. */
-    int canBlit = 1;
-    if (swapchain->blitInFlight && swapchain->blitFence) {
-        VkResult fenceStatus = vulkanWrapper.vkGetFenceStatus(
-                swapchain->device, swapchain->blitFence);
-        if (fenceStatus == VK_NOT_READY)
-            canBlit = 0;
-        else {
-            swapchain->blitInFlight = 0;
-            if (fenceStatus == VK_SUCCESS)
-                vulkanWrapper.vkResetFences(swapchain->device, 1,
-                                            &swapchain->blitFence);
-        }
-    }
+static int record_blit(XWindowSwapchain* swapchain, uint32_t imageIndex,
+                       uint32_t waitSemaphoreCount,
+                       const VkSemaphore* waitSemaphores) {
     VkCommandBuffer commandBuffer = swapchain->commandBuffer;
-    if (canBlit && commandBuffer && swapchain->commandPool && swapchain->queue
-            && swapchain->images
-            && imageIndex < (uint32_t)swapchain->imageCount
-            && swapchain->presentTarget.image) {
-        vulkanWrapper.vkResetCommandBuffer(commandBuffer, 0);
-        VkCommandBufferBeginInfo beginInfo = {0};
+    if (!commandBuffer || !swapchain->commandPool || !swapchain->queue
+            || !swapchain->images
+            || imageIndex >= (uint32_t)swapchain->imageCount
+            || !swapchain->presentTarget.image)
+        return 0;
+    vulkanWrapper.vkResetCommandBuffer(commandBuffer, 0);
+    VkCommandBufferBeginInfo beginInfo = {0};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         if (vulkanWrapper.vkBeginCommandBuffer(commandBuffer,
@@ -417,11 +416,122 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
             submitInfo.pWaitDstStageMask = waitCount ? waitStages : NULL;
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &commandBuffer;
-            vulkanWrapper.vkQueueSubmit(swapchain->queue, 1, &submitInfo,
-                                        swapchain->blitFence);
-            swapchain->blitInFlight = swapchain->blitFence ? 1 : 0;
+            if (vulkanWrapper.vkQueueSubmit(swapchain->queue, 1, &submitInfo,
+                                            swapchain->blitFence) != VK_SUCCESS)
+                return 0;
+            return 1;
         }
+    return 0;
+}
+
+static void start_waiter(XWindowSwapchain* swapchain) {
+    pthread_mutex_lock(&swapchain->lock);
+    if (swapchain->hasWaiter || swapchain->destroying) {
+        pthread_mutex_unlock(&swapchain->lock);
+        return;
     }
-    (*swapchain->jmethods->env)->CallVoidMethod(swapchain->jmethods->env, swapchain->jmethods->obj,
-                                                swapchain->jmethods->updateWindowContent, swapchain->windowId);
+    swapchain->hasWaiter = 1;
+    pthread_mutex_unlock(&swapchain->lock);
+    if (pthread_create(&swapchain->waiter, NULL, flush_pending_blit,
+                       swapchain) != 0) {
+        pthread_mutex_lock(&swapchain->lock);
+        swapchain->hasWaiter = 0;
+        pthread_mutex_unlock(&swapchain->lock);
+    }
+}
+
+static void submit_blit(XWindowSwapchain* swapchain, uint32_t imageIndex,
+                        uint32_t waitSemaphoreCount,
+                        const VkSemaphore* waitSemaphores) {
+    if (!record_blit(swapchain, imageIndex, waitSemaphoreCount,
+                     waitSemaphores)) {
+        pthread_mutex_lock(&swapchain->lock);
+        swapchain->blitInFlight = 0;
+        pthread_mutex_unlock(&swapchain->lock);
+        return;
+    }
+    if (swapchain->blitFence)
+        start_waiter(swapchain);
+}
+
+static void *flush_pending_blit(void *arg) {
+    XWindowSwapchain* swapchain = arg;
+    JNIEnv* env = NULL;
+    if (swapchain->jmethods && swapchain->jmethods->jvm)
+        (*swapchain->jmethods->jvm)->AttachCurrentThread(
+                swapchain->jmethods->jvm, &env, NULL);
+    for (;;) {
+        if (swapchain->blitFence) {
+            VkResult waitStatus = vulkanWrapper.vkWaitForFences(
+                    swapchain->device, 1, &swapchain->blitFence, VK_TRUE,
+                    100000000ull);
+            pthread_mutex_lock(&swapchain->lock);
+            if (swapchain->destroying) {
+                swapchain->blitInFlight = 0;
+                swapchain->hasWaiter = 0;
+                pthread_mutex_unlock(&swapchain->lock);
+                return NULL;
+            }
+            pthread_mutex_unlock(&swapchain->lock);
+            if (waitStatus == VK_TIMEOUT)
+                continue;
+        }
+        pthread_mutex_lock(&swapchain->lock);
+        if (swapchain->blitFence)
+            vulkanWrapper.vkResetFences(swapchain->device, 1,
+                                        &swapchain->blitFence);
+        int pending = swapchain->pendingIndex;
+        swapchain->pendingIndex = -1;
+        if (swapchain->destroying || pending < 0) {
+            swapchain->blitInFlight = 0;
+            swapchain->hasWaiter = 0;
+            pthread_mutex_unlock(&swapchain->lock);
+            if (!swapchain->destroying)
+                request_window_update(swapchain, env);
+            return NULL;
+        }
+        pthread_mutex_unlock(&swapchain->lock);
+        if (!record_blit(swapchain, (uint32_t)pending, 0, NULL)) {
+            pthread_mutex_lock(&swapchain->lock);
+            swapchain->blitInFlight = 0;
+            swapchain->hasWaiter = 0;
+            pthread_mutex_unlock(&swapchain->lock);
+            return NULL;
+        }
+        request_window_update(swapchain, env);
+    }
+}
+
+void XWindowSwapchain_presentImage(XWindowSwapchain* swapchain) {
+    XWindowSwapchain_presentImageIndex(swapchain, 0, 0, NULL);
+}
+
+void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex,
+                                        uint32_t waitSemaphoreCount,
+                                        const VkSemaphore* waitSemaphores) {
+    if (imageIndex < (uint32_t)swapchain->imageCount)
+        swapchain->presented = (int)imageIndex;
+    /* Mailbox: one blit in flight so timeline waits cannot fill the
+     * queue. Remember the latest skipped image and blit it from a
+     * waiter thread once the fence signals — Chrome may stop
+     * presenting after navigation. */
+    int submit_now = 0;
+    pthread_mutex_lock(&swapchain->lock);
+    if (swapchain->blitInFlight) {
+        swapchain->pendingIndex = (int)imageIndex;
+    } else {
+        swapchain->pendingIndex = -1;
+        swapchain->blitInFlight = 1;
+        submit_now = 1;
+    }
+    pthread_mutex_unlock(&swapchain->lock);
+    /* Do not GPU-wait the client's present semaphores. Chrome leaves
+     * timeline waits on those; the blit fence never signals and later
+     * frames stay pending forever. The image is already PRESENT_SRC. */
+    (void)waitSemaphoreCount;
+    (void)waitSemaphores;
+    if (submit_now)
+        submit_blit(swapchain, imageIndex, 0, NULL);
+    request_window_update(swapchain, swapchain->jmethods
+            ? swapchain->jmethods->env : NULL);
 }
