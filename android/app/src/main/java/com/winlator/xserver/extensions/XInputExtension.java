@@ -6,7 +6,9 @@ import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.core.Bitmask;
+import com.winlator.xserver.Atom;
 import com.winlator.xserver.Cursor;
+import com.winlator.xserver.Keyboard;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.Window;
@@ -50,6 +52,11 @@ public class XInputExtension extends Extension {
 
     private static abstract class ClientOpcodes {
         private static final byte GET_EXTENSION_VERSION = 1;
+        private static final byte LIST_INPUT_DEVICES = 2;
+        private static final byte OPEN_DEVICE = 3;
+        private static final byte CLOSE_DEVICE = 4;
+        private static final byte SELECT_EXTENSION_EVENT = 6;
+        private static final byte GET_SELECTED_EXTENSION_EVENTS = 7;
         private static final byte XI_QUERY_POINTER = 40;
         private static final byte XI_CHANGE_CURSOR = 42;
         private static final byte XI_GET_CLIENT_POINTER = 45;
@@ -292,6 +299,125 @@ public class XInputExtension extends Extension {
             outputStream.writeShort((short)MINOR_VERSION);
             outputStream.writeByte((byte)1);
             outputStream.writePad(19);
+        }
+    }
+
+    private static final int IS_X_POINTER = 0;
+    private static final int IS_X_KEYBOARD = 1;
+    private static final int KEY_CLASS = 0;
+    private static final int VALUATOR_CLASS = 2;
+    private static final String POINTER_NAME = "Virtual core pointer";
+    private static final String KEYBOARD_NAME = "Virtual core keyboard";
+
+    private void listInputDevices(XClient client, XOutputStream outputStream)
+            throws IOException {
+        int mouseType = Atom.internAtom("MOUSE");
+        int keyboardType = Atom.internAtom("KEYBOARD");
+        int pointerClasses = 4 + 8 + 12 * 2;
+        int keyboardClasses = 8;
+        int names = 1 + POINTER_NAME.length() + 1 + KEYBOARD_NAME.length();
+        int namesPadded = (names + 3) & ~3;
+        int extra = 8 * 2 + pointerClasses + keyboardClasses + namesPadded;
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.LIST_INPUT_DEVICES);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(extra / 4);
+            outputStream.writeByte((byte)2);
+            outputStream.writePad(23);
+
+            outputStream.writeInt(mouseType);
+            outputStream.writeByte((byte)MASTER_POINTER_ID);
+            outputStream.writeByte((byte)2);
+            outputStream.writeByte((byte)IS_X_POINTER);
+            outputStream.writeByte((byte)0);
+
+            outputStream.writeInt(keyboardType);
+            outputStream.writeByte((byte)MASTER_KEYBOARD_ID);
+            outputStream.writeByte((byte)1);
+            outputStream.writeByte((byte)IS_X_KEYBOARD);
+            outputStream.writeByte((byte)0);
+
+            outputStream.writeByte((byte)BUTTON_CLASS);
+            outputStream.writeByte((byte)4);
+            outputStream.writeShort((short)POINTER_BUTTONS);
+
+            outputStream.writeByte((byte)VALUATOR_CLASS);
+            outputStream.writeByte((byte)(8 + 12 * 2));
+            outputStream.writeByte((byte)2);
+            outputStream.writeByte((byte)0);
+            outputStream.writeInt(0);
+            for (int axis = 0; axis < 2; axis++) {
+                outputStream.writeInt(1);
+                outputStream.writeInt(0);
+                outputStream.writeInt(0);
+            }
+
+            outputStream.writeByte((byte)KEY_CLASS);
+            outputStream.writeByte((byte)8);
+            outputStream.writeByte((byte)Keyboard.MIN_KEYCODE);
+            outputStream.writeByte((byte)Keyboard.MAX_KEYCODE);
+            outputStream.writeShort(Keyboard.KEYS_COUNT);
+            outputStream.writePad(2);
+
+            outputStream.writeByte((byte)POINTER_NAME.length());
+            outputStream.write(POINTER_NAME.getBytes());
+            outputStream.writeByte((byte)KEYBOARD_NAME.length());
+            outputStream.write(KEYBOARD_NAME.getBytes());
+            if ((namesPadded - names) > 0) outputStream.writePad(namesPadded - names);
+        }
+    }
+
+    private void openDevice(XClient client, XInputStream inputStream,
+                            XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceId = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID)
+            throw new BadValue(deviceId);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.OPEN_DEVICE);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeByte((byte)0);
+            outputStream.writePad(23);
+        }
+    }
+
+    private void closeDevice(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int deviceId = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID)
+            throw new BadValue(deviceId);
+    }
+
+    private void selectExtensionEvent(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        int count = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        if (xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+        for (int i = 0; i < count; i++) inputStream.readInt();
+    }
+
+    private void getSelectedExtensionEvents(XClient client,
+                                            XInputStream inputStream,
+                                            XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        if (xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.GET_SELECTED_EXTENSION_EVENTS);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeShort((short)0);
+            outputStream.writeShort((short)0);
+            outputStream.writePad(20);
         }
     }
 
@@ -549,6 +675,21 @@ public class XInputExtension extends Extension {
         switch (client.getRequestData()) {
             case ClientOpcodes.GET_EXTENSION_VERSION:
                 getExtensionVersion(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.LIST_INPUT_DEVICES:
+                listInputDevices(client, outputStream);
+                break;
+            case ClientOpcodes.OPEN_DEVICE:
+                openDevice(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.CLOSE_DEVICE:
+                closeDevice(client, inputStream);
+                break;
+            case ClientOpcodes.SELECT_EXTENSION_EVENT:
+                selectExtensionEvent(client, inputStream);
+                break;
+            case ClientOpcodes.GET_SELECTED_EXTENSION_EVENTS:
+                getSelectedExtensionEvents(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.XI_QUERY_POINTER:
                 queryPointer(client, inputStream, outputStream);
