@@ -186,14 +186,14 @@ public abstract class GrabRequests {
         int windowId = inputStream.readInt();
         Window window = client.xServer.windowManager.getWindow(windowId);
         if (window == null) throw new BadWindow(windowId);
-        int timestamp = inputStream.readInt();
+        inputStream.readInt(); // timestamp is advisory
         int pointerMode = inputStream.readByte() & 0xff;
         int keyboardMode = inputStream.readByte() & 0xff;
         inputStream.skip(2);
-        // Synchronous modes require core AllowEvents freeze/thaw semantics.
-        // Reject that valid-but-unimplemented variant instead of returning a
-        // false GrabSuccess and delivering events asynchronously.
-        if (timestamp != 0 || pointerMode != 1 || keyboardMode != 1) {
+        // GDK passes the last event time and often GrabModeSync. Freeze is
+        // not implemented; accept the grab and deliver keys asynchronously.
+        if ((pointerMode != 0 && pointerMode != 1)
+                || (keyboardMode != 0 && keyboardMode != 1)) {
             throw new BadImplementation();
         }
 
@@ -223,8 +223,7 @@ public abstract class GrabRequests {
     public static void ungrabKeyboard(XClient client, XInputStream inputStream,
                                       XOutputStream outputStream)
             throws XRequestError {
-        int timestamp = inputStream.readInt();
-        if (timestamp != 0) throw new BadImplementation();
+        inputStream.readInt(); // timestamp is advisory
         if (client.xServer.grabManager.getKeyboardClient() == client) {
             client.xServer.grabManager.deactivateKeyboardGrab();
         }
