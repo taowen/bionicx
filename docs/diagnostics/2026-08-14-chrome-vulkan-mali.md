@@ -39,5 +39,10 @@ paints the full `chrome://gpu` page (Graphics Feature Status,
 ANGLE/Vortek Mali-G1-Ultra). Adreno `HA27DTL0` still paints the same
 page after the WaitForFences change.
 
-See `evidence/vivo-10AFA31610002QH/chrome-smoke.png` and
+`chrome-example.json` starts `https://www.baidu.com` on ANGLE Vulkan.
+The compositor paints the homepage (red Baidu wordmark, search box,
+hot list). Title is `百度一下，你就知道`.
+
+See `evidence/vivo-10AFA31610002QH/chrome-smoke.png`,
+`evidence/vivo-10AFA31610002QH/chrome-baidu.png` and
 `evidence/HA27DTL0/chrome-smoke.png`.

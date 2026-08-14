@@ -6,10 +6,14 @@ are ordinary entries in the same dpkg database; no Chrome rootfs or `/opt`
 bundle exists.
 
 The required `--no-sandbox` remains in both profiles. `chrome-smoke.json`
-starts `about:blank` through ANGLE Vulkan / Vortek, then
-`open-gpu.sh` types `chrome://gpu` into the omnibox (official Chrome
-drops `chrome://` startup URLs). `chrome-vulkan.json` keeps the local
-WebGL fixture. Both set `CHROME_EXTRA_FLAGS` so every Chrome process,
+starts `about:blank` through ANGLE Vulkan / Vortek.
+`chrome-example.json` starts `https://www.baidu.com`. Official Chrome
+drops `chrome://` startup URLs; `open-gpu.sh` still types
+`chrome://gpu` when that page is the target. `open-example.sh` types
+`baidu.com` when the window is not already there.
+`assert-example-page.py` requires a painted Baidu homepage, not a
+frozen `about:blank` or `chrome://gpu` table. `chrome-vulkan.json`
+keeps the local WebGL fixture. Both set `CHROME_EXTRA_FLAGS` so every Chrome process,
 including `--type=` children, disables Crashpad and the GPU watchdog
 before `ChromeMain`. `fhs-exec.c` does not rewrite Chrome argv.
 `build-bundle.sh` builds only that host-driver bridge, ICD metadata and the

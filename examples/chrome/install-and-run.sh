@@ -18,7 +18,20 @@ adb=("$adb_bin")
 "${adb[@]}" logcat -c
 "${adb[@]}" shell am force-stop io.taowen.bx
 "${adb[@]}" shell am start -W -n io.taowen.bx/com.winlator.BionicXActivity
-if [[ -n "$serial" && "$profile" == *chrome-smoke.json ]]; then
+if [[ -n "$serial" && "$profile" == *chrome-example.json ]]; then
     export ANDROID_SERIAL="$serial"
-    "$repo_dir/examples/chrome/open-gpu.sh"
+    # chrome://gpu remains examples/chrome/open-gpu.sh
+    "$repo_dir/examples/chrome/open-example.sh"
+    screenshot="${BIONICX_CHROME_EXAMPLE_SCREENSHOT:-$repo_dir/build/chrome-example.png}"
+    ok=0
+    for _ in $(seq 1 24); do
+        "${adb[@]}" exec-out screencap -p > "$screenshot"
+        if python3 "$repo_dir/examples/chrome/assert-example-page.py" \
+                "$screenshot"; then
+            ok=1
+            break
+        fi
+        sleep 2
+    done
+    [[ "$ok" -eq 1 ]]
 fi

@@ -17,7 +17,8 @@ ANGLE is still on the Vortek Vulkan ICD.
 
 vivo `10AFA31610002QH` (Mali-G1-Ultra) now paints the same
 `chrome://gpu` page after `WaitForFences` stopped blocking the RPC
-thread and stopped exporting SYNC_FD for that wait.
+thread and stopped exporting SYNC_FD for that wait. Both devices
+also paint `https://www.baidu.com` through `chrome-example.json`.
 
 See `evidence/HA27DTL0/hello.png`, `vulkan-frames.png`, and
 `chrome-smoke.png`.

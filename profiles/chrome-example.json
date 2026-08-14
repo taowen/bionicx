@@ -1,0 +1,57 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "chrome",
+  "name": "Google Chrome stable ARM64 baidu.com",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "hostServices": [
+    "vulkan"
+  ],
+  "launch": {
+    "executable": "${RUNTIME}/opt/google/chrome/chrome",
+    "workingDirectory": "${RUNTIME}/opt/google/chrome",
+    "argv0": "${RUNTIME}/opt/google/chrome/google-chrome",
+    "arguments": [
+      "--no-sandbox",
+      "--disable-breakpad",
+      "--hide-crash-restore-bubble",
+      "--disable-crashpad-for-testing",
+      "--disable-gpu-watchdog",
+      "--disable-dev-shm-usage",
+      "--disable-ipv6",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--window-position=0,0",
+      "--window-size=1920,1080",
+      "--start-maximized",
+      "--user-data-dir=${HOME}/profile-baidu",
+      "--ozone-platform=x11",
+      "--ui-toolkit=gtk",
+      "--use-gl=angle",
+      "--use-angle=vulkan",
+      "--disable-features=SkiaGraphite",
+      "--enable-logging=stderr",
+      "https://www.baidu.com"
+    ],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "XDG_RUNTIME_DIR": "${TMP}/runtime",
+      "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
+      "CHROME_WRAPPER": "${RUNTIME}/opt/google/chrome/google-chrome",
+      "CHROME_VERSION_EXTRA": "stable",
+      "CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing --disable-gpu-watchdog --disable-ipv6",
+      "VK_ICD_FILENAMES": "${APP}/share/vulkan/icd.d/vortek_icd.json",
+      "VORTEK_SERVER_PATH": "${RUNTIME}/tmp/.vortek/V0",
+      "GNOME_DISABLE_CRASH_DIALOG": "SET_BY_GOOGLE_CHROME",
+      "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
+      "GSETTINGS_BACKEND": "memory",
+      "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
+      "LANG": "C"
+    }
+  }
+}
