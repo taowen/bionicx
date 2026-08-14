@@ -21,11 +21,15 @@ carry Mojo remaps, so the interposer must not close FDs either.
 Chrome Linux `ChromeMain` reads `CHROME_EXTRA_FLAGS` and appends those
 switches before `ContentMain` / Crashpad init, in every process
 including children that inherit the environment. Both Chrome profiles
-set `CHROME_EXTRA_FLAGS=--disable-crashpad-for-testing`. `fhs-exec.c`
-stays Chrome-agnostic. `bionicx-exec` still closes inherited Activity
-FDs as hygiene.
+set `CHROME_EXTRA_FLAGS=--disable-crashpad-for-testing --disable-gpu-watchdog`.
+`fhs-exec.c` stays Chrome-agnostic. `bionicx-exec` still closes inherited
+Activity FDs as hygiene.
 
-vivo `10AFA31610002QH`: smoke `about:blank` paints with zygote/renderer
-children. Untraced `chrome-vulkan.json` without `--single-process`
-reports `WEBGL_OK` on ANGLE Vulkan / Vortek (Mali-G1-Ultra MC12). See
-`evidence/vivo-10AFA31610002QH/chrome-smoke.png` and `chrome-vulkan.png`.
+Official Chrome drops `chrome://` startup URLs. `chrome-smoke.json`
+starts `about:blank` on ANGLE Vulkan and `open-gpu.sh` types
+`chrome://gpu` into the omnibox. The window title becomes GPU Internals;
+the last composited frame may stay `about:blank` while the GPU process
+is busy with that page. Untraced `chrome-vulkan.json` without
+`--single-process` reports `WEBGL_OK` on ANGLE Vulkan / Vortek
+(Mali-G1-Ultra MC12). See `evidence/vivo-10AFA31610002QH/chrome-smoke.png`
+and `chrome-vulkan.png`.

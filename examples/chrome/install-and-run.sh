@@ -18,3 +18,7 @@ adb=("$adb_bin")
 "${adb[@]}" logcat -c
 "${adb[@]}" shell am force-stop io.taowen.bx
 "${adb[@]}" shell am start -W -n io.taowen.bx/com.winlator.BionicXActivity
+if [[ -n "$serial" && "$profile" == *chrome-smoke.json ]]; then
+    export ANDROID_SERIAL="$serial"
+    "$repo_dir/examples/chrome/open-gpu.sh"
+fi

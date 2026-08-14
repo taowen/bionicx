@@ -33,8 +33,25 @@ grep -F -- '--disable-gpu-watchdog' \
     "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
 grep -F '"CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing --disable-gpu-watchdog"' \
     "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
-grep -F '"CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing"' \
+grep -F '"vulkan"' "$repo_dir/profiles/chrome-smoke.json" >/dev/null
+grep -F -- '--use-angle=vulkan' "$repo_dir/profiles/chrome-smoke.json" >/dev/null
+grep -F 'chrome://gpu' "$repo_dir/profiles/chrome-smoke.json" >/dev/null
+grep -F 'about:blank' "$repo_dir/profiles/chrome-smoke.json" >/dev/null
+grep -F 'open-gpu.sh' "$repo_dir/examples/chrome/install-and-run.sh" >/dev/null
+grep -F "type 'chrome://gpu'" "$repo_dir/examples/chrome/open-gpu.sh" >/dev/null
+grep -F 'ctrl-l' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
+grep -F 'list-windows' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
+if grep -F -- '--use-angle=gl' "$repo_dir/profiles/chrome-smoke.json" >/dev/null; then
+    echo "chrome smoke must use ANGLE Vulkan, not Gladio GL" >&2
+    exit 1
+fi
+if grep -F -- '--single-process' "$repo_dir/profiles/chrome-smoke.json" >/dev/null; then
+    echo "chrome smoke must use a real renderer process" >&2
+    exit 1
+fi
+grep -F '"CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing --disable-gpu-watchdog"' \
     "$repo_dir/profiles/chrome-smoke.json" >/dev/null
+grep -F 'VK_ICD_FILENAMES' "$repo_dir/profiles/chrome-smoke.json" >/dev/null
 if grep -F 'with_chrome_child_arguments' \
         "$repo_dir/native/runtime/fhs-exec.c" >/dev/null; then
     echo "fhs-exec must not special-case Chrome argv" >&2

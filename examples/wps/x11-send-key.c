@@ -48,6 +48,33 @@ static char *window_title(Display *d, Window window) {
     return NULL;
 }
 
+static int list_windows(Display *d) {
+    int screen = DefaultScreen(d);
+    Window root = RootWindow(d, screen);
+    Window root_ret = None;
+    Window parent = None;
+    Window *children = NULL;
+    unsigned int child_count = 0;
+    if (!XQueryTree(d, root, &root_ret, &parent, &children, &child_count))
+        return 1;
+    printf("BXINFO list-windows display=%dx%d children=%u\n",
+           DisplayWidth(d, screen), DisplayHeight(d, screen), child_count);
+    for (unsigned int i = 0; i < child_count; ++i) {
+        XWindowAttributes attributes;
+        if (!XGetWindowAttributes(d, children[i], &attributes))
+            continue;
+        char *title = window_title(d, children[i]);
+        printf("BXINFO window=0x%lx map=%d geometry=%dx%d+%d+%d title=%s\n",
+               (unsigned long)children[i], attributes.map_state,
+               attributes.width, attributes.height, attributes.x,
+               attributes.y, title != NULL ? title : "(none)");
+        free(title);
+    }
+    if (children != NULL)
+        XFree(children);
+    return 0;
+}
+
 static int click_named_window(Display *d, const char *needle, double fx,
                               double fy) {
     int screen = DefaultScreen(d);
@@ -156,8 +183,9 @@ int main(int argc, char **argv) {
     if (argc < 2) {
         fprintf(stderr,
                 "usage: x11-send-key escape|return|tab|space|f5|"
-                "ctrl-a|ctrl-c|ctrl-v|ctrl-s|ctrl-p|end|type TEXT|"
-                "click X Y|click-frac FX FY|click-window TITLE FX FY\n");
+                "ctrl-a|ctrl-c|ctrl-l|ctrl-v|ctrl-s|ctrl-p|end|type TEXT|"
+                "click X Y|click-frac FX FY|click-window TITLE FX FY|"
+                "list-windows\n");
         return 2;
     }
     Display *d = XOpenDisplay(NULL);
@@ -189,6 +217,8 @@ int main(int argc, char **argv) {
         send_combo(d, focus, XK_a, ControlMask);
     else if (strcmp(argv[1], "ctrl-c") == 0)
         send_combo(d, focus, XK_c, ControlMask);
+    else if (strcmp(argv[1], "ctrl-l") == 0)
+        send_combo(d, focus, XK_l, ControlMask);
     else if (strcmp(argv[1], "ctrl-v") == 0)
         send_combo(d, focus, XK_v, ControlMask);
     else if (strcmp(argv[1], "ctrl-s") == 0)
@@ -212,6 +242,8 @@ int main(int argc, char **argv) {
         rc = click_named_window(d, argv[2], atof(argv[3]), atof(argv[4]));
         if (rc != 0)
             fprintf(stderr, "no viewable window title contains %s\n", argv[2]);
+    } else if (strcmp(argv[1], "list-windows") == 0) {
+        rc = list_windows(d);
     } else {
         fprintf(stderr, "unknown command\n");
         rc = 2;
