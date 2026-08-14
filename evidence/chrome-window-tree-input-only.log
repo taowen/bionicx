@@ -1,5 +1,0 @@
-bionicx-exec: running untraced pid=29264
-BXWINDOW depth=0 id=0x400003 map=viewable override=0 geometry=1919x1079+0+0 title=about:blank - Google Chrome class=google-chrome (/data/user/0/io.taowen.bx/files/homes/chrome/profile)/Google-chrome
-BXWINDOW depth=0 id=0x400004 map=unmapped override=1 geometry=1x1+0+0 title=- class=-/-
-BXWINDOW depth=0 id=0x400000 map=unmapped override=1 geometry=10x10-100-100 title=Chromium clipboard class=-/-
-BXSUMMARY window-tree windows=3 xerrors=0

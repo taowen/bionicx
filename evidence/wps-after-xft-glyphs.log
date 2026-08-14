@@ -1,5 +1,0 @@
-BXTEST PASS wps-docx archive=BionicX.docx members=16 paragraphs=3
-BXCONTENT BionicX_WPS_2026
-BXCONTENT abc_A
-BXCONTENT Bold_WPS_2026
-BXFORMAT bold Bold_WPS_2026

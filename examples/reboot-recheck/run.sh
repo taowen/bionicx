@@ -8,7 +8,7 @@ serial="${ANDROID_SERIAL:?ANDROID_SERIAL is required}"
 package_id=io.taowen.bx
 adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
 adb=("$adb_bin" -s "$serial")
-evidence="${BIONICX_EVIDENCE:-$repo_dir/evidence/rebuild-2026-08-14}"
+evidence="${BIONICX_EVIDENCE:-$repo_dir/build/evidence/reboot-recheck}"
 mkdir -p "$evidence"
 log="$evidence/reboot-recheck.log"
 exec > >(tee "$log") 2>&1

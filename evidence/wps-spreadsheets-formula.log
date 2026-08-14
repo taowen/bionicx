@@ -1,7 +1,0 @@
-BXTEST PASS wps-xlsx archive=Book1.xlsx members=16 cells=3
-BXCELL A1 value=12 formula=
-BXCELL A2 value=30 formula=
-BXCELL A3 value=42 formula=SUM(A1:A2)
-08-12 04:07:50.203 23711 23737 I BionicX : launching WPS Spreadsheets (AArch64): [/data/user/0/io.taowen.bx/files/bin/bionicx-exec, --direct, --cwd, /data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6, --argv0, et, --env, DISPLAY=:0, --env, HOME=/data/user/0/io.taowen.bx/files/homes/wps-office, --env, TMPDIR=/data/user/0/io.taowen.bx/files/run/wps-office, --env, XDG_RUNTIME_DIR=/data/user/0/io.taowen.bx/files/run/wps-office/runtime, --env, GCONV_PATH=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/gconv, --env, FONTCONFIG_PATH=/data/user/0/io.taowen.bx/files/apps/wps-office/etc/fonts, --env, FONTCONFIG_FILE=fonts.conf, --env, LANG=C, --env, QT_QPA_PLATFORM=xcb, --env, QT_X11_NO_MITSHM=1, --env, QT_OPENGL=software, --env, LIBGL_ALWAYS_SOFTWARE=1, --env, LD_LIBRARY_PATH=/data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6:/data/user/0/io.taowen.bx/files/rootfs/usr/lib, --env, LD_PRELOAD=/data/user/0/io.taowen.bx/files/lib/libbionicx-wps.so:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/libfreetype.so.6, --, /data/user/0/io.taowen.bx/files/apps/wps-office/opt/kingsoft/wps-office/office6/et]
-08-12 04:07:50.209 23711 23737 I BionicX : bionicx-exec: running untraced pid=23741
-BXTEST PASS wps-spreadsheets-cold-reopen untraced=true failure-markers=0

@@ -1,4 +1,0 @@
-08-12 00:39:26.475 22202 22202 I BionicX : profile=wps-office display=1920x1080@144 socket=filesystem
-08-12 00:39:26.490 22202 22228 I BionicX : bionicx-exec: running untraced pid=22233
-08-12 00:39:26.613 22202 22227 W WinlatorXRequest: unimplemented request=XKEYBOARD major=148 minor=24 error=17
-08-12 00:39:26.613 22202 22228 I BionicX : qt.qpa.xcb: failed to get core keyboard device info

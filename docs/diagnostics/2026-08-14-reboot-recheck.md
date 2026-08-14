@@ -25,6 +25,4 @@ intact):
   644x340→740x382, close, reopen (`desktop-session-accept.log`). A
   locked start leaves `isSleeping=true` and stalls `XOpenDisplay`.
 
-Evidence: `evidence/rebuild-2026-08-14/reboot-recheck.log`,
-`keepassxc-cli-probe-reboot.log`, `glx-probe-reboot.log`,
-`glx-probe-after-fix.log`, `krita-glx-destroy-after-fix.log`.
+Rerun `examples/reboot-recheck/run.sh` to recapture under `build/evidence/`.

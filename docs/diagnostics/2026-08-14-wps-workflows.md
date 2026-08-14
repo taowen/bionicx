@@ -58,8 +58,4 @@ See `2026-08-14-wps-pdf-tiff.md`. Untraced `wpspdf` already rendered the
 two-page fixture (`1/2`, page-1 text, thumbnails) after shared-rootfs
 `libtiff.so.5`.
 
-Evidence: `evidence/rebuild-2026-08-14/wps-workflows-20260814.log`,
-`wps-writer-edited.png`, `wps-writer-print-dialog.png`,
-`wps-writer-export.pdf`, `wps-writer-cold-reopen.png`,
-`wps-sheets-edited.png`, `wps-sheets-cold-reopen.png`,
-`wps-slides-slideshow.png`, `wps-slides-cold-reopen.png`.
+Rerun `examples/wps/run-workflows.sh` to recapture under `build/evidence/`.

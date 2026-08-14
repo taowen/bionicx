@@ -1,4 +1,0 @@
-device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
-BXTEST PASS poly-point origin=0x20c060 previous=0x20c060
-BXSUMMARY passed=20 failed=0 observational_input=yes
-real-icewm: opcode 64 count=0; BXSUMMARY icewm passed=3 failed=0

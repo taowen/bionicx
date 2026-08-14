@@ -1,10 +1,11 @@
 # Diagnostic notebook
 
-Create one Markdown file per concrete failure. Record device/build identity,
-the exact profile and command, minimal reproduction, logs or syscall/X11
-evidence, root cause, fix commit, and regression test. Keep hypotheses clearly
-separate from observations.
+Create one Markdown file per concrete failure that still matters after the
+fix. Record device/build identity, the exact profile and command, the
+decisive log excerpt, root cause, fix commit, and the regression probe.
+Do not keep a new note plus screenshot for every intermediate
+one-opcode experiment once a machine-readable probe covers it.
 
-Do not commit proprietary binaries, credentials, cookies, user documents, or
-unredacted application-private data. Prefer short log excerpts plus hashes and
-reproduction commands.
+Do not commit proprietary binaries, credentials, cookies, user documents,
+or unredacted application-private data. Device recapture logs belong under
+`build/evidence/` unless they are a current acceptance screenshot.

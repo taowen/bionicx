@@ -24,5 +24,4 @@ The 4 s compositor frame shows both windows painted on the IceWM
 taskbar. `xdg-open` remains the shared Debian opener on `PATH`; this
 session does not add a per-app dispatcher.
 
-Evidence: `evidence/rebuild-2026-08-14/desktop-session-accept.log`,
-`desktop-session-two-apps.png`.
+Rerun `examples/desktop-session/install-and-run.sh` to recapture under `build/evidence/`.

@@ -15,6 +15,4 @@ contains `https://example.com/`.
 The sandbox banner about reduced OS protection remains (`--no-sandbox`
 equivalent MOZ flags). No VirGL.
 
-Evidence: `evidence/rebuild-2026-08-14/nss-ckbi-probe.log`,
-`firefox-esr-online.log`, `firefox-esr-online.png`,
-`firefox-esr-online-cold.png`.
+Rerun `examples/firefox-online/run-online.sh` to recapture under `build/evidence/`.

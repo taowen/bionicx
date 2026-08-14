@@ -1,8 +1,0 @@
-I/BionicX (20831): BXTEST PASS list-extensions count=9
-I/BionicX (20831): BXTEST PASS extension-capability-honesty DRI3 hidden until Open can return a DRM fd
-I/BionicX (20831): BXSUMMARY passed=18 failed=0 observational_input=yes
-I/BionicX (20831): x11-probe exited with 0
-
-Chrome GPU progression after hiding incomplete DRI3:
-I/BionicX: WARNING:ui/gfx/linux/gbm_support_x11.cc:48 dri3 extension not supported.
-result=no ScopedFDCloseTraits EBADF fatal; GPU process reached SharedImageBackingFactory

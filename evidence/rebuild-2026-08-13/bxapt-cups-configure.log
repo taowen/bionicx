@@ -1,9 +1,0 @@
-bionicx-exec: running untraced pid=11410
-bionicx-exec: primary pid=11410 exited status=0x0; draining session
-bionicx-exec: session drained children=0
-bionicx-exec: running untraced pid=11418
-Setting up cups-client (2.4.10-3+deb13u2) ...
-Setting up ssl-cert (1.1.3) ...
-Setting up cups-daemon (2.4.10-3+deb13u2) ...
-bionicx-exec: primary pid=11418 exited status=0x0; draining session
-bionicx-exec: session drained children=0

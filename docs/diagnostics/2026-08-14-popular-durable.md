@@ -37,7 +37,4 @@ circle). `profiles/krita-export.json` then runs `krita --nosplash
 `files/homes/krita/Documents/bionicx-saved.png` is an 8-bit RGBA PNG,
 IHDR 640×480, 7968 bytes, same four-quadrant image.
 
-Evidence: `evidence/rebuild-2026-08-14/keepassxc-cli-probe.log`,
-`krita-glx-destroy-probe.log`, `popular-durable-workflows.log`,
-`keepassxc.png`, `qbittorrent.png`, `qbittorrent-cold.png`,
-`krita.png`, `krita-export.png`.
+Rerun `examples/popular-workflows/run.sh` to recapture under `build/evidence/`.

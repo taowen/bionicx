@@ -1,9 +1,0 @@
-device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
-BXTEST PASS server-grab-peer-frozen exact=1
-BXTEST PASS server-grab-owner-progress atom=76
-BXTEST PASS server-ungrab-peer-resumed exact=1
-BXTEST PASS server-grab-disconnect-release exact=1
-BXTEST PASS server-grab-new-connection freeze=1 resume=1
-BXSUMMARY server-grab-x11 passed=5/5
-server-grab-x11-probe exited with 0
-real-icewm: opcodes 36/37 count=0; BXSUMMARY icewm passed=3 failed=0

@@ -6,7 +6,7 @@ set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 serial="${ANDROID_SERIAL:?ANDROID_SERIAL is required}"
 package_id=io.taowen.bx
-evidence_dir="$repo_dir/evidence/rebuild-2026-08-13"
+evidence_dir="$repo_dir/build/evidence/bxapt-transaction"
 mkdir -p "$evidence_dir"
 bxapt=("$repo_dir/tools/bxapt" --serial "$serial")
 adb=("${ADB:-adb}" -s "$serial")

@@ -1,8 +1,0 @@
-BXFAIL baseline et interpreter=/lib/ld-linux-aarch64.so.1 exit=6
-BXFAIL relocated-et missing=libXtst.so.6 exit=255
-BXELF entry=wps interpreter=/data/data/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
-BXELF entry=et interpreter=/data/data/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
-BXELF entry=wpp interpreter=/data/data/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
-BXELF library=libXtst.so.6 glibc-floor=2.17 sha256=134cb0235ec9e096c5337f379548c05b7e0db5847b49db340ebdaa095fac24d7
-BXTEST PASS wps-spreadsheets-home genuine-et=1 missing-elf=0 xerrors=0
-BXKNOWN new-workbook exit=139 pending-diagnosis

@@ -43,7 +43,5 @@ eight newly introduced dependencies are automatic. WPS cold-started with PID
 The CUPS warning remains expected because this checkpoint intentionally did
 not start cupsd or create a printer destination.
 
-Evidence is under `evidence/rebuild-2026-08-13/` with the
-`android-glibc-identity-*`, `bxapt-cups-*`, and
-`wps-after-glibc-identity-fix.*` names. No root runtime, PRoot, Termux, Frida,
-package script modification, WPS branch, or identity fallback was added.
+No root runtime, PRoot, Termux, Frida, package script modification, WPS
+branch, or identity fallback was added.

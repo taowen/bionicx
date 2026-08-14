@@ -1,5 +1,0 @@
-device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
-BXTEST PASS copy-from-parent-class class=1 expected=1
-BXSUMMARY passed=24 failed=0 observational_input=yes
-x11-probe exited with 0
-real-icewm: BXSUMMARY icewm passed=4 failed=0

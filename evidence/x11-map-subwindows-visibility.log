@@ -1,7 +1,0 @@
-device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
-BXTEST PASS map-subwindows-exposure before=0/1/0 premature=0/0 after=2/0 expose=1/0 visible=1
-BXSUMMARY passed=23 failed=0 observational_input=yes
-x11-probe exited with 0
-real-icewm: BXTEST PASS icewm-decoration-pixels painted=4/4
-real-icewm: BXSUMMARY icewm passed=4 failed=0
-real-icewm: unsupported opcodes=0 request-errors=0

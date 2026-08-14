@@ -1,2 +1,0 @@
-profile qt-widgets-show-probe is valid
-qt widgets show probe covers QWidgetPrivate::showChildren: PASS

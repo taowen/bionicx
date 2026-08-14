@@ -6,7 +6,8 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 serial="${ANDROID_SERIAL:?ANDROID_SERIAL is required}"
 adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
 adb=("$adb_bin" -s "$serial")
-screenshot="${BIONICX_SCREENSHOT:-$repo_dir/evidence/rebuild-2026-08-14/wps-pdf-live.png}"
+screenshot="${BIONICX_SCREENSHOT:-$repo_dir/build/evidence/wps-pdf-live.png}"
+mkdir -p "$(dirname "$screenshot")"
 
 ANDROID_SERIAL="$serial" \
     "$repo_dir/examples/wps-pdf-tiff-probe/install-and-run.sh"

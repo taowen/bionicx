@@ -1,8 +1,0 @@
-device=01408BH601027129 Android=14 API=34 ABI=arm64-v8a
-package=io.taowen.bx uid-mode=ordinary-activity root-runtime=no proot=no termux=no frida=no
-reporter-run-1: BXSIGSYS syscall=444 arch=0xc00000b7 code=1
-decoded-run-1: landlock_create_ruleset -> compatibility result ENOSYS
-reporter-run-2: BXSIGSYS syscall=264 arch=0xc00000b7 code=1
-decoded-run-2: name_to_handle_at -> compatibility result ENOSYS
-compatibility-module-sha256=cc48cad993bc97b587f345c77b411370d86a490233915e197093148136c0b06e
-result: Chrome reached and retained its real X11 browser window under the ordinary app UID

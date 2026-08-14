@@ -1,4 +1,0 @@
-BXVERIFY WPS cold-start home UI reached
-BXVERIFY unimplemented RANDR requests=0
-BXVERIFY unimplemented XFIXES requests=0
-BXVERIFY qt-xkb-errors=0 process-exits=0 android-crashes=0

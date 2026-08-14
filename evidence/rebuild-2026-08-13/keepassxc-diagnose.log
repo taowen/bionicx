@@ -1,7 +1,0 @@
-The lock file could not be created. Single-instance mode disabled.
-bionicx-exec: fatal pid=18479 primary=18479
-bionicx-exec: signal=11 syscall=32 pc=0x7adf76f15c lr=0x7adf76f248 code=1 address=0x20
-bionicx-exec: registers x0=0x0 x1=0x5a88af53e0 x2=0x5 x3=0x88ac x4=0x0 x5=0x8080 x6=0x5a88a31cc0 x7=0x0 fp=0x7fe660e7f0 sp=0x7fe660e7c0
-bionicx-exec: pc maps unavailable: Permission denied
-bionicx-exec: lr maps unavailable: Permission denied
-bionicx-exec: fault maps unavailable: Permission denied

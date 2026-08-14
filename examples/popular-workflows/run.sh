@@ -9,7 +9,7 @@ files="/data/user/0/$package_id/files"
 root="$files/rootfs"
 adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
 adb=("$adb_bin" -s "$serial")
-evidence="${BIONICX_EVIDENCE:-$repo_dir/evidence/rebuild-2026-08-14}"
+evidence="${BIONICX_EVIDENCE:-$repo_dir/build/evidence/popular-workflows}"
 mkdir -p "$evidence"
 
 exec_rootfs() {

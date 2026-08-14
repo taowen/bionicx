@@ -1,2 +1,0 @@
-bionicx-exec: running untraced pid=25840
-uuidd:x:100:101::/run/uuidd:/usr/sbin/nologin

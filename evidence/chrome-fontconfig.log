@@ -1,8 +1,0 @@
-device=01408BH601027129 Android=14 API=34 ABI=arm64-v8a
-chrome_version=151.0.7922.108-1 profile=chrome ordinary_app_uid=yes
-installed_fonts=6 sources=LiberationSans-Regular,LiberationSans-Bold,LiberationSerif-Regular,LiberationSerif-Bold,LiberationMono-Regular,LiberationMono-Bold
-fontconfig_config=${APP}/etc/fonts/fonts.conf directories=/system/fonts,${APP}/usr/share/fonts
-observation_seconds=15
-fontconfig_default_config_errors=0 missing_font_errors=0 harfbuzz_empty_glyph_errors=0
-fd_ownership_violations=0 network_service_crashes=0
-result=readable-real-Chrome-X11-UI

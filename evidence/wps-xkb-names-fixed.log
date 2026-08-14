@@ -1,8 +1,0 @@
-08-12 00:47:31.680 24973 24973 I BionicX : profile=wps-office display=1920x1080@144 socket=filesystem
-08-12 00:47:31.695 24973 25003 I BionicX : bionicx-exec: running untraced pid=25007
-08-12 00:47:31.815 24973 25002 W WinlatorXRequest: unimplemented request=XInputExtension major=149 minor=46 error=17
-08-12 00:47:31.880 24973 25002 W WinlatorXRequest: unimplemented request=XInputExtension major=149 minor=46 error=17
-08-12 00:47:31.974 24973 25002 W WinlatorXRequest: unimplemented request=XInputExtension major=149 minor=46 error=17
-08-12 00:47:31.991 24973 25002 W WinlatorXRequest: unimplemented request=XInputExtension major=149 minor=46 error=17
-08-12 00:47:32.213 24973 25002 W WinlatorXRequest: unimplemented request=XInputExtension major=149 minor=46 error=17
-08-12 00:47:32.272 24973 25002 W WinlatorXRequest: unimplemented request=XInputExtension major=149 minor=46 error=17

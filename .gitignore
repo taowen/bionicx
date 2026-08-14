@@ -13,6 +13,9 @@ android/app/src/main/cpp/midihandler/
 android/app/src/main/cpp/virglrenderer/
 evidence/wps-open-dialog.png
 evidence/wps-writer.png
+evidence/rebuild-2026-08-13/*
+!evidence/rebuild-2026-08-13/bxapt-reconstruct.log
+evidence/rebuild-2026-08-14/
 android/app/src/main/assets/bionicx/bin/*
 android/app/src/main/assets/bionicx/lib/*
 !android/app/src/main/assets/bionicx/bin/.gitkeep

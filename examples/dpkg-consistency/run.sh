@@ -9,7 +9,7 @@ package_id=io.taowen.bx
 adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
 adb=("$adb_bin" -s "$serial")
 bxapt=("$repo_dir/tools/bxapt" --serial "$serial")
-evidence="${BIONICX_EVIDENCE:-$repo_dir/evidence/rebuild-2026-08-14}"
+evidence="${BIONICX_EVIDENCE:-$repo_dir/build/evidence/dpkg-consistency}"
 mkdir -p "$evidence"
 log="$evidence/dpkg-consistency.log"
 exec > >(tee "$log") 2>&1

@@ -25,5 +25,5 @@ After reboot with the screen later unlocked, logcat still shows
 logs `timed out waiting for compositor EGL context` and still creates
 the unsared context (`glx-context current`).
 
-Evidence: `evidence/rebuild-2026-08-14/glx-probe-after-fix.log`,
-`krita-glx-destroy-after-fix.log`, `glx-probe-reboot.log`.
+Recapture logs go to `build/evidence/` when `examples/glx-probe` or
+`examples/reboot-recheck` is rerun.

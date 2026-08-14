@@ -1,2 +1,0 @@
-profile qt-gui-segv-probe is valid
-qt gui segv probe covers XTEST, autotype and post-makeCurrent draw: PASS

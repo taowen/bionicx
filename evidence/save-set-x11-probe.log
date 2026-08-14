@@ -1,6 +1,0 @@
-device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
-BXTEST PASS save-set-framed parent=0x800001
-BXTEST PASS save-set-manager-disconnect parent=0x4 geometry=220,175 map=2
-BXSUMMARY save-set-x11 passed=2/2 xerrors=0
-save-set-x11-probe exited with 0
-real-icewm: unsupported opcode count=0; BXSUMMARY icewm passed=3 failed=0

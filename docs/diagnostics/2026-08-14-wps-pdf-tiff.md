@@ -30,5 +30,4 @@ both pages, and `1/2`. The formula-symbol health dialog is still shown
 and is not suppressed. `libproviders.so` is logged missing and is not
 required for this page.
 
-Evidence: `evidence/rebuild-2026-08-14/wps-pdf-tiff-repro.log`,
-`wps-pdf-tiff-probe.log`, `wps-pdf-live.png`.
+Rerun `examples/wps-pdf-tiff-probe/install-and-run.sh` to recapture under `build/evidence/`.

@@ -1,9 +1,0 @@
-08-12 03:11:18.633 29039 29066 I BionicX : BXTEST PASS xrender      version=0.1 event=0 error=0 a8=1 alpha-mask=0xff
-08-12 03:11:18.634 29039 29066 I BionicX : BXTEST PASS xfixes       version=2.0 rectangles=1 selection-notify=1
-08-12 03:11:18.635 29039 29066 I BionicX : BXTEST PASS randr        version=1.3 crtcs=1 outputs=1 primary=0x8 mode=1920x1080 name=BionicX-0 output=1 crtc=1 empty-property=1
-08-12 03:11:18.636 29039 29066 I BionicX : BXTEST PASS xinput2      version=2.0 devices=2 masters=1/1 selected=1 masks=1
-08-12 03:11:18.650 29039 29066 I BionicX : BXTEST PASS xkeyboard    version=1.0 opcode=148 selected=1 device=BionicX keyboard map=0 names=0 keys=8-255 types=4 esc-syms=1 offset=1 escape=0xff1b a-syms=2 a=0x61/0x41
-08-12 03:11:18.662 29039 29066 I BionicX : BXTEST PASS xkbcommon    device=3 keymap=1 state=1 keycode=38 syms=1 first=0x61 minus=0x2d/0x5f
-08-12 03:11:26.664 29039 29066 I BionicX : BXTEST PASS xkb-state-notify shift-set=1 shift-clear=1
-08-12 03:11:26.665 29039 29066 I BionicX : BXTEST PASS xfixes-input-shape inside-presses=1 expected=1
-08-12 03:11:26.665 29039 29066 I BionicX : BXSUMMARY desktop-x11 passed=8 failed=0 xerrors=0

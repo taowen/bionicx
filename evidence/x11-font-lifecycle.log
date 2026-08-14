@@ -1,4 +1,0 @@
-device=01408BH601027129 ordinary-app-uid=io.taowen.bx untraced=true
-BXTEST PASS font-open-close cursor resource released
-BXSUMMARY passed=22 failed=0 observational_input=yes
-real-icewm: opcode 46 count=0; BXSUMMARY icewm passed=3 failed=0

@@ -15,4 +15,4 @@ packages `ii` and audit empty. `bxapt set packages/trixie-popular.txt`
 put ristretto back to `ii`. One dpkg database, no per-app system
 libraries.
 
-Evidence: `evidence/rebuild-2026-08-14/dpkg-consistency.log`.
+Rerun `examples/dpkg-consistency/run.sh` to recapture under `build/evidence/`.
