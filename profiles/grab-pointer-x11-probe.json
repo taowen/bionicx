@@ -1,0 +1,23 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "grab-pointer-x11-probe",
+  "name": "BionicX GrabPointer Sync probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "launch": {
+    "executable": "${APP}/bin/grab-pointer-x11-probe",
+    "workingDirectory": "${APP}",
+    "arguments": [
+      "3"
+    ],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LANG": "C.UTF-8"
+    }
+  }
+}

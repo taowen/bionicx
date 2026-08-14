@@ -48,12 +48,17 @@ public abstract class GrabRequests {
         int keyboardMode = inputStream.readByte() & 0xff;
         int confineTo = inputStream.readInt();
         int cursorId = inputStream.readInt();
-        int timestamp = inputStream.readInt();
+        inputStream.readInt(); // timestamp is advisory
         Cursor cursor = cursorId == 0 ? null
                 : client.xServer.cursorManager.getCursor(cursorId);
         if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
-        if (pointerMode != 1 || keyboardMode != 1 || confineTo != 0
-                || timestamp != 0) throw new BadImplementation();
+        // GDK passes the last event time and often GrabModeSync. Confine
+        // and freeze are not implemented; accept the grab and deliver
+        // asynchronously.
+        if ((pointerMode != 0 && pointerMode != 1)
+                || (keyboardMode != 0 && keyboardMode != 1)
+                || confineTo != 0)
+            throw new BadImplementation();
 
         Status status;
         if (client.xServer.grabManager.getWindow() != null && client.xServer.grabManager.getClient() != client) {
