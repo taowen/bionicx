@@ -14,7 +14,6 @@ static void loadJMethods(JMethods* jmethods) {
     jmethods->getWindowWidth = (*env)->GetMethodID(env, cls, "getWindowWidth", "(I)I");
     jmethods->getWindowHeight = (*env)->GetMethodID(env, cls, "getWindowHeight", "(I)I");
     jmethods->getWindowHardwareBuffer = (*env)->GetMethodID(env, cls, "getWindowHardwareBuffer", "(IZ)J");
-    jmethods->updateWindowContent = (*env)->GetMethodID(env, cls, "updateWindowContent", "(I)V");
     jmethods->publishWindowPixels = (*env)->GetMethodID(env, cls,
             "publishWindowPixels", "(ILjava/nio/ByteBuffer;II)V");
 }

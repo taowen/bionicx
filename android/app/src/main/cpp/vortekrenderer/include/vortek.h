@@ -114,7 +114,6 @@ typedef struct JMethods {
     jmethodID getWindowWidth;
     jmethodID getWindowHeight;
     jmethodID getWindowHardwareBuffer;
-    jmethodID updateWindowContent;
     jmethodID publishWindowPixels;
 } JMethods;
 

@@ -191,7 +191,6 @@ XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphicsQueue
     memcpy(&swapchain->imageExtent, &swapchainInfo->imageExtent, sizeof(VkExtent2D));
     swapchain->jmethods = jmethods;
     swapchain->acquireIndex = 0;
-    swapchain->presented = -1;
     swapchain->pendingIndex = -1;
     swapchain->blitSource = -1;
     pthread_mutex_init(&swapchain->lock, NULL);
@@ -605,15 +604,9 @@ VkResult XWindowSwapchain_acquireNextImage(XWindowSwapchain* swapchain, uint64_t
     return VK_SUCCESS;
 }
 
-void XWindowSwapchain_presentImage(XWindowSwapchain* swapchain) {
-    XWindowSwapchain_presentImageIndex(swapchain, 0, 0, NULL);
-}
-
 void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex,
                                         uint32_t waitSemaphoreCount,
                                         const VkSemaphore* waitSemaphores) {
-    if (imageIndex < (uint32_t)swapchain->imageCount)
-        swapchain->presented = (int)imageIndex;
     int submit_now = 0;
     pthread_mutex_lock(&swapchain->lock);
     if (swapchain->blitInFlight) {

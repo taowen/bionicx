@@ -133,17 +133,6 @@ public class VortekRendererComponent extends EnvironmentComponent implements Con
     }
 
     @Keep
-    private void updateWindowContent(int windowId) {
-        Window window = xServer.windowManager.getWindow(windowId);
-        if (window != null) {
-            Drawable drawable = window.getContent();
-            synchronized (drawable.renderLock) {
-                drawable.forceUpdate();
-            }
-        }
-    }
-
-    @Keep
     private void publishWindowPixels(int windowId, ByteBuffer pixels,
                                      int width, int height) {
         Window window = xServer.windowManager.getWindow(windowId);

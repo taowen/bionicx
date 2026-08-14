@@ -142,6 +142,19 @@ grep -F 'pendingIndex' \
 grep -F 'flush_pending_blit' \
     "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
     >/dev/null
+if grep -F 'updateWindowContent' \
+        "$repo_dir/android/app/src/main/java/com/winlator/xenvironment/components/VortekRendererComponent.java" \
+        >/dev/null; then
+    echo "Vortek present path must not keep unused updateWindowContent" >&2
+    exit 1
+fi
+if grep -E 'swapchain->presented|int presented|XWindowSwapchain_presentImage\(' \
+        "$repo_dir/android/app/src/main/cpp/vortekrenderer/include/xwindow_swapchain.h" \
+        "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
+        >/dev/null; then
+    echo "unused presented/presentImage leftovers must stay gone" >&2
+    exit 1
+fi
 if grep -F 'vkAllocateCommandBuffers(swapchain->device' \
         "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
         >/dev/null; then
