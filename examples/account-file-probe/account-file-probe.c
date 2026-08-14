@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 static int fail(const char *name, const char *detail) {
@@ -55,12 +56,48 @@ int main(void) {
     if (ulckpwdf() != 0) return fail("ulckpwdf", strerror(errno));
     printf("BXTEST PASS lckpwdf\n");
 
+    int (*audit_open_fn)(void) = dlsym(RTLD_DEFAULT, "audit_open");
+    int (*audit_close_fn)(int) = dlsym(RTLD_DEFAULT, "audit_close");
+    int (*audit_log_fn)(int, int, const char *, const char *, const char *,
+                        unsigned int, const char *, const char *, const char *,
+                        int) = dlsym(RTLD_DEFAULT, "audit_log_acct_message");
+    if (audit_open_fn == NULL || audit_close_fn == NULL || audit_log_fn == NULL)
+        return fail("audit-symbols", "missing");
+    int audit_fd = audit_open_fn();
+    if (audit_fd < 0) return fail("audit_open", strerror(errno));
+    if (audit_log_fn(audit_fd, 1100, "probe", "adding-group",
+                     "bionicx", 0, NULL, NULL, NULL, 1) <= 0) {
+        audit_close_fn(audit_fd);
+        return fail("audit_log_acct_message", "stub failed");
+    }
+    if (audit_close_fn(audit_fd) != 0)
+        return fail("audit_close", strerror(errno));
+    printf("BXTEST PASS audit-stubs\n");
+
+    if (link("/etc/group", "/etc/group.lock") != 0)
+        return fail("group-lock-link", strerror(errno));
+    struct stat group_info;
+    struct stat lock_info;
+    if (stat("/etc/group", &group_info) != 0 ||
+            stat("/etc/group.lock", &lock_info) != 0) {
+        unlink("/etc/group.lock");
+        return fail("group-lock-stat", strerror(errno));
+    }
+    if (group_info.st_nlink != 2 || lock_info.st_nlink != 2 ||
+            group_info.st_ino != lock_info.st_ino) {
+        unlink("/etc/group.lock");
+        return fail("group-lock-nlink", "nlink/ino mismatch");
+    }
+    if (unlink("/etc/group.lock") != 0)
+        return fail("group-lock-unlink", strerror(errno));
+    printf("BXTEST PASS group-lock-nlink\n");
+
     unsetenv("BIONICX_ROOTFS");
     unsetenv("BIONICX_TMPDIR");
     stream = fopen("/etc/group", "r+");
     if (stream == NULL) return fail("fopen-after-unsetenv", strerror(errno));
     fclose(stream);
     printf("BXTEST PASS captured-rootfs-after-unsetenv\n");
-    printf("BXSUMMARY account-file 4/4\n");
+    printf("BXSUMMARY account-file 6/6\n");
     return 0;
 }

@@ -273,12 +273,70 @@ int faccessat(int directory, const char *path, int mode, int flags) {
     return actual != NULL ? next(directory, actual, mode, flags) : -1;
 }
 
+/* f2fs cannot hard-link. groupadd locks /etc/group by linking
+ * group.PID -> group.lock and requiring st_nlink == 2. */
+#define BIONICX_FAKE_LINKS 32
+
+static struct {
+    char first[PATH_MAX];
+    char second[PATH_MAX];
+    ino_t inode;
+    int used;
+} fake_links[BIONICX_FAKE_LINKS];
+
+static void remember_fake_link(const char *source, const char *destination) {
+    static int (*real_stat)(const char *, struct stat *);
+    struct stat info;
+    int index;
+    if (source == NULL || destination == NULL) return;
+    if (real_stat == NULL) real_stat = dlsym(RTLD_NEXT, "stat");
+    if (real_stat(source, &info) != 0) return;
+    for (index = 0; index < BIONICX_FAKE_LINKS; ++index) {
+        if (!fake_links[index].used) break;
+    }
+    if (index == BIONICX_FAKE_LINKS) return;
+    snprintf(fake_links[index].first, PATH_MAX, "%s", source);
+    snprintf(fake_links[index].second, PATH_MAX, "%s", destination);
+    fake_links[index].inode = info.st_ino;
+    fake_links[index].used = 1;
+}
+
+static void apply_fake_nlink(const char *path, nlink_t *nlink, ino_t *inode) {
+    int index;
+    if (path == NULL || path[0] == '\0') return;
+    for (index = 0; index < BIONICX_FAKE_LINKS; ++index) {
+        if (!fake_links[index].used) continue;
+        if (strcmp(path, fake_links[index].first) != 0 &&
+                strcmp(path, fake_links[index].second) != 0)
+            continue;
+        if (nlink != NULL) *nlink = 2;
+        if (inode != NULL) *inode = fake_links[index].inode;
+        return;
+    }
+}
+
+static void forget_fake_link(const char *path) {
+    int index;
+    if (path == NULL) return;
+    for (index = 0; index < BIONICX_FAKE_LINKS; ++index) {
+        if (!fake_links[index].used) continue;
+        if (strcmp(path, fake_links[index].first) != 0 &&
+                strcmp(path, fake_links[index].second) != 0)
+            continue;
+        fake_links[index].used = 0;
+        fake_links[index].first[0] = '\0';
+        fake_links[index].second[0] = '\0';
+    }
+}
+
 int stat(const char *path, struct stat *value) {
     static int (*next)(const char *, struct stat *);
     if (next == NULL) next = dlsym(RTLD_NEXT, "stat");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(actual, value) : -1;
+    if (actual == NULL || next(actual, value) != 0) return -1;
+    apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    return 0;
 }
 
 int stat64(const char *path, struct stat64 *value) {
@@ -286,7 +344,9 @@ int stat64(const char *path, struct stat64 *value) {
     if (next == NULL) next = dlsym(RTLD_NEXT, "stat64");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(actual, value) : -1;
+    if (actual == NULL || next(actual, value) != 0) return -1;
+    apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    return 0;
 }
 
 int lstat(const char *path, struct stat *value) {
@@ -294,7 +354,9 @@ int lstat(const char *path, struct stat *value) {
     if (next == NULL) next = dlsym(RTLD_NEXT, "lstat");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(actual, value) : -1;
+    if (actual == NULL || next(actual, value) != 0) return -1;
+    apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    return 0;
 }
 
 int lstat64(const char *path, struct stat64 *value) {
@@ -302,7 +364,9 @@ int lstat64(const char *path, struct stat64 *value) {
     if (next == NULL) next = dlsym(RTLD_NEXT, "lstat64");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(actual, value) : -1;
+    if (actual == NULL || next(actual, value) != 0) return -1;
+    apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    return 0;
 }
 
 int fstatat(int directory, const char *path, struct stat *value, int flags) {
@@ -310,7 +374,10 @@ int fstatat(int directory, const char *path, struct stat *value, int flags) {
     if (next == NULL) next = dlsym(RTLD_NEXT, "fstatat");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(directory, actual, value, flags) : -1;
+    if (actual == NULL || next(directory, actual, value, flags) != 0)
+        return -1;
+    apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    return 0;
 }
 
 int fstatat64(int directory, const char *path, struct stat64 *value,
@@ -319,7 +386,10 @@ int fstatat64(int directory, const char *path, struct stat64 *value,
     if (next == NULL) next = dlsym(RTLD_NEXT, "fstatat64");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(directory, actual, value, flags) : -1;
+    if (actual == NULL || next(directory, actual, value, flags) != 0)
+        return -1;
+    apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    return 0;
 }
 
 /* Android's / is often 100% full. glibc apps that statvfs("/") or an
@@ -383,7 +453,9 @@ int unlink(const char *path) {
     if (next == NULL) next = dlsym(RTLD_NEXT, "unlink");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(actual) : -1;
+    if (actual == NULL) return -1;
+    forget_fake_link(actual);
+    return next(actual);
 }
 
 int unlinkat(int directory, const char *path, int flags) {
@@ -391,7 +463,9 @@ int unlinkat(int directory, const char *path, int flags) {
     if (next == NULL) next = dlsym(RTLD_NEXT, "unlinkat");
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(directory, actual, flags) : -1;
+    if (actual == NULL) return -1;
+    forget_fake_link(actual);
+    return next(directory, actual, flags);
 }
 
 int rename(const char *old_path, const char *new_path) {
@@ -507,11 +581,16 @@ int link(const char *old_path, const char *new_path) {
     const char *actual_old = bionicx_redirect_path(old_path, old_buffer);
     const char *actual_new = bionicx_redirect_path(new_path, new_buffer);
     if (actual_old == NULL || actual_new == NULL) return -1;
-    if (link_copy_forced())
-        return copy_regular_file(actual_old, actual_new, 0);
+    if (link_copy_forced()) {
+        if (copy_regular_file(actual_old, actual_new, 0) != 0) return -1;
+        remember_fake_link(actual_old, actual_new);
+        return 0;
+    }
     int result = next(actual_old, actual_new);
     if (result == 0 || !link_copy_errno(errno)) return result;
-    return copy_regular_file(actual_old, actual_new, 0);
+    if (copy_regular_file(actual_old, actual_new, 0) != 0) return -1;
+    remember_fake_link(actual_old, actual_new);
+    return 0;
 }
 
 static int resolve_at_path(int directory, const char *path, char out[PATH_MAX]) {
@@ -578,7 +657,9 @@ static int copy_linkat(int old_directory, const char *old_path,
     const char *destination = bionicx_redirect_path(new_resolved, new_redirect);
     if (destination == NULL) return -1;
     int follow = (flags & (AT_SYMLINK_FOLLOW | AT_EMPTY_PATH)) != 0;
-    return copy_regular_file(source, destination, follow);
+    if (copy_regular_file(source, destination, follow) != 0) return -1;
+    remember_fake_link(source, destination);
+    return 0;
 }
 
 int linkat(int old_directory, const char *old_path, int new_directory,

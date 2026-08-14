@@ -168,6 +168,20 @@ int main(int argc, char **argv) {
     if (directory == NULL) fail("redirected opendir");
     if (closedir(directory) != 0) fail("closedir");
 
+    int (*audit_open_fn)(void) = dlsym(RTLD_DEFAULT, "audit_open");
+    int (*audit_close_fn)(int) = dlsym(RTLD_DEFAULT, "audit_close");
+    int (*audit_log_fn)(int, int, const char *, const char *, const char *,
+                        unsigned int, const char *, const char *, const char *,
+                        int) = dlsym(RTLD_DEFAULT, "audit_log_acct_message");
+    if (audit_open_fn == NULL || audit_close_fn == NULL || audit_log_fn == NULL)
+        fail("audit symbols");
+    int audit_fd = audit_open_fn();
+    if (audit_fd < 0) fail("audit_open");
+    if (audit_log_fn(audit_fd, 1100, "probe", "adding-group",
+                     "bionicx", 0, NULL, NULL, NULL, 1) <= 0)
+        fail("audit_log_acct_message");
+    if (audit_close_fn(audit_fd) != 0) fail("audit_close");
+
     write_file("/usr/share/krita/marker", "bundles\n", 0600);
     struct statvfs vfs;
     if (statvfs("/usr/share/krita", &vfs) != 0)
@@ -216,8 +230,10 @@ int main(int argc, char **argv) {
     if (lstat(status_path, &status_info) != 0 ||
             lstat(status_old, &status_old_info) != 0)
         fail("status-old lstat");
-    if (status_info.st_ino == status_old_info.st_ino)
-        fail("status-old must be a copy, not a hard link");
+    if (status_info.st_nlink != 2 || status_old_info.st_nlink != 2)
+        fail("copied group lock must report nlink 2");
+    if (status_info.st_ino != status_old_info.st_ino)
+        fail("copied group lock must share inode");
     if (status_info.st_size != status_old_info.st_size)
         fail("status-old copy size");
     if (unlink("/var/lib/dpkg/status-old") != 0) fail("status-old unlink");
@@ -225,8 +241,10 @@ int main(int argc, char **argv) {
                "/var/lib/dpkg/status-old", 0) != 0)
         fail("dpkg status-old linkat copy fallback");
     if (lstat(status_old, &status_old_info) != 0) fail("status-old linkat lstat");
-    if (status_info.st_ino == status_old_info.st_ino)
-        fail("status-old linkat must be a copy");
+    if (status_old_info.st_nlink != 2)
+        fail("status-old linkat must report nlink 2");
+    if (status_info.st_ino != status_old_info.st_ino)
+        fail("status-old linkat must share inode");
     if (unlink("/var/lib/dpkg/status-old") != 0) fail("status-old linkat unlink");
     int status_fd = open("/var/lib/dpkg/status", O_RDONLY);
     if (status_fd < 0) fail("open status for AT_EMPTY_PATH");
@@ -237,8 +255,10 @@ int main(int argc, char **argv) {
     snprintf(status_old, sizeof(status_old), "%s/var/lib/dpkg/status-tmpfile",
              root);
     if (lstat(status_old, &status_old_info) != 0) fail("status-tmpfile lstat");
-    if (status_info.st_ino == status_old_info.st_ino)
-        fail("status-tmpfile must be a copy");
+    if (status_old_info.st_nlink != 2)
+        fail("status-tmpfile must report nlink 2");
+    if (status_info.st_ino != status_old_info.st_ino)
+        fail("status-tmpfile must share inode");
     if (unlink("/var/lib/dpkg/status-tmpfile") != 0)
         fail("status-tmpfile unlink");
     unsetenv("BIONICX_FORCE_LINK_COPY");

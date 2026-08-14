@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <grp.h>
 #include <limits.h>
 #include <pwd.h>
@@ -120,4 +121,66 @@ struct group *getgrgid(gid_t gid) {
     int status = getgrgid_r(gid, &value, buffer, sizeof(buffer), &result);
     if (status != 0) errno = status;
     return status == 0 ? result : NULL;
+}
+
+/* Debian groupadd aborts when libaudit cannot open the netlink socket.
+ * Android app UIDs never get that socket. A /dev/null fd plus successful
+ * log stubs let maintainer scripts create lpadmin/ssl-cert. */
+int audit_open(void) {
+    static int (*real_open)(const char *, int, ...);
+    if (real_open == NULL) real_open = dlsym(RTLD_NEXT, "open");
+    int fd = real_open("/dev/null", O_RDWR | O_CLOEXEC);
+    if (fd >= 0) return fd;
+    int ends[2];
+    if (pipe(ends) != 0) return -1;
+    close(ends[0]);
+    return ends[1];
+}
+
+int audit_close(int fd) {
+    return close(fd);
+}
+
+int audit_log_acct_message(int audit_fd, int type, const char *pgname,
+                           const char *op, const char *name, unsigned int id,
+                           const char *host, const char *addr, const char *tty,
+                           int result) {
+    (void)audit_fd;
+    (void)type;
+    (void)pgname;
+    (void)op;
+    (void)name;
+    (void)id;
+    (void)host;
+    (void)addr;
+    (void)tty;
+    (void)result;
+    return 1;
+}
+
+int audit_log_user_message(int audit_fd, int type, const char *message,
+                           const char *hostname, const char *addr,
+                           const char *tty, int result) {
+    (void)audit_fd;
+    (void)type;
+    (void)message;
+    (void)hostname;
+    (void)addr;
+    (void)tty;
+    (void)result;
+    return 1;
+}
+
+int audit_log_user_comm_message(int audit_fd, int type, const char *message,
+                                const char *comm, const char *hostname,
+                                const char *addr, const char *tty, int result) {
+    (void)audit_fd;
+    (void)type;
+    (void)message;
+    (void)comm;
+    (void)hostname;
+    (void)addr;
+    (void)tty;
+    (void)result;
+    return 1;
 }

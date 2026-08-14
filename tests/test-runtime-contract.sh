@@ -76,6 +76,18 @@ grep -F 'AT_EMPTY_PATH' \
     "$repo_dir/native/runtime/fhs-path.c" >/dev/null
 grep -F 'QSaveFile AT_EMPTY_PATH copy fallback' \
     "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
+grep -F 'audit_open' "$repo_dir/native/runtime/identity.c" >/dev/null
+grep -F 'remember_fake_link' "$repo_dir/native/runtime/fhs-path.c" >/dev/null
+grep -F 'copied group lock must report nlink 2' \
+    "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
+grep -F 'audit_log_acct_message' \
+    "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
+grep -F 'audit-stubs' \
+    "$repo_dir/examples/account-file-probe/account-file-probe.c" >/dev/null
+grep -F 'group-lock-nlink' \
+    "$repo_dir/examples/account-file-probe/account-file-probe.c" >/dev/null
+grep -F 'account-file 6/6' \
+    "$repo_dir/examples/account-file-probe/account-file-probe.c" >/dev/null
 
 BIONICX_ROOTFS="$root" \
 BIONICX_APP="$test_dir/app" \
