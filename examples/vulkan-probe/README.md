@@ -7,9 +7,11 @@ bring-up helper. Each probe is a complete vertical slice:
 |---|---|---|
 | `vulkan-wsi` | `bin/vulkan-wsi` | ICD/loader, X11 BGRA visual, physical device honesty, Xlib+XCB WSI, surface BGRA/FIFO |
 | `vulkan-present` | `bin/vulkan-present` | BGRA swapchain, graphics pipeline, present + Chrome timeline handshake, compositor pixels |
+| `vulkan-frames` | `bin/vulkan-frames` | green then blue after a timeline wait + present burst |
+| `vulkan-chrome-frames` | `bin/vulkan-chrome-frames` | 1920×1080 overlapping ANGLE acquire(sem+fence) + present; first green then blue |
 | `vulkan-lifetime` | `bin/vulkan-lifetime` | acquire rotate, resize `OUT_OF_DATE`, recreate, unmap/remap |
 
-`install-and-run.sh` builds all three and runs them in that order. The
+`install-and-run.sh` builds the probes and runs them in that order. The
 ICD JSON names `../../../lib/libvulkan_vortek.so`. The payload installs
 against the existing seed rootfs and does not replace `/files/rootfs`.
 

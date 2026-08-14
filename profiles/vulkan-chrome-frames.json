@@ -1,0 +1,26 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "vulkan-chrome-frames",
+  "name": "Chrome-sized two-color present probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "hostServices": [
+    "vulkan"
+  ],
+  "launch": {
+    "executable": "${APP}/bin/vulkan-chrome-frames",
+    "workingDirectory": "${APP}",
+    "arguments": [],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "VK_ICD_FILENAMES": "${APP}/share/vulkan/icd.d/vortek_icd.json",
+      "VORTEK_SERVER_PATH": "${RUNTIME}/tmp/.vortek/V0",
+      "LANG": "C"
+    }
+  }
+}

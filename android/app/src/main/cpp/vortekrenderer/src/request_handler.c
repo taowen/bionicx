@@ -3,6 +3,16 @@
 #include "vulkan_helper.h"
 #include "sysvshared_memory.h"
 
+#include <sys/eventfd.h>
+
+/* SYNC_FD export of an already-signaled fence returns fd=-1. SCM_RIGHTS
+ * cannot send -1, so the client blocked forever in recv_fds. Hand the
+ * client a signaled eventfd instead. */
+static int signaled_sync_fd(int fd) {
+    if (fd >= 0) return fd;
+    return eventfd(1, EFD_CLOEXEC | EFD_NONBLOCK);
+}
+
 #define MSG_DEBUG_UNIMPLEMENTED_FUNC "%s not implemented yet\n"
 
 void vt_handle_vkCreateInstance(VkContext* context) {
@@ -538,6 +548,7 @@ void vt_handle_vkResetFences(VkContext* context) {
     vt_unserialize_vkResetFences(VK_NULL_HANDLE, NULL, fences, context->inputBuffer, &context->memoryPool);
 
     vulkanWrapper.vkResetFences(device, fenceCount, fences);
+    vt_send(context->clientRing, VK_SUCCESS, NULL, 0);
 }
 
 void vt_handle_vkGetFenceStatus(VkContext* context) {
@@ -567,17 +578,37 @@ void vt_handle_vkWaitForFences(VkContext* context) {
     if (timeout != 0) {
         VkResult result = VK_SUCCESS;
         int fds[fenceCount];
+        memset(fds, 0xff, sizeof(fds));
         for (int i = 0; i < fenceCount; i++) {
             VkFenceGetFdInfoKHR getFdInfo = {0};
             getFdInfo.sType = VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR;
             getFdInfo.fence = fences[i];
             getFdInfo.handleType = VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT;
 
-            result = vulkanWrapper.vkGetFenceFd(device, &getFdInfo, &fds[i]);
+            result = vulkanWrapper.vkGetFenceStatus(device, fences[i]);
+            if (result == VK_SUCCESS) {
+                fds[i] = signaled_sync_fd(-1);
+            } else if (result == VK_NOT_READY && vulkanWrapper.vkGetFenceFd) {
+                result = vulkanWrapper.vkGetFenceFd(device, &getFdInfo,
+                                                    &fds[i]);
+                if (result == VK_SUCCESS)
+                    fds[i] = signaled_sync_fd(fds[i]);
+            }
+            if (result == VK_NOT_READY || (result != VK_SUCCESS && result != VK_TIMEOUT)) {
+                result = vulkanWrapper.vkWaitForFences(
+                        device, 1, &fences[i], VK_TRUE, timeout);
+                if (result == VK_SUCCESS)
+                    fds[i] = signaled_sync_fd(-1);
+            }
             if (result != VK_SUCCESS) break;
+            if (fds[i] < 0) {
+                result = VK_ERROR_OUT_OF_HOST_MEMORY;
+                break;
+            }
         }
 
-        send_fds(context->clientFd, fds, fenceCount, &result, sizeof(VkResult));
+        send_fds(context->clientFd, fds, result == VK_SUCCESS ? fenceCount : 0,
+                 &result, sizeof(VkResult));
         for (int i = 0; i < fenceCount; i++) CLOSEFD(fds[i]);
     }
     else {
@@ -2107,14 +2138,16 @@ void vt_handle_vkQueuePresentKHR(VkContext* context) {
                                     context->inputBuffer, &context->memoryPool);
     VkQueue queue = VkObject_fromId(queueId);
 
-    /* Do not vkQueueWaitIdle here. Chrome leaves timeline waits on the
-     * same queue; blocking the RPC thread prevents vkSignalSemaphore. */
+    /* One graphics queue: the client already submitted its render
+     * before this present, so the blit sits after that work. Waiting
+     * pWaitSemaphores here is unnecessary and hangs if a timeline
+     * that is signaled later is included. Do not WaitIdle. */
     (void)queue;
     for (int i = 0; i < presentInfo.swapchainCount; i++) {
         uint32_t index = presentInfo.pImageIndices ? presentInfo.pImageIndices[i] : 0;
         XWindowSwapchain_presentImageIndex(
                 (XWindowSwapchain*)presentInfo.pSwapchains[i], index,
-                presentInfo.waitSemaphoreCount, presentInfo.pWaitSemaphores);
+                0, NULL);
     }
 }
 
@@ -2329,9 +2362,16 @@ void vt_handle_vkGetFenceFdKHR(VkContext* context) {
     VkDevice device = VkObject_fromId(deviceId);
     getFdInfo.handleType = VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT;
 
-    int fd;
-    VkResult result = vulkanWrapper.vkGetFenceFd(device, &getFdInfo, &fd);
-    send_fds(context->clientFd, &fd, 1, &result, sizeof(VkResult));
+    int fd = -1;
+    VkResult result = vulkanWrapper.vkGetFenceFd
+            ? vulkanWrapper.vkGetFenceFd(device, &getFdInfo, &fd)
+            : VK_ERROR_EXTENSION_NOT_PRESENT;
+    if (result == VK_SUCCESS) {
+        fd = signaled_sync_fd(fd);
+        if (fd < 0) result = VK_ERROR_OUT_OF_HOST_MEMORY;
+    }
+    send_fds(context->clientFd, &fd, result == VK_SUCCESS ? 1 : 0,
+             &result, sizeof(VkResult));
     CLOSEFD(fd);
 }
 

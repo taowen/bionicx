@@ -15,6 +15,8 @@ static void loadJMethods(JMethods* jmethods) {
     jmethods->getWindowHeight = (*env)->GetMethodID(env, cls, "getWindowHeight", "(I)I");
     jmethods->getWindowHardwareBuffer = (*env)->GetMethodID(env, cls, "getWindowHardwareBuffer", "(IZ)J");
     jmethods->updateWindowContent = (*env)->GetMethodID(env, cls, "updateWindowContent", "(I)V");
+    jmethods->publishWindowPixels = (*env)->GetMethodID(env, cls,
+            "publishWindowPixels", "(ILjava/nio/ByteBuffer;II)V");
 }
 
 static ExtraDataRequest* waitForExtraDataRequest(VkContext* context, uint16_t requestId) {

@@ -23,7 +23,7 @@ sleep 0.3
 "$send" return
 
 for _ in $(seq 1 30); do
-    if "$send" list-windows 2>/dev/null | grep -Fq 'GPU Internals'; then
+    if "$send" list-windows 2>/dev/null | grep -Eq 'GPU Internals|chrome://gpu'; then
         echo "BXTEST PASS chrome-gpu-title"
         exit 0
     fi

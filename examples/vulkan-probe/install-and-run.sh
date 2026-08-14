@@ -103,12 +103,41 @@ grep -Fq "BXTEST PASS host-vulkan-frames" \
 wait_log "BXSUMMARY vulkan-frames passed=1 failed=0"
 wait_log "vulkan-frames exited with 0"
 
+run_profile vulkan-chrome-frames.json
+wait_log "vulkan-chrome-frames extent="
+chrome_shot="${BIONICX_CHROME_FRAMES_SCREENSHOT:-}"
+remove_chrome=false
+if [[ -z "$chrome_shot" ]]; then
+    chrome_shot="$(mktemp --suffix=-bionicx-chrome-frames.png)"
+    remove_chrome=true
+fi
+trap '$remove_screenshot && rm -f "$screenshot"; $remove_frames && rm -f "$frames_shot"; $remove_chrome && rm -f "$chrome_shot"' EXIT
+chrome_ok=0
+for _ in $(seq 1 80); do
+    if "${adb[@]}" exec-out screencap -p > "$chrome_shot" &&
+            "$repo_dir/examples/vulkan-probe/assert-frames.py" "$chrome_shot" \
+                > "$repo_dir/build/vulkan-chrome-frames-result.log"; then
+        chrome_ok=1
+        break
+    fi
+    if "${adb[@]}" logcat -d -v brief | grep -Fq "vulkan-chrome-frames exited with"; then
+        break
+    fi
+    sleep 0.05
+done
+wait_log "BXTEST PASS vulkan-chrome-frames extent="
+cat "$repo_dir/build/vulkan-chrome-frames-result.log"
+grep -Fq "BXTEST PASS host-vulkan-frames" \
+    "$repo_dir/build/vulkan-chrome-frames-result.log"
+wait_log "BXSUMMARY vulkan-chrome-frames passed=1 failed=0"
+wait_log "vulkan-chrome-frames exited with 0"
+
 run_profile vulkan-lifetime.json
 wait_log "BXSUMMARY vulkan-lifetime passed=1 failed=0"
 wait_log "vulkan-lifetime exited with 0"
 
 result="$("${adb[@]}" logcat -d -v brief \
-    | grep -E 'BX(TEST|SUMMARY)|vulkan-(wsi|present|frames|lifetime) exited|enabled Vulkan')"
+    | grep -E 'BX(TEST|SUMMARY)|vulkan-(wsi|present|frames|chrome-frames|lifetime) exited|enabled Vulkan')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY vulkan-lifetime passed=1 failed=0" <<<"$result"
-echo "BXSUMMARY vulkan-probes wsi=5 present=3 frames=1 lifetime=1 compositor=2"
+echo "BXSUMMARY vulkan-probes wsi=5 present=3 frames=1 chrome-frames=1 lifetime=1 compositor=3"

@@ -22,6 +22,7 @@ import com.winlator.xserver.Window;
 import com.winlator.xserver.XServer;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class VortekRendererComponent extends EnvironmentComponent implements ConnectionHandler, RequestHandler {
     private static final byte REQUEST_CODE_CREATE_CONTEXT = 1;
@@ -139,6 +140,26 @@ public class VortekRendererComponent extends EnvironmentComponent implements Con
             synchronized (drawable.renderLock) {
                 drawable.forceUpdate();
             }
+        }
+    }
+
+    @Keep
+    private void publishWindowPixels(int windowId, ByteBuffer pixels,
+                                     int width, int height) {
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null || pixels == null) return;
+        Drawable drawable = window.getContent();
+        synchronized (drawable.renderLock) {
+            Texture texture = drawable.getTexture();
+            if (!(texture instanceof GPUImage)) {
+                xServer.getRenderer().xServerView.queueEvent(texture::destroy);
+                drawable.setTexture(new GPUImage(drawable, false, false));
+                texture = drawable.getTexture();
+            }
+            if (texture instanceof GPUImage) {
+                ((GPUImage) texture).publishPixels(pixels, width, height);
+            }
+            drawable.forceUpdate();
         }
     }
 

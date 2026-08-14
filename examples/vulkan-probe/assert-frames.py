@@ -93,8 +93,9 @@ def main() -> int:
                 blue += 1
 
     # First present is green; the second must replace it. A frozen first
-    # AHB copy keeps green and never shows blue.
-    passed = blue > 80_000 and green < 20_000
+    # AHB copy keeps green and never shows blue. Require a large solid
+    # block so a teal home-screen wallpaper cannot pass.
+    passed = blue > 200_000 and green < 20_000 and blue > green * 20
     state = "PASS" if passed else "FAIL"
     print(f"BXTEST {state} host-vulkan-frames blue={blue} green={green} "
           f"size={width}x{height}")

@@ -13,6 +13,7 @@ public class GPUImage extends Texture {
     private long hardwareBufferPtr;
     private long imageKHRPtr;
     private ByteBuffer virtualData;
+    private ByteBuffer staging;
     private short stride;
     private boolean locked = false;
     private int nativeHandle;
@@ -54,14 +55,10 @@ public class GPUImage extends Texture {
     public void updateFromDrawable() {
         if (owner == null || hardwareBufferPtr == 0) return;
         if (!isAllocated()) allocateTexture(owner.width, owner.height, null);
-        /* Mali samples an EGLImage of the window AHB as black. Vulkan
-         * writes are visible to CPU lock after queue idle, so upload. */
-        ByteBuffer pixels = virtualData;
-        boolean temporaryLock = false;
-        if (pixels == null) {
-            pixels = lockHardwareBuffer(hardwareBufferPtr);
-            temporaryLock = pixels != null;
-        }
+        /* Vulkan present publishes a host-visible copy into staging.
+         * Never lock the window AHB from the GL thread. */
+        if (!needsUpdate) return;
+        ByteBuffer pixels = staging != null ? staging : virtualData;
         if (pixels != null) {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
             GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 4);
@@ -73,9 +70,24 @@ public class GPUImage extends Texture {
             if (stride > owner.width)
                 GLES20.glPixelStorei(GLES30.GL_UNPACK_ROW_LENGTH, 0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-            if (temporaryLock) unlockHardwareBuffer(hardwareBufferPtr);
         }
         needsUpdate = false;
+    }
+
+    public void publishPixels(ByteBuffer pixels, int width, int height) {
+        if (pixels == null) return;
+        int size = width * height * 4;
+        if (size <= 0 || pixels.capacity() < size) return;
+        if (staging == null || staging.capacity() < size) {
+            staging = ByteBuffer.allocateDirect(size);
+        }
+        pixels.position(0);
+        pixels.limit(size);
+        staging.clear();
+        staging.limit(size);
+        staging.put(pixels);
+        staging.flip();
+        stride = (short)width;
     }
 
     public short getStride() {

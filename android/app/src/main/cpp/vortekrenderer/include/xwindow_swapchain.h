@@ -11,10 +11,18 @@ typedef struct XWindowSwapchain_Image {
     VkDeviceMemory memory;
 } XWindowSwapchain_Image;
 
+/* Real WSI, not a mailbox of special cases:
+ *   - client images are DEVICE_LOCAL in the requested format
+ *   - present converts into a DEVICE_LOCAL RGBA image, then copies into
+ *     a persistently mapped HOST_VISIBLE buffer
+ *   - the GLES compositor uploads that buffer; it never locks the AHB
+ *     the GPU is writing
+ *   - acquire never returns an image that is the current blit source
+ */
 typedef struct XWindowSwapchain {
     int windowId;
     XWindowSwapchain_Image* images;
-    XWindowSwapchain_Image presentTarget;
+    XWindowSwapchain_Image convertTarget;
     int imageCount;
     VkFormat imageFormat;
     VkExtent2D imageExtent;
@@ -24,7 +32,12 @@ typedef struct XWindowSwapchain {
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
     VkFence blitFence;
+    VkBuffer publishBuffer;
+    VkDeviceMemory publishMemory;
+    void* publishMapped;
+    VkDeviceSize publishSize;
     int blitInFlight;
+    int blitSource;
     int pendingIndex;
     int destroying;
     int hasWaiter;
