@@ -83,12 +83,14 @@ def main() -> int:
         for x in range(width):
             offset = x * channels
             red, green, blue = row[offset:offset + 3]
-            if (15 <= red <= 40 and 175 <= green <= 205
-                    and 45 <= blue <= 85
-                    and green - red >= 140 and green - blue >= 100):
+            # Adreno hits the exact clear (26,191,64). Mali's host-visible
+            # AHB blit is the same triangle with a wider green/red.
+            if (15 <= red <= 120 and 160 <= green <= 220
+                    and 40 <= blue <= 120
+                    and green - red >= 50 and green - blue >= 40):
                 matching.append((x, y))
-            if (205 <= red <= 245 and 5 <= green <= 40 and 0 <= blue <= 30
-                    and red - green >= 175 and red - blue >= 190):
+            if (180 <= red <= 245 and 5 <= green <= 80 and 0 <= blue <= 50
+                    and red - green >= 100 and red - blue >= 120):
                 triangle.append((x, y))
 
     if matching:

@@ -37,6 +37,8 @@ wait_log() {
     return 1
 }
 
+wait_log "host-vulkan-present status=0"
+
 screenshot="${BIONICX_SCREENSHOT:-}"
 remove_screenshot=false
 if [[ -z "$screenshot" ]]; then

@@ -162,7 +162,7 @@ int main(void) {
     Window window = 0;
     if (display) {
         window = XCreateSimpleWindow(display, DefaultRootWindow(display),
-                                     0, 0, 640, 360, 0, 0, 0);
+                                     80, 240, 640, 360, 0, 0, 0);
         XStoreName(display, window, "BionicX Vulkan probe");
         XMapWindow(display, window);
         XSync(display, False);

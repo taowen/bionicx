@@ -11,10 +11,30 @@ static AHardwareBuffer* getWindowHardwareBuffer(JMethods* jmethods, int windowId
     return (AHardwareBuffer*)hardwareBufferPtr;
 }
 
+static uint32_t memoryTypeForAhb(uint32_t typeBits) {
+    uint32_t index = getMemoryTypeIndex(typeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (typeBits & (1u << index))
+        return index;
+    for (uint32_t i = 0; typeBits != 0; i++, typeBits >>= 1) {
+        if (typeBits & 1)
+            return i;
+    }
+    return 0;
+}
+
 static VkResult createImageMemory(VkDevice device, VkImage image, AHardwareBuffer* hardwareBuffer, VkDeviceMemory* pMemory) {
+    VkAndroidHardwareBufferFormatPropertiesANDROID formatProperties = {0};
+    formatProperties.sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID;
+
     VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {0};
     ahbProperties.sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID;
-    vulkanWrapper.vkGetAndroidHardwareBufferPropertiesANDROID(device, hardwareBuffer, &ahbProperties);
+    ahbProperties.pNext = &formatProperties;
+    VkResult result = vulkanWrapper.vkGetAndroidHardwareBufferPropertiesANDROID(
+            device, hardwareBuffer, &ahbProperties);
+    if (result != VK_SUCCESS) {
+        println("vortek: AHB properties failed result=%d", result);
+        return result;
+    }
 
     VkImportAndroidHardwareBufferInfoANDROID memoryImportInfo = {0};
     memoryImportInfo.sType = VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID;
@@ -30,22 +50,36 @@ static VkResult createImageMemory(VkDevice device, VkImage image, AHardwareBuffe
     memoryInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memoryInfo.pNext = &memoryDedicatedInfo;
     memoryInfo.allocationSize = ahbProperties.allocationSize;
-    memoryInfo.memoryTypeIndex = getMemoryTypeIndex(ahbProperties.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    memoryInfo.memoryTypeIndex = memoryTypeForAhb(ahbProperties.memoryTypeBits);
 
     VkDeviceMemory memory;
-    VkResult result = vulkanWrapper.vkAllocateMemory(device, &memoryInfo, NULL, &memory);
-    if (result != VK_SUCCESS) return result;
+    result = vulkanWrapper.vkAllocateMemory(device, &memoryInfo, NULL, &memory);
+    if (result != VK_SUCCESS) {
+        println("vortek: AHB allocateMemory result=%d size=%llu type=%u bits=0x%x vkFormat=%d",
+                result, (unsigned long long)ahbProperties.allocationSize,
+                memoryInfo.memoryTypeIndex, ahbProperties.memoryTypeBits,
+                formatProperties.format);
+        return result;
+    }
 
     result = vulkanWrapper.vkBindImageMemory(device, image, memory, 0);
-    if (result != VK_SUCCESS) return result;
+    if (result != VK_SUCCESS) {
+        println("vortek: AHB bindImageMemory result=%d", result);
+        vulkanWrapper.vkFreeMemory(device, memory, NULL);
+        return result;
+    }
 
     *pMemory = memory;
     return VK_SUCCESS;
 }
 
 static VkResult createImage(VkDevice device, XWindowSwapchain* swapchain, XWindowSwapchain_Image* swapchainImage) {
-    jboolean useHALPixelFormatBGRA8888 = swapchain->imageFormat == VK_FORMAT_B8G8R8A8_UNORM || swapchain->imageFormat == VK_FORMAT_B8G8R8A8_SRGB;
-    AHardwareBuffer* hardwareBuffer = getWindowHardwareBuffer(swapchain->jmethods, swapchain->windowId, useHALPixelFormatBGRA8888);
+    /* Mali-G1 reports BGRA AHB as an external format that cannot be a
+     * COLOR_ATTACHMENT. Allocate RGBA so the imported image is renderable
+     * and the GLES compositor can sample it. */
+    AHardwareBuffer* hardwareBuffer = getWindowHardwareBuffer(swapchain->jmethods, swapchain->windowId, JNI_FALSE);
+    if (hardwareBuffer == NULL)
+        return VK_ERROR_INITIALIZATION_FAILED;
 
     AHardwareBuffer_Desc ahbDesc = {0};
     AHardwareBuffer_describe(hardwareBuffer, &ahbDesc);
@@ -96,7 +130,7 @@ int getSurfaceMinImageCount() {
 }
 
 VkSurfaceFormatKHR* getSurfaceFormats(uint32_t* formatCount) {
-    static const VkFormat supportedFormats[] = {VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB};
+    static const VkFormat supportedFormats[] = {VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB};
     int supportedFormatCount = ARRAY_SIZE(supportedFormats);
     VkSurfaceFormatKHR* surfaceFormats = calloc(supportedFormatCount, sizeof(VkSurfaceFormatKHR));
 
@@ -134,7 +168,22 @@ XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphicsQueue
     for (int i = 1; i < swapchain->imageCount; i++)
         swapchain->images[i] = swapchain->images[0];
 
+    swapchain->device = device;
     swapchain->queue = graphicsQueue;
+    VkCommandPoolCreateInfo poolInfo = {0};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = 0;
+    if (vulkanWrapper.vkCreateCommandPool(device, &poolInfo, NULL,
+                                          &swapchain->commandPool) == VK_SUCCESS) {
+        VkCommandBufferAllocateInfo allocInfo = {0};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = swapchain->commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = 1;
+        vulkanWrapper.vkAllocateCommandBuffers(device, &allocInfo,
+                                               &swapchain->commandBuffer);
+    }
     return swapchain;
 
 error:
@@ -145,6 +194,8 @@ error:
 
 void XWindowSwapchain_destroy(VkDevice device, XWindowSwapchain* swapchain) {
     if (!swapchain) return;
+    if (swapchain->commandPool)
+        vulkanWrapper.vkDestroyCommandPool(device, swapchain->commandPool, NULL);
     if (swapchain->imageCount > 0 && swapchain->images) {
         vulkanWrapper.vkDestroyImage(device, swapchain->images[0].image, NULL);
         vulkanWrapper.vkFreeMemory(device, swapchain->images[0].memory, NULL);
@@ -191,6 +242,48 @@ void XWindowSwapchain_presentImage(XWindowSwapchain* swapchain) {
 void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t imageIndex) {
     if (imageIndex < (uint32_t)swapchain->imageCount)
         swapchain->presented = (int)imageIndex;
+    /* Mali does not make PRESENT_SRC AHB contents visible to CPU/GLES
+     * without an explicit host-read barrier. */
+    if (swapchain->commandBuffer && swapchain->queue && swapchain->images) {
+        vulkanWrapper.vkResetCommandBuffer(swapchain->commandBuffer, 0);
+        VkCommandBufferBeginInfo beginInfo = {0};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        if (vulkanWrapper.vkBeginCommandBuffer(swapchain->commandBuffer,
+                                               &beginInfo) == VK_SUCCESS) {
+            VkImageSubresourceRange range = {0};
+            range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            range.levelCount = 1;
+            range.layerCount = 1;
+            VkImageMemoryBarrier barrier = {0};
+            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                    VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT |
+                                    VK_ACCESS_SHADER_READ_BIT;
+            barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.image = swapchain->images[0].image;
+            barrier.subresourceRange = range;
+            vulkanWrapper.vkCmdPipelineBarrier(
+                    swapchain->commandBuffer,
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                            VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_HOST_BIT |
+                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    0, 0, NULL, 0, NULL, 1, &barrier);
+            vulkanWrapper.vkEndCommandBuffer(swapchain->commandBuffer);
+            VkSubmitInfo submitInfo = {0};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &swapchain->commandBuffer;
+            vulkanWrapper.vkQueueSubmit(swapchain->queue, 1, &submitInfo,
+                                        VK_NULL_HANDLE);
+            vulkanWrapper.vkQueueWaitIdle(swapchain->queue);
+        }
+    }
     (*swapchain->jmethods->env)->CallVoidMethod(swapchain->jmethods->env, swapchain->jmethods->obj,
                                                 swapchain->jmethods->updateWindowContent, swapchain->windowId);
 }
