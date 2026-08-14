@@ -36,13 +36,6 @@ static void write_file(const char *path, const char *contents, mode_t mode) {
 }
 
 int main(int argc, char **argv) {
-    if (argc >= 2 && strncmp(argv[1], "--type=", 7) == 0) {
-        for (int i = 0; i < argc; ++i) {
-            if (strcmp(argv[i], "--disable-crashpad-for-testing") == 0)
-                return 0;
-        }
-        return 9;
-    }
     if (argc != 3) return 2;
     const char *root = argv[1];
     const char *temporary = argv[2];
@@ -340,41 +333,6 @@ int main(int argc, char **argv) {
     if (waitpid(execve_child, &execve_status, 0) != execve_child ||
             !WIFEXITED(execve_status) || WEXITSTATUS(execve_status) != 0)
         fail("execve preserves runtime environment");
-
-    int self_fd = open("/proc/self/exe", O_RDONLY);
-    if (self_fd < 0) fail("open /proc/self/exe");
-    int copy_fd = open("/tmp/chrome-child-probe",
-                       O_WRONLY | O_CREAT | O_TRUNC, 0755);
-    if (copy_fd < 0) fail("create /tmp/chrome-child-probe");
-    char copy_buf[8192];
-    for (;;) {
-        ssize_t copied = read(self_fd, copy_buf, sizeof(copy_buf));
-        if (copied == 0) break;
-        if (copied < 0 || write(copy_fd, copy_buf, (size_t)copied) != copied)
-            fail("copy chrome-child-probe");
-    }
-    close(self_fd);
-    if (close(copy_fd) != 0 || chmod("/tmp/chrome-child-probe", 0755) != 0)
-        fail("chmod chrome-child-probe");
-    pid_t chrome_child = fork();
-    if (chrome_child < 0) fail("fork chrome child probe");
-    if (chrome_child == 0) {
-        char *const chrome_argv[] = {
-            "/tmp/chrome-child-probe", "--type=gpu-process", NULL
-        };
-        execv("/tmp/chrome-child-probe", chrome_argv);
-        fprintf(stderr, "execv chrome-child-probe errno=%d %s\n",
-                errno, strerror(errno));
-        _exit(121);
-    }
-    int chrome_status = 0;
-    if (waitpid(chrome_child, &chrome_status, 0) != chrome_child ||
-            !WIFEXITED(chrome_status) || WEXITSTATUS(chrome_status) != 0) {
-        fprintf(stderr, "chrome child status=0x%x exited=%d code=%d\n",
-                chrome_status, WIFEXITED(chrome_status),
-                WIFEXITED(chrome_status) ? WEXITSTATUS(chrome_status) : -1);
-        fail("chrome --type= child gets --disable-crashpad-for-testing");
-    }
 
     pid_t stat_child = fork();
     if (stat_child < 0) fail("fork stat probe");

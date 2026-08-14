@@ -172,6 +172,18 @@ static int configure_child(const struct options *options) {
     return options->cwd == NULL || chdir(options->cwd) == 0 ? 0 : -1;
 }
 
+static void close_inherited_fds(void) {
+#ifdef __NR_close_range
+    if (syscall(__NR_close_range, 3, ~0U, 0) == 0)
+        return;
+#endif
+    long limit = sysconf(_SC_OPEN_MAX);
+    if (limit < 32) limit = 1024;
+    if (limit > 65536) limit = 65536;
+    for (int fd = 3; fd < (int)limit; ++fd)
+        (void)close(fd);
+}
+
 static char **build_child_argv(int argc, char **argv,
                                const struct options *options,
                                const char **exec_path) {
@@ -510,6 +522,12 @@ int main(int argc, char **argv) {
                     strerror(errno));
             _exit(121);
         }
+        /* Activity Runtime.exec inherits binder/ashmem/eventfds. Drop
+         * them before the first glibc exec so the guest starts with
+         * stdio only. Later fhs-exec interposers must not do this:
+         * those execs carry remapped pipes. This is hygiene, not the
+         * Chrome child Crashpad handshake. */
+        close_inherited_fds();
         execv(exec_path, child_argv);
         fprintf(stderr, "bionicx-exec: execv(%s): %s\n",
                 exec_path, strerror(errno));

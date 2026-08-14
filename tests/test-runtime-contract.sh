@@ -88,12 +88,13 @@ grep -F 'group-lock-nlink' \
     "$repo_dir/examples/account-file-probe/account-file-probe.c" >/dev/null
 grep -F 'account-file 6/6' \
     "$repo_dir/examples/account-file-probe/account-file-probe.c" >/dev/null
-grep -F 'with_chrome_child_arguments' \
-    "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
-grep -F -- '--disable-crashpad-for-testing' \
-    "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
-grep -F 'chrome --type= child gets --disable-crashpad-for-testing' \
-    "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
+grep -F 'close_inherited_fds' \
+    "$repo_dir/native/executor/bionicx-exec.c" >/dev/null
+if grep -F 'with_chrome_child_arguments' \
+        "$repo_dir/native/runtime/fhs-exec.c" >/dev/null; then
+    echo "fhs-exec must not special-case Chrome argv" >&2
+    exit 1
+fi
 
 BIONICX_ROOTFS="$root" \
 BIONICX_APP="$test_dir/app" \

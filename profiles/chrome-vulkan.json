@@ -42,6 +42,7 @@
       "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
       "CHROME_WRAPPER": "${RUNTIME}/opt/google/chrome/google-chrome",
       "CHROME_VERSION_EXTRA": "stable",
+      "CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing",
       "GNOME_DISABLE_CRASH_DIALOG": "SET_BY_GOOGLE_CHROME",
       "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
       "GSETTINGS_BACKEND": "memory",

@@ -28,8 +28,16 @@ grep -F '23f5d27be6ad6f5d69c1c11b602d4ed25a8499cfdfa11c3ca479ad0b58285499' \
 grep -F '../../../lib/libvulkan_vortek.so' \
     "$repo_dir/examples/chrome/build-bundle.sh" >/dev/null
 grep -F 'build-gladio.sh' "$repo_dir/examples/chrome/build-bundle.sh" >/dev/null
-grep -F 'with_chrome_child_arguments' \
-    "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
+"$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/chrome-smoke.json"
+grep -F '"CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing"' \
+    "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
+grep -F '"CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing"' \
+    "$repo_dir/profiles/chrome-smoke.json" >/dev/null
+if grep -F 'with_chrome_child_arguments' \
+        "$repo_dir/native/runtime/fhs-exec.c" >/dev/null; then
+    echo "fhs-exec must not special-case Chrome argv" >&2
+    exit 1
+fi
 if grep -F -- '--runtime-root' \
         "$repo_dir/examples/chrome/install-and-run.sh" >/dev/null; then
     echo "chrome install must not replace the shared seed" >&2
