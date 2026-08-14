@@ -8,8 +8,8 @@ import com.winlator.core.Callback;
 import com.winlator.xconnector.ConnectedClient;
 import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
+import com.winlator.xserver.errors.XRequestError;
 import com.winlator.xserver.events.Event;
-import com.winlator.xserver.events.ReparentNotify;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -284,17 +284,11 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
             if (parent == null) parent = xServer.windowManager.rootWindow;
             short x = (short)(rootX - parent.getRootX());
             short y = (short)(rootY - parent.getRootY());
-            xServer.windowManager.reparentWindow(window, parent, x, y);
-            boolean overrideRedirect = window.attributes.isOverrideRedirect();
-            window.sendEvent(Event.STRUCTURE_NOTIFY,
-                    new ReparentNotify(window, window, parent, x, y,
-                            overrideRedirect));
-            if (oldParent != null) oldParent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
-                    new ReparentNotify(oldParent, window, parent, x, y,
-                            overrideRedirect));
-            parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
-                    new ReparentNotify(parent, window, parent, x, y,
-                            overrideRedirect));
+            try {
+                xServer.windowManager.reparentWindow(window, parent, x, y, this);
+            } catch (XRequestError ignored) {
+                continue;
+            }
             xServer.windowManager.mapWindow(window, this);
         }
         saveSet.clear();

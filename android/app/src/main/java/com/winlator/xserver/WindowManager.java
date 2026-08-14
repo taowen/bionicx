@@ -15,6 +15,7 @@ import com.winlator.xserver.events.Event;
 import com.winlator.xserver.events.Expose;
 import com.winlator.xserver.events.MapNotify;
 import com.winlator.xserver.events.MapRequest;
+import com.winlator.xserver.events.ReparentNotify;
 import com.winlator.xserver.events.ResizeRequest;
 import com.winlator.xserver.events.UnmapNotify;
 import com.winlator.xserver.events.VisibilityNotify;
@@ -116,9 +117,8 @@ public class WindowManager extends XResourceManager {
                     == requestingClient;
             // A grab owner that maps while a WM holds SubstructureRedirect
             // would otherwise wait forever for MapNotify: the WM cannot
-            // answer MapRequest until the grab is released. Dock/panel
-            // windows stay unmapped if the WM never answers MapRequest.
-            if (!redirected || grabOwner || window.isDock()) {
+            // answer MapRequest until the grab is released.
+            if (!redirected || grabOwner) {
                 if (redirected) {
                     parent.sendEvent(Event.SUBSTRUCTURE_REDIRECT,
                             new MapRequest(parent, window));
@@ -145,11 +145,17 @@ public class WindowManager extends XResourceManager {
     }
 
     public void unmapWindow(Window window) {
+        unmapWindow(window, false);
+    }
+
+    public void unmapWindow(Window window, boolean fromConfigure) {
         if (rootWindow.id != window.id && window.attributes.isMapped()) {
             window.attributes.setMapped(false);
             Window parent = window.getParent();
-            window.sendEvent(Event.STRUCTURE_NOTIFY, new UnmapNotify(window, window));
-            parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY, new UnmapNotify(parent, window));
+            window.sendEvent(Event.STRUCTURE_NOTIFY,
+                    new UnmapNotify(window, window, fromConfigure));
+            parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
+                    new UnmapNotify(parent, window, fromConfigure));
             if (window == focusedWindow) revertFocus();
             triggerOnUnmapWindow(window);
             // Unmapping an obscuring window makes portions of its siblings
@@ -363,14 +369,47 @@ public class WindowManager extends XResourceManager {
         else parent.sendEvent(Event.SUBSTRUCTURE_REDIRECT, new ConfigureRequest(parent, window, window.previousSibling(), x, y, width, height, borderWidth, stackMode, valueMask));
     }
 
-    public void reparentWindow(Window window, Window newParent, short x, short y) {
+    public void reparentWindow(Window window, Window newParent, short x, short y)
+            throws XRequestError {
+        reparentWindow(window, newParent, x, y, null);
+    }
+
+    public void reparentWindow(Window window, Window newParent, short x, short y,
+                               XClient requestingClient) throws XRequestError {
+        if (newParent == window || window.isAncestorOf(newParent)) throw new BadMatch();
+        if (window.isInputOutput() && !newParent.isInputOutput()) throw new BadMatch();
+
         Window oldParent = window.getParent();
+        // X protocol ReparentWindow: if mapped, UnmapWindow (from-configure),
+        // then reparent, then MapWindow. WMs reparent already-mapped clients
+        // into a new unmapped frame; skipping the unmap/remap leaves the
+        // client mapped under an unmapped ancestor (IsUnviewable) and makes
+        // the WM's subsequent MapWindow a no-op.
+        boolean wasMapped = window.attributes.isMapped();
+        if (wasMapped) unmapWindow(window, true);
+
         if (oldParent != null) oldParent.removeChild(window);
         newParent.addChild(window);
         boolean moved = window.getX() != x || window.getY() != y;
         window.setX(x);
         window.setY(y);
         if (moved) triggerOnUpdateWindowGeometry(window, false);
+
+        boolean overrideRedirect = window.attributes.isOverrideRedirect();
+        window.sendEvent(Event.STRUCTURE_NOTIFY,
+                new ReparentNotify(window, window, newParent, x, y, overrideRedirect));
+        if (oldParent != null) {
+            oldParent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
+                    new ReparentNotify(oldParent, window, newParent, x, y,
+                            overrideRedirect));
+        }
+        if (newParent != oldParent) {
+            newParent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
+                    new ReparentNotify(newParent, window, newParent, x, y,
+                            overrideRedirect));
+        }
+
+        if (wasMapped) mapWindow(window, requestingClient);
     }
 
     public Window findPointWindow(short rootX, short rootY) {

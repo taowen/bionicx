@@ -134,8 +134,17 @@ static void dump_mapped_walk(Display *display, Window window, int depth,
             }
         }
         if (attributes.map_state == IsViewable || klass[0] != '-') {
-            printf("BXINFO win 0x%lx map=%d %dx%d+%d+%d name=%s class=%s\n",
-                   (unsigned long)window, attributes.map_state,
+            Window query_root = None;
+            Window parent = None;
+            Window *kids = NULL;
+            unsigned count = 0;
+            if (XQueryTree(display, window, &query_root, &parent, &kids,
+                           &count) && kids != NULL)
+                XFree(kids);
+            printf("BXINFO win 0x%lx parent=0x%lx map=%d override=%d "
+                   "%dx%d+%d+%d name=%s class=%s\n",
+                   (unsigned long)window, (unsigned long)parent,
+                   attributes.map_state, attributes.override_redirect,
                    attributes.width, attributes.height, attributes.x,
                    attributes.y, name, klass);
             fflush(stdout);
@@ -163,30 +172,6 @@ static Window find_class(Display *display, Window root, const char *wanted) {
     int visited = 0;
     walk_class(display, root, wanted, &best, &best_area, 0, &visited, 1);
     return best;
-}
-
-static Window find_class_any(Display *display, Window root, const char *wanted) {
-    Window best = None;
-    int best_area = 0;
-    int visited = 0;
-    walk_class(display, root, wanted, &best, &best_area, 0, &visited, 0);
-    return best;
-}
-
-static void force_map_tree(Display *display, Window window) {
-    Window query_root = None;
-    Window parent = None;
-    Window *kids = NULL;
-    unsigned count = 0;
-    if (XQueryTree(display, window, &query_root, &parent, &kids, &count)) {
-        if (kids != NULL) XFree(kids);
-        if (parent != None && parent != query_root)
-            force_map_tree(display, parent);
-    }
-    XSetWindowAttributes attrs = {0};
-    attrs.override_redirect = True;
-    XChangeWindowAttributes(display, window, CWOverrideRedirect, &attrs);
-    XMapWindow(display, window);
 }
 
 static Window wait_class(Display *display, Window root, const char *wanted,
@@ -345,18 +330,6 @@ static int accept_session(Display *display, char *app2_path) {
     Window panel = wait_class(display, root, "Xfce4-panel", 8000);
     if (panel == None)
         panel = wait_class(display, root, "xfce4-panel", 1000);
-    if (panel == None) {
-        Window hidden = find_class_any(display, root, "Xfce4-panel");
-        if (hidden == None) hidden = find_class_any(display, root, "xfce4-panel");
-        if (hidden != None) {
-            printf("BXINFO mapping-hidden-panel 0x%lx\n",
-                   (unsigned long)hidden);
-            fflush(stdout);
-            force_map_tree(display, hidden);
-            XSync(display, False);
-            panel = wait_class(display, root, "Xfce4-panel", 3000);
-        }
-    }
     if (panel == None)
         panel = wait_class(display, root, "Wrapper-2.0", 1000);
     result("xfce-panel", panel != None,

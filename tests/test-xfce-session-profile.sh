@@ -18,6 +18,16 @@ grep -F 'REDIRECT_SUBWINDOWS' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XComposite.java" >/dev/null
 grep -F 'grabOwner' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/WindowManager.java" >/dev/null
+if grep -F 'window.isDock()' \
+        "$repo_dir/android/app/src/main/java/com/winlator/xserver/WindowManager.java" >/dev/null; then
+    echo "MapWindow must not special-case TYPE_DOCK" >&2
+    exit 1
+fi
+if grep -F 'force_map_tree' \
+        "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null; then
+    echo "xfce-session must not override-redirect map the panel" >&2
+    exit 1
+fi
 grep -F 'xfwm4' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'xfce4-panel' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'xfdesktop4' "$repo_dir/packages/trixie-popular.txt" >/dev/null

@@ -24,7 +24,6 @@ import com.winlator.xserver.errors.XRequestError;
 import com.winlator.xserver.events.CreateNotify;
 import com.winlator.xserver.events.Event;
 import com.winlator.xserver.events.RawEvent;
-import com.winlator.xserver.events.ReparentNotify;
 
 import java.io.IOException;
 import java.util.List;
@@ -143,22 +142,7 @@ public abstract class WindowRequests {
         Window parent = client.xServer.windowManager.getWindow(parentId);
         if (parent == null) throw new BadWindow(parentId);
 
-        Window oldParent = window.getParent();
-        client.xServer.windowManager.reparentWindow(window, parent, x, y);
-        boolean overrideRedirect = window.attributes.isOverrideRedirect();
-        window.sendEvent(Event.STRUCTURE_NOTIFY,
-                new ReparentNotify(window, window, parent, x, y,
-                        overrideRedirect));
-        if (oldParent != null) {
-            oldParent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
-                    new ReparentNotify(oldParent, window, parent, x, y,
-                            overrideRedirect));
-        }
-        if (parent != oldParent) {
-            parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY,
-                    new ReparentNotify(parent, window, parent, x, y,
-                            overrideRedirect));
-        }
+        client.xServer.windowManager.reparentWindow(window, parent, x, y, client);
     }
 
     public static void mapWindow(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {

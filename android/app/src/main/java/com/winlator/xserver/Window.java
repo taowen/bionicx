@@ -281,12 +281,6 @@ public class Window extends XResource {
         return property != null && property.toString().equals("_NET_WM_WINDOW_TYPE_DIALOG") ? Type.DIALOG : Type.NORMAL;
     }
 
-    public boolean isDock() {
-        Property property = getProperty(Atom._NET_WM_WINDOW_TYPE);
-        String name = property != null ? property.toString() : null;
-        return name != null && name.contains("DOCK");
-    }
-
     public long getHandle() {
         Property property = getProperty(Atom._NET_WM_HWND);
         return property != null ? property.getLong(0) : 0;

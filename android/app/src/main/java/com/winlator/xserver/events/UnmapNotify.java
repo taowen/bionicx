@@ -9,11 +9,17 @@ import java.io.IOException;
 public class UnmapNotify extends Event {
     private final Window event;
     private final Window window;
+    private final boolean fromConfigure;
 
     public UnmapNotify(Window event, Window window) {
+        this(event, window, false);
+    }
+
+    public UnmapNotify(Window event, Window window, boolean fromConfigure) {
         super(18);
         this.event = event;
         this.window = window;
+        this.fromConfigure = fromConfigure;
     }
 
     @Override
@@ -24,7 +30,7 @@ public class UnmapNotify extends Event {
             outputStream.writeShort(sequenceNumber);
             outputStream.writeInt(event.id);
             outputStream.writeInt(window.id);
-            outputStream.writeByte((byte)0);
+            outputStream.writeByte((byte)(fromConfigure ? 1 : 0));
             outputStream.writePad(19);
         }
     }
