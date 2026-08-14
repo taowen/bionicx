@@ -40,4 +40,6 @@ compiles. After 52s the green canvas and `WEBGL_OK` string remain;
 ownership is 0.
 
 See `evidence/vivo-10AFA31610002QH/vulkan-probe.png` and
-`evidence/vivo-10AFA31610002QH/chrome-vulkan.png`.
+`evidence/vivo-10AFA31610002QH/chrome-vulkan.png`. Adreno `HA27DTL0`
+paints `chrome://gpu`; see
+`docs/diagnostics/2026-08-14-chrome-adreno.md`.
