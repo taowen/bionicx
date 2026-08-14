@@ -1,5 +1,90 @@
 #include "common.h"
 
+#include <pthread.h>
+
+typedef struct DeferredFence {
+    VkQueue queue;
+    VkCommandBuffer cmd;
+    VkFence fence;
+} DeferredFence;
+
+static void *submit_deferred_fence(void *arg) {
+    DeferredFence *work = arg;
+    usleep(200000);
+    VkSubmitInfo submit = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &work->cmd,
+    };
+    vkQueueSubmit(work->queue, 1, &submit, work->fence);
+    return NULL;
+}
+
+/* Chrome waits on a fence that another GPU thread will signal. If the
+ * ICD RPC thread blocks inside WaitForFences, the later QueueSubmit
+ * never runs and this hangs. */
+static bool probe_deferred_fence(ProbeEnv *env) {
+    VkFenceCreateInfo fence_info = {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+    };
+    VkFence fence = VK_NULL_HANDLE;
+    if (vkCreateFence(env->device, &fence_info, NULL, &fence) != VK_SUCCESS)
+        return false;
+
+    VkCommandPoolCreateInfo pool_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .queueFamilyIndex = env->graphics_family,
+    };
+    VkCommandPool pool = VK_NULL_HANDLE;
+    if (vkCreateCommandPool(env->device, &pool_info, NULL, &pool)
+            != VK_SUCCESS) {
+        vkDestroyFence(env->device, fence, NULL);
+        return false;
+    }
+
+    VkCommandBufferAllocateInfo alloc = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = pool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    VkCommandBuffer cmd = VK_NULL_HANDLE;
+    if (vkAllocateCommandBuffers(env->device, &alloc, &cmd) != VK_SUCCESS) {
+        vkDestroyCommandPool(env->device, pool, NULL);
+        vkDestroyFence(env->device, fence, NULL);
+        return false;
+    }
+
+    VkCommandBufferBeginInfo begin = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    if (vkBeginCommandBuffer(cmd, &begin) != VK_SUCCESS
+            || vkEndCommandBuffer(cmd) != VK_SUCCESS) {
+        vkDestroyCommandPool(env->device, pool, NULL);
+        vkDestroyFence(env->device, fence, NULL);
+        return false;
+    }
+
+    DeferredFence work = {
+        .queue = env->queue,
+        .cmd = cmd,
+        .fence = fence,
+    };
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, submit_deferred_fence, &work) != 0) {
+        vkDestroyCommandPool(env->device, pool, NULL);
+        vkDestroyFence(env->device, fence, NULL);
+        return false;
+    }
+    VkResult waited = vkWaitForFences(env->device, 1, &fence, VK_TRUE,
+                                      UINT64_MAX);
+    pthread_join(thread, NULL);
+    vkDestroyCommandPool(env->device, pool, NULL);
+    vkDestroyFence(env->device, fence, NULL);
+    return waited == VK_SUCCESS;
+}
+
 static int bring_up(ProbeEnv *env) {
     if (!probe_open_window(env)) return 0;
     vkEnumerateInstanceVersion(&env->loader_version);
@@ -16,6 +101,16 @@ int main(void) {
     if (!bring_up(&env)) {
         snprintf(env.details, sizeof(env.details), "bring-up failed");
         result(&env, "vulkan-lifetime", false);
+        probe_env_destroy(&env);
+        printf("BXSUMMARY vulkan-lifetime passed=%u failed=%u\n",
+               env.passed, env.failed);
+        return 1;
+    }
+
+    bool deferred_ok = probe_deferred_fence(&env);
+    snprintf(env.details, sizeof(env.details), "waited=%u", deferred_ok);
+    result(&env, "vulkan-lifetime-deferred-fence", deferred_ok);
+    if (!deferred_ok) {
         probe_env_destroy(&env);
         printf("BXSUMMARY vulkan-lifetime passed=%u failed=%u\n",
                env.passed, env.failed);

@@ -133,11 +133,12 @@ wait_log "BXSUMMARY vulkan-chrome-frames passed=1 failed=0"
 wait_log "vulkan-chrome-frames exited with 0"
 
 run_profile vulkan-lifetime.json
-wait_log "BXSUMMARY vulkan-lifetime passed=1 failed=0"
+wait_log "BXTEST PASS vulkan-lifetime-deferred-fence"
+wait_log "BXSUMMARY vulkan-lifetime passed=2 failed=0"
 wait_log "vulkan-lifetime exited with 0"
 
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(TEST|SUMMARY)|vulkan-(wsi|present|frames|chrome-frames|lifetime) exited|enabled Vulkan')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY vulkan-lifetime passed=1 failed=0" <<<"$result"
-echo "BXSUMMARY vulkan-probes wsi=5 present=3 frames=1 chrome-frames=1 lifetime=1 compositor=3"
+echo "BXSUMMARY vulkan-probes wsi=5 present=3 frames=1 chrome-frames=1 lifetime=2 compositor=3"

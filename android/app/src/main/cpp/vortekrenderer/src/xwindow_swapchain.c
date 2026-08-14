@@ -296,6 +296,14 @@ static void publish_pixels(XWindowSwapchain* swapchain, JNIEnv* env) {
     if (!swapchain->jmethods || !env || !swapchain->publishMapped
             || !swapchain->jmethods->publishWindowPixels)
         return;
+    if (swapchain->publishMemory && vulkanWrapper.vkInvalidateMappedMemoryRanges) {
+        VkMappedMemoryRange range = {0};
+        range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range.memory = swapchain->publishMemory;
+        range.size = VK_WHOLE_SIZE;
+        vulkanWrapper.vkInvalidateMappedMemoryRanges(swapchain->device, 1,
+                                                     &range);
+    }
     jobject buffer = (*env)->NewDirectByteBuffer(
             env, swapchain->publishMapped, (jlong)swapchain->publishSize);
     if (!buffer)

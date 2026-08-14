@@ -15,10 +15,9 @@ compositing / WebGL are hardware accelerated. The `Vulkan: Disabled`
 line is Chrome's native Skia-Vulkan path (`SkiaGraphite` stays off);
 ANGLE is still on the Vortek Vulkan ICD.
 
-vivo `10AFA31610002QH` (Mali-G1-Ultra) reaches the same window title
-(`GPU Internals`) but the compositor stays on the first `about:blank`
-frame. The remaining freeze is Mali/AHB, not a generic Chrome or Vortek
-mailbox bug.
+vivo `10AFA31610002QH` (Mali-G1-Ultra) now paints the same
+`chrome://gpu` page after `WaitForFences` stopped blocking the RPC
+thread and stopped exporting SYNC_FD for that wait.
 
 See `evidence/HA27DTL0/hello.png`, `vulkan-frames.png`, and
 `chrome-smoke.png`.

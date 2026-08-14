@@ -17,20 +17,27 @@ render `vkQueueSubmit` on the single graphics queue, so present-wait
 semaphores are not GPU-waited (a later timeline wait on those
 semaphores would hang the blit).
 
-`vkWaitForFences` implements SYNC_FD: an already-signaled fence is a
-signaled eventfd, not `fd=-1` over SCM_RIGHTS. `vkResetFences` waits
-for the server.
+`vkWaitForFences` with `timeout != 0` never blocks the RPC thread.
+An already-signaled fence is a signaled eventfd, not `fd=-1` over
+SCM_RIGHTS. A not-ready fence is an unsignaled eventfd plus an
+off-thread `vkWaitForFences`; `GetFenceFd` is not used for this wait
+because SYNC_FD export transfers the payload and leaves the fence
+unsignaled. `vkResetFences` waits for the server.
+
+`vulkan-lifetime-deferred-fence` waits on an unsignaled fence while
+another thread later `vkQueueSubmit`s it. That hangs if RPC blocks
+inside `WaitForFences`. It PASSes on this device.
 
 `vulkan-chrome-frames` (1920×1080, acquire sem+fence, 16 overlapping
 presents, green then blue) is `16/16` and compositor
 `blue≈1.8e6 green=0` on this device. The same probe is blue on Adreno
 `HA27DTL0`.
 
-Untraced `chrome-vulkan.json` still paints the static WebGL fixture
+Untraced `chrome-vulkan.json` paints the static WebGL fixture
 (`WEBGL_OK` / ANGLE Vulkan Mali). `chrome-smoke` plus `open-gpu.sh`
-updates the window title to `GPU Internals` but the compositor stays
-on the first `about:blank` frame. Adreno paints the full
-`chrome://gpu` page after the same WSI change.
+paints the full `chrome://gpu` page (Graphics Feature Status,
+ANGLE/Vortek Mali-G1-Ultra). Adreno `HA27DTL0` still paints the same
+page after the WaitForFences change.
 
-See `evidence/vivo-10AFA31610002QH/vulkan-chrome-frames.png` and
+See `evidence/vivo-10AFA31610002QH/chrome-smoke.png` and
 `evidence/HA27DTL0/chrome-smoke.png`.

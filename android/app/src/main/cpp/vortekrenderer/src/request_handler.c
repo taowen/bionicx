@@ -13,6 +13,67 @@ static int signaled_sync_fd(int fd) {
     return eventfd(1, EFD_CLOEXEC | EFD_NONBLOCK);
 }
 
+/* WaitForFences with timeout != 0 must never block the RPC thread: the
+ * client may be waiting on a fence that another thread will signal with
+ * a later QueueSubmit. Do not implement the wait with GetFenceFd:
+ * SYNC_FD export transfers the payload and leaves the fence unsignaled.
+ * Hand the client an eventfd and wait off-thread. */
+typedef struct WaitFenceRequest {
+    VkDevice device;
+    VkFence fence;
+    uint64_t timeout;
+    int notifyFd;
+} WaitFenceRequest;
+
+static void* waitFenceThread(void* param) {
+    WaitFenceRequest* req = param;
+    VkResult result = vulkanWrapper.vkWaitForFences(
+            req->device, 1, &req->fence, VK_TRUE, req->timeout);
+    if (result == VK_SUCCESS) {
+        uint64_t value = 1;
+        write(req->notifyFd, &value, sizeof(value));
+    }
+    CLOSEFD(req->notifyFd);
+    free(req);
+    return NULL;
+}
+
+static VkResult pending_fence_fd(VkDevice device, VkFence fence,
+                                 uint64_t timeout, int* outFd) {
+    int fd = eventfd(0, EFD_CLOEXEC);
+    if (fd < 0) return VK_ERROR_OUT_OF_HOST_MEMORY;
+
+    WaitFenceRequest* req = calloc(1, sizeof(*req));
+    if (!req) {
+        CLOSEFD(fd);
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+    }
+    req->device = device;
+    req->fence = fence;
+    req->timeout = timeout;
+    req->notifyFd = dup(fd);
+    if (req->notifyFd < 0) {
+        free(req);
+        CLOSEFD(fd);
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+    }
+
+    pthread_t thread;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    int rc = pthread_create(&thread, &attr, waitFenceThread, req);
+    pthread_attr_destroy(&attr);
+    if (rc != 0) {
+        CLOSEFD(req->notifyFd);
+        free(req);
+        CLOSEFD(fd);
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+    }
+    *outFd = fd;
+    return VK_SUCCESS;
+}
+
 #define MSG_DEBUG_UNIMPLEMENTED_FUNC "%s not implemented yet\n"
 
 void vt_handle_vkCreateInstance(VkContext* context) {
@@ -280,6 +341,9 @@ void vt_handle_vkQueueSubmit(VkContext* context) {
     bool clientWaiting = RingBuffer_hasStatus(context->clientRing, RING_STATUS_WAIT);
     if (context->textureDecoder) TextureDecoder_decodeAll(context->textureDecoder);
 
+    /* Do not vkQueueWaitIdle here. The client may already be blocked in
+     * WaitForFences on another thread; the RPC thread must stay free to
+     * process the submit that signals that fence. */
     VkResult result = vulkanWrapper.vkQueueSubmit(queue, submitCount, submits, fence);
     if (result == VK_ERROR_DEVICE_LOST) context->status = result;
 
@@ -580,25 +644,17 @@ void vt_handle_vkWaitForFences(VkContext* context) {
         int fds[fenceCount];
         memset(fds, 0xff, sizeof(fds));
         for (int i = 0; i < fenceCount; i++) {
-            VkFenceGetFdInfoKHR getFdInfo = {0};
-            getFdInfo.sType = VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR;
-            getFdInfo.fence = fences[i];
-            getFdInfo.handleType = VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT;
-
+            /* Do not implement this wait with GetFenceFd. SYNC_FD export
+             * transfers the payload and leaves the fence unsignaled, so a
+             * later WaitForFences or GetFenceStatus on the same fence
+             * hangs. Eventfd plus an off-thread vkWaitForFences keeps
+             * both the RPC thread and the Vulkan fence state intact. */
             result = vulkanWrapper.vkGetFenceStatus(device, fences[i]);
             if (result == VK_SUCCESS) {
                 fds[i] = signaled_sync_fd(-1);
-            } else if (result == VK_NOT_READY && vulkanWrapper.vkGetFenceFd) {
-                result = vulkanWrapper.vkGetFenceFd(device, &getFdInfo,
-                                                    &fds[i]);
-                if (result == VK_SUCCESS)
-                    fds[i] = signaled_sync_fd(fds[i]);
-            }
-            if (result == VK_NOT_READY || (result != VK_SUCCESS && result != VK_TIMEOUT)) {
-                result = vulkanWrapper.vkWaitForFences(
-                        device, 1, &fences[i], VK_TRUE, timeout);
-                if (result == VK_SUCCESS)
-                    fds[i] = signaled_sync_fd(-1);
+            } else if (result == VK_NOT_READY) {
+                result = pending_fence_fd(device, fences[i], timeout,
+                                          &fds[i]);
             }
             if (result != VK_SUCCESS) break;
             if (fds[i] < 0) {

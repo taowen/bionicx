@@ -56,7 +56,10 @@ grep -F 'return 2' \
 grep -F 'VK_ERROR_OUT_OF_DATE_KHR' \
     "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
     >/dev/null
-grep -F 'presentTarget' \
+grep -F 'publishBuffer' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/include/xwindow_swapchain.h" \
+    >/dev/null
+grep -F 'publishMapped' \
     "$repo_dir/android/app/src/main/cpp/vortekrenderer/include/xwindow_swapchain.h" \
     >/dev/null
 if grep -F 'swapchain->images[i] = swapchain->images[0]' \
@@ -104,6 +107,26 @@ grep -F 'bin/vulkan-present' "$repo_dir/profiles/vulkan-probe.json" >/dev/null
 grep -F 'Do not vkQueueWaitIdle here' \
     "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" \
     >/dev/null
+grep -F 'pending_fence_fd' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" \
+    >/dev/null
+grep -F 'waitFenceThread' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" \
+    >/dev/null
+if grep -F '&fences[i]' \
+        "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" \
+        | grep -F vkWaitForFences >/dev/null; then
+    echo "WaitForFences must not block the RPC thread on timeout != 0" >&2
+    exit 1
+fi
+if awk '/void vt_handle_vkWaitForFences/,/^void vt_handle_vkCreateSemaphore/' \
+        "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" \
+        | grep -F vkGetFenceFd >/dev/null; then
+    echo "WaitForFences must not export SYNC_FD; that resets the fence" >&2
+    exit 1
+fi
+grep -F 'vulkan-lifetime-deferred-fence' "$probe_dir/vulkan-lifetime.c" >/dev/null
+grep -F 'submit_deferred_fence' "$probe_dir/vulkan-lifetime.c" >/dev/null
 if grep -F 'vulkanWrapper.vkQueueWaitIdle' \
         "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
         >/dev/null; then
