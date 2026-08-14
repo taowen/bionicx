@@ -254,10 +254,16 @@ public abstract class WindowRequests {
             }
             else {
                 byte[] data = property.data.array();
-                int offset = longOffset * 4;
-                int length = Math.min(data.length - offset, longLength * 4);
-                if (length < 0) throw new BadValue(longOffset);
-                bytesAfter = data.length - (offset + length);
+                // long-offset / long-length are CARD32. WMs pass G_MAXLONG
+                // (0x7fffffff); signed int multiply overflows and used to
+                // throw BadValue, so getAtomList/getCardinalList failed for
+                // every existing property (TYPE_DOCK, STRUT_PARTIAL).
+                long offsetBytes = Integer.toUnsignedLong(longOffset) * 4L;
+                if (offsetBytes > data.length) throw new BadValue(longOffset);
+                int offset = (int)offsetBytes;
+                long wantBytes = Integer.toUnsignedLong(longLength) * 4L;
+                int remaining = data.length - offset;
+                int length = wantBytes >= remaining ? remaining : (int)wantBytes;
 
                 outputStream.writeByte(RESPONSE_CODE_SUCCESS);
                 outputStream.writeByte(property.format.value);

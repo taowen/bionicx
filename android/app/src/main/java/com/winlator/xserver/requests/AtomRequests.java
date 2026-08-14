@@ -35,9 +35,9 @@ public abstract class AtomRequests {
 
     public static void getAtomName(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
         int id = inputStream.readInt();
-        if (id < 0) throw new BadAtom(id);
-
+        if (!Atom.isValid(id)) throw new BadAtom(id);
         String name = Atom.getName(id);
+        if (name == null) throw new BadAtom(id);
         int length = name.length();
 
         try (XStreamLock lock = outputStream.lock()) {
