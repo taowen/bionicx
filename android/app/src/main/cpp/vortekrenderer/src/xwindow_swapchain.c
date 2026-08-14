@@ -232,6 +232,10 @@ XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphicsQueue
         allocInfo.commandBufferCount = 1;
         vulkanWrapper.vkAllocateCommandBuffers(device, &allocInfo,
                                                &swapchain->commandBuffer);
+        VkFenceCreateInfo fenceInfo = {0};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        vulkanWrapper.vkCreateFence(device, &fenceInfo, NULL,
+                                    &swapchain->blitFence);
     }
     return swapchain;
 
@@ -242,6 +246,11 @@ error:
 
 void XWindowSwapchain_destroy(VkDevice device, XWindowSwapchain* swapchain) {
     if (!swapchain) return;
+    if (swapchain->blitInFlight && swapchain->blitFence)
+        vulkanWrapper.vkWaitForFences(device, 1, &swapchain->blitFence,
+                                      VK_TRUE, 1000000000ull);
+    if (swapchain->blitFence)
+        vulkanWrapper.vkDestroyFence(device, swapchain->blitFence, NULL);
     if (swapchain->commandPool)
         vulkanWrapper.vkDestroyCommandPool(device, swapchain->commandPool, NULL);
     if (swapchain->presentTarget.image)
@@ -302,19 +311,28 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
         swapchain->presented = (int)imageIndex;
     /* Mali does not make PRESENT_SRC AHB contents visible to CPU/GLES
      * without an explicit host-read barrier. Do not vkQueueWaitIdle:
-     * in-flight timeline waits on this queue must not block later RPCs. */
+     * in-flight timeline waits on this queue must not block later RPCs.
+     * Mailbox: one blit in flight. Extra presents after a timeline wait
+     * would fill the queue and block vkQueueSubmit on the RPC thread. */
+    int canBlit = 1;
+    if (swapchain->blitInFlight && swapchain->blitFence) {
+        VkResult fenceStatus = vulkanWrapper.vkGetFenceStatus(
+                swapchain->device, swapchain->blitFence);
+        if (fenceStatus == VK_NOT_READY)
+            canBlit = 0;
+        else {
+            swapchain->blitInFlight = 0;
+            if (fenceStatus == VK_SUCCESS)
+                vulkanWrapper.vkResetFences(swapchain->device, 1,
+                                            &swapchain->blitFence);
+        }
+    }
     VkCommandBuffer commandBuffer = swapchain->commandBuffer;
-    if (swapchain->commandPool && swapchain->queue && swapchain->images
+    if (canBlit && commandBuffer && swapchain->commandPool && swapchain->queue
+            && swapchain->images
             && imageIndex < (uint32_t)swapchain->imageCount
             && swapchain->presentTarget.image) {
-        VkCommandBufferAllocateInfo allocInfo = {0};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = swapchain->commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = 1;
-        if (vulkanWrapper.vkAllocateCommandBuffers(swapchain->device, &allocInfo,
-                                                   &commandBuffer) != VK_SUCCESS)
-            commandBuffer = swapchain->commandBuffer;
+        vulkanWrapper.vkResetCommandBuffer(commandBuffer, 0);
         VkCommandBufferBeginInfo beginInfo = {0};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -400,7 +418,8 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &commandBuffer;
             vulkanWrapper.vkQueueSubmit(swapchain->queue, 1, &submitInfo,
-                                        VK_NULL_HANDLE);
+                                        swapchain->blitFence);
+            swapchain->blitInFlight = swapchain->blitFence ? 1 : 0;
         }
     }
     (*swapchain->jmethods->env)->CallVoidMethod(swapchain->jmethods->env, swapchain->jmethods->obj,

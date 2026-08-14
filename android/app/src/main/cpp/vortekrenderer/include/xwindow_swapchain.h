@@ -22,6 +22,8 @@ typedef struct XWindowSwapchain {
     VkQueue queue;
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
+    VkFence blitFence;
+    int blitInFlight;
     JMethods* jmethods;
     uint32_t acquireIndex;
     int presented;

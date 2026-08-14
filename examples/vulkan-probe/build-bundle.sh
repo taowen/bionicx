@@ -37,6 +37,7 @@ podman run --rm --network host --userns=keep-id \
         }
         compile vulkan-wsi ""
         compile vulkan-present -lpthread
+        compile vulkan-frames -lpthread
         compile vulkan-lifetime ""
         cp -L /usr/lib/aarch64-linux-gnu/libvulkan.so.1 "$app_dir/lib/"
         cp -L /usr/lib/aarch64-linux-gnu/libX11-xcb.so.1 "$app_dir/lib/"

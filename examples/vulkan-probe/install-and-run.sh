@@ -74,12 +74,41 @@ grep -Fq "BXTEST PASS host-vulkan-compositor" \
 wait_log "BXSUMMARY vulkan-present passed=3 failed=0"
 wait_log "vulkan-present exited with 0"
 
+run_profile vulkan-frames.json
+wait_log "vulkan-frames first="
+frames_shot="${BIONICX_FRAMES_SCREENSHOT:-}"
+remove_frames=false
+if [[ -z "$frames_shot" ]]; then
+    frames_shot="$(mktemp --suffix=-bionicx-frames.png)"
+    remove_frames=true
+fi
+trap '$remove_screenshot && rm -f "$screenshot"; $remove_frames && rm -f "$frames_shot"' EXIT
+frames_ok=0
+for _ in $(seq 1 80); do
+    if "${adb[@]}" exec-out screencap -p > "$frames_shot" &&
+            "$repo_dir/examples/vulkan-probe/assert-frames.py" "$frames_shot" \
+                > "$repo_dir/build/vulkan-frames-result.log"; then
+        frames_ok=1
+        break
+    fi
+    if "${adb[@]}" logcat -d -v brief | grep -Fq "vulkan-frames exited with"; then
+        break
+    fi
+    sleep 0.05
+done
+wait_log "BXTEST PASS vulkan-frames first="
+cat "$repo_dir/build/vulkan-frames-result.log"
+grep -Fq "BXTEST PASS host-vulkan-frames" \
+    "$repo_dir/build/vulkan-frames-result.log"
+wait_log "BXSUMMARY vulkan-frames passed=1 failed=0"
+wait_log "vulkan-frames exited with 0"
+
 run_profile vulkan-lifetime.json
 wait_log "BXSUMMARY vulkan-lifetime passed=1 failed=0"
 wait_log "vulkan-lifetime exited with 0"
 
 result="$("${adb[@]}" logcat -d -v brief \
-    | grep -E 'BX(TEST|SUMMARY)|vulkan-(wsi|present|lifetime) exited|enabled Vulkan')"
+    | grep -E 'BX(TEST|SUMMARY)|vulkan-(wsi|present|frames|lifetime) exited|enabled Vulkan')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY vulkan-lifetime passed=1 failed=0" <<<"$result"
-echo "BXSUMMARY vulkan-probes wsi=5 present=3 lifetime=1 compositor=1"
+echo "BXSUMMARY vulkan-probes wsi=5 present=3 frames=1 lifetime=1 compositor=2"

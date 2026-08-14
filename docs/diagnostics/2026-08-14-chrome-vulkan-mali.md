@@ -25,10 +25,16 @@ The fixture now uses `WEBGL_debug_renderer_info` so a masked
 `host-vulkan-present` now submits a timeline wait, presents, then
 `vkSignalSemaphore`. The old present path called `vkQueueWaitIdle` on
 the RPC thread, so the signal never ran and the probe hung. Present
-now only GPU-waits the blit on the present semaphores. Chrome's 30s
-`exit_code=512` was that deadlock plus the GPU watchdog. The profile
-still sets `--disable-gpu-watchdog` for slow Vortek shader compiles.
-After 52s the green canvas and `WEBGL_OK` string remain; ownership is 0.
+now only GPU-waits the blit on the present semaphores. A later hang
+showed up as `vulkan-frames`: after the timeline wait, 2048 presents
+each submitted a blit on the same queue. Mali's `vkQueueSubmit` blocked
+the RPC thread once the queue filled, so `vkSignalSemaphore` never
+ran and the compositor stayed on the first green frame. Present now
+mailboxes: one blit in flight, extra presents skip. Chrome's 30s
+`exit_code=512` was the WaitIdle deadlock plus the GPU watchdog. The
+profile still sets `--disable-gpu-watchdog` for slow Vortek shader
+compiles. After 52s the green canvas and `WEBGL_OK` string remain;
+ownership is 0.
 
 See `evidence/vivo-10AFA31610002QH/vulkan-probe.png` and
 `evidence/vivo-10AFA31610002QH/chrome-vulkan.png`.

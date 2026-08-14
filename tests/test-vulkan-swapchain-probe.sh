@@ -6,21 +6,31 @@ probe_dir="$repo_dir/examples/vulkan-probe"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-wsi.json"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-present.json"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-lifetime.json"
+"$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-frames.json"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-probe.json"
 grep -F 'minImageCount >= 2' "$probe_dir"/*.[ch] >/dev/null
 for name in vulkan-wsi-loader vulkan-wsi-window vulkan-wsi-device \
             vulkan-wsi-present-support vulkan-wsi-surface \
             vulkan-present-swapchain vulkan-present-pipeline vulkan-present \
-            vulkan-lifetime; do
+            vulkan-frames vulkan-lifetime; do
     grep -F "$name" "$probe_dir"/*.[ch] >/dev/null
 done
 test -f "$probe_dir/vulkan-wsi.c"
 test -f "$probe_dir/vulkan-present.c"
 test -f "$probe_dir/vulkan-lifetime.c"
+test -f "$probe_dir/vulkan-frames.c"
+test -f "$probe_dir/assert-frames.py"
 test ! -f "$probe_dir/vulkan-probe.c"
 grep -Fq 'passed=5' "$probe_dir/install-and-run.sh"
 grep -Fq 'passed=3' "$probe_dir/install-and-run.sh"
 grep -Fq 'passed=1' "$probe_dir/install-and-run.sh"
+grep -Fq 'background2=20,80,240' "$probe_dir/vulkan-frames.c"
+grep -Fq '2048' "$probe_dir/vulkan-frames.c"
+grep -F 'VK_SEMAPHORE_TYPE_TIMELINE' "$probe_dir/vulkan-frames.c" >/dev/null
+grep -F 'hung after timeline wait plus present burst' \
+    "$probe_dir/vulkan-frames.c" >/dev/null
+grep -Fq 'host-vulkan-frames' "$probe_dir/assert-frames.py"
+grep -Fq 'green < 20_000' "$probe_dir/assert-frames.py"
 grep -F 'preferred_format' "$probe_dir"/*.[ch] >/dev/null
 grep -F 'vkCmdBindVertexBuffers2' "$probe_dir"/*.[ch] >/dev/null
 grep -F 'red_mask == 0xff0000UL' "$probe_dir"/*.[ch] >/dev/null
@@ -34,6 +44,7 @@ grep -F '../../../lib/libvulkan_vortek.so' "$probe_dir/build-bundle.sh" >/dev/nu
 grep -F 'compile vulkan-wsi' "$probe_dir/build-bundle.sh" >/dev/null
 grep -F 'compile vulkan-present' "$probe_dir/build-bundle.sh" >/dev/null
 grep -F 'compile vulkan-lifetime' "$probe_dir/build-bundle.sh" >/dev/null
+grep -F 'compile vulkan-frames' "$probe_dir/build-bundle.sh" >/dev/null
 grep -F -- '--app-root' "$probe_dir/install-and-run.sh" >/dev/null
 if grep -F -- '--runtime-root' "$probe_dir/install-and-run.sh" >/dev/null; then
     echo "vulkan-probe install must not replace the shared seed" >&2
@@ -99,4 +110,18 @@ if grep -F 'vulkanWrapper.vkQueueWaitIdle' \
     echo "swapchain present must not vkQueueWaitIdle" >&2
     exit 1
 fi
-echo "vulkan probes split into wsi/present/lifetime: PASS"
+grep -F 'vkGetFenceStatus' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
+    >/dev/null
+grep -F 'blitInFlight' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/include/xwindow_swapchain.h" \
+    >/dev/null
+if grep -F 'vkAllocateCommandBuffers(swapchain->device' \
+        "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
+        >/dev/null; then
+    echo "present must not allocate a command buffer every frame" >&2
+    exit 1
+fi
+grep -F 'vulkan-frames.json' "$probe_dir/install-and-run.sh" >/dev/null
+grep -F 'assert-frames.py' "$probe_dir/install-and-run.sh" >/dev/null
+echo "vulkan probes split into wsi/present/frames/lifetime: PASS"
