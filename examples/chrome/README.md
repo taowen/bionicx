@@ -7,8 +7,9 @@ bundle exists.
 
 The required `--no-sandbox` remains in both profiles. `chrome-smoke.json` uses
 the host GLES path through Gladio. `chrome-vulkan.json` uses the Vortek bridge
-and a local WebGL fixture; `--single-process` is required because a
-multiprocess renderer currently dies on an FD-ownership check.
+and a local WebGL fixture. The runtime forwards
+`--disable-crashpad-for-testing` to `--type=` children so Crashpad does
+not abort on Android's inherited FD table.
 `build-bundle.sh` builds only that host-driver bridge, ICD metadata and the
 fixture, never Chrome or Debian libraries.
 

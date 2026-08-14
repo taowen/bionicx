@@ -364,6 +364,32 @@ static void free_runtime_environment(char **merged, size_t owned_from) {
     free(merged);
 }
 
+/* Chrome children start Crashpad unless the browser testing switch is
+ * forwarded. Crashpad then aborts on Android's inherited FD table:
+ * "Crashing due to FD ownership violation". */
+static char **with_chrome_child_arguments(char *const arguments[],
+                                          int *owned) {
+    *owned = 0;
+    if (arguments == NULL) return NULL;
+    int has_type = 0;
+    int has_flag = 0;
+    size_t count = 0;
+    while (arguments[count] != NULL) {
+        if (strncmp(arguments[count], "--type=", 7) == 0) has_type = 1;
+        if (strcmp(arguments[count], "--disable-crashpad-for-testing") == 0)
+            has_flag = 1;
+        count++;
+    }
+    if (!has_type || has_flag) return (char **)arguments;
+    char **copy = calloc(count + 2, sizeof(*copy));
+    if (copy == NULL) return NULL;
+    for (size_t i = 0; i < count; ++i) copy[i] = arguments[i];
+    copy[count] = "--disable-crashpad-for-testing";
+    copy[count + 1] = NULL;
+    *owned = 1;
+    return copy;
+}
+
 int execv(const char *path, char *const arguments[]) {
     static int (*next)(const char *, char *const[]);
     if (next == NULL) next = dlsym(RTLD_NEXT, "execv");
@@ -372,7 +398,14 @@ int execv(const char *path, char *const arguments[]) {
     if (actual == NULL) return -1;
     restore_runtime_environment();
     ensure_rootfs_path();
-    return exec_script(actual, arguments, next);
+    int chrome_owned = 0;
+    char **chrome_argv = with_chrome_child_arguments(arguments, &chrome_owned);
+    if (chrome_argv == NULL) return -1;
+    int result = exec_script(actual, chrome_argv, next);
+    int saved_errno = errno;
+    if (chrome_owned) free(chrome_argv);
+    errno = saved_errno;
+    return result;
 }
 
 int execve(const char *path, char *const arguments[],
@@ -386,13 +419,21 @@ int execve(const char *path, char *const arguments[],
     char **merged = with_runtime_environment(environment, &owned_from);
     if (environment != NULL && merged == NULL) return -1;
     char *const *actual_environment = merged != NULL ? merged : environment;
+    int chrome_owned = 0;
+    char **chrome_argv = with_chrome_child_arguments(arguments, &chrome_owned);
+    if (chrome_argv == NULL) {
+        free_runtime_environment(merged, owned_from);
+        return -1;
+    }
+    char *const *actual_arguments = chrome_argv;
     char program[PATH_MAX], interpreter_argument[PATH_MAX];
-    char **script = script_arguments(actual, arguments, program,
+    char **script = script_arguments(actual, actual_arguments, program,
                                      interpreter_argument);
     int result = script == NULL
-            ? next(actual, arguments, actual_environment)
+            ? next(actual, actual_arguments, actual_environment)
             : next(program, script, actual_environment);
     int saved_errno = errno;
+    if (chrome_owned) free(chrome_argv);
     free(script);
     free_runtime_environment(merged, owned_from);
     errno = saved_errno;
@@ -415,14 +456,22 @@ int posix_spawn(pid_t *pid, const char *path,
     char **merged = with_runtime_environment(environment, &owned_from);
     if (environment != NULL && merged == NULL) return ENOMEM;
     char *const *actual_environment = merged != NULL ? merged : environment;
+    int chrome_owned = 0;
+    char **chrome_argv = with_chrome_child_arguments(arguments, &chrome_owned);
+    if (chrome_argv == NULL) {
+        free_runtime_environment(merged, owned_from);
+        return ENOMEM;
+    }
+    char *const *actual_arguments = chrome_argv;
     char program[PATH_MAX], interpreter_argument[PATH_MAX];
-    char **script = script_arguments(actual, arguments, program,
+    char **script = script_arguments(actual, actual_arguments, program,
                                      interpreter_argument);
     int result = script == NULL
-            ? next(pid, actual, file_actions, attrp, arguments,
+            ? next(pid, actual, file_actions, attrp, actual_arguments,
                    actual_environment)
             : next(pid, program, file_actions, attrp, script,
                    actual_environment);
+    if (chrome_owned) free(chrome_argv);
     free(script);
     free_runtime_environment(merged, owned_from);
     return result;
@@ -464,6 +513,10 @@ int execvp(const char *path, char *const arguments[]) {
     if (actual == NULL) return -1;
     restore_runtime_environment();
     ensure_rootfs_path();
+    int chrome_owned = 0;
+    char **chrome_argv = with_chrome_child_arguments(arguments, &chrome_owned);
+    if (chrome_argv == NULL) return -1;
+    arguments = chrome_argv;
     if (actual == path && strchr(path, '/') == NULL) {
         const char *root = bionicx_getenv("BIONICX_ROOTFS");
         static const char *directories[] = {
@@ -482,7 +535,11 @@ int execvp(const char *path, char *const arguments[]) {
             }
         }
     }
-    return exec_script(actual, arguments, next);
+    int result = exec_script(actual, arguments, next);
+    int saved_errno = errno;
+    if (chrome_owned) free(chrome_argv);
+    errno = saved_errno;
+    return result;
 }
 
 static char **vararg_arguments(const char *argument, va_list values,

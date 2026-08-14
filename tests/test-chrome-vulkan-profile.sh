@@ -5,7 +5,10 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/chrome-vulkan.json"
 grep -F '"vulkan"' "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
 grep -F -- '--no-sandbox' "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
-grep -F -- '--single-process' "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
+if grep -F -- '--single-process' "$repo_dir/profiles/chrome-vulkan.json" >/dev/null; then
+    echo "chrome vulkan must use a real renderer process" >&2
+    exit 1
+fi
 grep -F -- '--use-angle=vulkan' "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
 grep -F 'webgl-fixture.html' "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
 grep -F -- '--hide-crash-restore-bubble' \
@@ -24,6 +27,9 @@ grep -F '23f5d27be6ad6f5d69c1c11b602d4ed25a8499cfdfa11c3ca479ad0b58285499' \
     "$repo_dir/packages/external-arm64.tsv" >/dev/null
 grep -F '../../../lib/libvulkan_vortek.so' \
     "$repo_dir/examples/chrome/build-bundle.sh" >/dev/null
+grep -F 'build-gladio.sh' "$repo_dir/examples/chrome/build-bundle.sh" >/dev/null
+grep -F 'with_chrome_child_arguments' \
+    "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
 if grep -F -- '--runtime-root' \
         "$repo_dir/examples/chrome/install-and-run.sh" >/dev/null; then
     echo "chrome install must not replace the shared seed" >&2

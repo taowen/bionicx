@@ -16,7 +16,6 @@
     "argv0": "${RUNTIME}/opt/google/chrome/google-chrome",
     "arguments": [
       "--no-sandbox",
-      "--single-process",
       "--hide-crash-restore-bubble",
       "--disable-breakpad",
       "--disable-crashpad-for-testing",

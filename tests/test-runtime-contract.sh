@@ -88,6 +88,12 @@ grep -F 'group-lock-nlink' \
     "$repo_dir/examples/account-file-probe/account-file-probe.c" >/dev/null
 grep -F 'account-file 6/6' \
     "$repo_dir/examples/account-file-probe/account-file-probe.c" >/dev/null
+grep -F 'with_chrome_child_arguments' \
+    "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
+grep -F -- '--disable-crashpad-for-testing' \
+    "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
+grep -F 'chrome --type= child gets --disable-crashpad-for-testing' \
+    "$repo_dir/tests/fixtures/runtime-contract-probe.c" >/dev/null
 
 BIONICX_ROOTFS="$root" \
 BIONICX_APP="$test_dir/app" \

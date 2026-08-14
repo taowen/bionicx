@@ -15,6 +15,7 @@ mkdir -p "$output_dir/app/lib" "$output_dir/app/share/vulkan/icd.d" \
 cp "$repo_dir/examples/chrome/webgl-fixture.html" \
     "$output_dir/app/share/chrome-vulkan/webgl-fixture.html"
 "$repo_dir/tools/build-vortek.sh" "$output_dir/app/lib"
+"$repo_dir/tools/build-gladio.sh" "$output_dir/app/lib"
 printf '%s\n' \
     '{' \
     '  "file_format_version": "1.0.0",' \
