@@ -170,6 +170,45 @@ int main(void) {
     snprintf(details, sizeof(details), "display=%s window=0x%lx size=640x360",
              display ? "open" : "closed", (unsigned long)window);
     result("host-vulkan-xlib-window", display && window != 0, details);
+    VisualID window_visual = 0;
+    VisualID root_visual = 0;
+    if (display && window) {
+        XWindowAttributes attributes;
+        if (XGetWindowAttributes(display, window, &attributes))
+            window_visual = XVisualIDFromVisual(attributes.visual);
+        root_visual = XVisualIDFromVisual(
+                DefaultVisual(display, DefaultScreen(display)));
+    }
+    snprintf(details, sizeof(details), "window=0x%lx root=0x%lx",
+             (unsigned long)window_visual, (unsigned long)root_visual);
+    result("host-vulkan-root-visual",
+           window_visual != 0 && window_visual == root_visual, details);
+    unsigned long red_mask = 0;
+    unsigned long green_mask = 0;
+    unsigned long blue_mask = 0;
+    int depth = 0;
+    int visual_class = 0;
+    if (display && window) {
+        XWindowAttributes attributes;
+        if (XGetWindowAttributes(display, window, &attributes)
+                && attributes.visual) {
+            red_mask = attributes.visual->red_mask;
+            green_mask = attributes.visual->green_mask;
+            blue_mask = attributes.visual->blue_mask;
+            depth = attributes.depth;
+            visual_class = attributes.visual->class;
+        }
+    }
+    snprintf(details, sizeof(details),
+             "class=%d depth=%d red=0x%lx green=0x%lx blue=0x%lx",
+             visual_class, depth, red_mask, green_mask, blue_mask);
+    /* ANGLE maps this TrueColor layout to VK_FORMAT_B8G8R8A8_UNORM. */
+    result("host-vulkan-x11-bgra-visual",
+           visual_class == TrueColor && depth >= 24
+                   && red_mask == 0xff0000UL
+                   && green_mask == 0x00ff00UL
+                   && blue_mask == 0x0000ffUL,
+           details);
 
     const char *instance_extensions[] = {
         VK_KHR_SURFACE_EXTENSION_NAME,
@@ -395,6 +434,12 @@ int main(void) {
            status == VK_SUCCESS && format_count > 0
                    && returned_format_count > 0,
            details);
+    bool has_bgra = false;
+    for (uint32_t i = 0; i < returned_format_count; ++i)
+        has_bgra |= formats[i].format == VK_FORMAT_B8G8R8A8_UNORM;
+    snprintf(details, sizeof(details), "bgra=%u advertised=%u",
+             has_bgra, returned_format_count);
+    result("host-vulkan-angle-bgra", has_bgra, details);
 
     uint32_t mode_count = 0;
     status = surface != VK_NULL_HANDLE
@@ -464,9 +509,6 @@ int main(void) {
             break;
         }
     }
-    if (!preferred_format && returned_format_count > 0)
-        selected_format = formats[0];
-
     VkCompositeAlphaFlagBitsKHR composite_alpha =
             VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     if (!(capabilities.supportedCompositeAlpha & composite_alpha)) {
@@ -502,7 +544,10 @@ int main(void) {
              swapchain_create_info.imageExtent.height,
              swapchain_create_info.minImageCount);
     result("host-vulkan-swapchain",
-           status == VK_SUCCESS && swapchain != VK_NULL_HANDLE, details);
+           status == VK_SUCCESS && swapchain != VK_NULL_HANDLE
+                   && preferred_format
+                   && selected_format.format == VK_FORMAT_B8G8R8A8_UNORM,
+           details);
 
     uint32_t swapchain_image_count = 0;
     if (swapchain != VK_NULL_HANDLE)

@@ -13,6 +13,7 @@ typedef struct XWindowSwapchain_Image {
 typedef struct XWindowSwapchain {
     int windowId;
     XWindowSwapchain_Image* images;
+    XWindowSwapchain_Image presentTarget;
     int imageCount;
     VkFormat imageFormat;
     VkExtent2D imageExtent;

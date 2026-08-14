@@ -12,6 +12,11 @@ grep -F -- '--hide-crash-restore-bubble' \
     "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
 test -f "$repo_dir/examples/chrome/webgl-fixture.html"
 grep -F 'WEBGL_OK' "$repo_dir/examples/chrome/webgl-fixture.html" >/dev/null
+grep -F 'UNMASKED_RENDERER_WEBGL' \
+    "$repo_dir/examples/chrome/webgl-fixture.html" >/dev/null
+grep -F 'WEBGL_NOT_VULKAN' \
+    "$repo_dir/examples/chrome/webgl-fixture.html" >/dev/null
+grep -F 'SwiftShader' "$repo_dir/examples/chrome/webgl-fixture.html" >/dev/null
 grep -F 'webgl-fixture.html' \
     "$repo_dir/examples/chrome/build-bundle.sh" >/dev/null
 grep -F 'VK_ICD_FILENAMES' "$repo_dir/profiles/chrome-vulkan.json" >/dev/null

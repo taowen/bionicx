@@ -73,10 +73,53 @@ static VkResult createImageMemory(VkDevice device, VkImage image, AHardwareBuffe
     return VK_SUCCESS;
 }
 
-static VkResult createImage(VkDevice device, XWindowSwapchain* swapchain, XWindowSwapchain_Image* swapchainImage) {
-    /* Mali-G1 reports BGRA AHB as an external format that cannot be a
-     * COLOR_ATTACHMENT. Allocate RGBA so the imported image is renderable
-     * and the GLES compositor can sample it. */
+static VkResult createDeviceImage(VkDevice device, XWindowSwapchain* swapchain,
+                                  XWindowSwapchain_Image* swapchainImage) {
+    VkImageCreateInfo imageInfo = {0};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.format = swapchain->imageFormat;
+    imageInfo.extent.width = swapchain->imageExtent.width;
+    imageInfo.extent.height = swapchain->imageExtent.height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.usage = swapchain->imageUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    VkImage image;
+    VkResult result = vulkanWrapper.vkCreateImage(device, &imageInfo, NULL, &image);
+    if (result != VK_SUCCESS) return result;
+
+    VkMemoryRequirements requirements;
+    vulkanWrapper.vkGetImageMemoryRequirements(device, image, &requirements);
+    VkMemoryAllocateInfo memoryInfo = {0};
+    memoryInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryInfo.allocationSize = requirements.size;
+    memoryInfo.memoryTypeIndex = memoryTypeForAhb(requirements.memoryTypeBits);
+    VkDeviceMemory memory;
+    result = vulkanWrapper.vkAllocateMemory(device, &memoryInfo, NULL, &memory);
+    if (result != VK_SUCCESS) {
+        vulkanWrapper.vkDestroyImage(device, image, NULL);
+        return result;
+    }
+    result = vulkanWrapper.vkBindImageMemory(device, image, memory, 0);
+    if (result != VK_SUCCESS) {
+        vulkanWrapper.vkFreeMemory(device, memory, NULL);
+        vulkanWrapper.vkDestroyImage(device, image, NULL);
+        return result;
+    }
+    swapchainImage->image = image;
+    swapchainImage->memory = memory;
+    return VK_SUCCESS;
+}
+
+static VkResult createAhbImage(VkDevice device, XWindowSwapchain* swapchain, XWindowSwapchain_Image* swapchainImage) {
+    /* Mali cannot use BGRA AHB as a color attachment. The compositor
+     * always samples an RGBA window buffer; client images blit into it. */
     AHardwareBuffer* hardwareBuffer = getWindowHardwareBuffer(swapchain->jmethods, swapchain->windowId, JNI_FALSE);
     if (hardwareBuffer == NULL)
         return VK_ERROR_INITIALIZATION_FAILED;
@@ -98,7 +141,7 @@ static VkResult createImage(VkDevice device, XWindowSwapchain* swapchain, XWindo
     imageInfo.pNext = &externalMemoryImageInfo;
     imageInfo.flags = VK_IMAGE_CREATE_ALIAS_BIT;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.format = swapchain->imageFormat;
+    imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
     imageInfo.extent.width = ahbDesc.width;
     imageInfo.extent.height = ahbDesc.height;
     imageInfo.extent.depth = 1;
@@ -106,7 +149,8 @@ static VkResult createImage(VkDevice device, XWindowSwapchain* swapchain, XWindo
     imageInfo.arrayLayers = 1;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.usage = swapchain->imageUsage;
+    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -130,7 +174,13 @@ int getSurfaceMinImageCount() {
 }
 
 VkSurfaceFormatKHR* getSurfaceFormats(uint32_t* formatCount) {
-    static const VkFormat supportedFormats[] = {VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB};
+    /* ANGLE on X11 prefers BGRA to match the root visual. Mali cannot
+     * import BGRA AHB as a color attachment, so client images stay in
+     * the requested format and blit into an RGBA window AHB. */
+    static const VkFormat supportedFormats[] = {
+        VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SRGB,
+        VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB
+    };
     int supportedFormatCount = ARRAY_SIZE(supportedFormats);
     VkSurfaceFormatKHR* surfaceFormats = calloc(supportedFormatCount, sizeof(VkSurfaceFormatKHR));
 
@@ -160,13 +210,12 @@ XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphicsQueue
     swapchain->presented = -1;
 
     VkResult result;
-    result = createImage(device, swapchain, &swapchain->images[0]);
+    for (int i = 0; i < swapchain->imageCount; i++) {
+        result = createDeviceImage(device, swapchain, &swapchain->images[i]);
+        if (result != VK_SUCCESS) goto error;
+    }
+    result = createAhbImage(device, swapchain, &swapchain->presentTarget);
     if (result != VK_SUCCESS) goto error;
-    /* Extra indices rotate at the protocol level. A second
-     * AHardwareBuffer import of the same window buffer can invalidate
-     * the first image, so every slot aliases the one imported image. */
-    for (int i = 1; i < swapchain->imageCount; i++)
-        swapchain->images[i] = swapchain->images[0];
 
     swapchain->device = device;
     swapchain->queue = graphicsQueue;
@@ -187,8 +236,7 @@ XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphicsQueue
     return swapchain;
 
 error:
-    MEMFREE(swapchain->images);
-    MEMFREE(swapchain);
+    XWindowSwapchain_destroy(device, swapchain);
     return NULL;
 }
 
@@ -196,9 +244,17 @@ void XWindowSwapchain_destroy(VkDevice device, XWindowSwapchain* swapchain) {
     if (!swapchain) return;
     if (swapchain->commandPool)
         vulkanWrapper.vkDestroyCommandPool(device, swapchain->commandPool, NULL);
-    if (swapchain->imageCount > 0 && swapchain->images) {
-        vulkanWrapper.vkDestroyImage(device, swapchain->images[0].image, NULL);
-        vulkanWrapper.vkFreeMemory(device, swapchain->images[0].memory, NULL);
+    if (swapchain->presentTarget.image)
+        vulkanWrapper.vkDestroyImage(device, swapchain->presentTarget.image, NULL);
+    if (swapchain->presentTarget.memory)
+        vulkanWrapper.vkFreeMemory(device, swapchain->presentTarget.memory, NULL);
+    if (swapchain->images) {
+        for (int i = 0; i < swapchain->imageCount; i++) {
+            if (swapchain->images[i].image)
+                vulkanWrapper.vkDestroyImage(device, swapchain->images[i].image, NULL);
+            if (swapchain->images[i].memory)
+                vulkanWrapper.vkFreeMemory(device, swapchain->images[i].memory, NULL);
+        }
     }
 
     MEMFREE(swapchain->images);
@@ -244,7 +300,9 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
         swapchain->presented = (int)imageIndex;
     /* Mali does not make PRESENT_SRC AHB contents visible to CPU/GLES
      * without an explicit host-read barrier. */
-    if (swapchain->commandBuffer && swapchain->queue && swapchain->images) {
+    if (swapchain->commandBuffer && swapchain->queue && swapchain->images
+            && imageIndex < (uint32_t)swapchain->imageCount
+            && swapchain->presentTarget.image) {
         vulkanWrapper.vkResetCommandBuffer(swapchain->commandBuffer, 0);
         VkCommandBufferBeginInfo beginInfo = {0};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -255,25 +313,55 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
             range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             range.levelCount = 1;
             range.layerCount = 1;
-            VkImageMemoryBarrier barrier = {0};
-            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                    VK_ACCESS_TRANSFER_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT |
-                                    VK_ACCESS_SHADER_READ_BIT;
-            barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.image = swapchain->images[0].image;
-            barrier.subresourceRange = range;
+            VkImageMemoryBarrier barriers[2] = {0};
+            barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            barriers[0].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            barriers[0].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            barriers[0].oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            barriers[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barriers[0].image = swapchain->images[imageIndex].image;
+            barriers[0].subresourceRange = range;
+            barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            barriers[1].srcAccessMask = 0;
+            barriers[1].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barriers[1].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            barriers[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barriers[1].image = swapchain->presentTarget.image;
+            barriers[1].subresourceRange = range;
             vulkanWrapper.vkCmdPipelineBarrier(
                     swapchain->commandBuffer,
-                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_HOST_BIT |
-                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                    0, 0, NULL, 0, NULL, 1, &barrier);
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    0, 0, NULL, 0, NULL, 2, barriers);
+            VkImageBlit blit = {0};
+            blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blit.srcSubresource.layerCount = 1;
+            blit.srcOffsets[1].x = (int32_t)swapchain->imageExtent.width;
+            blit.srcOffsets[1].y = (int32_t)swapchain->imageExtent.height;
+            blit.srcOffsets[1].z = 1;
+            blit.dstSubresource = blit.srcSubresource;
+            blit.dstOffsets[1] = blit.srcOffsets[1];
+            vulkanWrapper.vkCmdBlitImage(
+                    swapchain->commandBuffer,
+                    swapchain->images[imageIndex].image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    swapchain->presentTarget.image,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    1, &blit, VK_FILTER_NEAREST);
+            VkImageMemoryBarrier hostBarrier = barriers[1];
+            hostBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            hostBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+            hostBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            hostBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+            vulkanWrapper.vkCmdPipelineBarrier(
+                    swapchain->commandBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_HOST_BIT,
+                    0, 0, NULL, 0, NULL, 1, &hostBarrier);
             vulkanWrapper.vkEndCommandBuffer(swapchain->commandBuffer);
             VkSubmitInfo submitInfo = {0};
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
