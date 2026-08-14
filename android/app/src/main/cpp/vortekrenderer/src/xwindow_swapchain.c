@@ -362,6 +362,19 @@ void XWindowSwapchain_presentImageIndex(XWindowSwapchain* swapchain, uint32_t im
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
                     VK_PIPELINE_STAGE_HOST_BIT,
                     0, 0, NULL, 0, NULL, 1, &hostBarrier);
+            /* WSI leaves the presented image in PRESENT_SRC. ANGLE's next
+             * frame barriers from that layout; Mali hangs if we leave
+             * TRANSFER_SRC. */
+            VkImageMemoryBarrier presentBarrier = barriers[0];
+            presentBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            presentBarrier.dstAccessMask = 0;
+            presentBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            presentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            vulkanWrapper.vkCmdPipelineBarrier(
+                    swapchain->commandBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                    0, 0, NULL, 0, NULL, 1, &presentBarrier);
             vulkanWrapper.vkEndCommandBuffer(swapchain->commandBuffer);
             VkSubmitInfo submitInfo = {0};
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

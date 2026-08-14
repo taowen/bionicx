@@ -87,6 +87,9 @@ grep -F 'createDeviceImage' \
 grep -F 'VK_IMAGE_LAYOUT_PRESENT_SRC_KHR' \
     "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
     >/dev/null
+grep -F 'presentBarrier' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
+    >/dev/null
 grep -F 'VK_ACCESS_HOST_READ_BIT' \
     "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
     >/dev/null

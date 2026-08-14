@@ -29,7 +29,9 @@ grep -F '../../../lib/libvulkan_vortek.so' \
     "$repo_dir/examples/chrome/build-bundle.sh" >/dev/null
 grep -F 'build-gladio.sh' "$repo_dir/examples/chrome/build-bundle.sh" >/dev/null
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/chrome-smoke.json"
-grep -F '"CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing"' \
+grep -F -- '--disable-gpu-watchdog' \
+    "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
+grep -F '"CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing --disable-gpu-watchdog"' \
     "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
 grep -F '"CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing"' \
     "$repo_dir/profiles/chrome-smoke.json" >/dev/null
