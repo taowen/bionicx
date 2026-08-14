@@ -10,8 +10,22 @@ if grep -F -- '--runtime-root' \
     echo "glx-probe install must not replace the shared seed" >&2
     exit 1
 fi
-grep -F 'passed=26' \
+grep -F 'passed=5' \
     "$repo_dir/examples/glx-probe/install-and-run.sh" >/dev/null
+grep -F 'glx-setup' "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
+grep -F 'glx-config' "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
+grep -F 'host-gl-capabilities' \
+    "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
+if grep -F 'result("glx-display"' \
+        "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null; then
+    echo "stale fragmented glx-display result remains" >&2
+    exit 1
+fi
+if grep -F 'result("host-gl-identity"' \
+        "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null; then
+    echo "stale fragmented host-gl-identity result remains" >&2
+    exit 1
+fi
 grep -F 'MapNotify' \
     "$repo_dir/examples/glx-probe/glx-probe.c" >/dev/null
 grep -F 'awaitEglContext' \

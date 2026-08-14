@@ -126,7 +126,7 @@ ANDROID_SERIAL="$serial" \
 BIONICX_SCREENSHOT="$evidence/glx-probe-reboot.png" \
     "$repo_dir/examples/glx-probe/install-and-run.sh" \
     | tee "$evidence/glx-probe-reboot.log"
-grep -Fq "BXSUMMARY host-glx passed=26 failed=0" \
+grep -Fq "BXSUMMARY host-glx passed=5 failed=0" \
     "$evidence/glx-probe-reboot.log"
 
 echo "==== untraced desktop session after reboot ===="
@@ -138,4 +138,4 @@ BIONICX_DESKTOP_MAPPED="$evidence/desktop-session-reboot-mapped.png" \
 grep -Fq "BXSUMMARY desktop-session-accept passed=7 failed=0" \
     "$evidence/desktop-session-reboot.log"
 
-echo "BXSUMMARY reboot-recheck seed+audit+glx26+keepassxc6+desktop7"
+echo "BXSUMMARY reboot-recheck seed+audit+glx5+keepassxc6+desktop7"

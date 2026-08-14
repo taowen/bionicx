@@ -99,10 +99,10 @@ int main(void) {
 
     Display *display = XOpenDisplay(NULL);
     bool display_ok = display != NULL;
-    result("glx-display", display_ok,
-           display_ok ? "connected" : "XOpenDisplay failed");
-    display_ok ? passed++ : failed++;
-    if (!display_ok) return 1;
+    if (!display_ok) {
+        result("glx-setup", false, "XOpenDisplay failed");
+        return 1;
+    }
 
     int screen = DefaultScreen(display);
     int glx_opcode = 0;
@@ -112,19 +112,16 @@ int main(void) {
             && XQueryExtension(display, "GLX", &glx_opcode, &glx_event,
                                &glx_error);
     char details[512];
-    snprintf(details, sizeof(details), "opcode=%d event=%d error=%d",
-             glx_opcode, glx_event, glx_error);
-    result("glx-extension", extension_ok, details);
-    extension_ok ? passed++ : failed++;
-
     int glx_major = 1;
     int glx_minor = 4;
     bool version_ok = glXQueryVersion(display, &glx_major, &glx_minor)
             && glx_major == 1 && glx_minor >= 4;
-    snprintf(details, sizeof(details), "version=%d.%d",
-             glx_major, glx_minor);
-    result("glx-version", version_ok, details);
-    version_ok ? passed++ : failed++;
+    snprintf(details, sizeof(details),
+             "opcode=%d event=%d error=%d version=%d.%d",
+             glx_opcode, glx_event, glx_error, glx_major, glx_minor);
+    bool setup_ok = extension_ok && version_ok;
+    result("glx-setup", setup_ok, details);
+    setup_ok ? passed++ : failed++;
 
     uint32_t visual_properties[64] = {0};
     GLXGetVisualConfigsReply visual_reply = {0};
@@ -150,8 +147,7 @@ int main(void) {
              visual_reply.num_visuals, visual_reply.num_properties,
              visual_properties[0], visual_properties[2],
              visual_properties[14]);
-    result("glx-visual-config-wire", visual_config_ok, details);
-    visual_config_ok ? passed++ : failed++;
+    /* visual_config_ok is folded into glx-config. */
 
     int fbconfig_count = 0;
     GLXFBConfig *fbconfigs = glXGetFBConfigs(display, screen,
@@ -203,15 +199,12 @@ int main(void) {
              "configs=%d visual=0x%x xVisual=0x%lx xRenderable=%d",
              fbconfig_count, fb_visual_id, (unsigned long)x_visual_id,
              fb_x_renderable);
-    result("glx-fbconfig-visual", fbconfig_ok, details);
-    fbconfig_ok ? passed++ : failed++;
+    /* fbconfig_ok is folded into glx-config. */
 
     const char *extensions = glXQueryExtensionsString(display, screen);
     bool es_profile_ok = extensions
             && strstr(extensions, "GLX_EXT_create_context_es_profile");
-    result("glx-es-profile-extension", es_profile_ok,
-           extensions ? extensions : "unavailable");
-    es_profile_ok ? passed++ : failed++;
+    /* es_profile_ok is folded into glx-config. */
 
     int pbuffer_attributes[] = {
         GLX_PBUFFER_WIDTH, 7,
@@ -229,8 +222,7 @@ int main(void) {
     bool pbuffer_ok = pbuffer && pbuffer_width == 7 && pbuffer_height == 5;
     snprintf(details, sizeof(details), "drawable=0x%lx size=%ux%u",
              (unsigned long)pbuffer, pbuffer_width, pbuffer_height);
-    result("glx-pbuffer", pbuffer_ok, details);
-    pbuffer_ok ? passed++ : failed++;
+    /* pbuffer_ok is folded into glx-config. */
     if (pbuffer) glXDestroyPbuffer(display, pbuffer);
     if (fb_visual) XFree(fb_visual);
     free(fbconfigs);
@@ -239,10 +231,12 @@ int main(void) {
                                GLX_DEPTH_SIZE, 16, None};
     XVisualInfo *visual = glXChooseVisual(display, screen, visual_attributes);
     bool visual_ok = visual != NULL;
-    result("glx-visual", visual_ok,
-           visual_ok ? "RGBA double-buffered" : "unavailable");
-    visual_ok ? passed++ : failed++;
     if (!visual_ok) {
+        snprintf(details, sizeof(details),
+                 "wire=%u fb=%u es=%u pbuffer=%u visual=missing",
+                 visual_config_ok, fbconfig_ok, es_profile_ok, pbuffer_ok);
+        result("glx-config", false, details);
+        failed++;
         XCloseDisplay(display);
         return 1;
     }
@@ -265,8 +259,16 @@ int main(void) {
     snprintf(details, sizeof(details),
              "rgba=%d double=%d red=%d depth=%d type=0x%x",
              rgba, double_buffer, red_size, depth_size, visual_type);
-    result("glx-visual-config-api", config_ok, details);
-    config_ok ? passed++ : failed++;
+    snprintf(details, sizeof(details),
+             "wire=%u fb=%u es=%u pbuffer=%ux%u visual=ok rgba=%d double=%d "
+             "red=%d depth=%d type=0x%x",
+             visual_config_ok, fbconfig_ok, es_profile_ok,
+             pbuffer_width, pbuffer_height, rgba, double_buffer, red_size,
+             depth_size, visual_type);
+    bool glx_config_ok = visual_config_ok && fbconfig_ok && es_profile_ok
+            && pbuffer_ok && visual_ok && config_ok;
+    result("glx-config", glx_config_ok, details);
+    glx_config_ok ? passed++ : failed++;
 
     Colormap colormap = XCreateColormap(display, RootWindow(display, screen),
                                          visual->visual, AllocNone);
@@ -304,11 +306,12 @@ int main(void) {
     bool make_current = context != NULL
             && glXMakeCurrent(display, window, context);
     bool context_ok = make_current;
-    result("glx-context", context_ok,
-           context == NULL ? "create-null"
-           : make_current ? "current" : "make-current-failed");
-    context_ok ? passed++ : failed++;
-    if (!context_ok) goto cleanup_window;
+    if (!context_ok) {
+        result("glx-context", false,
+               context == NULL ? "create-null" : "make-current-failed");
+        failed++;
+        goto cleanup_window;
+    }
 
     typedef const GLubyte *(*GetStringProc)(GLenum);
     GetStringProc get_string = (GetStringProc)glXGetProcAddress(
@@ -316,18 +319,16 @@ int main(void) {
     const char *proc_version = get_string
             ? (const char *)get_string(GL_VERSION) : NULL;
     bool proc_address_ok = proc_version != NULL;
-    result("glx-gl-proc-address", proc_address_ok,
-           proc_version ? proc_version : "glGetString unavailable");
-    proc_address_ok ? passed++ : failed++;
+    snprintf(details, sizeof(details), "current=1 proc=%s",
+             proc_version ? proc_version : "glGetString unavailable");
+    result("glx-context", context_ok && proc_address_ok, details);
+    (context_ok && proc_address_ok) ? passed++ : failed++;
 
     const char *gl_extensions = (const char *)glGetString(GL_EXTENSIONS);
     bool bgra_extension_ok = gl_extensions
             && strstr(gl_extensions,
                       "GL_EXT_texture_format_BGRA8888") != NULL;
-    result("host-gl-bgra-texture-extension", bgra_extension_ok,
-           bgra_extension_ok ? "GL_EXT_texture_format_BGRA8888"
-                             : "extension unavailable");
-    bgra_extension_ok ? passed++ : failed++;
+    /* bgra_extension_ok is folded into host-gl-capabilities. */
 
     GLint gl_major = 0;
     GLint gl_minor = 0;
@@ -335,8 +336,7 @@ int main(void) {
     glGetIntegerv(GL_MINOR_VERSION, &gl_minor);
     bool numeric_version_ok = gl_major == 3 && gl_minor == 2;
     snprintf(details, sizeof(details), "version=%d.%d", gl_major, gl_minor);
-    result("host-gl-numeric-version", numeric_version_ok, details);
-    numeric_version_ok ? passed++ : failed++;
+    /* numeric_version_ok is folded into host-gl-capabilities. */
 
     GLint precision_range[2] = {0};
     GLint precision_bits = 0;
@@ -346,16 +346,14 @@ int main(void) {
             && precision_range[1] > 0 && precision_bits > 0;
     snprintf(details, sizeof(details), "range=%d..%d precision=%d",
              precision_range[0], precision_range[1], precision_bits);
-    result("host-gl-shader-precision", precision_ok, details);
-    precision_ok ? passed++ : failed++;
+    /* precision_ok is folded into host-gl-capabilities. */
 
     GLint64 max_element_index = 0;
     glGetInteger64v(GL_MAX_ELEMENT_INDEX, &max_element_index);
     bool integer64_ok = max_element_index > 0;
     snprintf(details, sizeof(details), "maxElementIndex=%lld",
              (long long)max_element_index);
-    result("host-gl-integer64", integer64_ok, details);
-    integer64_ok ? passed++ : failed++;
+    /* integer64_ok is folded into host-gl-capabilities. */
 
     GLint max_compute_count = 0;
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0,
@@ -363,8 +361,7 @@ int main(void) {
     bool indexed_integer_ok = max_compute_count > 0;
     snprintf(details, sizeof(details), "maxComputeWorkGroupsX=%d",
              max_compute_count);
-    result("host-gl-indexed-integer", indexed_integer_ok, details);
-    indexed_integer_ok ? passed++ : failed++;
+    /* indexed_integer_ok is folded into host-gl-capabilities. */
 
     GLint max_viewport_dims[2] = {0, 0};
     glGetIntegerv(GL_MAX_VIEWPORT_DIMS, max_viewport_dims);
@@ -372,8 +369,7 @@ int main(void) {
             && max_viewport_dims[1] >= 1080;
     snprintf(details, sizeof(details), "maximum=%dx%d",
              max_viewport_dims[0], max_viewport_dims[1]);
-    result("host-gl-max-viewport-dimensions", viewport_dims_ok, details);
-    viewport_dims_ok ? passed++ : failed++;
+    /* viewport_dims_ok is folded into host-gl-capabilities. */
 
     while (glGetError() != GL_NO_ERROR) {}
     const GLint integer_vertices[] = {1, 2, 3, 4};
@@ -403,8 +399,7 @@ int main(void) {
              "id=%u integer=%d size=%d type=0x%x buffer=%d glError=0x%x",
              integer_vertex_buffer, attrib_integer, attrib_size, attrib_type,
              attrib_buffer, integer_attrib_error);
-    result("host-gl-integer-vertex-attrib", integer_attrib_ok, details);
-    integer_attrib_ok ? passed++ : failed++;
+    /* integer_attrib_ok is folded into host-gl-capabilities. */
     glDisableVertexAttribArray(7);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDeleteBuffers(1, &integer_vertex_buffer);
@@ -439,8 +434,7 @@ int main(void) {
     snprintf(details, sizeof(details), "formats=%zu minimumMaxSamples=%d",
              sizeof(required_msaa_formats) / sizeof(required_msaa_formats[0]),
              minimum_max_samples);
-    result("host-gl-required-format-msaa", required_msaa_ok, details);
-    required_msaa_ok ? passed++ : failed++;
+    /* required_msaa_ok is folded into host-gl-capabilities. */
 
     typedef void (*GenTransformFeedbacksProc)(GLsizei, GLuint *);
     typedef void (*BindTransformFeedbackProc)(GLenum, GLuint);
@@ -475,9 +469,7 @@ int main(void) {
                 && glGetError() == GL_NO_ERROR;
     }
     snprintf(details, sizeof(details), "id=%u", transform_feedback);
-    result("host-gl-transform-feedback-object", transform_feedback_ok,
-           details);
-    transform_feedback_ok ? passed++ : failed++;
+    /* transform_feedback_ok is folded into host-gl-capabilities. */
 
     const char *vertex_source =
             "#version 120\n"
@@ -542,8 +534,7 @@ int main(void) {
              "sourceLinked=%d length=%d received=%d format=0x%x restored=%d",
              source_linked, binary_length, received_binary_length,
              binary_format, restored_linked);
-    result("host-gl-program-binary-roundtrip", program_binary_ok, details);
-    program_binary_ok ? passed++ : failed++;
+    /* program_binary_ok is folded into host-gl-capabilities. */
     free(program_binary);
     glDeleteProgram(restored_program);
     glDeleteProgram(source_program);
@@ -591,8 +582,7 @@ int main(void) {
             && modern_linked == GL_TRUE && glGetError() == GL_NO_ERROR;
     snprintf(details, sizeof(details), "vertex=%d fragment=%d linked=%d",
              modern_vertex_compiled, modern_fragment_compiled, modern_linked);
-    result("host-gl-modern-integer-shader", modern_shader_ok, details);
-    modern_shader_ok ? passed++ : failed++;
+    /* modern_shader_ok is folded into host-gl-capabilities. */
     glDeleteProgram(modern_program);
     glDeleteShader(modern_fragment_shader);
     glDeleteShader(modern_vertex_shader);
@@ -607,8 +597,7 @@ int main(void) {
             && strstr(vendor, "Gladio") != NULL
             && strstr(renderer, "Gladio") != NULL
             && strstr(version, "OpenGL ES 3.") != NULL;
-    result("host-gl-identity", identity_ok, details);
-    identity_ok ? passed++ : failed++;
+    /* identity_ok is folded into host-gl-capabilities. */
 
     while (glGetError() != GL_NO_ERROR) {}
     GLuint bgra_texture = 0;
@@ -642,8 +631,22 @@ int main(void) {
              "status=0x%x pixel=%u,%u,%u,%u glError=0x%x",
              bgra_framebuffer_status, bgra_pixel[0], bgra_pixel[1],
              bgra_pixel[2], bgra_pixel[3], bgra_error);
-    result("host-gl-bgra-render-target", bgra_render_target_ok, details);
-    bgra_render_target_ok ? passed++ : failed++;
+    snprintf(details, sizeof(details),
+             "bgraExt=%u es=%d.%d precision=%u i64=%u indexed=%u viewport=%dx%d "
+             "intAttrib=%u msaa=%d xfb=%u programBinary=%u modern=%u "
+             "identity=%u bgraRT=%u vendor=%s",
+             bgra_extension_ok, gl_major, gl_minor, precision_ok, integer64_ok,
+             indexed_integer_ok, max_viewport_dims[0], max_viewport_dims[1],
+             integer_attrib_ok, minimum_max_samples, transform_feedback_ok,
+             program_binary_ok, modern_shader_ok, identity_ok,
+             bgra_render_target_ok, vendor ? vendor : "-");
+    bool capabilities_ok = bgra_extension_ok && numeric_version_ok
+            && precision_ok && integer64_ok && indexed_integer_ok
+            && viewport_dims_ok && integer_attrib_ok && required_msaa_ok
+            && transform_feedback_ok && program_binary_ok && modern_shader_ok
+            && identity_ok && bgra_render_target_ok;
+    result("host-gl-capabilities", capabilities_ok, details);
+    capabilities_ok ? passed++ : failed++;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDeleteFramebuffers(1, &bgra_framebuffer);
     glDeleteTextures(1, &bgra_texture);
@@ -676,14 +679,14 @@ int main(void) {
              "center=%u,%u,%u,%u corner=%u,%u,%u,%u",
              center[0], center[1], center[2], center[3],
              corner[0], corner[1], corner[2], corner[3]);
-    result("host-gl-pixels", pixels_ok, details);
-    pixels_ok ? passed++ : failed++;
-
     glXSwapBuffers(display, window);
     glFinish();
     GLenum error = glGetError();
-    bool present_ok = error == GL_NO_ERROR;
-    snprintf(details, sizeof(details), "glError=0x%x", error);
+    bool present_ok = pixels_ok && error == GL_NO_ERROR;
+    snprintf(details, sizeof(details),
+             "center=%u,%u,%u,%u corner=%u,%u,%u,%u glError=0x%x",
+             center[0], center[1], center[2], center[3],
+             corner[0], corner[1], corner[2], corner[3], error);
     result("glx-present", present_ok, details);
     present_ok ? passed++ : failed++;
 
