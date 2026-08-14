@@ -65,6 +65,7 @@ public class XInputExtension extends Extension {
         private static final byte XI_QUERY_DEVICE = 48;
         private static final byte XI_GRAB_DEVICE = 51;
         private static final byte XI_UNGRAB_DEVICE = 52;
+        private static final byte XI_ALLOW_EVENTS = 53;
         private static final byte XI_GET_PROPERTY = 59;
         private static final byte XI_GET_SELECTED_EVENTS = 60;
     }
@@ -671,6 +672,22 @@ public class XInputExtension extends Extension {
         }
     }
 
+    private void allowEvents(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        inputStream.readInt(); // timestamp is advisory
+        int deviceId = inputStream.readUnsignedShort();
+        int mode = inputStream.readUnsignedByte() & 0xff;
+        inputStream.skip(1);
+        // XI 2.2 appends touchid + grab_window. Skip any tail.
+        inputStream.skip(client.getRemainingRequestLength());
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID
+                && deviceId != ALL_DEVICES && deviceId != ALL_MASTER_DEVICES)
+            throw new BadValue(deviceId);
+        // GDK thaws with XIAsyncDevice / XIReplayDevice and a last-event
+        // timestamp. Freeze is not implemented; accept as a no-op.
+        if (mode > 7) throw new BadValue(mode);
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -717,6 +734,9 @@ public class XInputExtension extends Extension {
                 break;
             case ClientOpcodes.XI_UNGRAB_DEVICE:
                 ungrabDevice(client, inputStream);
+                break;
+            case ClientOpcodes.XI_ALLOW_EVENTS:
+                allowEvents(client, inputStream);
                 break;
             case ClientOpcodes.XI_GET_PROPERTY:
                 getProperty(client, inputStream, outputStream);
