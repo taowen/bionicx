@@ -121,8 +121,12 @@ public abstract class GrabRequests {
                                    XOutputStream outputStream)
             throws XRequestError {
         int mode = client.getRequestData() & 0xff;
-        int timestamp = inputStream.readInt();
-        if (timestamp != 0) throw new BadImplementation();
+        // Timestamps are advisory. GDK passes the last event time, not 0.
+        inputStream.readInt();
+        if (mode == 0 || mode == 3 || mode == 6) {
+            // AsyncPointer / AsyncKeyboard / AsyncBoth: no-op unless frozen.
+            return;
+        }
         if (client.xServer.grabManager.getClient() != client) return;
 
         if (mode == 2) { // ReplayPointer
@@ -132,8 +136,13 @@ public abstract class GrabRequests {
                     || button == null) return;
             client.xServer.grabManager.deactivatePointerGrabForReplay();
             client.xServer.inputDeviceManager.replayPointerButtonPress(button);
+            return;
         }
-        else throw new BadImplementation();
+        if (mode == 5) {
+            // ReplayKeyboard: no keyboard freeze yet.
+            return;
+        }
+        throw new BadImplementation();
     }
 
     public static void ungrabButton(XClient client, XInputStream inputStream,
