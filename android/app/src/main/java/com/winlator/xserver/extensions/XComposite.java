@@ -29,7 +29,9 @@ public class XComposite extends Extension {
     private static abstract class ClientOpcodes {
         private static final byte QUERY_VERSION = 0;
         private static final byte REDIRECT_WINDOW = 1;
+        private static final byte REDIRECT_SUBWINDOWS = 2;
         private static final byte UNREDIRECT_WINDOW = 3;
+        private static final byte UNREDIRECT_SUBWINDOWS = 4;
     }
 
     public XComposite(XServer xServer, byte majorOpcode) {
@@ -92,6 +94,32 @@ public class XComposite extends Extension {
         }
     }
 
+    private void redirectSubwindows(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        byte updateMode = inputStream.readByte();
+        inputStream.skip(3);
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        if (updateMode != UpdateMode.REDIRECT_AUTOMATIC.ordinal()
+                && updateMode != UpdateMode.REDIRECT_MANUAL.ordinal()) {
+            throw new BadValue(updateMode);
+        }
+        // Accept the request without taking children offscreen. A real
+        // compositor also needs XDamage; until that exists, painting stays
+        // on the parent so a WM can keep running.
+        window.setTag("compositeRedirectSubwindows", Byte.valueOf(updateMode));
+    }
+
+    private void unredirectSubwindows(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        inputStream.skip(4);
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        window.removeTag("compositeRedirectSubwindows");
+    }
+
     private void unredirectWindow(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
         int windowId = inputStream.readInt();
         byte updateMode = inputStream.readByte();
@@ -131,9 +159,19 @@ public class XComposite extends Extension {
                     redirectWindow(client, inputStream, outputStream);
                 }
                 break;
+            case ClientOpcodes.REDIRECT_SUBWINDOWS:
+                try (XLock lock = xServer.lock(XServer.Lockable.WINDOW_MANAGER)) {
+                    redirectSubwindows(client, inputStream);
+                }
+                break;
             case ClientOpcodes.UNREDIRECT_WINDOW:
                 try (XLock lock = xServer.lock(XServer.Lockable.WINDOW_MANAGER, XServer.Lockable.DRAWABLE_MANAGER)) {
                     unredirectWindow(client, inputStream, outputStream);
+                }
+                break;
+            case ClientOpcodes.UNREDIRECT_SUBWINDOWS:
+                try (XLock lock = xServer.lock(XServer.Lockable.WINDOW_MANAGER)) {
+                    unredirectSubwindows(client, inputStream);
                 }
                 break;
             default:

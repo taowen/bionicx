@@ -32,5 +32,5 @@ done
 result="$("${adb[@]}" logcat -d -v brief \
     | grep -E 'BX(TEST|SUMMARY|ERROR)|server-grab-x11-probe exited with')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY server-grab-x11 passed=5/5" <<<"$result"
+grep -Fq "BXSUMMARY server-grab-x11 passed=6/6" <<<"$result"
 grep -Fq "server-grab-x11-probe exited with 0" <<<"$result"

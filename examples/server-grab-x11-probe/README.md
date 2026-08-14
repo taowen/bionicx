@@ -10,4 +10,7 @@ its setup handshake and become usable after release.
 ANDROID_SERIAL=<serial> examples/server-grab-x11-probe/install-and-run.sh
 ```
 
-Success requires five strict ordering checks and a normal process exit.
+Success requires six strict ordering checks and a normal process exit.
+The sixth check maps a window while the owner holds `GrabServer` and
+another client has `SubstructureRedirect`; the window must become
+viewable so a GTK client cannot deadlock against a window manager.

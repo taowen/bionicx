@@ -4,6 +4,10 @@
 # Desktop session and terminal
 dbus
 icewm
+xfwm4
+xfce4-panel
+xfdesktop4
+xfce4-settings
 xterm
 
 # Browser, office and communication

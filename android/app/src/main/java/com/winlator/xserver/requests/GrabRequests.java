@@ -236,7 +236,7 @@ public abstract class GrabRequests {
         if ((keycode != 0 && keycode < 8) || (modifiers & ~0x80ff) != 0)
             throw new BadValue(keycode != 0 && keycode < 8
                     ? keycode : modifiers);
-        if (pointerMode != 1 || keyboardMode != 1)
+        if ((pointerMode != 0 && pointerMode != 1) || keyboardMode != 1)
             throw new BadImplementation();
         if (!client.xServer.grabManager.addPassiveKeyGrab(window, keycode,
                 modifiers, ownerEvents, client)) throw new BadAccess();

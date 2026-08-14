@@ -136,10 +136,34 @@ int main(int argc, char **argv) {
             new_connection_frozen && new_connection_resumed && new_connection
                     ? "PASS" : "FAIL",
             new_connection_frozen, new_connection_resumed);
+
+    bool grab_map = false;
+    Display *manager = XOpenDisplay(NULL);
+    if (manager) {
+        Window root = DefaultRootWindow(manager);
+        XSelectInput(manager, root, SubstructureRedirectMask);
+        XSync(manager, False);
+        XGrabServer(owner);
+        XSync(owner, False);
+        Window mapped = XCreateSimpleWindow(owner, DefaultRootWindow(owner),
+                20, 20, 120, 80, 0, 0, 0x224466);
+        XMapWindow(owner, mapped);
+        XSync(owner, False);
+        XWindowAttributes attributes = {0};
+        grab_map = XGetWindowAttributes(owner, mapped, &attributes)
+                && attributes.map_state == IsViewable;
+        XUngrabServer(owner);
+        XDestroyWindow(owner, mapped);
+        XSync(owner, False);
+        XCloseDisplay(manager);
+    }
+    printf("BXTEST %s server-grab-map-viewable map=%d\n",
+            grab_map ? "PASS" : "FAIL", grab_map);
+
     bool passed = peer_frozen && owner_progress && peer_resumed
             && disconnect_release && new_connection_frozen
-            && new_connection_resumed && new_connection;
-    printf("BXSUMMARY server-grab-x11 passed=%d/5\n", passed ? 5 : 0);
+            && new_connection_resumed && new_connection && grab_map;
+    printf("BXSUMMARY server-grab-x11 passed=%d/6\n", passed ? 6 : 0);
     fflush(stdout);
     sleep((unsigned)(duration > 0 && duration <= 60 ? duration : 4));
 

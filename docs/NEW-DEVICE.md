@@ -80,7 +80,7 @@ Interrupted installs are finished with `tools/bxapt recover`.
 Install a profile without replacing the rootfs:
 
 ```sh
-tools/install-profile.sh --profile profiles/desktop-session.json --serial "$SERIAL"
+tools/install-profile.sh --profile profiles/xfce-session.json --serial "$SERIAL"
 adb -s "$SERIAL" shell am start -W -n io.taowen.bx/com.winlator.BionicXActivity
 ```
 

@@ -108,9 +108,21 @@ public class WindowManager extends XResourceManager {
     public void mapWindow(Window window, XClient requestingClient) {
         if (!window.attributes.isMapped()) {
             Window parent = window.getParent();
-            if (!parent.hasEventListenerForOtherClient(
+            boolean redirected = parent.hasEventListenerForOtherClient(
                     Event.SUBSTRUCTURE_REDIRECT, requestingClient)
-                    || window.attributes.isOverrideRedirect()) {
+                    && !window.attributes.isOverrideRedirect();
+            boolean grabOwner = requestingClient != null
+                    && requestingClient.xServer.getServerGrabClient()
+                    == requestingClient;
+            // A grab owner that maps while a WM holds SubstructureRedirect
+            // would otherwise wait forever for MapNotify: the WM cannot
+            // answer MapRequest until the grab is released. Dock/panel
+            // windows stay unmapped if the WM never answers MapRequest.
+            if (!redirected || grabOwner || window.isDock()) {
+                if (redirected) {
+                    parent.sendEvent(Event.SUBSTRUCTURE_REDIRECT,
+                            new MapRequest(parent, window));
+                }
                 window.attributes.setMapped(true);
                 window.sendEvent(Event.STRUCTURE_NOTIFY, new MapNotify(window, window));
                 parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY, new MapNotify(parent, window));

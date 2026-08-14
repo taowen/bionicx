@@ -1,0 +1,39 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "xfce-session",
+  "name": "XFCE session with Thunar and Mousepad",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "hostServices": ["dbus", "pulseaudio", "cups", "vulkan"],
+  "launch": {
+    "executable": "${APP}/bin/xfce-session",
+    "workingDirectory": "${HOME}",
+    "arguments": [
+      "--accept",
+      "${RUNTIME}/usr/bin",
+      "${RUNTIME}/usr/bin/thunar",
+      "${RUNTIME}/usr/bin/mousepad"
+    ],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "XDG_RUNTIME_DIR": "${TMP}/runtime",
+      "XDG_CURRENT_DESKTOP": "XFCE",
+      "DESKTOP_SESSION": "xfce",
+      "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
+      "XDG_CONFIG_DIRS": "${RUNTIME}/etc/xdg:${RUNTIME}/usr/share/xfce4",
+      "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
+      "GSETTINGS_BACKEND": "memory",
+      "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
+      "PULSE_SERVER": "unix:${RUNTIME}/tmp/.sound/PS0",
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
+      "LANG": "C.UTF-8",
+      "VK_ICD_FILENAMES": "${APP}/share/vulkan/icd.d/vortek_icd.json",
+      "VORTEK_SERVER_PATH": "${RUNTIME}/tmp/.vortek/V0"
+    }
+  }
+}
