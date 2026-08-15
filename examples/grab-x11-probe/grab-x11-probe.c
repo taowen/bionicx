@@ -27,17 +27,21 @@ static void result(const char *name, bool ok, const char *detail) {
 int main(int argc, char **argv) {
     int duration = argc > 1 ? atoi(argv[1]) : 3;
     Display *display = XOpenDisplay(NULL);
-    if (display == NULL) {
-        fprintf(stderr, "BXFAIL open X11 connection\n");
+    Display *peer = XOpenDisplay(NULL);
+    if (display == NULL || peer == NULL) {
+        fprintf(stderr, "BXFAIL open X11 connections\n");
         return 2;
     }
     XSetErrorHandler(on_x_error);
     Window root = RootWindow(display, DefaultScreen(display));
     Window window = XCreateSimpleWindow(display, root, 40, 40, 200, 120, 0,
                                         0, 0x336699);
+    Window confine = XCreateSimpleWindow(display, root, 100, 100, 80, 80, 0,
+                                         0, 0x663333);
     XSelectInput(display, window, KeyPressMask | ButtonPressMask |
                  ButtonReleaseMask | PointerMotionMask);
     XMapWindow(display, window);
+    XMapWindow(display, confine);
     XSync(display, False);
 
     int passed = 0;
@@ -86,6 +90,46 @@ int main(int argc, char **argv) {
     XUngrabButton(display, AnyButton, AnyModifier, window);
 
     before = x_errors;
+    XWarpPointer(display, None, root, 0, 0, 0, 0, 10, 10);
+    int confined = XGrabPointer(display, window, True, ButtonPressMask,
+                                GrabModeAsync, GrabModeAsync, confine, None,
+                                1);
+    Window qroot = None;
+    Window qchild = None;
+    int root_x = 0;
+    int root_y = 0;
+    int win_x = 0;
+    int win_y = 0;
+    unsigned mask_ret = 0;
+    XQueryPointer(display, confine, &qroot, &qchild, &root_x, &root_y,
+                  &win_x, &win_y, &mask_ret);
+    XWarpPointer(display, None, root, 0, 0, 0, 0, 10, 10);
+    int win_x2 = 0;
+    int win_y2 = 0;
+    XQueryPointer(peer, confine, &qroot, &qchild, &root_x, &root_y,
+                  &win_x2, &win_y2, &mask_ret);
+    XUngrabPointer(display, 1);
+    XSync(display, False);
+    XSync(peer, False);
+    bool confine_ok = confined == GrabSuccess && x_errors == before
+            && win_x >= 0 && win_x < 80 && win_y >= 0 && win_y < 80
+            && win_x2 >= 0 && win_x2 < 80 && win_y2 >= 0 && win_y2 < 80;
+    result("grab-pointer-confine", confine_ok,
+           confine_ok ? "confineTo clamps" : "confineTo failed");
+    RECORD(confine_ok);
+
+    before = x_errors;
+    XGrabButton(display, AnyButton, AnyModifier, window, True,
+                ButtonPressMask | ButtonReleaseMask,
+                GrabModeSync, GrabModeSync, confine, None);
+    XSync(display, False);
+    bool button_confine_ok = x_errors == before;
+    result("grab-button-confine", button_confine_ok,
+           button_confine_ok ? "GrabButton confineTo" : "button confine failed");
+    RECORD(button_confine_ok);
+    XUngrabButton(display, AnyButton, AnyModifier, window);
+
+    before = x_errors;
     XAllowEvents(display, AsyncPointer, CurrentTime);
     XAllowEvents(display, AsyncKeyboard, CurrentTime);
     XAllowEvents(display, AsyncBoth, 1);
@@ -106,9 +150,9 @@ int main(int argc, char **argv) {
     int grab_kb = XGrabKeyboard(display, window, False,
                                 GrabModeSync, GrabModeSync, 1);
     int grab_ptr = XGrabPointer(display, window, False, ButtonPressMask,
-                                GrabModeSync, GrabModeSync, None, None, 1);
+                                GrabModeSync, GrabModeSync, confine, None, 1);
     XGrabButton(display, Button1, ShiftMask, window, False, ButtonPressMask,
-                GrabModeSync, GrabModeSync, None, None);
+                GrabModeSync, GrabModeSync, confine, None);
     XAllowEvents(display, SyncBoth, 1);
     XUngrabPointer(display, 1);
     XUngrabKeyboard(display, 1);
@@ -124,7 +168,9 @@ int main(int argc, char **argv) {
            passed, failed, x_errors);
     fflush(stdout);
     sleep((unsigned)(duration > 0 && duration <= 30 ? duration : 3));
+    XDestroyWindow(display, confine);
     XDestroyWindow(display, window);
+    XCloseDisplay(peer);
     XCloseDisplay(display);
     return failed == 0 && x_errors == 0 ? 0 : 1;
 }

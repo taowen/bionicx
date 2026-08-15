@@ -7,12 +7,16 @@ grep -F 'GrabModeSync' \
     "$repo_dir/examples/grab-x11-probe/grab-x11-probe.c" >/dev/null
 grep -F 'SyncBoth' \
     "$repo_dir/examples/grab-x11-probe/grab-x11-probe.c" >/dev/null
+grep -F 'confine' \
+    "$repo_dir/examples/grab-x11-probe/grab-x11-probe.c" >/dev/null
+grep -F 'getConfineWindow' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/GrabManager.java" >/dev/null
 if grep -E 'xfsettingsd|xfwm4|icewm' \
         "$repo_dir/examples/grab-x11-probe/grab-x11-probe.c" >/dev/null; then
     echo "grab family probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=6 failed=0' \
+grep -F 'passed=8 failed=0' \
     "$repo_dir/examples/grab-x11-probe/install-and-run.sh" >/dev/null
 grep -F 'rootfs_payload=none' \
     "$repo_dir/examples/grab-x11-probe/build-bundle.sh" >/dev/null

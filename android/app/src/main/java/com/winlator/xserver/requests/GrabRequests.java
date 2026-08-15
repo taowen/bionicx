@@ -52,25 +52,30 @@ public abstract class GrabRequests {
         Cursor cursor = cursorId == 0 ? null
                 : client.xServer.cursorManager.getCursor(cursorId);
         if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
-        // GDK passes the last event time and often GrabModeSync. Confine
-        // and freeze are not implemented; accept the grab and deliver
-        // asynchronously.
+        Window confine = null;
+        if (confineTo != 0) {
+            confine = client.xServer.windowManager.getWindow(confineTo);
+            if (confine == null) throw new BadWindow(confineTo);
+        }
+        // GDK passes the last event time and often GrabModeSync. Freeze is
+        // not implemented; accept the grab and deliver asynchronously.
         if ((pointerMode != 0 && pointerMode != 1)
-                || (keyboardMode != 0 && keyboardMode != 1)
-                || confineTo != 0)
+                || (keyboardMode != 0 && keyboardMode != 1))
             throw new BadImplementation();
 
         Status status;
         if (client.xServer.grabManager.getWindow() != null && client.xServer.grabManager.getClient() != client) {
             status = Status.ALREADY_GRABBED;
         }
-        else if (window.getMapState() != Window.MapState.VIEWABLE) {
+        else if (window.getMapState() != Window.MapState.VIEWABLE
+                || (confine != null
+                    && confine.getMapState() != Window.MapState.VIEWABLE)) {
             status = Status.NOT_VIEWABLE;
         }
         else {
             status = Status.SUCCESS;
             client.xServer.grabManager.activatePointerGrab(window, ownerEvents,
-                    eventMask, client, cursor);
+                    eventMask, client, cursor, confine);
         }
 
         try (XStreamLock lock = outputStream.lock()) {
@@ -108,21 +113,24 @@ public abstract class GrabRequests {
         Cursor cursor = cursorId == 0 ? null
                 : client.xServer.cursorManager.getCursor(cursorId);
         if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
+        Window confine = null;
+        if (confineTo != 0) {
+            confine = client.xServer.windowManager.getWindow(confineTo);
+            if (confine == null) throw new BadWindow(confineTo);
+        }
         // GDK/xfsettingsd install passive button grabs with GrabModeSync
         // (keyboardMode 0). Keyboard freeze is not implemented; accept
-        // the request and deliver asynchronously. Confine remains an error.
+        // the request and deliver asynchronously.
         if ((pointerMode != 0 && pointerMode != 1)
-                || (keyboardMode != 0 && keyboardMode != 1)
-                || confineTo != 0) {
+                || (keyboardMode != 0 && keyboardMode != 1)) {
             Log.w(TAG, "unsupported GrabButton modes pointer=" + pointerMode
                     + " keyboard=" + keyboardMode
-                    + " confineTo=" + Integer.toUnsignedString(confineTo)
                     + " cursor=" + Integer.toUnsignedString(cursorId));
             throw new BadImplementation();
         }
         if (!client.xServer.grabManager.addPassiveButtonGrab(window, button,
                 modifiers, ownerEvents, eventMask, client, cursor,
-                pointerMode == 0))
+                pointerMode == 0, confine))
             throw new BadAccess();
     }
 

@@ -39,11 +39,29 @@ public class Pointer {
     }
 
     public void setX(int x) {
-        this.x = (short)x;
+        this.x = (short)confineX(x);
     }
 
     public void setY(int y) {
-        this.y = (short)y;
+        this.y = (short)confineY(y);
+    }
+
+    private int confineX(int x) {
+        Window confine = xServer.grabManager.getConfineWindow();
+        if (confine == null) return x;
+        short[] origin = confine.localPointToRoot((short)0, (short)0);
+        int max = origin[0] + confine.getWidth() - 1;
+        if (max < origin[0]) max = origin[0];
+        return Mathf.clamp(x, origin[0], max);
+    }
+
+    private int confineY(int y) {
+        Window confine = xServer.grabManager.getConfineWindow();
+        if (confine == null) return y;
+        short[] origin = confine.localPointToRoot((short)0, (short)0);
+        int max = origin[1] + confine.getHeight() - 1;
+        if (max < origin[1]) max = origin[1];
+        return Mathf.clamp(y, origin[1], max);
     }
 
     public short getX() {
