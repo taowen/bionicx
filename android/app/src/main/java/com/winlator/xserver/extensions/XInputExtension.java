@@ -66,6 +66,8 @@ public class XInputExtension extends Extension {
         private static final byte XI_GRAB_DEVICE = 51;
         private static final byte XI_UNGRAB_DEVICE = 52;
         private static final byte XI_ALLOW_EVENTS = 53;
+        private static final byte XI_PASSIVE_GRAB_DEVICE = 54;
+        private static final byte XI_PASSIVE_UNGRAB_DEVICE = 55;
         private static final byte XI_GET_PROPERTY = 59;
         private static final byte XI_GET_SELECTED_EVENTS = 60;
     }
@@ -688,6 +690,117 @@ public class XInputExtension extends Extension {
         if (mode > 7) throw new BadValue(mode);
     }
 
+    private static int coreModifiers(int xiModifiers) {
+        return xiModifiers == 0x80000000 ? 0x8000 : (xiModifiers & 0xffff);
+    }
+
+    private void passiveGrabDevice(XClient client, XInputStream inputStream,
+                                   XOutputStream outputStream)
+            throws IOException, XRequestError {
+        inputStream.readInt(); // timestamp is advisory
+        int windowId = inputStream.readInt();
+        int cursorId = inputStream.readInt();
+        int detail = inputStream.readInt();
+        int deviceId = inputStream.readUnsignedShort();
+        int numModifiers = inputStream.readUnsignedShort();
+        int maskWords = inputStream.readUnsignedShort();
+        int grabType = inputStream.readUnsignedByte();
+        int grabMode = inputStream.readUnsignedByte();
+        int pairedDeviceMode = inputStream.readUnsignedByte();
+        boolean ownerEvents = inputStream.readUnsignedByte() != 0;
+        inputStream.skip(2);
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        Cursor cursor = cursorId == 0 ? null
+                : xServer.cursorManager.getCursor(cursorId);
+        if (cursorId != 0 && cursor == null) throw new BadCursor(cursorId);
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID
+                && deviceId != ALL_DEVICES && deviceId != ALL_MASTER_DEVICES)
+            throw new BadValue(deviceId);
+        // GDK installs XIGrabButton / XIGrabKeycode with XIGrabModeSync.
+        // Freeze is not implemented; accept and deliver asynchronously.
+        if ((grabMode != 0 && grabMode != 1)
+                || (pairedDeviceMode != 0 && pairedDeviceMode != 1)
+                || grabType > 6 || numModifiers > 32 || maskWords > 8
+                || maskWords * 4 + numModifiers * 4
+                    > client.getRemainingRequestLength()) {
+            throw new BadImplementation();
+        }
+        byte[] xiMask = new byte[maskWords * 4];
+        inputStream.read(xiMask);
+        int[] failedModifiers = new int[numModifiers];
+        byte[] failedStatuses = new byte[numModifiers];
+        int failed = 0;
+        int coreMask = 0;
+        if (maskBit(xiMask, XI_BUTTON_PRESS)) coreMask |= Event.BUTTON_PRESS;
+        if (maskBit(xiMask, XI_BUTTON_RELEASE)) coreMask |= Event.BUTTON_RELEASE;
+        if (maskBit(xiMask, XI_MOTION)) coreMask |= Event.POINTER_MOTION;
+        for (int i = 0; i < numModifiers; i++) {
+            int modifier = inputStream.readInt();
+            int coreMods = coreModifiers(modifier);
+            boolean ok = true;
+            if (grabType == 0) {
+                ok = xServer.grabManager.addPassiveButtonGrab(window,
+                        detail & 0xff, coreMods, ownerEvents,
+                        new Bitmask(coreMask), client, cursor, grabMode == 0);
+            }
+            else if (grabType == 1) {
+                ok = xServer.grabManager.addPassiveKeyGrab(window,
+                        detail & 0xff, coreMods, ownerEvents, client);
+            }
+            if (!ok) {
+                failedModifiers[failed] = modifier;
+                failedStatuses[failed] = 1; // AlreadyGrabbed
+                failed++;
+            }
+        }
+        inputStream.skip(client.getRemainingRequestLength());
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.XI_PASSIVE_GRAB_DEVICE);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(failed * 2);
+            outputStream.writeShort((short)failed);
+            outputStream.writePad(22);
+            for (int i = 0; i < failed; i++) {
+                outputStream.writeInt(failedModifiers[i]);
+                outputStream.writeByte(failedStatuses[i]);
+                outputStream.writePad(3);
+            }
+        }
+    }
+
+    private void passiveUngrabDevice(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        int detail = inputStream.readInt();
+        int deviceId = inputStream.readUnsignedShort();
+        int numModifiers = inputStream.readUnsignedShort();
+        int grabType = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID
+                && deviceId != ALL_DEVICES && deviceId != ALL_MASTER_DEVICES)
+            throw new BadValue(deviceId);
+        if (grabType > 6 || numModifiers > 32
+                || numModifiers * 4 > client.getRemainingRequestLength()) {
+            throw new BadImplementation();
+        }
+        for (int i = 0; i < numModifiers; i++) {
+            int coreMods = coreModifiers(inputStream.readInt());
+            if (grabType == 0) {
+                xServer.grabManager.removePassiveButtonGrabs(window,
+                        detail & 0xff, coreMods, client);
+            }
+            else if (grabType == 1) {
+                xServer.grabManager.removePassiveKeyGrabs(window,
+                        detail & 0xff, coreMods, client);
+            }
+        }
+        inputStream.skip(client.getRemainingRequestLength());
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -737,6 +850,12 @@ public class XInputExtension extends Extension {
                 break;
             case ClientOpcodes.XI_ALLOW_EVENTS:
                 allowEvents(client, inputStream);
+                break;
+            case ClientOpcodes.XI_PASSIVE_GRAB_DEVICE:
+                passiveGrabDevice(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.XI_PASSIVE_UNGRAB_DEVICE:
+                passiveUngrabDevice(client, inputStream);
                 break;
             case ClientOpcodes.XI_GET_PROPERTY:
                 getProperty(client, inputStream, outputStream);
