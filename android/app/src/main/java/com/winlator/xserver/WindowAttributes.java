@@ -72,6 +72,10 @@ public class WindowAttributes {
         return cursor == null && parent != null ? parent.attributes.getCursor() : cursor;
     }
 
+    public Cursor getAssignedCursor() {
+        return cursor;
+    }
+
     public void setCursor(Cursor cursor) {
         this.cursor = cursor;
     }

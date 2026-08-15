@@ -8,6 +8,7 @@ import com.winlator.core.Callback;
 import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
+import com.winlator.xserver.Cursor;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.Window;
@@ -20,20 +21,23 @@ import com.winlator.xserver.errors.BadIdChoice;
 import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.BadWindow;
+import com.winlator.xserver.errors.BadMatch;
 import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 
-/** Stateful subset of XFixes 2.0 region resources. */
+/** Stateful subset of XFixes 4.0 cursor, save-set and region resources. */
 public class XFixesExtension extends Extension {
-    public static final int MAJOR_VERSION = 2;
+    public static final int MAJOR_VERSION = 4;
     public static final int MINOR_VERSION = 0;
+    private static final String HIDE_COUNT_TAG = "xfixesHideCount";
     private static final byte FIRST_EVENT = 70;
     private static final byte FIRST_ERROR = -110;
 
     private final SparseArray<Region> regions = new SparseArray<>();
+    private final SparseArray<String> cursorNames = new SparseArray<>();
     private final IdentityHashMap<XClient, ArrayList<Integer>> clientRegions =
             new IdentityHashMap<>();
     private final ArrayList<SelectionInput> selectionInputs = new ArrayList<>();
@@ -41,12 +45,21 @@ public class XFixesExtension extends Extension {
 
     private static abstract class ClientOpcodes {
         private static final byte QUERY_VERSION = 0;
+        private static final byte CHANGE_SAVE_SET = 1;
         private static final byte SELECT_SELECTION_INPUT = 2;
+        private static final byte SELECT_CURSOR_INPUT = 3;
+        private static final byte GET_CURSOR_IMAGE = 4;
         private static final byte CREATE_REGION = 5;
         private static final byte DESTROY_REGION = 10;
         private static final byte FETCH_REGION = 19;
         private static final byte SET_WINDOW_SHAPE_REGION = 21;
         private static final byte SET_CURSOR_NAME = 23;
+        private static final byte GET_CURSOR_NAME = 24;
+        private static final byte GET_CURSOR_IMAGE_AND_NAME = 25;
+        private static final byte CHANGE_CURSOR = 26;
+        private static final byte CHANGE_CURSOR_BY_NAME = 27;
+        private static final byte HIDE_CURSOR = 29;
+        private static final byte SHOW_CURSOR = 30;
     }
 
     private static final class Rectangle {
@@ -309,10 +322,151 @@ public class XFixesExtension extends Extension {
         inputStream.skip(2);
         if (xServer.cursorManager.getCursor(cursorId) == null)
             throw new BadCursor(cursorId);
-        inputStream.skip(nameLength);
-        inputStream.skip((-nameLength) & 3);
-        // Cursor names are descriptive metadata. The Android compositor uses
-        // the cursor resource's pixels and does not need to retain the name.
+        String name = inputStream.readString8(nameLength);
+        synchronized (cursorNames) {
+            cursorNames.put(cursorId, name);
+        }
+    }
+
+    private void changeSaveSet(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int mode = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        int windowId = inputStream.readInt();
+        if (mode > 1) throw new BadValue(mode);
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        if (!client.changeSaveSet(window, mode == 0)) throw new BadMatch();
+    }
+
+    private void selectCursorInput(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        int eventMask = inputStream.readInt();
+        if (xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+        if ((eventMask & ~1) != 0) throw new BadValue(eventMask);
+    }
+
+    private String getStoredCursorName(int cursorId) {
+        synchronized (cursorNames) {
+            return cursorNames.get(cursorId);
+        }
+    }
+
+    private void writeCursorImageHeader(XClient client, XOutputStream outputStream,
+                                        int extraWords) {
+        outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+        outputStream.writeByte((byte)0);
+        outputStream.writeShort(client.getSequenceNumber());
+        outputStream.writeInt(extraWords);
+        outputStream.writeShort((short)xServer.pointer.getClampedX());
+        outputStream.writeShort((short)xServer.pointer.getClampedY());
+        outputStream.writeShort((short)1);
+        outputStream.writeShort((short)1);
+        outputStream.writeShort((short)0);
+        outputStream.writeShort((short)0);
+        outputStream.writeInt(1);
+    }
+
+    private void getCursorImage(XClient client, XOutputStream outputStream)
+            throws IOException {
+        try (XStreamLock lock = outputStream.lock()) {
+            writeCursorImageHeader(client, outputStream, 1);
+            outputStream.writePad(8);
+            outputStream.writeInt(0);
+        }
+    }
+
+    private void getCursorImageAndName(XClient client, XOutputStream outputStream)
+            throws IOException {
+        try (XStreamLock lock = outputStream.lock()) {
+            writeCursorImageHeader(client, outputStream, 1);
+            outputStream.writeInt(0);
+            outputStream.writeShort((short)0);
+            outputStream.writePad(2);
+            outputStream.writeInt(0);
+        }
+    }
+
+    private void getCursorName(XClient client, XInputStream inputStream,
+                               XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int cursorId = inputStream.readInt();
+        if (xServer.cursorManager.getCursor(cursorId) == null)
+            throw new BadCursor(cursorId);
+        String name = getStoredCursorName(cursorId);
+        if (name == null) name = "";
+        int atom = name.isEmpty() ? 0 : Atom.internAtom(name);
+        int nbytes = name.length();
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt((nbytes + 3) / 4);
+            outputStream.writeInt(atom);
+            outputStream.writeShort((short)nbytes);
+            outputStream.writePad(18);
+            if (nbytes > 0) outputStream.writeString8(name);
+        }
+    }
+
+    private void replaceAssignedCursor(Window window, Cursor source, Cursor destination) {
+        if (window.attributes.getAssignedCursor() == source)
+            window.attributes.setCursor(destination);
+        for (Window child : window.getChildren())
+            replaceAssignedCursor(child, source, destination);
+    }
+
+    private void changeCursor(XInputStream inputStream) throws XRequestError {
+        int sourceId = inputStream.readInt();
+        int destinationId = inputStream.readInt();
+        Cursor source = xServer.cursorManager.getCursor(sourceId);
+        if (source == null) throw new BadCursor(sourceId);
+        Cursor destination = xServer.cursorManager.getCursor(destinationId);
+        if (destination == null) throw new BadCursor(destinationId);
+        replaceAssignedCursor(xServer.windowManager.rootWindow, source, destination);
+    }
+
+    private int findCursorIdByName(String name) {
+        synchronized (cursorNames) {
+            for (int i = 0; i < cursorNames.size(); i++) {
+                if (name.equals(cursorNames.valueAt(i)))
+                    return cursorNames.keyAt(i);
+            }
+        }
+        return 0;
+    }
+
+    private void changeCursorByName(XInputStream inputStream) throws XRequestError {
+        int destinationId = inputStream.readInt();
+        int nameLength = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        Cursor destination = xServer.cursorManager.getCursor(destinationId);
+        if (destination == null) throw new BadCursor(destinationId);
+        String name = inputStream.readString8(nameLength);
+        int sourceId = findCursorIdByName(name);
+        Cursor source = sourceId == 0 ? null : xServer.cursorManager.getCursor(sourceId);
+        if (source != null)
+            replaceAssignedCursor(xServer.windowManager.rootWindow, source, destination);
+    }
+
+    private void hideCursor(XInputStream inputStream) throws XRequestError {
+        int windowId = inputStream.readInt();
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        Integer count = (Integer)window.getTag(HIDE_COUNT_TAG, Integer.valueOf(0));
+        window.setTag(HIDE_COUNT_TAG, Integer.valueOf(count + 1));
+    }
+
+    private void showCursor(XInputStream inputStream) throws XRequestError {
+        int windowId = inputStream.readInt();
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        Integer count = (Integer)window.getTag(HIDE_COUNT_TAG, Integer.valueOf(0));
+        if (count <= 0) throw new BadMatch();
+        if (count == 1) window.removeTag(HIDE_COUNT_TAG);
+        else window.setTag(HIDE_COUNT_TAG, Integer.valueOf(count - 1));
     }
 
     @Override
@@ -322,6 +476,33 @@ public class XFixesExtension extends Extension {
         switch (client.getRequestData()) {
             case ClientOpcodes.QUERY_VERSION:
                 queryVersion(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.CHANGE_SAVE_SET:
+                changeSaveSet(client, inputStream);
+                break;
+            case ClientOpcodes.SELECT_CURSOR_INPUT:
+                selectCursorInput(client, inputStream);
+                break;
+            case ClientOpcodes.GET_CURSOR_IMAGE:
+                getCursorImage(client, outputStream);
+                break;
+            case ClientOpcodes.GET_CURSOR_IMAGE_AND_NAME:
+                getCursorImageAndName(client, outputStream);
+                break;
+            case ClientOpcodes.GET_CURSOR_NAME:
+                getCursorName(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.CHANGE_CURSOR:
+                changeCursor(inputStream);
+                break;
+            case ClientOpcodes.CHANGE_CURSOR_BY_NAME:
+                changeCursorByName(inputStream);
+                break;
+            case ClientOpcodes.HIDE_CURSOR:
+                hideCursor(inputStream);
+                break;
+            case ClientOpcodes.SHOW_CURSOR:
+                showCursor(inputStream);
                 break;
             case ClientOpcodes.SELECT_SELECTION_INPUT:
                 selectSelectionInput(client, inputStream);
