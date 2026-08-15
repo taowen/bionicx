@@ -61,11 +61,14 @@ public class XKeyboardExtension extends Extension {
     private static final int XKB_REPEAT_KEYS_MASK = 1;
     private int repeatDelay = 660;
     private int repeatInterval = 40;
+    private int lockedMods = 0;
+    private int latchedMods = 0;
 
     private static abstract class ClientOpcodes {
         private static final byte USE_EXTENSION = 0;
         private static final byte SELECT_EVENTS = 1;
         private static final byte GET_STATE = 4;
+        private static final byte LATCH_LOCK_STATE = 5;
         private static final byte GET_CONTROLS = 6;
         private static final byte SET_CONTROLS = 7;
         private static final byte GET_MAP = 8;
@@ -360,6 +363,23 @@ public class XKeyboardExtension extends Extension {
         }
     }
 
+    private void latchLockState(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        int affectModLocks = inputStream.readUnsignedByte();
+        int modLocks = inputStream.readUnsignedByte();
+        inputStream.skip(2); // lockGroup, groupLock
+        int affectModLatches = inputStream.readUnsignedByte();
+        int modLatches = inputStream.readUnsignedByte();
+        inputStream.skip(client.getRemainingRequestLength());
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+        lockedMods = (lockedMods & ~affectModLocks) | (modLocks & affectModLocks);
+        latchedMods = (latchedMods & ~affectModLatches)
+                | (modLatches & affectModLatches);
+    }
+
     private void getState(XClient client, XInputStream inputStream,
                           XOutputStream outputStream)
             throws IOException, XRequestError {
@@ -373,11 +393,14 @@ public class XKeyboardExtension extends Extension {
             outputStream.writeByte((byte)CORE_KEYBOARD_ID);
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(0);
-            int effectiveMods = xServer.keyboard.getModifiersMask().getBits();
+            int baseMods = xServer.keyboard.getBaseModifiers();
+            int effectiveMods = baseMods | latchedMods | lockedMods
+                    | xServer.keyboard.getLockedModifiers();
             outputStream.writeByte((byte)effectiveMods);
-            outputStream.writeByte((byte)xServer.keyboard.getBaseModifiers());
-            outputStream.writeByte((byte)0); // latched modifiers
-            outputStream.writeByte((byte)xServer.keyboard.getLockedModifiers());
+            outputStream.writeByte((byte)baseMods);
+            outputStream.writeByte((byte)latchedMods);
+            outputStream.writeByte((byte)(lockedMods
+                    | xServer.keyboard.getLockedModifiers()));
             outputStream.writeByte((byte)0); // effective group
             outputStream.writeByte((byte)0); // locked group
             outputStream.writeShort((short)0); // base group
@@ -641,6 +664,9 @@ public class XKeyboardExtension extends Extension {
                 break;
             case ClientOpcodes.GET_STATE:
                 getState(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.LATCH_LOCK_STATE:
+                latchLockState(client, inputStream);
                 break;
             case ClientOpcodes.GET_CONTROLS:
                 getControls(client, inputStream, outputStream);
