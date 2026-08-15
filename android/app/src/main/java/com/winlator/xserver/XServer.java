@@ -12,6 +12,7 @@ import com.winlator.xserver.extensions.MITSHMExtension;
 import com.winlator.xserver.extensions.PresentExtension;
 import com.winlator.xserver.extensions.ShapeExtension;
 import com.winlator.xserver.extensions.XComposite;
+import com.winlator.xserver.extensions.XDamageExtension;
 import com.winlator.xserver.extensions.XFixesExtension;
 import com.winlator.xserver.extensions.XInputExtension;
 import com.winlator.xserver.extensions.XKeyboardExtension;
@@ -277,7 +278,8 @@ public class XServer {
             new XInputExtension(this, opcode--),
             new XKeyboardExtension(this, opcode--),
             new XTestExtension(this, opcode--),
-            new GLXExtension(this, opcode--)
+            new GLXExtension(this, opcode--),
+            new XDamageExtension(this, opcode--)
         };
     }
 
