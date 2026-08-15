@@ -5,37 +5,23 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 output_dir="${1:-$repo_dir/build/x11-desktop-probe-bundle}"
 output_dir="$(realpath -m "$output_dir")"
 case "$output_dir/" in
-    "$repo_dir"/*) ;;
-    *) echo "output must be inside the repository: $output_dir" >&2; exit 2 ;;
+    "$repo_dir/build/"*) ;;
+    *) echo "output must be below $repo_dir/build: $output_dir" >&2; exit 2 ;;
 esac
 
-"$repo_dir/examples/hello/build-bundle.sh" "$output_dir"
-container_output="/work/${output_dir#"$repo_dir"/}"
+mkdir -p "$output_dir/app/bin"
 builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
-podman run --rm --network host \
-    --volume "$repo_dir:/work:Z" --workdir /work \
-    "$builder_image" \
+podman run --rm --network host --userns=keep-id \
+    --volume "$repo_dir:/work:Z" --workdir /work "$builder_image" \
     aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
         examples/x11-desktop-probe/x11-desktop-probe.c \
-        -o "$container_output/app/bin/x11-desktop-probe" \
+        -o "${output_dir#"$repo_dir/"}/app/bin/x11-desktop-probe" \
         -lXrender -lXfixes -lXrandr -lXi -lXext \
         -lxkbcommon-x11 -lxkbcommon -lxcb-xkb -lX11-xcb -lX11 -lxcb
-
-# These libraries are not part of Winlator's minimal rootfs closure. Keep the
-# probe self-contained by taking the matching AArch64 runtime artifacts from
-# the same cross-toolchain image used to link it.
-podman run --rm --network host --userns=keep-id \
-    --volume "$repo_dir:/work:Z" --workdir /work \
-    "$builder_image" sh -eu -c '
-        for library in libX11-xcb.so.1 libxcb-xkb.so.1 \
-                       libxkbcommon.so.0 libxkbcommon-x11.so.0; do
-            cp -L "/usr/lib/aarch64-linux-gnu/$library" \
-                "'"$container_output"'/rootfs/usr/lib/$library"
-        done
-    '
-
-"$repo_dir/tools/resolve-elf-deps.py" \
-    --entry "$output_dir/app/bin/x11-desktop-probe" \
-    --search-root "$output_dir/rootfs/usr/lib" \
-    --json "$output_dir/x11-desktop-probe-dependency-closure.json"
+interpreter=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
+rpath=/data/user/0/io.taowen.bx/files/rootfs/usr/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu
+patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \
+    "$output_dir/app/bin/x11-desktop-probe"
+printf 'required_package=libxkbcommon-x11-0\nrootfs_payload=none\n' \
+    > "$output_dir/BUILD-INFO"
 echo "$output_dir"

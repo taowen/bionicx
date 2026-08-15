@@ -1,24 +1,33 @@
 #!/usr/bin/env bash
+# Installs only the probe payload. Does not replace the shared seed rootfs.
 set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-bundle_dir="${BIONICX_X11_PROBE_BUNDLE:-$repo_dir/build/x11-probe-bundle}"
-serial="${ANDROID_SERIAL:-}"
-adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
-adb=("$adb_bin")
-[[ -z "$serial" ]] || adb+=( -s "$serial" )
+serial="${ANDROID_SERIAL:?ANDROID_SERIAL is required}"
+bundle="${BIONICX_X11_PROBE_BUNDLE:-$repo_dir/build/x11-probe-bundle}"
 
-# Refresh the client and runtime closure before every device installation.
-"$repo_dir/examples/x11-probe/build-bundle.sh" "$bundle_dir"
-install=("$repo_dir/tools/install-profile.sh"
-    --profile "$repo_dir/profiles/x11-probe.json"
-    --app-root "$bundle_dir/app" --runtime-root "$bundle_dir/rootfs")
-[[ -z "$serial" ]] || install+=(--serial "$serial")
-"${install[@]}"
-"${adb[@]}" logcat -c
-"${adb[@]}" shell am force-stop io.taowen.bx
-"${adb[@]}" shell am start -W -n io.taowen.bx/com.winlator.BionicXActivity
+"$repo_dir/examples/x11-probe/build-bundle.sh" "$bundle"
+"$repo_dir/tools/install-profile.sh" \
+    --profile "$repo_dir/profiles/x11-probe.json" \
+    --app-root "$bundle/app" \
+    --serial "$serial"
+adb -s "$serial" logcat -c
+adb -s "$serial" shell am force-stop io.taowen.bx
+adb -s "$serial" shell am start -W \
+    -n io.taowen.bx/com.winlator.BionicXActivity >/dev/null
 sleep 1
-"${adb[@]}" shell input text abc_A
-"${adb[@]}" shell input tap 480 360
-"${adb[@]}" shell input swipe 520 380 760 520 350
+adb -s "$serial" shell input text abc_A
+adb -s "$serial" shell input tap 480 360
+adb -s "$serial" shell input swipe 520 380 760 520 350
+for i in $(seq 1 20); do
+    if adb -s "$serial" logcat -d -v brief | grep -Fq 'BXSUMMARY passed='; then
+        echo "x11-probe finished at ${i}s"
+        break
+    fi
+    sleep 1
+done
+result="$(adb -s "$serial" logcat -d -v brief \
+    | grep -E 'BXTEST|BXSUMMARY|BXERROR|BXOBS')"
+printf '%s\n' "$result"
+grep -Eq 'BXSUMMARY passed=[0-9]+ failed=0' <<<"$result"
+echo "core X11 probe: PASS"

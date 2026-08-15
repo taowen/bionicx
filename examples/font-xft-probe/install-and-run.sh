@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
+# Installs only the probe payload. Does not replace the shared seed rootfs.
 set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-bundle_dir="${BIONICX_FONT_XFT_BUNDLE:-$repo_dir/build/font-xft-probe-bundle}"
-serial="${ANDROID_SERIAL:-}"
-adb_bin="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
-adb=("$adb_bin")
-[[ -z "$serial" ]] || adb+=( -s "$serial" )
+serial="${ANDROID_SERIAL:?ANDROID_SERIAL is required}"
+bundle="${BIONICX_FONT_XFT_BUNDLE:-$repo_dir/build/font-xft-probe-bundle}"
 
-"$repo_dir/examples/font-xft-probe/build-bundle.sh" "$bundle_dir"
-install=("$repo_dir/tools/install-profile.sh"
-    --profile "$repo_dir/profiles/font-xft-probe.json"
-    --app-root "$bundle_dir/app" --runtime-root "$bundle_dir/rootfs")
-[[ -z "$serial" ]] || install+=(--serial "$serial")
-"${install[@]}"
-"${adb[@]}" logcat -c
-"${adb[@]}" shell am force-stop io.taowen.bx
-"${adb[@]}" shell am start -W -n io.taowen.bx/com.winlator.BionicXActivity
+"$repo_dir/examples/font-xft-probe/build-bundle.sh" "$bundle"
+"$repo_dir/tools/install-profile.sh" \
+    --profile "$repo_dir/profiles/font-xft-probe.json" \
+    --app-root "$bundle/app" \
+    --serial "$serial"
+adb -s "$serial" logcat -c
+adb -s "$serial" shell am force-stop io.taowen.bx
+adb -s "$serial" shell am start -W \
+    -n io.taowen.bx/com.winlator.BionicXActivity >/dev/null
+for i in $(seq 1 20); do
+    if adb -s "$serial" logcat -d -v brief \
+            | grep -Fq 'BXTEST PASS font-xft checks=4/4'; then
+        echo "font-xft probe finished at ${i}s"
+        break
+    fi
+    sleep 1
+done
+result="$(adb -s "$serial" logcat -d -v brief \
+    | grep -E 'BXTEST|BXFONT|BXERROR')"
+printf '%s\n' "$result"
+grep -Fq "BXTEST PASS font-xft checks=4/4" <<<"$result"
+echo "Fontconfig/Xft probe: PASS"
