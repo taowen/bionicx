@@ -18,7 +18,9 @@ if grep -E 'xfsettingsd|xfwm4|icewm' \
     echo "damage probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=6 failed=0' \
+grep -F 'XPutImage' \
+    "$repo_dir/examples/damage-x11-probe/damage-x11-probe.c" >/dev/null
+grep -F 'passed=7 failed=0' \
     "$repo_dir/examples/damage-x11-probe/install-and-run.sh" >/dev/null
 grep -F 'rootfs_payload=none' \
     "$repo_dir/examples/damage-x11-probe/build-bundle.sh" >/dev/null

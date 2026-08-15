@@ -10,6 +10,7 @@ import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.xserver.Pixmap;
 import com.winlator.xserver.Window;
+import com.winlator.xserver.WindowManager;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.errors.BadDrawable;
@@ -45,6 +46,7 @@ public class XDamageExtension extends Extension {
         private final Window window;
         private final int level;
         private final XClient client;
+        private boolean empty = true;
 
         private Damage(int id, int drawableId, Window window, int level,
                        XClient client) {
@@ -63,6 +65,13 @@ public class XDamageExtension extends Extension {
 
     public XDamageExtension(XServer xServer, byte majorOpcode) {
         super(xServer, majorOpcode);
+        xServer.windowManager.addOnWindowModificationListener(
+                new WindowManager.OnWindowModificationListener() {
+                    @Override
+                    public void onUpdateWindowContent(Window window) {
+                        reportDamage(window.id);
+                    }
+                });
     }
 
     @Override
@@ -143,18 +152,20 @@ public class XDamageExtension extends Extension {
         int id = inputStream.readInt();
         inputStream.skip(8); // repair and parts regions
         synchronized (damages) {
-            if (damages.get(id) == null) throw badDamage(id);
+            Damage damage = damages.get(id);
+            if (damage == null) throw badDamage(id);
+            damage.empty = true;
         }
     }
 
     private void add(XInputStream inputStream) throws XRequestError {
         int drawableId = inputStream.readInt();
         inputStream.skip(4); // region, None means the whole drawable
-        Window window = drawableWindow(drawableId);
-        int width = window != null ? window.getWidth() : 1;
-        int height = window != null ? window.getHeight() : 1;
-        short x = window != null ? window.getX() : 0;
-        short y = window != null ? window.getY() : 0;
+        drawableWindow(drawableId);
+        reportDamage(drawableId);
+    }
+
+    void reportDamage(int drawableId) {
         ArrayList<Damage> snapshot = new ArrayList<>();
         synchronized (damages) {
             for (int i = 0; i < damages.size(); i++) {
@@ -162,13 +173,19 @@ public class XDamageExtension extends Extension {
                 if (damage.drawableId == drawableId) snapshot.add(damage);
             }
         }
+        if (snapshot.isEmpty()) return;
+        Window window = xServer.windowManager.getWindow(drawableId);
+        int width = window != null ? window.getWidth() : 1;
+        int height = window != null ? window.getHeight() : 1;
+        short x = window != null ? window.getX() : 0;
+        short y = window != null ? window.getY() : 0;
         for (Damage damage : snapshot) {
-            DamageNotify notify = new DamageNotify(
+            if (damage.level >= 3 && !damage.empty) continue;
+            damage.empty = false;
+            damage.client.sendEvent(new DamageNotify(
                     Byte.toUnsignedInt(FIRST_EVENT), damage.level, drawableId,
                     damage.id, (short)0, (short)0, width, height,
-                    x, y, width, height);
-            damage.client.sendEvent(notify);
-            if (damage.window != null) damage.window.sendEvent(notify);
+                    x, y, width, height));
         }
     }
 

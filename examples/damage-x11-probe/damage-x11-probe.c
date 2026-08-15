@@ -4,10 +4,12 @@
 #include <X11/Xlibint.h>
 #include <X11/Xmd.h>
 #include <X11/Xproto.h>
+#include <X11/Xutil.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -284,6 +286,30 @@ int main(int argc, char **argv) {
     result("damage-subtract", subtract_ok,
            subtract_ok ? "Subtract" : "Subtract failed");
     RECORD(subtract_ok);
+
+    before = x_errors;
+    int screen = DefaultScreen(display);
+    char *pixels = calloc(16u * 16u, 4u);
+    bool draw_ok = false;
+    if (pixels != NULL) {
+        XImage *image = XCreateImage(display, DefaultVisual(display, screen),
+                                     (unsigned)DefaultDepth(display, screen),
+                                     ZPixmap, 0, pixels, 16, 16, 32, 0);
+        GC gc = XCreateGC(display, window, 0, NULL);
+        if (image != NULL && gc != None) {
+            memset(pixels, 0x40, 16u * 16u * 4u);
+            XPutImage(display, window, gc, image, 0, 0, 0, 0, 16, 16);
+            draw_ok = wait_damage(display, event_base, &event)
+                    && x_errors == before;
+            XDestroyImage(image);
+            pixels = NULL;
+        }
+        if (gc != None) XFreeGC(display, gc);
+        free(pixels);
+    }
+    result("damage-from-putimage", draw_ok,
+           draw_ok ? "PutImage DamageNotify" : "no notify from PutImage");
+    RECORD(draw_ok);
 
     before = x_errors;
     damage_destroy(display, opcode, damage);
