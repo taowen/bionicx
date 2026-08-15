@@ -26,5 +26,5 @@ done
 result="$(adb -s "$serial" logcat -d -v brief \
     | grep -E 'BXTEST|BXSUMMARY|BXERROR')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY composite-x11 passed=6 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY composite-x11 passed=8 failed=0" <<<"$result"
 echo "Composite X11 probe: PASS"

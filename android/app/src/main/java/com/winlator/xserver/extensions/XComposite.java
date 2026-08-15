@@ -6,9 +6,12 @@ import com.winlator.renderer.Texture;
 import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
+import com.winlator.core.Callback;
 import com.winlator.xserver.Drawable;
+import com.winlator.xserver.IDGenerator;
 import com.winlator.xserver.Pixmap;
 import com.winlator.xserver.Window;
+import com.winlator.xserver.WindowAttributes;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XLock;
 import com.winlator.xserver.XServer;
@@ -21,10 +24,11 @@ import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class XComposite extends Extension {
     public static final byte MAJOR_VERSION = 0;
-    public static final byte MINOR_VERSION = 2;
+    public static final byte MINOR_VERSION = 3;
 
     public enum UpdateMode {REDIRECT_AUTOMATIC, REDIRECT_MANUAL}
 
@@ -35,7 +39,13 @@ public class XComposite extends Extension {
         private static final byte UNREDIRECT_WINDOW = 3;
         private static final byte UNREDIRECT_SUBWINDOWS = 4;
         private static final byte NAME_WINDOW_PIXMAP = 6;
+        private static final byte GET_OVERLAY_WINDOW = 7;
+        private static final byte RELEASE_OVERLAY_WINDOW = 8;
     }
+
+    private Window overlayWindow;
+    private final ArrayList<XClient> overlayClients = new ArrayList<>();
+    private final Callback<XClient> onOverlayClientGone = this::dropOverlayClient;
 
     public XComposite(XServer xServer, byte majorOpcode) {
         super(xServer, majorOpcode);
@@ -145,6 +155,61 @@ public class XComposite extends Extension {
         client.registerAsOwnerOfResource(pixmap);
     }
 
+    private Window createOverlayWindow() throws XRequestError {
+        Window root = xServer.windowManager.rootWindow;
+        Window overlay = xServer.windowManager.createWindow(
+                IDGenerator.generate(), root, (short)0, (short)0,
+                root.getWidth(), root.getHeight(),
+                WindowAttributes.WindowClass.INPUT_OUTPUT,
+                root.getContent().visual, root.getContent().visual.depth,
+                null);
+        overlay.attributes.setOverrideRedirect(true);
+        root.moveChildAbove(overlay, null);
+        return overlay;
+    }
+
+    private void getOverlayWindow(XClient client, XInputStream inputStream,
+                                  XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        if (overlayWindow != null
+                && xServer.windowManager.getWindow(overlayWindow.id) == null) {
+            overlayWindow = null;
+            overlayClients.clear();
+        }
+        if (overlayWindow == null) overlayWindow = createOverlayWindow();
+        if (!overlayClients.contains(client)) {
+            overlayClients.add(client);
+            client.addOnDestroyListener(onOverlayClientGone);
+        }
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(overlayWindow.id);
+            outputStream.writePad(20);
+        }
+    }
+
+    private void dropOverlayClient(XClient client) {
+        if (!overlayClients.remove(client)) return;
+        if (!overlayClients.isEmpty() || overlayWindow == null) return;
+        int id = overlayWindow.id;
+        overlayWindow = null;
+        xServer.windowManager.destroyWindow(id);
+    }
+
+    private void releaseOverlayWindow(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        dropOverlayClient(client);
+    }
+
     private void unredirectSubwindows(XClient client, XInputStream inputStream)
             throws XRequestError {
         int windowId = inputStream.readInt();
@@ -214,6 +279,20 @@ public class XComposite extends Extension {
                         XServer.Lockable.DRAWABLE_MANAGER,
                         XServer.Lockable.PIXMAP_MANAGER)) {
                     nameWindowPixmap(client, inputStream);
+                }
+                break;
+            case ClientOpcodes.GET_OVERLAY_WINDOW:
+                try (XLock lock = xServer.lock(
+                        XServer.Lockable.WINDOW_MANAGER,
+                        XServer.Lockable.DRAWABLE_MANAGER)) {
+                    getOverlayWindow(client, inputStream, outputStream);
+                }
+                break;
+            case ClientOpcodes.RELEASE_OVERLAY_WINDOW:
+                try (XLock lock = xServer.lock(
+                        XServer.Lockable.WINDOW_MANAGER,
+                        XServer.Lockable.DRAWABLE_MANAGER)) {
+                    releaseOverlayWindow(client, inputStream);
                 }
                 break;
             default:

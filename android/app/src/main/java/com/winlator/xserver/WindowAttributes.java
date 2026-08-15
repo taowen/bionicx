@@ -100,6 +100,10 @@ public class WindowAttributes {
         return attributeFlags.isSet(FLAG_OVERRIDE_REDIRECT);
     }
 
+    public void setOverrideRedirect(boolean overrideRedirect) {
+        attributeFlags.set(FLAG_OVERRIDE_REDIRECT, overrideRedirect);
+    }
+
     public boolean isSaveUnder() {
         return attributeFlags.isSet(FLAG_SAVE_UNDER);
     }

@@ -66,6 +66,22 @@ typedef struct {
     uint32_t pixmap;
 } cmp_name_pixmap_req;
 
+typedef struct {
+    uint8_t reqType;
+    uint8_t compositeReqType;
+    uint16_t length;
+    uint32_t window;
+} cmp_overlay_req;
+
+typedef struct {
+    uint8_t type;
+    uint8_t pad;
+    uint16_t sequenceNumber;
+    uint32_t length;
+    uint32_t overlay;
+    uint32_t pad2[5];
+} cmp_overlay_rep;
+
 static void *reserve(Display *display, unsigned bytes) {
     if (display->bufptr + (int)bytes > display->bufmax) _XFlush(display);
     void *ptr = display->bufptr;
@@ -154,6 +170,50 @@ static void unredirect_subwindows(Display *display, int opcode, uint32_t window,
     _XFlush(display);
 }
 
+static uint32_t get_overlay_window(Display *display, int opcode,
+                                   uint32_t window) {
+    cmp_overlay_rep reply;
+    LockDisplay(display);
+    cmp_overlay_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->compositeReqType = 7;
+    req->length = 2;
+    req->window = window;
+    if (!_XReply(display, (xReply *)&reply, 0, xTrue)) {
+        UnlockDisplay(display);
+        return 0;
+    }
+    UnlockDisplay(display);
+    return reply.overlay;
+}
+
+static void release_overlay_window(Display *display, int opcode,
+                                   uint32_t window) {
+    LockDisplay(display);
+    cmp_overlay_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->compositeReqType = 8;
+    req->length = 2;
+    req->window = window;
+    UnlockDisplay(display);
+    _XFlush(display);
+}
+
+static bool tree_has(Display *display, Window root, Window target) {
+    Window ret_root = 0;
+    Window parent = 0;
+    Window *children = NULL;
+    unsigned int count = 0;
+    if (!XQueryTree(display, root, &ret_root, &parent, &children, &count))
+        return false;
+    bool found = false;
+    for (unsigned int i = 0; i < count; ++i) {
+        if (children[i] == target) found = true;
+    }
+    XFree(children);
+    return found;
+}
+
 static void name_window_pixmap(Display *display, int opcode, uint32_t window,
                                uint32_t pixmap) {
     LockDisplay(display);
@@ -237,7 +297,7 @@ int main(int argc, char **argv) {
     int major = 0;
     int minor = 0;
     bool version_ok = query_version(display, opcode, &major, &minor)
-            && (major > 0 || minor >= 2) && x_errors == before;
+            && (major > 0 || minor >= 3) && x_errors == before;
     char version_detail[64];
     if (version_ok)
         snprintf(version_detail, sizeof(version_detail),
@@ -291,6 +351,41 @@ int main(int argc, char **argv) {
            sub_ok ? "RedirectSubwindows NameWindowPixmap"
                   : "subwindows name failed");
     RECORD(sub_ok);
+
+    before = x_errors;
+    Window overlay = (Window)get_overlay_window(display, opcode, (uint32_t)root);
+    Window peer_overlay = (Window)get_overlay_window(peer, opcode,
+                                                     (uint32_t)root);
+    XWindowAttributes attrs;
+    bool attrs_ok = overlay != 0
+            && XGetWindowAttributes(display, overlay, &attrs) != 0;
+    unsigned long overlay_pixel = 0;
+    bool overlay_ok = x_errors == before && attrs_ok
+            && attrs.override_redirect
+            && attrs.width == DisplayWidth(display, DefaultScreen(display))
+            && attrs.height == DisplayHeight(display, DefaultScreen(display))
+            && peer_overlay == overlay
+            && tree_has(peer, root, overlay)
+            && paint_and_read(display, overlay, overlay, &overlay_pixel)
+            && overlay_pixel == 0x00cc44 && x_errors == before;
+    result("composite-overlay", overlay_ok,
+           overlay_ok ? "GetOverlayWindow" : "overlay get failed");
+    RECORD(overlay_ok);
+
+    before = x_errors;
+    release_overlay_window(display, opcode, (uint32_t)root);
+    XSync(display, False);
+    XSync(peer, False);
+    bool still_held = tree_has(peer, root, overlay) && x_errors == before;
+    release_overlay_window(peer, opcode, (uint32_t)root);
+    XSync(display, False);
+    XSync(peer, False);
+    bool release_ok = still_held && !tree_has(display, root, overlay)
+            && x_errors == before;
+    result("composite-overlay-release", release_ok,
+           release_ok ? "last Release destroys overlay"
+                      : "overlay release failed");
+    RECORD(release_ok);
 
     before = x_errors;
     XGrabServer(display);
