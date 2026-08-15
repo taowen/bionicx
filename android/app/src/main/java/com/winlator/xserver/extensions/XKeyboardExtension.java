@@ -9,6 +9,7 @@ import com.winlator.xserver.Keyboard;
 import com.winlator.xserver.Atom;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
+import com.winlator.xserver.errors.BadAtom;
 import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.XRequestError;
@@ -63,6 +64,9 @@ public class XKeyboardExtension extends Extension {
     private int repeatInterval = 40;
     private int lockedMods = 0;
     private int latchedMods = 0;
+    private boolean scrollLockOn = false;
+    private static final int LOCK_MOD_MASK = 2;
+    private static final int NUM_LOCK_MOD_MASK = 16;
 
     private static abstract class ClientOpcodes {
         private static final byte USE_EXTENSION = 0;
@@ -76,6 +80,9 @@ public class XKeyboardExtension extends Extension {
         private static final byte GET_COMPAT_MAP = 10;
         private static final byte GET_INDICATOR_STATE = 12;
         private static final byte GET_INDICATOR_MAP = 13;
+        private static final byte SET_INDICATOR_MAP = 14;
+        private static final byte GET_NAMED_INDICATOR = 15;
+        private static final byte SET_NAMED_INDICATOR = 16;
         private static final byte GET_NAMES = 17;
         private static final byte PER_CLIENT_FLAGS = 21;
         private static final byte GET_KBD_BY_NAME = 23;
@@ -443,6 +450,112 @@ public class XKeyboardExtension extends Extension {
         }
     }
 
+    private int effectiveLockedMods() {
+        return lockedMods | xServer.keyboard.getLockedModifiers();
+    }
+
+    private int namedIndicatorIndex(int atom) {
+        String name = Atom.getName(atom);
+        if ("Caps Lock".equals(name)) return 0;
+        if ("Num Lock".equals(name)) return 1;
+        if ("Scroll Lock".equals(name)) return 2;
+        return -1;
+    }
+
+    private boolean namedIndicatorOn(int index) {
+        int locked = effectiveLockedMods();
+        switch (index) {
+            case 0:
+                return (locked & LOCK_MOD_MASK) != 0;
+            case 1:
+                return (locked & NUM_LOCK_MOD_MASK) != 0;
+            case 2:
+                return scrollLockOn;
+            default:
+                return false;
+        }
+    }
+
+    private void setNamedIndicatorOn(int index, boolean on) {
+        switch (index) {
+            case 0:
+                lockedMods = on ? (lockedMods | LOCK_MOD_MASK)
+                        : (lockedMods & ~LOCK_MOD_MASK);
+                break;
+            case 1:
+                lockedMods = on ? (lockedMods | NUM_LOCK_MOD_MASK)
+                        : (lockedMods & ~NUM_LOCK_MOD_MASK);
+                break;
+            case 2:
+                scrollLockOn = on;
+                break;
+            default:
+                break;
+        }
+    }
+
+    private int indicatorStateBits() {
+        int bits = 0;
+        if (namedIndicatorOn(0)) bits |= 1;
+        if (namedIndicatorOn(1)) bits |= 2;
+        if (namedIndicatorOn(2)) bits |= 4;
+        return bits;
+    }
+
+    private void getNamedIndicator(XClient client, XInputStream inputStream,
+                                   XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        inputStream.skip(6); // ledClass, ledID, pad
+        int indicator = inputStream.readInt();
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+        if (!Atom.isValid(indicator)) throw new BadAtom(indicator);
+        int index = namedIndicatorIndex(indicator);
+        boolean found = index >= 0;
+        boolean on = found && namedIndicatorOn(index);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)CORE_KEYBOARD_ID);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(indicator);
+            outputStream.writeByte((byte)(found ? 1 : 0));
+            outputStream.writeByte((byte)(on ? 1 : 0));
+            outputStream.writeByte((byte)(found ? 1 : 0));
+            outputStream.writeByte((byte)(found ? index : 0xff));
+            outputStream.writePad(8);
+            outputStream.writeInt(0);
+            outputStream.writeByte((byte)1);
+            outputStream.writePad(3);
+        }
+    }
+
+    private void setNamedIndicator(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        inputStream.skip(6); // ledClass, ledID, pad
+        int indicator = inputStream.readInt();
+        boolean setState = inputStream.readUnsignedByte() != 0;
+        boolean on = inputStream.readUnsignedByte() != 0;
+        inputStream.skip(client.getRemainingRequestLength());
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+        if (!Atom.isValid(indicator)) throw new BadAtom(indicator);
+        if (setState) setNamedIndicatorOn(namedIndicatorIndex(indicator), on);
+    }
+
+    private void setIndicatorMap(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        inputStream.skip(client.getRemainingRequestLength());
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+    }
+
     private void getIndicatorMap(XClient client, XInputStream inputStream,
                                  XOutputStream outputStream)
             throws IOException, XRequestError {
@@ -476,7 +589,7 @@ public class XKeyboardExtension extends Extension {
             outputStream.writeByte((byte)CORE_KEYBOARD_ID);
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(0);
-            outputStream.writeInt(0); // no keyboard LEDs are active
+            outputStream.writeInt(indicatorStateBits());
             outputStream.writePad(20);
         }
     }
@@ -698,6 +811,15 @@ public class XKeyboardExtension extends Extension {
                 break;
             case ClientOpcodes.GET_INDICATOR_MAP:
                 getIndicatorMap(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SET_INDICATOR_MAP:
+                setIndicatorMap(client, inputStream);
+                break;
+            case ClientOpcodes.GET_NAMED_INDICATOR:
+                getNamedIndicator(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SET_NAMED_INDICATOR:
+                setNamedIndicator(client, inputStream);
                 break;
             case ClientOpcodes.GET_NAMES:
                 getNames(client, inputStream, outputStream);

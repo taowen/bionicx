@@ -28,8 +28,9 @@ static void result(const char *name, bool ok, const char *detail) {
 int main(int argc, char **argv) {
     int duration = argc > 1 ? atoi(argv[1]) : 3;
     Display *display = XOpenDisplay(NULL);
-    if (display == NULL) {
-        fprintf(stderr, "BXFAIL open X11 connection\n");
+    Display *peer = XOpenDisplay(NULL);
+    if (display == NULL || peer == NULL) {
+        fprintf(stderr, "BXFAIL open X11 connections\n");
         return 2;
     }
     XSetErrorHandler(on_x_error);
@@ -121,6 +122,44 @@ int main(int argc, char **argv) {
     RECORD(lock_ok);
 
     before = x_errors;
+    Atom num_lock = XInternAtom(display, "Num Lock", False);
+    Bool num_on = False;
+    int num_ndx = -1;
+    Bool num_found = XkbSetNamedIndicator(display, num_lock, True, True,
+                                          False, NULL)
+            && XkbGetNamedIndicator(display, num_lock, &num_ndx, &num_on,
+                                    NULL, NULL);
+    unsigned int leds = 0;
+    Status led_got = XkbGetIndicatorState(display, XkbUseCoreKbd, &leds);
+    got = XkbGetState(display, XkbUseCoreKbd, &xkb);
+    XkbStateRec peer_state = {0};
+    Bool peer_num = False;
+    XkbGetState(peer, XkbUseCoreKbd, &peer_state);
+    XkbGetNamedIndicator(peer, num_lock, NULL, &peer_num, NULL, NULL);
+    XSync(display, False);
+    XSync(peer, False);
+    bool named_ok = num_found && num_on && num_ndx == 1 && led_got == Success
+            && got == Success && (leds & 2) && (xkb.locked_mods & Mod2Mask)
+            && peer_num && (peer_state.locked_mods & Mod2Mask)
+            && x_errors == before;
+    result("xkb-named-indicator", named_ok,
+           named_ok ? "Num Lock Set/Get" : "named indicator failed");
+    RECORD(named_ok);
+
+    before = x_errors;
+    Atom caps_lock = XInternAtom(display, "Caps Lock", False);
+    Bool caps_on = False;
+    int caps_ndx = -1;
+    XkbLockModifiers(display, XkbUseCoreKbd, LockMask, LockMask);
+    Bool caps_found = XkbGetNamedIndicator(display, caps_lock, &caps_ndx,
+                                           &caps_on, NULL, NULL);
+    XSync(display, False);
+    bool caps_ok = caps_found && caps_on && caps_ndx == 0 && x_errors == before;
+    result("xkb-caps-indicator", caps_ok,
+           caps_ok ? "Caps from LockModifiers" : "Caps indicator failed");
+    RECORD(caps_ok);
+
+    before = x_errors;
     Bool bell = XkbBell(display, None, 50, None);
     Bool detectable = False;
     XkbSetDetectableAutoRepeat(display, True, &detectable);
@@ -136,6 +175,7 @@ int main(int argc, char **argv) {
     XChangeKeyboardControl(display, KBBellPercent | KBAutoRepeatMode, &kbd);
     XkbSetAutoRepeatRate(display, XkbUseCoreKbd, 500, 30);
     XkbLockModifiers(display, XkbUseCoreKbd, LockMask, 0);
+    XkbSetNamedIndicator(display, num_lock, True, False, False, NULL);
     XUngrabServer(display);
     XGetPointerControl(display, &num, &den, &threshold);
     get_repeat = XkbGetAutoRepeatRate(display, XkbUseCoreKbd, &delay, &interval);
@@ -150,6 +190,7 @@ int main(int argc, char **argv) {
            passed, failed, x_errors);
     fflush(stdout);
     sleep((unsigned)(duration > 0 && duration <= 30 ? duration : 3));
+    XCloseDisplay(peer);
     XCloseDisplay(display);
     return failed == 0 && x_errors == 0 ? 0 : 1;
 }
