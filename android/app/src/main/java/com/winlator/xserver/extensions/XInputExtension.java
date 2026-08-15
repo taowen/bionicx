@@ -15,11 +15,15 @@ import com.winlator.xserver.Window;
 import com.winlator.xserver.events.Event;
 import com.winlator.xserver.events.XInputCrossingEvent;
 import com.winlator.xserver.events.XInputDeviceEvent;
+import com.winlator.xserver.errors.BadAtom;
 import com.winlator.xserver.errors.BadCursor;
 import com.winlator.xserver.errors.BadImplementation;
+import com.winlator.xserver.errors.BadMatch;
 import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
+
+import android.util.SparseArray;
 
 import java.io.IOException;
 
@@ -49,17 +53,45 @@ public class XInputExtension extends Extension {
     public static final int XI_LEAVE = 8;
     private byte[] pointerGrabMask;
     private byte[] keyboardGrabMask;
+    private int deviceMode = 0;
+    private byte[] deviceButtonMap = {1, 2, 3, 4, 5, 6, 7};
+    private final SparseArray<DeviceProperty> pointerProperties = new SparseArray<>();
+    private final SparseArray<DeviceProperty> keyboardProperties = new SparseArray<>();
+
+    private static final class DeviceProperty {
+        private int type;
+        private int format;
+        private byte[] data;
+
+        private DeviceProperty(int type, int format, byte[] data) {
+            this.type = type;
+            this.format = format;
+            this.data = data;
+        }
+    }
 
     private static abstract class ClientOpcodes {
         private static final byte GET_EXTENSION_VERSION = 1;
         private static final byte LIST_INPUT_DEVICES = 2;
         private static final byte OPEN_DEVICE = 3;
         private static final byte CLOSE_DEVICE = 4;
+        private static final byte SET_DEVICE_MODE = 5;
         private static final byte SELECT_EXTENSION_EVENT = 6;
         private static final byte GET_SELECTED_EXTENSION_EVENTS = 7;
+        private static final byte GET_FEEDBACK_CONTROL = 22;
+        private static final byte CHANGE_FEEDBACK_CONTROL = 23;
+        private static final byte GET_DEVICE_BUTTON_MAPPING = 28;
+        private static final byte SET_DEVICE_BUTTON_MAPPING = 29;
+        private static final byte LIST_DEVICE_PROPERTIES = 36;
+        private static final byte CHANGE_DEVICE_PROPERTY = 37;
+        private static final byte DELETE_DEVICE_PROPERTY = 38;
+        private static final byte GET_DEVICE_PROPERTY = 39;
         private static final byte XI_QUERY_POINTER = 40;
+        private static final byte XI_WARP_POINTER = 41;
         private static final byte XI_CHANGE_CURSOR = 42;
         private static final byte XI_GET_CLIENT_POINTER = 45;
+        private static final byte XI_SET_FOCUS = 49;
+        private static final byte XI_GET_FOCUS = 50;
         private static final byte XI_SELECT_EVENTS = 46;
         private static final byte XI_QUERY_VERSION = 47;
         private static final byte XI_QUERY_DEVICE = 48;
@@ -396,6 +428,84 @@ public class XInputExtension extends Extension {
             throw new BadValue(deviceId);
     }
 
+    private void requireMasterDevice(int deviceId) throws XRequestError {
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID)
+            throw new BadValue(deviceId);
+    }
+
+    private SparseArray<DeviceProperty> propertiesFor(int deviceId) {
+        return deviceId == MASTER_KEYBOARD_ID ? keyboardProperties : pointerProperties;
+    }
+
+    private void setDeviceMode(XClient client, XInputStream inputStream,
+                               XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceId = inputStream.readUnsignedByte();
+        int mode = inputStream.readUnsignedByte();
+        inputStream.skip(2);
+        requireMasterDevice(deviceId);
+        if (mode != 0 && mode != 1) throw new BadValue(mode);
+        deviceMode = mode;
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.SET_DEVICE_MODE);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeByte((byte)0);
+            outputStream.writePad(23);
+        }
+    }
+
+    private void getFeedbackControl(XClient client, XInputStream inputStream,
+                                    XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceId = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        requireMasterDevice(deviceId);
+        boolean pointer = deviceId == MASTER_POINTER_ID;
+        int extra = pointer ? 12 : 0;
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.GET_FEEDBACK_CONTROL);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(extra / 4);
+            outputStream.writeShort((short)(pointer ? 1 : 0));
+            outputStream.writePad(22);
+            if (pointer) {
+                outputStream.writeByte((byte)1); // PtrFeedbackClass
+                outputStream.writeByte((byte)0);
+                outputStream.writeShort((short)12);
+                outputStream.writePad(2);
+                outputStream.writeShort((short)xServer.pointer.getAccelNumerator());
+                outputStream.writeShort((short)xServer.pointer.getAccelDenominator());
+                outputStream.writeShort((short)xServer.pointer.getAccelThreshold());
+            }
+        }
+    }
+
+    private void changeFeedbackControl(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int mask = inputStream.readInt();
+        int deviceId = inputStream.readUnsignedByte();
+        inputStream.skip(3); // feedback id + pad
+        requireMasterDevice(deviceId);
+        if (client.getRemainingRequestLength() >= 12) {
+            inputStream.skip(4); // class, id, length
+            inputStream.skip(2);
+            int threshold = inputStream.readShort();
+            int accelNum = inputStream.readShort();
+            int accelDenom = inputStream.readShort();
+            if (deviceId == MASTER_POINTER_ID) {
+                int num = (mask & 1) != 0 ? accelNum : xServer.pointer.getAccelNumerator();
+                int denom = (mask & 2) != 0 ? accelDenom : xServer.pointer.getAccelDenominator();
+                int thr = (mask & 4) != 0 ? threshold : xServer.pointer.getAccelThreshold();
+                if ((mask & 2) != 0 && denom == 0) throw new BadValue(0);
+                xServer.pointer.setAccel(num, denom, thr);
+            }
+        }
+        inputStream.skip(client.getRemainingRequestLength());
+    }
+
     private void selectExtensionEvent(XClient client, XInputStream inputStream)
             throws XRequestError {
         int windowId = inputStream.readInt();
@@ -551,6 +661,262 @@ public class XInputExtension extends Extension {
                 outputStream.writeShort((short)(mask.length / 4));
                 outputStream.write(mask);
             }
+        }
+    }
+
+    private void getDeviceButtonMapping(XClient client, XInputStream inputStream,
+                                        XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceId = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        requireMasterDevice(deviceId);
+        byte[] map = deviceButtonMap;
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.GET_DEVICE_BUTTON_MAPPING);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt((map.length + 3) / 4);
+            outputStream.writeByte((byte)map.length);
+            outputStream.writePad(23);
+            outputStream.write(map);
+            outputStream.writePad(-map.length & 3);
+        }
+    }
+
+    private void setDeviceButtonMapping(XClient client, XInputStream inputStream,
+                                        XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceId = inputStream.readUnsignedByte();
+        int mapLength = inputStream.readUnsignedByte();
+        inputStream.skip(2);
+        requireMasterDevice(deviceId);
+        byte[] map = new byte[mapLength];
+        inputStream.read(map);
+        inputStream.skip((-mapLength) & 3);
+        boolean ok = mapLength == deviceButtonMap.length;
+        if (ok) deviceButtonMap = map;
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.SET_DEVICE_BUTTON_MAPPING);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeByte((byte)(ok ? 0 : 2));
+            outputStream.writePad(23);
+        }
+    }
+
+    private void listDeviceProperties(XClient client, XInputStream inputStream,
+                                      XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceId = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        requireMasterDevice(deviceId);
+        SparseArray<DeviceProperty> properties = propertiesFor(deviceId);
+        int count;
+        int[] atoms;
+        synchronized (properties) {
+            count = properties.size();
+            atoms = new int[count];
+            for (int i = 0; i < count; i++) atoms[i] = properties.keyAt(i);
+        }
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.LIST_DEVICE_PROPERTIES);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(count);
+            outputStream.writeShort((short)count);
+            outputStream.writePad(22);
+            for (int atom : atoms) outputStream.writeInt(atom);
+        }
+    }
+
+    private void changeDeviceProperty(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int property = inputStream.readInt();
+        int type = inputStream.readInt();
+        int deviceId = inputStream.readUnsignedByte();
+        int format = inputStream.readUnsignedByte();
+        int mode = inputStream.readUnsignedByte();
+        inputStream.skip(1);
+        int nUnits = inputStream.readInt();
+        requireMasterDevice(deviceId);
+        if (!Atom.isValid(property) || !Atom.isValid(type))
+            throw new BadAtom(property);
+        if (format != 8 && format != 16 && format != 32) throw new BadValue(format);
+        if (mode > 2) throw new BadValue(mode);
+        int dataBytes = nUnits * (format / 8);
+        byte[] incoming = new byte[dataBytes];
+        inputStream.read(incoming);
+        inputStream.skip((-dataBytes) & 3);
+        inputStream.skip(client.getRemainingRequestLength());
+        SparseArray<DeviceProperty> properties = propertiesFor(deviceId);
+        synchronized (properties) {
+            DeviceProperty existing = properties.get(property);
+            if (mode == 0 || existing == null) {
+                properties.put(property, new DeviceProperty(type, format, incoming));
+                return;
+            }
+            if (existing.format != format || existing.type != type)
+                throw new BadMatch();
+            byte[] merged = new byte[existing.data.length + incoming.length];
+            if (mode == 1) {
+                System.arraycopy(incoming, 0, merged, 0, incoming.length);
+                System.arraycopy(existing.data, 0, merged, incoming.length,
+                        existing.data.length);
+            }
+            else {
+                System.arraycopy(existing.data, 0, merged, 0, existing.data.length);
+                System.arraycopy(incoming, 0, merged, existing.data.length,
+                        incoming.length);
+            }
+            existing.data = merged;
+        }
+    }
+
+    private void deleteDeviceProperty(XInputStream inputStream) throws XRequestError {
+        int property = inputStream.readInt();
+        int deviceId = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        requireMasterDevice(deviceId);
+        if (!Atom.isValid(property)) throw new BadAtom(property);
+        SparseArray<DeviceProperty> properties = propertiesFor(deviceId);
+        synchronized (properties) {
+            properties.remove(property);
+        }
+    }
+
+    private void getDeviceProperty(XClient client, XInputStream inputStream,
+                                   XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int property = inputStream.readInt();
+        inputStream.readInt(); // requested type
+        int longOffset = inputStream.readInt();
+        int longLength = inputStream.readInt();
+        int deviceId = inputStream.readUnsignedByte();
+        boolean delete = inputStream.readUnsignedByte() != 0;
+        inputStream.skip(2);
+        requireMasterDevice(deviceId);
+        if (!Atom.isValid(property)) throw new BadAtom(property);
+        DeviceProperty stored;
+        SparseArray<DeviceProperty> properties = propertiesFor(deviceId);
+        synchronized (properties) {
+            stored = properties.get(property);
+            if (delete && stored != null) properties.remove(property);
+        }
+        int offsetBytes = longOffset * 4;
+        byte[] slice = new byte[0];
+        int bytesAfter = 0;
+        int format = 0;
+        int type = 0;
+        int nItems = 0;
+        if (stored != null) {
+            type = stored.type;
+            format = stored.format;
+            if (offsetBytes > stored.data.length) throw new BadValue(longOffset);
+            int available = stored.data.length - offsetBytes;
+            int wanted = longLength * 4;
+            int take = Math.min(available, wanted);
+            slice = new byte[take];
+            System.arraycopy(stored.data, offsetBytes, slice, 0, take);
+            bytesAfter = available - take;
+            int unit = Math.max(1, format / 8);
+            nItems = take / unit;
+        }
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.GET_DEVICE_PROPERTY);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt((slice.length + 3) / 4);
+            outputStream.writeInt(type);
+            outputStream.writeInt(bytesAfter);
+            outputStream.writeInt(nItems);
+            outputStream.writeByte((byte)format);
+            outputStream.writeByte((byte)deviceId);
+            outputStream.writePad(10);
+            outputStream.write(slice);
+            outputStream.writePad(-slice.length & 3);
+        }
+    }
+
+    private void warpPointer(XInputStream inputStream) throws XRequestError {
+        int srcWindowId = inputStream.readInt();
+        int dstWindowId = inputStream.readInt();
+        int srcX = inputStream.readInt() >> 16;
+        int srcY = inputStream.readInt() >> 16;
+        int srcWidth = inputStream.readUnsignedShort();
+        int srcHeight = inputStream.readUnsignedShort();
+        int dstX = inputStream.readInt() >> 16;
+        int dstY = inputStream.readInt() >> 16;
+        int deviceId = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        if (deviceId != MASTER_POINTER_ID && deviceId != ALL_MASTER_DEVICES)
+            throw new BadValue(deviceId);
+        Window srcWindow = srcWindowId == 0 ? null
+                : xServer.windowManager.getWindow(srcWindowId);
+        if (srcWindowId != 0 && srcWindow == null) throw new BadWindow(srcWindowId);
+        Window dstWindow = dstWindowId == 0 ? null
+                : xServer.windowManager.getWindow(dstWindowId);
+        if (dstWindowId != 0 && dstWindow == null) throw new BadWindow(dstWindowId);
+        if (srcWindow != null) {
+            if (srcWidth == 0) srcWidth = srcWindow.getWidth() - srcX;
+            if (srcHeight == 0) srcHeight = srcWindow.getHeight() - srcY;
+            short[] local = srcWindow.rootPointToLocal(
+                    xServer.pointer.getX(), xServer.pointer.getY());
+            if (local[0] < srcX || local[1] < srcY
+                    || local[0] >= srcX + srcWidth
+                    || local[1] >= srcY + srcHeight) return;
+        }
+        if (dstWindow == null) {
+            xServer.pointer.setPosition(xServer.pointer.getX() + dstX,
+                    xServer.pointer.getY() + dstY);
+        }
+        else {
+            short[] root = dstWindow.localPointToRoot((short)dstX, (short)dstY);
+            xServer.pointer.setPosition(root[0], root[1]);
+        }
+    }
+
+    private void setFocus(XInputStream inputStream) throws XRequestError {
+        int windowId = inputStream.readInt();
+        inputStream.skip(4); // timestamp
+        int deviceId = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID
+                && deviceId != ALL_MASTER_DEVICES)
+            throw new BadValue(deviceId);
+        if (windowId == 0) {
+            xServer.windowManager.setFocus(null,
+                    xServer.windowManager.getFocusRevertTo());
+            return;
+        }
+        if (windowId == 1) {
+            xServer.windowManager.setPointerRootFocus(
+                    xServer.windowManager.getFocusRevertTo());
+            return;
+        }
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+        if (!window.attributes.isViewable()) throw new BadMatch();
+        xServer.windowManager.setFocus(window,
+                xServer.windowManager.getFocusRevertTo());
+    }
+
+    private void getFocus(XClient client, XInputStream inputStream,
+                          XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int deviceId = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID
+                && deviceId != ALL_MASTER_DEVICES)
+            throw new BadValue(deviceId);
+        Window focused = xServer.windowManager.getFocusedWindow();
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte(ClientOpcodes.XI_GET_FOCUS);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(focused == null ? 0 : focused.id);
+            outputStream.writePad(20);
         }
     }
 
@@ -817,6 +1183,42 @@ public class XInputExtension extends Extension {
                 break;
             case ClientOpcodes.CLOSE_DEVICE:
                 closeDevice(client, inputStream);
+                break;
+            case ClientOpcodes.SET_DEVICE_MODE:
+                setDeviceMode(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_FEEDBACK_CONTROL:
+                getFeedbackControl(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.CHANGE_FEEDBACK_CONTROL:
+                changeFeedbackControl(client, inputStream);
+                break;
+            case ClientOpcodes.GET_DEVICE_BUTTON_MAPPING:
+                getDeviceButtonMapping(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SET_DEVICE_BUTTON_MAPPING:
+                setDeviceButtonMapping(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.LIST_DEVICE_PROPERTIES:
+                listDeviceProperties(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.CHANGE_DEVICE_PROPERTY:
+                changeDeviceProperty(client, inputStream);
+                break;
+            case ClientOpcodes.DELETE_DEVICE_PROPERTY:
+                deleteDeviceProperty(inputStream);
+                break;
+            case ClientOpcodes.GET_DEVICE_PROPERTY:
+                getDeviceProperty(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.XI_WARP_POINTER:
+                warpPointer(inputStream);
+                break;
+            case ClientOpcodes.XI_SET_FOCUS:
+                setFocus(inputStream);
+                break;
+            case ClientOpcodes.XI_GET_FOCUS:
+                getFocus(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.SELECT_EXTENSION_EVENT:
                 selectExtensionEvent(client, inputStream);
