@@ -21,6 +21,13 @@ public class Keyboard {
     private final ArraySet<Byte> pressedKeys = new ArraySet<>();
     private final ArrayList<OnKeyboardListener> onKeyboardListeners = new ArrayList<>();
     private final XServer xServer;
+    private int keyClickPercent = 0;
+    private int bellPercent = 50;
+    private int bellPitch = 400;
+    private int bellDuration = 100;
+    private int ledMask = 0;
+    private int globalAutoRepeat = 1;
+    private final byte[] autoRepeats = new byte[32];
 
     public interface OnKeyboardListener {
         void onKeyPress(byte keycode, int keysym);
@@ -32,6 +39,34 @@ public class Keyboard {
 
     public Keyboard(XServer xServer) {
         this.xServer = xServer;
+        java.util.Arrays.fill(autoRepeats, (byte)0xff);
+    }
+
+    public int getKeyClickPercent() { return keyClickPercent; }
+    public int getBellPercent() { return bellPercent; }
+    public int getBellPitch() { return bellPitch; }
+    public int getBellDuration() { return bellDuration; }
+    public int getLedMask() { return ledMask; }
+    public int getGlobalAutoRepeat() { return globalAutoRepeat; }
+    public byte[] getAutoRepeats() { return autoRepeats; }
+
+    public void setKeyClickPercent(int value) { keyClickPercent = value & 0xff; }
+    public void setBellPercent(int value) { bellPercent = value & 0xff; }
+    public void setBellPitch(int value) { bellPitch = value & 0xffff; }
+    public void setBellDuration(int value) { bellDuration = value & 0xffff; }
+    public void setLed(int led, boolean on) {
+        int bit = 1 << (led & 31);
+        ledMask = on ? (ledMask | bit) : (ledMask & ~bit);
+    }
+    public void setGlobalAutoRepeat(int mode) {
+        if (mode == 0 || mode == 1) globalAutoRepeat = mode;
+    }
+    public void setKeyAutoRepeat(int keycode, int mode) {
+        if (keycode < 0 || keycode > 255 || (mode != 0 && mode != 1)) return;
+        int index = keycode >>> 3;
+        int bit = 1 << (keycode & 7);
+        if (mode == 1) autoRepeats[index] |= (byte)bit;
+        else autoRepeats[index] &= (byte)~bit;
     }
 
     public Bitmask getModifiersMask() {

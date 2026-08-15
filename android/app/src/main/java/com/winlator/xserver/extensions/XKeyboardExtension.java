@@ -67,6 +67,7 @@ public class XKeyboardExtension extends Extension {
     private static abstract class ClientOpcodes {
         private static final byte USE_EXTENSION = 0;
         private static final byte SELECT_EVENTS = 1;
+        private static final byte BELL = 3;
         private static final byte GET_STATE = 4;
         private static final byte LATCH_LOCK_STATE = 5;
         private static final byte GET_CONTROLS = 6;
@@ -360,6 +361,15 @@ public class XKeyboardExtension extends Extension {
             outputStream.writeInt(0); // timeout controls values
             outputStream.writeInt(0); // enabled controls
             for (int i = 0; i < 32; i++) outputStream.writeByte((byte)0xff);
+        }
+    }
+
+    private void ringBell(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        inputStream.skip(client.getRemainingRequestLength());
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
         }
     }
 
@@ -661,6 +671,9 @@ public class XKeyboardExtension extends Extension {
                 break;
             case ClientOpcodes.SELECT_EVENTS:
                 selectEvents(client, inputStream);
+                break;
+            case ClientOpcodes.BELL:
+                ringBell(client, inputStream);
                 break;
             case ClientOpcodes.GET_STATE:
                 getState(client, inputStream, outputStream);

@@ -76,12 +76,15 @@ public abstract class ClientOpcodes {
     public static final byte QUERY_EXTENSION = 98;
     public static final byte LIST_EXTENSIONS = 99;
     public static final byte GET_KEYBOARD_MAPPING = 101;
+    public static final byte CHANGE_KEYBOARD_CONTROL = 102;
+    public static final byte GET_KEYBOARD_CONTROL = 103;
     public static final byte BELL = 104;
     public static final byte CHANGE_POINTER_CONTROL = 105;
     public static final byte GET_POINTER_CONTROL = 106;
     public static final byte SET_SCREEN_SAVER = 107;
     public static final byte GET_SCREEN_SAVER = 108;
     public static final byte FORCE_SCREEN_SAVER = 115;
+    public static final byte SET_POINTER_MAPPING = 116;
     public static final byte GET_POINTER_MAPPING = 117;
     public static final byte GET_MODIFIER_MAPPING = 119;
     public static final byte NO_OPERATION = 127;

@@ -26,6 +26,7 @@ public class Pointer {
     private int accelNumerator = 2;
     private int accelDenominator = 1;
     private int accelThreshold = 4;
+    private byte[] buttonMap = {1, 2, 3};
 
     public interface OnPointerMotionListener {
         default void onPointerButtonPress(Button button) {}
@@ -83,6 +84,16 @@ public class Pointer {
         accelNumerator = numerator;
         accelDenominator = denominator;
         accelThreshold = threshold;
+    }
+
+    public byte[] getButtonMap() {
+        return buttonMap.clone();
+    }
+
+    public boolean setButtonMap(byte[] map) {
+        if (map == null || map.length != buttonMap.length) return false;
+        buttonMap = map.clone();
+        return true;
     }
 
     public Bitmask getButtonMask() {

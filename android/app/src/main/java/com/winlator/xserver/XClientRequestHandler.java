@@ -536,6 +536,16 @@ public class XClientRequestHandler implements RequestHandler {
                             KeyboardRequests.getKeyboardMapping(client, inputStream, outputStream);
                         }
                         break;
+                    case ClientOpcodes.CHANGE_KEYBOARD_CONTROL:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.INPUT_DEVICE)) {
+                            KeyboardRequests.changeKeyboardControl(client, inputStream);
+                        }
+                        break;
+                    case ClientOpcodes.GET_KEYBOARD_CONTROL:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.INPUT_DEVICE)) {
+                            KeyboardRequests.getKeyboardControl(client, outputStream);
+                        }
+                        break;
                     case ClientOpcodes.BELL:
                         client.skipRequest();
                         break;
@@ -558,8 +568,15 @@ public class XClientRequestHandler implements RequestHandler {
                     case ClientOpcodes.FORCE_SCREEN_SAVER:
                         client.skipRequest();
                         break;
+                    case ClientOpcodes.SET_POINTER_MAPPING:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.INPUT_DEVICE)) {
+                            PointerRequests.setPointerMapping(client, inputStream, outputStream);
+                        }
+                        break;
                     case ClientOpcodes.GET_POINTER_MAPPING:
-                        CursorRequests.getPointerMapping(client, inputStream, outputStream);
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.INPUT_DEVICE)) {
+                            PointerRequests.getPointerMapping(client, outputStream);
+                        }
                         break;
                     case ClientOpcodes.GET_MODIFIER_MAPPING:
                         KeyboardRequests.getModifierMapping(client, inputStream, outputStream);
