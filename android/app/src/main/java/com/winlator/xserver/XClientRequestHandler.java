@@ -20,6 +20,7 @@ import com.winlator.xserver.requests.GrabRequests;
 import com.winlator.xserver.requests.GraphicsContextRequests;
 import com.winlator.xserver.requests.KeyboardRequests;
 import com.winlator.xserver.requests.PixmapRequests;
+import com.winlator.xserver.requests.PointerRequests;
 import com.winlator.xserver.requests.SelectionRequests;
 import com.winlator.xserver.requests.WindowRequests;
 
@@ -537,6 +538,16 @@ public class XClientRequestHandler implements RequestHandler {
                         break;
                     case ClientOpcodes.BELL:
                         client.skipRequest();
+                        break;
+                    case ClientOpcodes.CHANGE_POINTER_CONTROL:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.INPUT_DEVICE)) {
+                            PointerRequests.changePointerControl(client, inputStream);
+                        }
+                        break;
+                    case ClientOpcodes.GET_POINTER_CONTROL:
+                        try (XLock lock = client.xServer.lock(XServer.Lockable.INPUT_DEVICE)) {
+                            PointerRequests.getPointerControl(client, outputStream);
+                        }
                         break;
                     case ClientOpcodes.SET_SCREEN_SAVER:
                         client.skipRequest();

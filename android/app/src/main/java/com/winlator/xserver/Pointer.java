@@ -23,6 +23,9 @@ public class Pointer {
     private final XServer xServer;
     private short x;
     private short y;
+    private int accelNumerator = 2;
+    private int accelDenominator = 1;
+    private int accelThreshold = 4;
 
     public interface OnPointerMotionListener {
         default void onPointerButtonPress(Button button) {}
@@ -62,6 +65,24 @@ public class Pointer {
         setX(x);
         setY(y);
         triggerOnPointerMove(this.x, this.y);
+    }
+
+    public int getAccelNumerator() {
+        return accelNumerator;
+    }
+
+    public int getAccelDenominator() {
+        return accelDenominator;
+    }
+
+    public int getAccelThreshold() {
+        return accelThreshold;
+    }
+
+    public void setAccel(int numerator, int denominator, int threshold) {
+        accelNumerator = numerator;
+        accelDenominator = denominator;
+        accelThreshold = threshold;
     }
 
     public Bitmask getButtonMask() {
