@@ -18,7 +18,7 @@ import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
 
-/** Read-only RandR 1.3 model of BionicX's single Android display. */
+/** RandR 1.3 model of BionicX's single Android display. */
 public class XRandRExtension extends Extension {
     public static final int MAJOR_VERSION = 1;
     public static final int MINOR_VERSION = 3;
@@ -26,23 +26,42 @@ public class XRandRExtension extends Extension {
     private static final byte FIRST_ERROR = -116;
     private static final String OUTPUT_NAME = "BionicX-0";
 
+    private static final int GAMMA_SIZE = 256;
     private final int crtcId = IDGenerator.generate();
     private final int outputId = IDGenerator.generate();
     private final int modeId = IDGenerator.generate();
+    private int primaryOutput;
+    private final int[] gammaRed = new int[GAMMA_SIZE];
+    private final int[] gammaGreen = new int[GAMMA_SIZE];
+    private final int[] gammaBlue = new int[GAMMA_SIZE];
 
     private static abstract class ClientOpcodes {
         private static final byte QUERY_VERSION = 0;
         private static final byte SELECT_INPUT = 4;
+        private static final byte GET_SCREEN_SIZE_RANGE = 6;
+        private static final byte SET_SCREEN_SIZE = 7;
         private static final byte GET_SCREEN_RESOURCES = 8;
         private static final byte GET_OUTPUT_INFO = 9;
         private static final byte GET_OUTPUT_PROPERTY = 15;
         private static final byte GET_CRTC_INFO = 20;
+        private static final byte SET_CRTC_CONFIG = 21;
+        private static final byte GET_CRTC_GAMMA_SIZE = 22;
+        private static final byte GET_CRTC_GAMMA = 23;
+        private static final byte SET_CRTC_GAMMA = 24;
         private static final byte GET_SCREEN_RESOURCES_CURRENT = 25;
+        private static final byte SET_OUTPUT_PRIMARY = 30;
         private static final byte GET_OUTPUT_PRIMARY = 31;
     }
 
     public XRandRExtension(XServer xServer, byte majorOpcode) {
         super(xServer, majorOpcode);
+        primaryOutput = outputId;
+        for (int i = 0; i < GAMMA_SIZE; i++) {
+            int value = i * 257;
+            gammaRed[i] = value;
+            gammaGreen[i] = value;
+            gammaBlue[i] = value;
+        }
     }
 
     @Override
@@ -134,9 +153,120 @@ public class XRandRExtension extends Extension {
             outputStream.writeByte((byte)0);
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(0);
-            outputStream.writeInt(outputId);
+            outputStream.writeInt(primaryOutput);
             outputStream.writePad(20);
         }
+    }
+
+    private void setOutputPrimary(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        int output = inputStream.readInt();
+        if (xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+        if (output != 0 && output != outputId) throw badOutput(output);
+        primaryOutput = output;
+    }
+
+    private void getScreenSizeRange(XClient client, XInputStream inputStream,
+                                    XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        if (xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+        int width = Short.toUnsignedInt(xServer.screenInfo.width);
+        int height = Short.toUnsignedInt(xServer.screenInfo.height);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeShort((short)width);
+            outputStream.writeShort((short)height);
+            outputStream.writeShort((short)width);
+            outputStream.writeShort((short)height);
+            outputStream.writePad(16);
+        }
+    }
+
+    private void setScreenSize(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int windowId = inputStream.readInt();
+        inputStream.skip(12);
+        if (xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+    }
+
+    private void setCrtcConfig(XClient client, XInputStream inputStream,
+                               XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int crtc = inputStream.readInt();
+        inputStream.skip(20);
+        inputStream.skip(client.getRemainingRequestLength());
+        if (crtc != crtcId) throw badCrtc(crtc);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(1);
+            outputStream.writePad(20);
+        }
+    }
+
+    private void getCrtcGammaSize(XClient client, XInputStream inputStream,
+                                  XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int crtc = inputStream.readInt();
+        if (crtc != crtcId) throw badCrtc(crtc);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeShort((short)GAMMA_SIZE);
+            outputStream.writePad(22);
+        }
+    }
+
+    private void writeGamma(XOutputStream outputStream, int[] ramp) {
+        for (int value : ramp) outputStream.writeShort((short)value);
+    }
+
+    private void getCrtcGamma(XClient client, XInputStream inputStream,
+                              XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int crtc = inputStream.readInt();
+        if (crtc != crtcId) throw badCrtc(crtc);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(GAMMA_SIZE * 6 / 4);
+            outputStream.writeShort((short)GAMMA_SIZE);
+            outputStream.writePad(22);
+            writeGamma(outputStream, gammaRed);
+            writeGamma(outputStream, gammaGreen);
+            writeGamma(outputStream, gammaBlue);
+        }
+    }
+
+    private void readGamma(XInputStream inputStream, int[] ramp, int size) {
+        for (int i = 0; i < size && i < ramp.length; i++)
+            ramp[i] = inputStream.readUnsignedShort();
+    }
+
+    private void setCrtcGamma(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int crtc = inputStream.readInt();
+        int size = inputStream.readUnsignedShort();
+        inputStream.skip(2);
+        if (crtc != crtcId) throw badCrtc(crtc);
+        if (size <= 0 || size > GAMMA_SIZE) throw new BadValue(size);
+        readGamma(inputStream, gammaRed, size);
+        readGamma(inputStream, gammaGreen, size);
+        readGamma(inputStream, gammaBlue, size);
+        inputStream.skip(client.getRemainingRequestLength());
     }
 
     private XRequestError badOutput(int id) {
@@ -260,6 +390,12 @@ public class XRandRExtension extends Extension {
             case ClientOpcodes.SELECT_INPUT:
                 selectInput(client, inputStream);
                 break;
+            case ClientOpcodes.GET_SCREEN_SIZE_RANGE:
+                getScreenSizeRange(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SET_SCREEN_SIZE:
+                setScreenSize(client, inputStream);
+                break;
             case ClientOpcodes.GET_SCREEN_RESOURCES:
             case ClientOpcodes.GET_SCREEN_RESOURCES_CURRENT:
                 getScreenResources(client, inputStream, outputStream);
@@ -272,6 +408,21 @@ public class XRandRExtension extends Extension {
                 break;
             case ClientOpcodes.GET_CRTC_INFO:
                 getCrtcInfo(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SET_CRTC_CONFIG:
+                setCrtcConfig(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_CRTC_GAMMA_SIZE:
+                getCrtcGammaSize(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_CRTC_GAMMA:
+                getCrtcGamma(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SET_CRTC_GAMMA:
+                setCrtcGamma(client, inputStream);
+                break;
+            case ClientOpcodes.SET_OUTPUT_PRIMARY:
+                setOutputPrimary(client, inputStream);
                 break;
             case ClientOpcodes.GET_OUTPUT_PROPERTY:
                 getOutputProperty(client, inputStream, outputStream);
