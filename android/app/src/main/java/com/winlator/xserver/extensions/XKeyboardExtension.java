@@ -16,7 +16,7 @@ import com.winlator.xserver.errors.XRequestError;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-/** Minimal read-only XKB 1.0 map for the core keyboard. */
+/** Minimal XKB 1.0 map for the core keyboard. */
 public class XKeyboardExtension extends Extension {
     public static final int MAJOR_VERSION = 1;
     public static final int MINOR_VERSION = 0;
@@ -58,12 +58,16 @@ public class XKeyboardExtension extends Extension {
         "ONE_LEVEL", "TWO_LEVEL", "ALPHABETIC", "KEYPAD"
     };
     private static final int[] KEY_TYPE_LEVEL_COUNTS = {1, 2, 2, 2};
+    private static final int XKB_REPEAT_KEYS_MASK = 1;
+    private int repeatDelay = 660;
+    private int repeatInterval = 40;
 
     private static abstract class ClientOpcodes {
         private static final byte USE_EXTENSION = 0;
         private static final byte SELECT_EVENTS = 1;
         private static final byte GET_STATE = 4;
         private static final byte GET_CONTROLS = 6;
+        private static final byte SET_CONTROLS = 7;
         private static final byte GET_MAP = 8;
         private static final byte GET_COMPAT_MAP = 10;
         private static final byte GET_INDICATOR_STATE = 12;
@@ -296,6 +300,26 @@ public class XKeyboardExtension extends Extension {
         }
     }
 
+    private void setControls(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int deviceSpec = inputStream.readUnsignedShort();
+        inputStream.skip(26);
+        int changeCtrls = inputStream.readInt();
+        int delay = inputStream.readUnsignedShort();
+        int interval = inputStream.readUnsignedShort();
+        inputStream.skip(client.getRemainingRequestLength());
+        if (deviceSpec != CORE_KEYBOARD_ID && deviceSpec != 0x100) {
+            throw new BadValue(deviceSpec);
+        }
+        // xfsettingsd applies keyboard repeat via XkbSetAutoRepeatRate.
+        // Other control bits are accepted as no-ops.
+        if ((changeCtrls & XKB_REPEAT_KEYS_MASK) != 0) {
+            if (delay == 0 || interval == 0) throw new BadValue(0);
+            repeatDelay = delay;
+            repeatInterval = interval;
+        }
+    }
+
     private void getControls(XClient client, XInputStream inputStream,
                              XOutputStream outputStream)
             throws IOException, XRequestError {
@@ -315,8 +339,8 @@ public class XKeyboardExtension extends Extension {
             outputStream.writePad(5); // internal and ignored modifiers
             outputStream.writeShort((short)0); // internal virtual modifiers
             outputStream.writeShort((short)0); // ignored virtual modifiers
-            outputStream.writeShort((short)660); // repeat delay
-            outputStream.writeShort((short)40); // repeat interval
+            outputStream.writeShort((short)repeatDelay);
+            outputStream.writeShort((short)repeatInterval);
             outputStream.writeShort((short)300); // slow-keys delay
             outputStream.writeShort((short)300); // debounce delay
             outputStream.writeShort((short)160); // mouse-keys delay
@@ -620,6 +644,9 @@ public class XKeyboardExtension extends Extension {
                 break;
             case ClientOpcodes.GET_CONTROLS:
                 getControls(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SET_CONTROLS:
+                setControls(client, inputStream);
                 break;
             case ClientOpcodes.GET_MAP:
                 getMap(client, inputStream, outputStream);
