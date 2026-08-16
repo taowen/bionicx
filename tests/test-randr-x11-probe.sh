@@ -7,7 +7,12 @@ grep -F 'XRRSetCrtcConfig' \
     "$repo_dir/examples/randr-x11-probe/randr-x11-probe.c" >/dev/null
 grep -F 'XRRGetCrtcTransform' \
     "$repo_dir/examples/randr-x11-probe/randr-x11-probe.c" >/dev/null
+grep -F 'XRRSetCrtcTransform' \
+    "$repo_dir/examples/randr-x11-probe/randr-x11-probe.c" >/dev/null
 grep -F 'GET_CRTC_TRANSFORM' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XRandRExtension.java" \
+    >/dev/null
+grep -F 'SET_CRTC_TRANSFORM' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XRandRExtension.java" \
     >/dev/null
 grep -F 'XRRSetOutputPrimary' \

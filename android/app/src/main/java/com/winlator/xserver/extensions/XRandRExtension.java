@@ -34,6 +34,11 @@ public class XRandRExtension extends Extension {
     private final int[] gammaRed = new int[GAMMA_SIZE];
     private final int[] gammaGreen = new int[GAMMA_SIZE];
     private final int[] gammaBlue = new int[GAMMA_SIZE];
+    private final int[] crtcTransform = {
+        0x10000, 0, 0,
+        0, 0x10000, 0,
+        0, 0, 0x10000
+    };
 
     private static abstract class ClientOpcodes {
         private static final byte QUERY_VERSION = 0;
@@ -50,6 +55,7 @@ public class XRandRExtension extends Extension {
         private static final byte GET_CRTC_GAMMA = 23;
         private static final byte SET_CRTC_GAMMA = 24;
         private static final byte GET_SCREEN_RESOURCES_CURRENT = 25;
+        private static final byte SET_CRTC_TRANSFORM = 26;
         private static final byte GET_CRTC_TRANSFORM = 27;
         private static final byte SET_OUTPUT_PRIMARY = 30;
         private static final byte GET_OUTPUT_PRIMARY = 31;
@@ -329,18 +335,24 @@ public class XRandRExtension extends Extension {
         }
     }
 
-    private void writeIdentityTransform(XOutputStream outputStream)
+    private void writeStoredTransform(XOutputStream outputStream)
             throws IOException {
-        // 3x3 16.16 identity. xfsettingsd reads this after GetCrtcInfo.
-        outputStream.writeInt(0x10000);
-        outputStream.writeInt(0);
-        outputStream.writeInt(0);
-        outputStream.writeInt(0);
-        outputStream.writeInt(0x10000);
-        outputStream.writeInt(0);
-        outputStream.writeInt(0);
-        outputStream.writeInt(0);
-        outputStream.writeInt(0x10000);
+        for (int value : crtcTransform) outputStream.writeInt(value);
+    }
+
+    private void setCrtcTransform(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int crtc = inputStream.readInt();
+        if (crtc != crtcId) {
+            inputStream.skip(client.getRemainingRequestLength());
+            throw badCrtc(crtc);
+        }
+        for (int i = 0; i < crtcTransform.length; i++) {
+            crtcTransform[i] = inputStream.readInt();
+        }
+        // Filter name and FIXED params are accepted and discarded; the
+        // stored matrix is what GetCrtcTransform and xfsettingsd read back.
+        inputStream.skip(client.getRemainingRequestLength());
     }
 
     private void getCrtcTransform(XClient client, XInputStream inputStream,
@@ -353,10 +365,10 @@ public class XRandRExtension extends Extension {
             outputStream.writeByte((byte)0);
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(16);
-            writeIdentityTransform(outputStream);
+            writeStoredTransform(outputStream);
             outputStream.writeByte((byte)1); // hasTransforms
             outputStream.writePad(3);
-            writeIdentityTransform(outputStream);
+            writeStoredTransform(outputStream);
             outputStream.writePad(4);
             outputStream.writeShort((short)0); // pendingNparams
             outputStream.writeShort((short)0); // pendingNfilter
@@ -507,6 +519,9 @@ public class XRandRExtension extends Extension {
             case ClientOpcodes.GET_SCREEN_RESOURCES:
             case ClientOpcodes.GET_SCREEN_RESOURCES_CURRENT:
                 getScreenResources(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.SET_CRTC_TRANSFORM:
+                setCrtcTransform(client, inputStream);
                 break;
             case ClientOpcodes.GET_CRTC_TRANSFORM:
                 getCrtcTransform(client, inputStream, outputStream);

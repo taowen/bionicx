@@ -110,15 +110,26 @@ int main(int argc, char **argv) {
     before = x_errors;
     XRRCrtcTransformAttributes *transform = NULL;
     Status transform_status = XRRGetCrtcTransform(display, crtc, &transform);
+    XTransform scaled = {{{0}}};
+    scaled.matrix[0][0] = 0x20000;
+    scaled.matrix[1][1] = 0x20000;
+    scaled.matrix[2][2] = 0x10000;
+    if (transform_status != 0)
+        XRRSetCrtcTransform(display, crtc, &scaled, "nearest", NULL, 0);
+    if (transform != NULL) {
+        XFree(transform);
+        transform = NULL;
+    }
+    transform_status = XRRGetCrtcTransform(display, crtc, &transform);
     XSync(display, False);
     bool transform_ok = transform_status != 0 && transform != NULL
-            && transform->currentTransform.matrix[0][0] == 0x10000
-            && transform->currentTransform.matrix[1][1] == 0x10000
+            && transform->currentTransform.matrix[0][0] == 0x20000
+            && transform->currentTransform.matrix[1][1] == 0x20000
             && transform->currentTransform.matrix[2][2] == 0x10000
             && x_errors == before;
     result("randr-crtc-transform", transform_ok,
-           transform_ok ? "GetCrtcTransform identity"
-                        : "GetCrtcTransform failed");
+           transform_ok ? "Set/GetCrtcTransform"
+                        : "CrtcTransform failed");
     RECORD(transform_ok);
     if (transform != NULL) XFree(transform);
 
