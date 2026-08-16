@@ -653,7 +653,27 @@ int main(int argc, char **argv) {
            grab_ok ? "under GrabServer" : "blocked or dropped under grab");
     RECORD(grab_ok);
 
+    before = x_errors;
+    Window output = 0;
+    if (overlay != 0) {
+        output = XCreateSimpleWindow(comp, overlay, 0, 0, 200, 120,
+                                     0, 0, 0x224466);
+        XMapWindow(comp, output);
+    }
+    XSync(comp, False);
+    bool child_painted = output != 0 && paint_window(comp, output, 0xaabbcc);
+    XSync(comp, False);
+    unsigned long child_pixel = 0;
+    bool child_ok = child_painted && x_errors == before
+            && read_pixel(comp, output, &child_pixel)
+            && child_pixel == 0xaabbcc && x_errors == before;
+    result("overlay-child-output", child_ok,
+           child_ok ? "overlay child output paintable"
+                    : "overlay child lost after RedirectSubwindows(root)");
+    RECORD(child_ok);
+
     damage_destroy(comp, dmg_op, damage);
+    if (output != 0) XDestroyWindow(comp, output);
     release_overlay_window(comp, cmp_op, (uint32_t)root);
     unredirect_subwindows(comp, cmp_op, (uint32_t)root, 1);
     XSync(comp, False);
