@@ -1,10 +1,9 @@
 # XFCE desktop session
 
-Starts package-installed `xfwm4 --compositor=off`,
+Starts package-installed `xfwm4 --compositor=on --vblank=off`,
 `xfce4-panel` and `xfdesktop`, then Thunar and Mousepad from the shared
-rootfs. The compositor stays off until an `xfwm4 --compositor=on`
-session is green. After the windows map, `--accept` checks that xfwm4 advertised
-`_NET_SUPPORTING_WM_CHECK`, the panel is mapped, focus can switch,
+rootfs. After the windows map, `--accept` checks that xfwm4 advertised
+`_NET_WM_CM_S0`, `_NET_SUPPORTING_WM_CHECK`, the panel is mapped, focus can switch,
 Thunar can resize (shrink when the saved window already fills
 the screen), and Mousepad can close and reopen. D-Bus,
 PulseAudio, CUPS and Vulkan are requested through `hostServices`. There

@@ -310,6 +310,14 @@ static int wm_is_xfwm(Display *display, Window root) {
     return find_class(display, root, "Xfwm4") != None;
 }
 
+static int compositor_selection_owned(Display *display) {
+    char name[32];
+    snprintf(name, sizeof(name), "_NET_WM_CM_S%d", DefaultScreen(display));
+    Atom cm = XInternAtom(display, name, True);
+    if (cm == None) return 0;
+    return XGetSelectionOwner(display, cm) != None;
+}
+
 static int accept_session(Display *display, char *app2_path) {
     int passed = 0;
     int failed = 0;
@@ -327,6 +335,15 @@ static int accept_session(Display *display, char *app2_path) {
     }
     result("xfce-wm", wm_ok, wm_ok ? "xfwm4" : "no supporting WM");
     RECORD(wm_ok);
+
+    int cm_ok = 0;
+    for (int i = 0; i < 40 && !cm_ok; ++i) {
+        cm_ok = compositor_selection_owned(display);
+        if (!cm_ok) sleep_ms(100);
+    }
+    result("xfce-compositor", cm_ok,
+           cm_ok ? "_NET_WM_CM_S0" : "compositor selection unowned");
+    RECORD(cm_ok);
 
     Window panel = wait_class(display, root, "Xfce4-panel", 8000);
     if (panel == None)
@@ -474,7 +491,8 @@ int main(int argc, char **argv) {
     join_path(panel, sizeof(panel), prefix, "xfce4-panel");
     join_path(desktop, sizeof(desktop), prefix, "xfdesktop");
 
-    char *wm_argv[] = {xfwm4, "--compositor=off", "--sm-client-disable", NULL};
+    char *wm_argv[] = {xfwm4, "--compositor=on", "--vblank=off",
+                       "--sm-client-disable", NULL};
     char *panel_argv[] = {panel, "--disable-wm-check", "--sm-client-disable",
                           NULL};
     char *desktop_argv[] = {desktop, "--disable-wm-check", NULL};
