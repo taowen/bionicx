@@ -34,6 +34,8 @@ static int is_android_seccomp_probe(long number) {
 #ifdef SYS_shmdt
     if (number == SYS_shmdt) return 1;
 #endif
+    /* SYS_io_uring_setup/enter/register (425-427) are blocked for app UIDs. */
+    if (number == 425 || number == 426 || number == 427) return 1;
     return 0;
 }
 

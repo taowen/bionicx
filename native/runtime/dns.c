@@ -2,8 +2,13 @@
 #include "runtime-internal.h"
 
 #include <arpa/inet.h>
+#include <dlfcn.h>
 #include <fcntl.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -64,4 +69,47 @@ static void publish_android_resolver_config(void) {
 
 __attribute__((constructor)) static void initialize_android_dns(void) {
     publish_android_resolver_config();
+}
+
+static char synthetic_ifaddrs_tag;
+
+int getifaddrs(struct ifaddrs **ifap) {
+    static int (*next)(struct ifaddrs **);
+    if (ifap == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (next == NULL) next = dlsym(RTLD_NEXT, "getifaddrs");
+    if (next != NULL && next(ifap) == 0) return 0;
+
+    struct {
+        struct ifaddrs addrs;
+        struct sockaddr_in addr;
+        struct sockaddr_in netmask;
+        char name[3];
+    } *block = calloc(1, sizeof(*block));
+    if (block == NULL) return -1;
+    memcpy(block->name, "lo", 3);
+    block->addr.sin_family = AF_INET;
+    block->addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    block->netmask.sin_family = AF_INET;
+    block->netmask.sin_addr.s_addr = htonl(0xff000000);
+    block->addrs.ifa_name = block->name;
+    block->addrs.ifa_flags = IFF_UP | IFF_LOOPBACK | IFF_RUNNING;
+    block->addrs.ifa_addr = (struct sockaddr *)&block->addr;
+    block->addrs.ifa_netmask = (struct sockaddr *)&block->netmask;
+    block->addrs.ifa_data = &synthetic_ifaddrs_tag;
+    *ifap = &block->addrs;
+    return 0;
+}
+
+void freeifaddrs(struct ifaddrs *ifa) {
+    static void (*next)(struct ifaddrs *);
+    if (ifa == NULL) return;
+    if (ifa->ifa_data == &synthetic_ifaddrs_tag) {
+        free(ifa);
+        return;
+    }
+    if (next == NULL) next = dlsym(RTLD_NEXT, "freeifaddrs");
+    if (next != NULL) next(ifa);
 }

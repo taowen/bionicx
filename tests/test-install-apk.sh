@@ -18,6 +18,8 @@ grep -F '2289' "$installer" >/dev/null
 grep -F '2462' "$installer" >/dev/null
 grep -F 'bionicx-exec' "$installer" >/dev/null
 grep -F 'libbionicx-runtime.so' "$installer" >/dev/null
+grep -F 'keep existing' \
+    "$repo_dir/android/app/src/main/java/com/winlator/BionicXActivity.java" >/dev/null
 grep -F -- '--extract-only' "$installer" >/dev/null
 grep -F 'tools/install-apk.sh' "$guide" >/dev/null
 grep -F 'tools/install-apk.sh' "$hello_runner" >/dev/null

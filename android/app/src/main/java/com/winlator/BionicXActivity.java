@@ -244,6 +244,12 @@ public final class BionicXActivity extends Activity {
     }
 
     private File extractAsset(String asset, File destination) throws IOException {
+        /* bxapt/install-apk stage a matching runtime. Re-extracting on every
+         * launch would clobber a newer .so copied from the source tree. */
+        if (destination.isFile() && destination.length() > 0) {
+            Log.i(TAG, "keep existing " + destination.getPath());
+            return destination;
+        }
         File parent = destination.getParentFile();
         if (!parent.isDirectory() && !parent.mkdirs())
             throw new IOException("cannot create " + parent);

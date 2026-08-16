@@ -9,12 +9,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ifaddrs.h>
+#include <sys/ioctl.h>
+#include <sys/inotify.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
+#include <sys/syscall.h>
+#include <poll.h>
 #include <sys/sem.h>
 #include <sys/types.h>
 #include <spawn.h>
 #include <sys/wait.h>
+#include <pty.h>
 #include <unistd.h>
 
 static void fail(const char *message) {
@@ -36,6 +42,18 @@ static void write_file(const char *path, const char *contents, mode_t mode) {
 }
 
 int main(int argc, char **argv) {
+    if (argc >= 2 && strncmp(argv[1], "--type=", 7) == 0) {
+        for (int i = 0; i < argc; ++i)
+            if (strcmp(argv[i], "--disable-crashpad-for-testing") == 0)
+                return 0;
+        return 21;
+    }
+    if (argc >= 2 && strcmp(argv[1], "--print-home") == 0) {
+        const char *home = getenv("HOME");
+        if (home == NULL) home = "";
+        fwrite(home, 1, strlen(home), stdout);
+        return home[0] != '\0' ? 0 : 3;
+    }
     if (argc != 3) return 2;
     const char *root = argv[1];
     const char *temporary = argv[2];
@@ -300,6 +318,37 @@ int main(int argc, char **argv) {
         fclose(group_stream);
         if (lckpwdf() != 0) _exit(115);
         if (ulckpwdf() != 0) _exit(114);
+        char resolved[PATH_MAX];
+        if (realpath("/var/lib/dpkg/status", resolved) == NULL ||
+                strcmp(resolved, "/var/lib/dpkg/status") != 0)
+            _exit(113);
+        int sysfd = (int)syscall(SYS_openat, AT_FDCWD, "/etc/group",
+                                 O_RDONLY, 0);
+        if (sysfd < 0) _exit(112);
+        close(sysfd);
+        unsetenv("SSL_CERT_FILE");
+        unsetenv("SSL_CERT_DIR");
+        unsetenv("NODE_EXTRA_CA_CERTS");
+        unsetenv("SHELL");
+        unsetenv("HOME");
+        unsetenv("PATH");
+        unsetenv("LANG");
+        if (getenv("SSL_CERT_FILE") == NULL ||
+                strcmp(getenv("SSL_CERT_FILE"), "/captured-cert") != 0)
+            _exit(111);
+        if (getenv("SHELL") == NULL || strcmp(getenv("SHELL"), "/bin/sh") != 0)
+            _exit(110);
+        if (getenv("HOME") == NULL ||
+                strcmp(getenv("HOME"), "/captured-home") != 0)
+            _exit(109);
+        clearenv();
+        if (getenv("SHELL") == NULL || strcmp(getenv("SHELL"), "/bin/sh") != 0)
+            _exit(108);
+        int found_shell = 0;
+        for (char **item = environ; item != NULL && *item != NULL; ++item) {
+            if (strncmp(*item, "SHELL=", 6) == 0) found_shell = 1;
+        }
+        if (!found_shell) _exit(107); /* clearenv keeps SHELL */
         _exit(0);
     }
     int unlocked_status = 0;
@@ -329,6 +378,19 @@ int main(int argc, char **argv) {
         execve(shell, arguments, sanitized);
         _exit(119);
     }
+    pid_t helper_child = fork();
+    if (helper_child < 0) fail("fork child-flags helper");
+    if (helper_child == 0) {
+        char *const helper[] = {
+            (char *)"/proc/self/exe", (char *)"--type=utility", NULL
+        };
+        execv("/proc/self/exe", helper);
+        _exit(22);
+    }
+    int helper_status = 0;
+    if (waitpid(helper_child, &helper_status, 0) != helper_child ||
+            !WIFEXITED(helper_status) || WEXITSTATUS(helper_status) != 0)
+        fail("BIONICX_CHILD_FLAGS on --type= helper");
     int execve_status = 0;
     if (waitpid(execve_child, &execve_status, 0) != execve_child ||
             !WIFEXITED(execve_status) || WEXITSTATUS(execve_status) != 0)
@@ -382,6 +444,65 @@ int main(int argc, char **argv) {
     struct passwd *current_user = getpwuid(geteuid());
     if (current_user == NULL || current_user->pw_uid != geteuid())
         fail("current app user mapping");
+    if (current_user->pw_shell == NULL ||
+            strcmp(current_user->pw_shell, "/bin/sh") != 0)
+        fail("current app user shell");
+    if (setenv("SHELL", "/bin/bash", 1) != 0)
+        fail("setenv SHELL");
+    current_user = getpwuid(geteuid());
+    if (current_user == NULL || current_user->pw_shell == NULL ||
+            strcmp(current_user->pw_shell, "/bin/bash") != 0)
+        fail("SHELL overrides app user shell");
+    if (setenv("SHELL", "/system/bin/sh", 1) != 0)
+        fail("setenv Android SHELL");
+    current_user = getpwuid(geteuid());
+    if (current_user == NULL || current_user->pw_shell == NULL ||
+            strcmp(current_user->pw_shell, "/bin/sh") != 0)
+        fail("Android SHELL stays guest /bin/sh");
+    if (setenv("SHELL", "/bin/sh", 1) != 0)
+        fail("restore SHELL");
+    struct statx shell_info;
+    memset(&shell_info, 0, sizeof(shell_info));
+    if (statx(AT_FDCWD, "/bin/sh", 0, STATX_TYPE | STATX_MODE, &shell_info) != 0)
+        fail("statx guest /bin/sh");
+    int watches = open("/proc/sys/fs/inotify/max_user_watches", O_RDONLY);
+    if (watches < 0) fail("inotify max_user_watches");
+    char watch_limit[16] = {0};
+    if (read(watches, watch_limit, sizeof(watch_limit) - 1) <= 0 ||
+            strstr(watch_limit, "65536") == NULL)
+        fail("inotify max_user_watches value");
+    close(watches);
+    int proc_stat = open("/proc/stat", O_RDONLY);
+    if (proc_stat < 0) fail("open /proc/stat");
+    char proc_stat_text[256] = {0};
+    if (read(proc_stat, proc_stat_text, sizeof(proc_stat_text) - 1) <= 0 ||
+            strstr(proc_stat_text, "cpu ") == NULL ||
+            strstr(proc_stat_text, "btime 0") == NULL)
+        fail("read /proc/stat");
+    close(proc_stat);
+    int shells = open("/etc/shells", O_RDONLY);
+    if (shells < 0) fail("open /etc/shells");
+    char shell_list[512] = {0};
+    if (read(shells, shell_list, sizeof(shell_list) - 1) <= 0)
+        fail("read /etc/shells");
+    close(shells);
+    if (strstr(shell_list, root) == NULL ||
+            strstr(shell_list, "/usr/bin/bash") == NULL)
+        fail("rooted /etc/shells");
+    int notify = inotify_init1(IN_CLOEXEC | IN_NONBLOCK);
+    if (notify < 0) fail("inotify_init1");
+    if (inotify_add_watch(notify, "/bin", IN_CREATE | IN_ATTRIB) < 0)
+        fail("inotify_add_watch guest /bin");
+    write_file("/bin/bionicx-inotify-marker", "watched\n", 0600);
+    struct pollfd ready = { .fd = notify, .events = POLLIN };
+    if (poll(&ready, 1, 1000) <= 0)
+        fail("inotify event for guest /bin");
+    close(notify);
+    struct ifaddrs *interfaces = NULL;
+    if (getifaddrs(&interfaces) != 0) fail("getifaddrs");
+    if (interfaces == NULL || interfaces->ifa_name == NULL)
+        fail("getifaddrs interfaces");
+    freeifaddrs(interfaces);
 
     int semaphore = semget(IPC_PRIVATE, 1, IPC_CREAT | 0600);
     if (semaphore < 0) fail("semget");
@@ -414,6 +535,66 @@ int main(int argc, char **argv) {
         (char *)"HOME=/tmp",
         NULL
     };
+    int saved_stdin = dup(STDIN_FILENO);
+    int null_stdin = open("/dev/null", O_RDONLY);
+    if (saved_stdin < 0 || null_stdin < 0) fail("forkpty stdin setup");
+    if (dup2(null_stdin, STDIN_FILENO) < 0) fail("dup2 /dev/null");
+    close(null_stdin);
+    int pty_master = -1;
+    pid_t pty_child = forkpty(&pty_master, NULL, NULL, NULL);
+    if (pty_child == 0) {
+        char tty_flag = isatty(STDIN_FILENO) ? '1' : '0';
+        if (write(STDOUT_FILENO, &tty_flag, 1) != 1) _exit(121);
+        _exit(0);
+    }
+    if (dup2(saved_stdin, STDIN_FILENO) < 0) fail("restore stdin");
+    close(saved_stdin);
+    if (pty_child < 0) fail("forkpty");
+    char tty_flag = 0;
+    if (read(pty_master, &tty_flag, 1) != 1) fail("forkpty master read");
+    int pty_status = 0;
+    if (waitpid(pty_child, &pty_status, 0) != pty_child ||
+            !WIFEXITED(pty_status) || WEXITSTATUS(pty_status) != 0 ||
+            tty_flag != '1')
+        fail("forkpty child stdin is not a tty");
+    close(pty_master);
+    snprintf(path, sizeof(path), "%s/usr/bin/bionicx-isatty-std", root);
+    write_file(path,
+               "#!/bin/sh\n"
+               "[ -t 0 ] && [ -t 1 ] && [ -t 2 ] || exit 9\n"
+               "printf all-ttys\n",
+               0700);
+    int std_master = -1;
+    pid_t std_child = forkpty(&std_master, NULL, NULL, NULL);
+    if (std_child == 0) {
+        int nullfd = open("/dev/null", O_RDWR);
+        if (nullfd < 0) _exit(121);
+        if (dup2(nullfd, STDOUT_FILENO) < 0 || dup2(nullfd, STDERR_FILENO) < 0)
+            _exit(121);
+        if (nullfd > STDERR_FILENO) close(nullfd);
+        execl("/usr/bin/bionicx-isatty-std", "bionicx-isatty-std", (char *)NULL);
+        _exit(121);
+    }
+    if (std_child < 0) fail("forkpty isatty-std");
+    char std_buf[16] = {0};
+    ssize_t std_n = read(std_master, std_buf, sizeof(std_buf) - 1);
+    int std_status = 0;
+    if (waitpid(std_child, &std_status, 0) != std_child ||
+            !WIFEXITED(std_status) || WEXITSTATUS(std_status) != 0 ||
+            std_n < 8 || memcmp(std_buf, "all-ttys", 8) != 0)
+        fail("exec must copy the pty onto stdout and stderr");
+    close(std_master);
+#ifndef CLOSE_RANGE_CLOEXEC
+#define CLOSE_RANGE_CLOEXEC 4u
+#endif
+#ifdef SYS_close_range
+    if (syscall(SYS_close_range, 0, ~0U, CLOSE_RANGE_CLOEXEC) == 0) {
+        int stdin_flags = fcntl(STDIN_FILENO, F_GETFD);
+        if (stdin_flags < 0 || (stdin_flags & FD_CLOEXEC) != 0)
+            fail("close_range must not CLOEXEC stdin");
+    }
+#endif
+
     if (posix_spawn(&spawn_pid, "/usr/bin/bionicx-spawn-marker", NULL, NULL,
                     spawn_arguments, spawn_environment) != 0)
         fail("posix_spawn rootfs helper");
@@ -426,6 +607,34 @@ int main(int argc, char **argv) {
 
     snprintf(path, sizeof(path), "%s/usr/bin/bionicx-script", root);
     write_file(path, "#!/bin/sh\nexit 23\n", 0700);
+    snprintf(path, sizeof(path), "%s/usr/bin/bionicx-print-home", root);
+    write_file(path, "#!/bin/sh\nprintf '%s' \"$HOME\"\n", 0700);
+    int env_pipe[2];
+    if (pipe(env_pipe) != 0) fail("pipe environ exec");
+    pid_t env_child = fork();
+    if (env_child < 0) fail("fork environ exec");
+    if (env_child == 0) {
+        if (dup2(env_pipe[1], STDOUT_FILENO) < 0) _exit(127);
+        close(env_pipe[0]);
+        close(env_pipe[1]);
+        char *minienv[] = { "PATH=/usr/bin:/bin", NULL };
+        environ = minienv;
+        char *args[] = { "bionicx-print-home", NULL };
+        execv("/usr/bin/bionicx-print-home", args);
+        _exit(127);
+    }
+    close(env_pipe[1]);
+    char printed_home[256];
+    ssize_t printed = read(env_pipe[0], printed_home, sizeof(printed_home) - 1);
+    close(env_pipe[0]);
+    int env_status = 0;
+    if (printed < 0) printed = 0;
+    printed_home[printed] = '\0';
+    if (waitpid(env_child, &env_status, 0) != env_child ||
+            !WIFEXITED(env_status) || WEXITSTATUS(env_status) != 0 ||
+            strcmp(printed_home, "/captured-home") != 0)
+        fail("exec after environ replace must restore HOME");
+
     pid_t execl_child = fork();
     if (execl_child < 0) fail("fork execl");
     if (execl_child == 0) {

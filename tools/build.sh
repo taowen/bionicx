@@ -60,7 +60,8 @@ podman run --rm --pull=newer --network host \
             native/runtime/identity.c \
             native/runtime/sysv-semaphore.c \
             -o android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so \
-            -Wl,-z,now -ldl
+            -Wl,-z,now -ldl \
+            -Wl,--version-script=native/runtime/glibc-interpose.map
     '
 
 cp "$repo_dir/profiles/hello.json" "$assets_dir/profiles/default.json"

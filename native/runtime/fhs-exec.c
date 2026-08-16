@@ -3,10 +3,13 @@
 #include <dlfcn.h>
 #include <link.h>
 #include <pthread.h>
+#include <pty.h>
 #include <signal.h>
 #include <spawn.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
 #include <sys/wait.h>
+#include <termios.h>
 
 #define SHELL_CHILD_SLOTS 64
 
@@ -202,6 +205,11 @@ static char **script_arguments(const char *path, char *const arguments[],
     return result;
 }
 
+static char **with_child_flags(char *const arguments[]);
+static void free_child_flags(char **merged, char *const original[]);
+static void log_exec(const char *path, char *const arguments[]);
+static void restore_runtime_environment(void);
+
 static void ensure_rootfs_path(void) {
     const char *root = bionicx_getenv("BIONICX_ROOTFS");
     const char *current = bionicx_getenv("PATH");
@@ -216,10 +224,39 @@ static void ensure_rootfs_path(void) {
     if (count > 0 && count < (int)sizeof(value)) setenv("PATH", value, 1);
 }
 
+static void keep_standard_fds(void) {
+    for (int fd = STDIN_FILENO; fd <= STDERR_FILENO; ++fd) {
+        int flags = fcntl(fd, F_GETFD);
+        if (flags >= 0 && (flags & FD_CLOEXEC) != 0)
+            (void)fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC);
+    }
+    /* node-pty leaves stdin on the slave but stdout/stderr on a pipe and
+     * /dev/null. Interactive bash then writes the prompt off the pty. */
+    if (isatty(STDIN_FILENO)) {
+        if (!isatty(STDOUT_FILENO))
+            (void)dup2(STDIN_FILENO, STDOUT_FILENO);
+        if (!isatty(STDERR_FILENO))
+            (void)dup2(STDIN_FILENO, STDERR_FILENO);
+        /* node-pty resets signals after forkpty() returns in the child and
+         * can drop the controlling tty. bash -i then skips rc and exits 0
+         * on EOF. Re-acquire /dev/tty before exec. */
+        int devtty = open("/dev/tty", O_RDWR | O_NOCTTY);
+        if (devtty >= 0) {
+            close(devtty);
+        } else {
+            if (getsid(0) != getpid())
+                (void)setsid();
+            (void)ioctl(STDIN_FILENO, TIOCSCTTY, 1);
+        }
+    }
+}
+
 static int exec_script(const char *path, char *const arguments[],
                        int (*execute)(const char *, char *const[])) {
+    char **child_args = with_child_flags(arguments);
+    char *const *use_args = child_args != NULL ? child_args : arguments;
     char program[PATH_MAX], interpreter_argument[PATH_MAX];
-    char **script = script_arguments(path, arguments, program,
+    char **script = script_arguments(path, use_args, program,
                                      interpreter_argument);
     if (script == NULL) {
         /* A missing shebang is a real ELF. A present shebang must not reach
@@ -231,14 +268,26 @@ static int exec_script(const char *path, char *const arguments[],
             close(descriptor);
             if (n == 2 && magic[0] == '#' && magic[1] == '!') {
                 errno = ENOEXEC;
+                free_child_flags(child_args, arguments);
                 return -1;
             }
         }
-        return execute(path, arguments);
+        restore_runtime_environment();
+        log_exec(path, (char *const *)use_args);
+        keep_standard_fds();
+        int result = execute(path, (char *const *)use_args);
+        int saved_errno = errno;
+        free_child_flags(child_args, arguments);
+        errno = saved_errno;
+        return result;
     }
+    restore_runtime_environment();
+    log_exec(program, script);
+    keep_standard_fds();
     int result = execute(program, script);
     int saved_errno = errno;
     free(script);
+    free_child_flags(child_args, arguments);
     errno = saved_errno;
     return result;
 }
@@ -250,6 +299,17 @@ static const char *const runtime_environment_names[] = {
     "BIONICX_DNS_SERVERS",
     "BIONICX_VIRTUAL_ROOT",
     "BIONICX_REWRITE_ABSOLUTE_SYMLINKS",
+    "BIONICX_CHILD_FLAGS",
+    "BIONICX_LOG_EXEC",
+    "SSL_CERT_FILE",
+    "SSL_CERT_DIR",
+    "NODE_EXTRA_CA_CERTS",
+    /* Zygote children clearenv(); VS Code's pty host still getenv()s these. */
+    "SHELL",
+    "HOME",
+    "PATH",
+    "LANG",
+    "TERM",
 };
 
 static char captured_runtime_environment
@@ -289,12 +349,105 @@ static void restore_runtime_environment(void) {
     }
 }
 
+int clearenv(void) {
+    static int (*next)(void);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "clearenv");
+    int result = next != NULL ? next() : 0;
+    /* Chromium's zygote clearenv()s before specializing Node utilities.
+     * Node copies environ into process.env, so libc getenv hooks are not
+     * enough for VS Code's pty host to see SHELL/HOME/PATH. */
+    restore_runtime_environment();
+    return result;
+}
+
+int unsetenv(const char *name) {
+    static int (*next)(const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "unsetenv");
+    /* Do not call setenv() here: glibc setenv() can recurse into unsetenv(). */
+    if (captured_runtime_value(name) != NULL) return 0;
+    return next != NULL ? next(name) : -1;
+}
+
 const char *bionicx_captured_rootfs(void) {
     return captured_runtime_value("BIONICX_ROOTFS");
 }
 
 const char *bionicx_captured_tmpdir(void) {
     return captured_runtime_value("BIONICX_TMPDIR");
+}
+
+char *getenv(const char *name) {
+    static char *(*next)(const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "getenv");
+    char *live = next(name);
+    if (live != NULL && live[0] != '\0') return live;
+    return (char *)captured_runtime_value(name);
+}
+
+char *secure_getenv(const char *name) {
+    static char *(*next)(const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "secure_getenv");
+    char *live = next != NULL ? next(name) : NULL;
+    if (live != NULL && live[0] != '\0') return live;
+    return (char *)captured_runtime_value(name);
+}
+
+__attribute__((constructor(102)))
+static void log_runtime_loaded(void) {
+    if (captured_runtime_value("BIONICX_LOG_EXEC") == NULL) return;
+    fputs("bionicx-runtime: exec log enabled\n", stderr);
+    fflush(stderr);
+}
+
+__attribute__((constructor(103)))
+static void trace_bash_startup(void) {
+    if (captured_runtime_value("BIONICX_LOG_EXEC") == NULL) return;
+    char exe[PATH_MAX];
+    ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    if (n <= 0) return;
+    exe[n] = '\0';
+    if (strstr(exe, "bash") == NULL) return;
+    const char *tmp = captured_runtime_value("BIONICX_TMPDIR");
+    if (tmp == NULL || tmp[0] != '/') tmp = bionicx_getenv("BIONICX_TMPDIR");
+    const char *home = bionicx_getenv("HOME");
+    char path[PATH_MAX];
+    if (tmp != NULL && tmp[0] == '/' &&
+            snprintf(path, sizeof(path), "%s/bash-ctor.log", tmp) < PATH_MAX) {
+        /* Prefer the app cache so run-as can cat it. */
+    } else if (home != NULL && home[0] == '/' &&
+            snprintf(path, sizeof(path), "%s/bash-ctor.log", home) < PATH_MAX) {
+    } else {
+        return;
+    }
+    int fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (fd < 0) return;
+    char cmdline[256];
+    int cmdfd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
+    ssize_t clen = cmdfd >= 0 ? read(cmdfd, cmdline, sizeof(cmdline) - 1) : 0;
+    if (cmdfd >= 0) close(cmdfd);
+    if (clen < 0) clen = 0;
+    for (ssize_t i = 0; i < clen; ++i)
+        if (cmdline[i] == '\0') cmdline[i] = ' ';
+    cmdline[clen] = '\0';
+    char rcpath[PATH_MAX];
+    int rc_ok = 0, rc_err = 0;
+    if (home != NULL &&
+            snprintf(rcpath, sizeof(rcpath), "%s/.bashrc", home) < PATH_MAX) {
+        int rcfd = open(rcpath, O_RDONLY | O_CLOEXEC);
+        if (rcfd >= 0) {
+            rc_ok = 1;
+            close(rcfd);
+        } else {
+            rc_err = errno;
+        }
+    }
+    char line[512];
+    int w = snprintf(line, sizeof(line),
+                     "exe=%s cmdline=%s isatty0=%d HOME=%s bashrc=%d errno=%d\n",
+                     exe, cmdline, isatty(STDIN_FILENO),
+                     home != NULL ? home : "", rc_ok, rc_err);
+    if (w > 0) (void)write(fd, line, (size_t)w);
+    close(fd);
 }
 
 static int environment_has_name(const char *entry, const char *name) {
@@ -364,6 +517,139 @@ static void free_runtime_environment(char **merged, size_t owned_from) {
     free(merged);
 }
 
+/* Chromium-family helpers re-exec themselves with --type=. Browser argv
+ * switches are not forwarded, and Lark/Feishu does not read
+ * CHROME_EXTRA_FLAGS. Append captured BIONICX_CHILD_FLAGS only for those
+ * helpers so dpkg/sh keep their original argv. */
+#define CHILD_FLAG_SLOTS 16
+
+static int arguments_have_prefix(char *const arguments[], const char *prefix) {
+    size_t length = strlen(prefix);
+    if (arguments == NULL) return 0;
+    for (size_t i = 0; arguments[i] != NULL; ++i)
+        if (strncmp(arguments[i], prefix, length) == 0)
+            return 1;
+    return 0;
+}
+
+static int arguments_have_flag(char *const arguments[], const char *flag) {
+    if (arguments == NULL) return 0;
+    for (size_t i = 0; arguments[i] != NULL; ++i)
+        if (strcmp(arguments[i], flag) == 0)
+            return 1;
+    return 0;
+}
+
+static char **with_child_flags(char *const arguments[]) {
+    const char *extra = captured_runtime_value("BIONICX_CHILD_FLAGS");
+    if (extra == NULL || extra[0] == '\0' || arguments == NULL)
+        return NULL;
+    if (!arguments_have_prefix(arguments, "--type="))
+        return NULL;
+
+    char copy[PATH_MAX];
+    snprintf(copy, sizeof(copy), "%s", extra);
+    const char *flags[CHILD_FLAG_SLOTS];
+    size_t flag_count = 0;
+    char *cursor = copy;
+    while (*cursor != '\0' && flag_count < CHILD_FLAG_SLOTS) {
+        while (*cursor == ' ') ++cursor;
+        if (*cursor == '\0') break;
+        flags[flag_count++] = cursor;
+        char *end = cursor;
+        while (*end != '\0' && *end != ' ') ++end;
+        if (*end != '\0') *end++ = '\0';
+        cursor = end;
+    }
+
+    size_t original = 0;
+    while (arguments[original] != NULL) ++original;
+    size_t add = 0;
+    for (size_t i = 0; i < flag_count; ++i)
+        if (!arguments_have_flag(arguments, flags[i]))
+            ++add;
+    if (add == 0) return NULL;
+
+    char **merged = calloc(original + add + 1, sizeof(*merged));
+    if (merged == NULL) return NULL;
+    for (size_t i = 0; i < original; ++i)
+        merged[i] = arguments[i];
+    size_t out = original;
+    for (size_t i = 0; i < flag_count; ++i) {
+        if (arguments_have_flag(arguments, flags[i])) continue;
+        merged[out] = strdup(flags[i]);
+        if (merged[out] == NULL) {
+            while (out > original) free(merged[--out]);
+            free(merged);
+            return NULL;
+        }
+        ++out;
+    }
+    merged[out] = NULL;
+    return merged;
+}
+
+static void free_child_flags(char **merged, char *const original[]) {
+    if (merged == NULL) return;
+    size_t i = 0;
+    while (original[i] != NULL) ++i;
+    for (; merged[i] != NULL; ++i) free(merged[i]);
+    free(merged);
+}
+
+static void log_exec(const char *path, char *const arguments[]) {
+    const char *enabled = captured_runtime_value("BIONICX_LOG_EXEC");
+    if (enabled == NULL) enabled = getenv("BIONICX_LOG_EXEC");
+    if (enabled == NULL || enabled[0] == '\0') return;
+    int log_file = path != NULL && strstr(path, "bash") != NULL;
+    char line[512];
+    size_t used = 0;
+    used = (size_t)snprintf(line, sizeof(line), "bionicx-execve:");
+    if (path != NULL && used < sizeof(line))
+        used += (size_t)snprintf(line + used, sizeof(line) - used, " %s", path);
+    if (log_file && used < sizeof(line)) {
+        int cloexec = fcntl(STDIN_FILENO, F_GETFD);
+        int nenv = 0, has_ld = 0;
+        const char *live_home = "";
+        if (environ != NULL) {
+            for (char **entry = environ; *entry != NULL; ++entry) {
+                ++nenv;
+                if (strncmp(*entry, "HOME=", 5) == 0) live_home = *entry + 5;
+                if (strncmp(*entry, "LD_PRELOAD=", 11) == 0) has_ld = 1;
+            }
+        }
+        used += (size_t)snprintf(line + used, sizeof(line) - used,
+                                 " isatty0=%d isatty1=%d isatty2=%d cloexec0=%d nenv=%d ld=%d HOME=%s",
+                                 isatty(STDIN_FILENO), isatty(STDOUT_FILENO),
+                                 isatty(STDERR_FILENO),
+                                 cloexec >= 0 && (cloexec & FD_CLOEXEC) ? 1 : 0,
+                                 nenv, has_ld, live_home);
+    }
+    if (arguments != NULL) {
+        for (size_t i = 0; arguments[i] != NULL && i < 8 && used < sizeof(line);
+                ++i)
+            used += (size_t)snprintf(line + used, sizeof(line) - used, " %s",
+                                     arguments[i]);
+    }
+    if (used >= sizeof(line)) used = sizeof(line) - 1;
+    line[used++] = '\n';
+    if (enabled != NULL && enabled[0] != '\0') {
+        fwrite(line, 1, used, stderr);
+        fflush(stderr);
+    }
+    if (!log_file) return;
+    const char *tmp = bionicx_captured_tmpdir();
+    if (tmp == NULL || tmp[0] != '/') tmp = bionicx_getenv("BIONICX_TMPDIR");
+    if (tmp == NULL || tmp[0] != '/') return;
+    char log_path[PATH_MAX];
+    if (snprintf(log_path, sizeof(log_path), "%s/exec.log", tmp) >= PATH_MAX)
+        return;
+    int fd = open(log_path, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (fd < 0) return;
+    (void)write(fd, line, used);
+    close(fd);
+}
+
 int execv(const char *path, char *const arguments[]) {
     static int (*next)(const char *, char *const[]);
     if (next == NULL) next = dlsym(RTLD_NEXT, "execv");
@@ -386,14 +672,46 @@ int execve(const char *path, char *const arguments[],
     char **merged = with_runtime_environment(environment, &owned_from);
     if (environment != NULL && merged == NULL) return -1;
     char *const *actual_environment = merged != NULL ? merged : environment;
+    char **child_args = with_child_flags(arguments);
+    char *const *use_args = child_args != NULL ? child_args : arguments;
     char program[PATH_MAX], interpreter_argument[PATH_MAX];
-    char **script = script_arguments(actual, arguments, program,
+    char **script = script_arguments(actual, use_args, program,
                                      interpreter_argument);
+    log_exec(script == NULL ? actual : program,
+             script == NULL ? use_args : script);
+    keep_standard_fds();
     int result = script == NULL
-            ? next(actual, arguments, actual_environment)
+            ? next(actual, use_args, actual_environment)
             : next(program, script, actual_environment);
     int saved_errno = errno;
     free(script);
+    free_child_flags(child_args, arguments);
+    free_runtime_environment(merged, owned_from);
+    errno = saved_errno;
+    return result;
+}
+
+int execveat(int dirfd, const char *path, char *const arguments[],
+             char *const environment[], int flags) {
+    static int (*next)(int, const char *, char *const[], char *const[], int);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "execveat");
+    char buffer[PATH_MAX];
+    const char *actual = path;
+    if (path[0] == '/') {
+        actual = bionicx_redirect_path(path, buffer);
+        if (actual == NULL) return -1;
+    }
+    size_t owned_from = 0;
+    char **merged = with_runtime_environment(environment, &owned_from);
+    if (environment != NULL && merged == NULL) return -1;
+    char *const *actual_environment = merged != NULL ? merged : environment;
+    char **child_args = with_child_flags(arguments);
+    char *const *use_args = child_args != NULL ? child_args : arguments;
+    log_exec(actual[0] != '\0' ? actual : "execveat", use_args);
+    keep_standard_fds();
+    int result = next(dirfd, actual, use_args, actual_environment, flags);
+    int saved_errno = errno;
+    free_child_flags(child_args, arguments);
     free_runtime_environment(merged, owned_from);
     errno = saved_errno;
     return result;
@@ -415,15 +733,20 @@ int posix_spawn(pid_t *pid, const char *path,
     char **merged = with_runtime_environment(environment, &owned_from);
     if (environment != NULL && merged == NULL) return ENOMEM;
     char *const *actual_environment = merged != NULL ? merged : environment;
+    char **child_args = with_child_flags(arguments);
+    char *const *use_args = child_args != NULL ? child_args : arguments;
     char program[PATH_MAX], interpreter_argument[PATH_MAX];
-    char **script = script_arguments(actual, arguments, program,
+    char **script = script_arguments(actual, use_args, program,
                                      interpreter_argument);
+    log_exec(script == NULL ? actual : program,
+             script == NULL ? use_args : script);
     int result = script == NULL
-            ? next(pid, actual, file_actions, attrp, arguments,
+            ? next(pid, actual, file_actions, attrp, use_args,
                    actual_environment)
             : next(pid, program, file_actions, attrp, script,
                    actual_environment);
     free(script);
+    free_child_flags(child_args, arguments);
     free_runtime_environment(merged, owned_from);
     return result;
 }
@@ -582,6 +905,98 @@ int execlp(const char *path, const char *argument, ...) {
     free(arguments);
     errno = saved_errno;
     return result;
+}
+
+/* libutil forkpty() calls login_tty() in the child. If TIOCSCTTY fails,
+ * glibc leaves stdin on the inherited /dev/null and the child either
+ * _exit(1) or execs bash, which then sees EOF and exits 0. Always attach
+ * the slave to 0/1/2 even when TIOCSCTTY is denied. */
+static void trace_forkpty(const char *phase, pid_t pid, int err) {
+    if (captured_runtime_value("BIONICX_LOG_EXEC") == NULL &&
+            getenv("BIONICX_LOG_EXEC") == NULL)
+        return;
+    const char *tmp = bionicx_captured_tmpdir();
+    if (tmp == NULL || tmp[0] != '/') tmp = bionicx_getenv("BIONICX_TMPDIR");
+    if (tmp == NULL || tmp[0] != '/') return;
+    char path[PATH_MAX];
+    if (snprintf(path, sizeof(path), "%s/forkpty.log", tmp) >= PATH_MAX)
+        return;
+    int fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (fd < 0) return;
+    char line[160];
+    int n = snprintf(line, sizeof(line), "%s pid=%d errno=%d\n",
+                     phase, (int)pid, err);
+    if (n > 0) (void)write(fd, line, (size_t)n);
+    close(fd);
+}
+
+pid_t forkpty(int *amaster, char *name, const struct termios *termp,
+              const struct winsize *winp) {
+    static int (*real_openpty)(int *, int *, char *, const struct termios *,
+                               const struct winsize *);
+    if (real_openpty == NULL)
+        real_openpty = dlsym(RTLD_NEXT, "openpty");
+    if (real_openpty == NULL || amaster == NULL) {
+        errno = ENOSYS;
+        trace_forkpty("enosys", -1, errno);
+        return -1;
+    }
+    int master = -1, slave = -1;
+    if (real_openpty(&master, &slave, name, termp, winp) < 0) {
+        trace_forkpty("openpty", -1, errno);
+        return -1;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        int saved = errno;
+        close(master);
+        close(slave);
+        errno = saved;
+        trace_forkpty("fork", -1, saved);
+        return -1;
+    }
+    if (pid == 0) {
+        close(master);
+        (void)setsid();
+        (void)ioctl(slave, TIOCSCTTY, 0);
+        if (dup2(slave, STDIN_FILENO) < 0 ||
+                dup2(slave, STDOUT_FILENO) < 0 ||
+                dup2(slave, STDERR_FILENO) < 0)
+            _exit(127);
+        if (slave > STDERR_FILENO) close(slave);
+        trace_forkpty("child", 0, 0);
+        return 0;
+    }
+    close(slave);
+    *amaster = master;
+    trace_forkpty("parent", pid, 0);
+    return pid;
+}
+
+char *ptsname(int fd) {
+    static __thread char buffer[64];
+    unsigned int ptyno = 0;
+    if (ioctl(fd, TIOCGPTN, &ptyno) == 0) {
+        int count = snprintf(buffer, sizeof(buffer), "/dev/pts/%u", ptyno);
+        if (count > 0 && count < (int)sizeof(buffer)) return buffer;
+    }
+    static char *(*next)(int);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "ptsname");
+    return next != NULL ? next(fd) : NULL;
+}
+
+int ptsname_r(int fd, char *buffer, size_t length) {
+    unsigned int ptyno = 0;
+    if (ioctl(fd, TIOCGPTN, &ptyno) == 0) {
+        int count = snprintf(buffer, length, "/dev/pts/%u", ptyno);
+        if (count > 0 && (size_t)count < length) return 0;
+        errno = ERANGE;
+        return ERANGE;
+    }
+    static int (*next)(int, char *, size_t);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "ptsname_r");
+    if (next == NULL) return errno != 0 ? errno : ENOSYS;
+    return next(fd, buffer, length);
 }
 
 static const char *rootfs_shell(char path[PATH_MAX]) {

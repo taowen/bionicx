@@ -1,0 +1,7 @@
+/* pty.node imports forkpty@GLIBC_2.17; an unversioned interpose is ignored. */
+GLIBC_2.17 {
+  global:
+    forkpty;
+    ptsname;
+    ptsname_r;
+};

@@ -1,12 +1,136 @@
 #include "runtime-internal.h"
 
 #include <dlfcn.h>
+#include <sys/inotify.h>
 #include <sys/statfs.h>
 #include <sys/statvfs.h>
+#include <sys/syscall.h>
+#include <time.h>
+
+static const char *inotify_sysctl_value(const char *name) {
+    if (strcmp(name, "max_user_watches") == 0) return "65536\n";
+    if (strcmp(name, "max_user_instances") == 0) return "128\n";
+    if (strcmp(name, "max_queued_events") == 0) return "16384\n";
+    return NULL;
+}
+
+/* Android has no /proc/sys/fs/inotify sysctls. Chromium FilePathWatcher reads
+ * max_user_watches and otherwise disables the explorer/git file watcher. */
+static const char *redirect_inotify_sysctl(const char *path,
+                                           char buffer[PATH_MAX]) {
+    if (path == NULL || strncmp(path, "/proc/sys/fs/inotify/", 21) != 0)
+        return NULL;
+    const char *name = path + 21;
+    const char *value = inotify_sysctl_value(name);
+    if (value == NULL || strchr(name, '/') != NULL) return NULL;
+    const char *tmp = bionicx_captured_tmpdir();
+    if (tmp == NULL) tmp = bionicx_getenv("BIONICX_TMPDIR");
+    if (tmp == NULL || tmp[0] != '/') return path;
+    char directory[PATH_MAX];
+    if (snprintf(directory, PATH_MAX, "%s/inotify-sysctl", tmp) >= PATH_MAX ||
+            snprintf(buffer, PATH_MAX, "%s/%s", directory, name) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return NULL;
+    }
+    static int (*real_mkdir)(const char *, mode_t);
+    static int (*real_open)(const char *, int, ...);
+    static int (*real_stat)(const char *, struct stat *);
+    if (real_mkdir == NULL) real_mkdir = dlsym(RTLD_NEXT, "mkdir");
+    if (real_open == NULL) real_open = dlsym(RTLD_NEXT, "open");
+    if (real_stat == NULL) real_stat = dlsym(RTLD_NEXT, "stat");
+    struct stat info;
+    if (real_stat(buffer, &info) == 0) return buffer;
+    if (real_mkdir(directory, 0700) != 0 && errno != EEXIST) return path;
+    int fd = real_open(buffer, O_WRONLY | O_CREAT | O_EXCL, 0600);
+    if (fd < 0) return errno == EEXIST ? buffer : path;
+    size_t length = strlen(value);
+    ssize_t wrote = write(fd, value, length);
+    close(fd);
+    if (wrote != (ssize_t)length) return path;
+    return buffer;
+}
+
+/* VS Code reads /etc/shells then fs.watch()s dirname. Android /bin is
+ * /system/bin (mode o+x only), so watch("/bin") returns EACCES. Point
+ * login shells at the real rootfs paths instead. */
+static const char *redirect_etc_shells(const char *path, char buffer[PATH_MAX]) {
+    static const char *const shells[] = {
+        "/bin/sh", "/usr/bin/sh", "/bin/bash", "/usr/bin/bash",
+        "/bin/rbash", "/usr/bin/rbash", "/usr/bin/dash"
+    };
+    if (path == NULL || strcmp(path, "/etc/shells") != 0) return NULL;
+    const char *root = bionicx_captured_rootfs();
+    if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
+    const char *tmp = bionicx_captured_tmpdir();
+    if (tmp == NULL) tmp = bionicx_getenv("BIONICX_TMPDIR");
+    if (root == NULL || root[0] != '/' || tmp == NULL || tmp[0] != '/')
+        return NULL;
+    if (snprintf(buffer, PATH_MAX, "%s/etc-shells", tmp) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return NULL;
+    }
+    static int (*real_open)(const char *, int, ...);
+    static int (*real_stat)(const char *, struct stat *);
+    if (real_open == NULL) real_open = dlsym(RTLD_NEXT, "open");
+    if (real_stat == NULL) real_stat = dlsym(RTLD_NEXT, "stat");
+    struct stat info;
+    if (real_stat(buffer, &info) == 0) return buffer;
+    int fd = real_open(buffer, O_WRONLY | O_CREAT | O_EXCL, 0600);
+    if (fd < 0) return errno == EEXIST ? buffer : NULL;
+    int ok = 1;
+    for (size_t i = 0; i < sizeof(shells) / sizeof(shells[0]); ++i) {
+        char line[PATH_MAX];
+        int n = snprintf(line, sizeof(line), "%s%s\n", root, shells[i]);
+        if (n < 0 || n >= (int)sizeof(line) ||
+                write(fd, line, (size_t)n) != n) {
+            ok = 0;
+            break;
+        }
+    }
+    close(fd);
+    return ok ? buffer : NULL;
+}
+
+/* Android app UIDs cannot read /proc/stat. VS Code's cpuUsage.sh (and
+ * `code --status`) then dies with division by zero. Rewrite a growing idle
+ * counter so two samples in one script have a non-zero total delta. */
+static const char *redirect_proc_stat(const char *path, char buffer[PATH_MAX]) {
+    if (path == NULL || strcmp(path, "/proc/stat") != 0) return NULL;
+    const char *tmp = bionicx_captured_tmpdir();
+    if (tmp == NULL) tmp = bionicx_getenv("BIONICX_TMPDIR");
+    if (tmp == NULL || tmp[0] != '/') return path;
+    if (snprintf(buffer, PATH_MAX, "%s/proc-stat", tmp) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return NULL;
+    }
+    static int (*real_open)(const char *, int, ...);
+    if (real_open == NULL) real_open = dlsym(RTLD_NEXT, "open");
+    int fd = real_open(buffer, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (fd < 0) return path;
+    static unsigned long ticks;
+    unsigned long idle = 1000000UL + (unsigned long)time(NULL) + ++ticks * 10UL;
+    char text[256];
+    int length = snprintf(text, sizeof(text),
+            "cpu  0 0 0 %lu 0 0 0 0 0 0\n"
+            "cpu0 0 0 0 %lu 0 0 0 0 0 0\n"
+            "intr 0\nctxt 0\nbtime 0\nprocesses 1\n"
+            "procs_running 1\nprocs_blocked 0\nsoftirq 0\n",
+            idle, idle);
+    ssize_t wrote = length > 0 ? write(fd, text, (size_t)length) : -1;
+    close(fd);
+    if (wrote != (ssize_t)length) return path;
+    return buffer;
+}
 
 /* Redirect Linux FHS paths into app-private Android directories. */
 const char *bionicx_redirect_path(const char *path, char buffer[PATH_MAX]) {
     if (path == NULL) return NULL;
+    const char *inotify = redirect_inotify_sysctl(path, buffer);
+    if (inotify != NULL) return inotify;
+    const char *proc_stat = redirect_proc_stat(path, buffer);
+    if (proc_stat != NULL) return proc_stat;
+    const char *shells = redirect_etc_shells(path, buffer);
+    if (shells != NULL) return shells;
     const char *target = NULL;
     const char *suffix = NULL;
     if (strcmp(path, "/tmp") == 0 || strncmp(path, "/tmp/", 5) == 0) {
@@ -72,6 +196,110 @@ int symlinkat(const char *target, int directory, const char *link_path) {
 mode_t bionicx_optional_mode(int flags, va_list arguments) {
     return (flags & O_CREAT) || ((flags & O_TMPFILE) == O_TMPFILE)
             ? (mode_t)va_arg(arguments, int) : 0;
+}
+
+int inotify_add_watch(int fd, const char *path, uint32_t mask) {
+    static int (*next)(int, const char *, uint32_t);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "inotify_add_watch");
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    return next(fd, actual, mask);
+}
+
+/* Node/libuv and Chromium issue openat/statx/inotify via syscall(), not
+ * libc open. Zygote children also clearenv(), so path rewrite must not
+ * depend on the live environment. Call the kernel directly: forwarding
+ * through libc syscall() uses the wrong variadic ABI on AArch64. */
+static long kernel_syscall6(long number, long a1, long a2, long a3, long a4,
+                            long a5, long a6) {
+#if defined(__aarch64__)
+    register long x8 __asm__("x8") = number;
+    register long x0 __asm__("x0") = a1;
+    register long x1 __asm__("x1") = a2;
+    register long x2 __asm__("x2") = a3;
+    register long x3 __asm__("x3") = a4;
+    register long x4 __asm__("x4") = a5;
+    register long x5 __asm__("x5") = a6;
+    __asm__ volatile("svc 0" : "+r"(x0) : "r"(x8), "r"(x1), "r"(x2), "r"(x3),
+                     "r"(x4), "r"(x5) : "memory", "cc");
+    return x0;
+#elif defined(__x86_64__)
+    register long r10 __asm__("r10") = a4;
+    register long r8 __asm__("r8") = a5;
+    register long r9 __asm__("r9") = a6;
+    long result;
+    __asm__ volatile("syscall"
+                     : "=a"(result)
+                     : "a"(number), "D"(a1), "S"(a2), "d"(a3), "r"(r10),
+                       "r"(r8), "r"(r9)
+                     : "rcx", "r11", "memory", "cc");
+    return result;
+#else
+    static long (*next)(long, long, long, long, long, long, long);
+    if (next == NULL)
+        next = (long (*)(long, long, long, long, long, long, long))
+                dlsym(RTLD_NEXT, "syscall");
+    return next(number, a1, a2, a3, a4, a5, a6);
+#endif
+}
+
+long syscall(long number, ...) {
+    va_list arguments;
+    va_start(arguments, number);
+    long a1 = va_arg(arguments, long);
+    long a2 = va_arg(arguments, long);
+    long a3 = va_arg(arguments, long);
+    long a4 = va_arg(arguments, long);
+    long a5 = va_arg(arguments, long);
+    long a6 = va_arg(arguments, long);
+    va_end(arguments);
+    long *path_slot = NULL;
+#ifdef SYS_openat
+    if (number == SYS_openat) path_slot = &a2;
+#endif
+#ifdef SYS_openat2
+    if (number == SYS_openat2) path_slot = &a2;
+#endif
+#ifdef SYS_statx
+    if (number == SYS_statx) path_slot = &a2;
+#endif
+#ifdef SYS_inotify_add_watch
+    if (number == SYS_inotify_add_watch) path_slot = &a2;
+#endif
+#ifdef SYS_newfstatat
+    if (number == SYS_newfstatat) path_slot = &a2;
+#endif
+#ifdef SYS_faccessat
+    if (number == SYS_faccessat) path_slot = &a2;
+#endif
+#ifdef SYS_faccessat2
+    if (number == SYS_faccessat2) path_slot = &a2;
+#endif
+#ifdef SYS_readlinkat
+    if (number == SYS_readlinkat) path_slot = &a2;
+#endif
+    if (path_slot != NULL) {
+        const char *path = (const char *)*path_slot;
+        if (path != NULL && path[0] != '\0') {
+            char buffer[PATH_MAX];
+            const char *actual = bionicx_redirect_path(path, buffer);
+            if (actual == NULL) return -1;
+            if (actual != path) *path_slot = (long)actual;
+        }
+    }
+#ifdef SYS_close_range
+    /* node-pty calls syscall(SYS_close_range, 3, ~0U, CLOSE_RANGE_CLOEXEC)
+     * after forkpty. A mis-decoded first fd of 0 would CLOEXEC stdin, so
+     * execve drops the slave and bash exits 0 on /dev/null. */
+    if (number == SYS_close_range && a1 < 3) a1 = 3;
+#endif
+    long result = kernel_syscall6(number, a1, a2, a3, a4, a5, a6);
+    if (result < 0 && result > -4096) {
+        errno = (int)-result;
+        return -1;
+    }
+    return result;
 }
 
 int open(const char *path, int flags, ...) {
@@ -213,7 +441,8 @@ char *realpath(const char *path, char *resolved_path) {
     char *result = next(actual, resolved_path == NULL ? NULL : physical);
     if (result == NULL) return NULL;
 
-    const char *root = bionicx_getenv("BIONICX_ROOTFS");
+    const char *root = bionicx_captured_rootfs();
+    if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
     size_t root_length = root != NULL ? strlen(root) : 0;
     char canonical_root[PATH_MAX];
     const char *root_prefix = root;
@@ -389,6 +618,24 @@ int fstatat64(int directory, const char *path, struct stat64 *value,
     if (actual == NULL || next(directory, actual, value, flags) != 0)
         return -1;
     apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    return 0;
+}
+
+int statx(int directory, const char *path, int flags, unsigned int mask,
+          struct statx *value) {
+    static int (*next)(int, const char *, int, unsigned int, struct statx *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "statx");
+    /* Node/libuv uses statx, not stat. Without a rewrite, existsSync("/bin/bash")
+     * looks at Android and VS Code falls back to /bin/sh. */
+    if ((flags & AT_EMPTY_PATH) != 0 && (path == NULL || path[0] == '\0'))
+        return next(directory, path, flags, mask, value);
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    if (next(directory, actual, flags, mask, value) != 0) return -1;
+    nlink_t nlink = (nlink_t)value->stx_nlink;
+    apply_fake_nlink(actual, &nlink, NULL);
+    value->stx_nlink = nlink;
     return 0;
 }
 
@@ -823,7 +1070,8 @@ int connect(int socket, const struct sockaddr *address, socklen_t length) {
     return next(socket, actual, actual_length);
 }
 int chroot(const char *path) {
-    const char *root = bionicx_getenv("BIONICX_ROOTFS");
+    const char *root = bionicx_captured_rootfs();
+    if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
     if (root != NULL && strcmp(path, root) == 0) {
         return setenv("BIONICX_VIRTUAL_ROOT", "1", 1);
     }

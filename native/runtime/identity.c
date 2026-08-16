@@ -39,12 +39,24 @@ gid_t getegid(void) {
     return virtual_root() ? 0 : next();
 }
 
+static const char *synthetic_shell(void) {
+    const char *shell = getenv("SHELL");
+    /* Android's app environment often has SHELL=/system/bin/sh. Electron
+     * reads userInfo().shell and runs `$SHELL -ilc`; that Bionic path is
+     * rewritten into a missing rootfs file. Guest profiles may set SHELL
+     * to /bin/bash instead. */
+    if (shell == NULL || shell[0] != '/' ||
+            strncmp(shell, "/system/", 8) == 0)
+        return "/bin/sh";
+    return shell;
+}
+
 static int synthetic_user(uid_t uid, struct passwd *value, char *buffer,
                           size_t length, struct passwd **result) {
     const char *home = getenv("HOME");
     if (home == NULL || home[0] != '/') home = "/tmp";
     const char *fields[] = {"bionicx", "x", "BionicX Android app", home,
-                            "/bin/sh"};
+                            synthetic_shell()};
     size_t required = 0;
     for (size_t i = 0; i < sizeof(fields) / sizeof(fields[0]); ++i)
         required += strlen(fields[i]) + 1;
@@ -73,6 +85,8 @@ int getpwuid_r(uid_t uid, struct passwd *value, char *buffer, size_t length,
     static int (*next)(uid_t, struct passwd *, char *, size_t,
                        struct passwd **);
     if (next == NULL) next = dlsym(RTLD_NEXT, "getpwuid_r");
+    if (uid == geteuid() && getenv("BIONICX_ROOTFS") != NULL)
+        return synthetic_user(uid, value, buffer, length, result);
     int status = next(uid, value, buffer, length, result);
     if ((status != 0 || *result == NULL) && uid == geteuid())
         return synthetic_user(uid, value, buffer, length, result);
