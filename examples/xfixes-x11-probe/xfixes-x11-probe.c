@@ -144,6 +144,50 @@ int main(int argc, char **argv) {
     RECORD(region_ok);
 
     before = x_errors;
+    XRectangle seed = {10, 20, 80, 40};
+    XserverRegion region = XFixesCreateRegion(display, &seed, 1);
+    XFixesTranslateRegion(display, region, 5, -5);
+    int fetched = 0;
+    XRectangle *rects = XFixesFetchRegion(display, region, &fetched);
+    bool translate_ok = fetched == 1 && rects != NULL && rects[0].x == 15
+            && rects[0].y == 15 && rects[0].width == 80 && rects[0].height == 40;
+    if (rects != NULL) XFree(rects);
+    XFixesSetRegion(display, region, &seed, 1);
+    rects = XFixesFetchRegion(display, region, &fetched);
+    bool set_ok = fetched == 1 && rects != NULL && rects[0].x == 10
+            && rects[0].y == 20 && rects[0].width == 80 && rects[0].height == 40;
+    if (rects != NULL) XFree(rects);
+    XserverRegion extents = XFixesCreateRegion(display, NULL, 0);
+    XFixesRegionExtents(display, extents, region);
+    rects = XFixesFetchRegion(display, extents, &fetched);
+    bool extents_ok = fetched == 1 && rects != NULL && rects[0].x == 10
+            && rects[0].y == 20 && rects[0].width == 80 && rects[0].height == 40;
+    if (rects != NULL) XFree(rects);
+    XRectangle box = {0, 0, 100, 100};
+    XserverRegion inverted = XFixesCreateRegion(display, NULL, 0);
+    XFixesInvertRegion(display, inverted, &box, region);
+    rects = XFixesFetchRegion(display, inverted, &fetched);
+    bool invert_ok = fetched >= 1 && rects != NULL;
+    if (rects != NULL) XFree(rects);
+    XserverRegion from_window = XFixesCreateRegionFromWindow(display, window,
+            WindowRegionBounding);
+    rects = XFixesFetchRegion(display, from_window, &fetched);
+    bool from_ok = from_window != None && fetched == 1 && rects != NULL
+            && rects[0].width == 200 && rects[0].height == 120;
+    if (rects != NULL) XFree(rects);
+    XFixesDestroyRegion(display, region);
+    XFixesDestroyRegion(display, extents);
+    XFixesDestroyRegion(display, inverted);
+    XFixesDestroyRegion(display, from_window);
+    XSync(display, False);
+    bool transform_ok = translate_ok && set_ok && extents_ok && invert_ok
+            && from_ok && x_errors == before;
+    result("xfixes-region-transform", transform_ok,
+           transform_ok ? "Set/Translate/Invert/Extents/FromWindow"
+                        : "region transform failed");
+    RECORD(transform_ok);
+
+    before = x_errors;
     XGrabServer(display);
     XFixesSelectCursorInput(display, window, XFixesDisplayCursorNotifyMask);
     image = XFixesGetCursorImage(display);

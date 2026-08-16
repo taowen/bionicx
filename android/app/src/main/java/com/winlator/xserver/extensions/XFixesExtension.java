@@ -50,11 +50,16 @@ public class XFixesExtension extends Extension {
         private static final byte SELECT_CURSOR_INPUT = 3;
         private static final byte GET_CURSOR_IMAGE = 4;
         private static final byte CREATE_REGION = 5;
+        private static final byte CREATE_REGION_FROM_WINDOW = 7;
         private static final byte DESTROY_REGION = 10;
+        private static final byte SET_REGION = 11;
         private static final byte COPY_REGION = 12;
         private static final byte UNION_REGION = 13;
         private static final byte INTERSECT_REGION = 14;
         private static final byte SUBTRACT_REGION = 15;
+        private static final byte INVERT_REGION = 16;
+        private static final byte TRANSLATE_REGION = 17;
+        private static final byte REGION_EXTENTS = 18;
         private static final byte FETCH_REGION = 19;
         private static final byte SET_WINDOW_SHAPE_REGION = 21;
         private static final byte SET_CURSOR_NAME = 23;
@@ -153,7 +158,12 @@ public class XFixesExtension extends Extension {
             remaining -= 8;
         }
         if (remaining > 0) inputStream.skip(remaining);
+        putOwnedRegion(client, id, rectangles);
+    }
 
+    private void putOwnedRegion(XClient client, int id,
+                                ArrayList<Rectangle> rectangles)
+            throws XRequestError {
         synchronized (regions) {
             if (regions.indexOfKey(id) >= 0) throw new BadIdChoice(id);
             regions.put(id, new Region(rectangles));
@@ -165,6 +175,108 @@ public class XFixesExtension extends Extension {
             }
             owned.add(id);
         }
+    }
+
+    private void createRegionFromWindow(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int id = inputStream.readInt();
+        int windowId = inputStream.readInt();
+        int kind = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        if (!client.isValidResourceId(id)) throw new BadIdChoice(id);
+        if (kind > 2) throw new BadValue(kind);
+        Window window = xServer.windowManager.getWindow(windowId);
+        if (window == null) throw new BadWindow(windowId);
+
+        ArrayList<Rectangle> rectangles = new ArrayList<>();
+        if (window.isWindowShaped(kind)) {
+            for (Window.ShapeRectangle rectangle : window.copyWindowShape(kind)) {
+                rectangles.add(new Rectangle((short)rectangle.x, (short)rectangle.y,
+                        rectangle.width, rectangle.height));
+            }
+        } else {
+            int[] extents = window.getWindowShapeExtents(kind);
+            rectangles.add(new Rectangle((short)extents[0], (short)extents[1],
+                    extents[2], extents[3]));
+        }
+        putOwnedRegion(client, id, rectangles);
+    }
+
+    private void setRegion(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int id = inputStream.readInt();
+        Region dest = requireRegion(id);
+        int remaining = client.getRemainingRequestLength();
+        ArrayList<Rectangle> rectangles = new ArrayList<>(remaining / 8);
+        while (remaining >= 8) {
+            rectangles.add(new Rectangle(inputStream.readShort(), inputStream.readShort(),
+                    inputStream.readUnsignedShort(), inputStream.readUnsignedShort()));
+            remaining -= 8;
+        }
+        if (remaining > 0) inputStream.skip(remaining);
+        dest.rectangles.clear();
+        dest.rectangles.addAll(rectangles);
+    }
+
+    private void translateRegion(XInputStream inputStream) throws XRequestError {
+        int id = inputStream.readInt();
+        short dx = inputStream.readShort();
+        short dy = inputStream.readShort();
+        Region region = requireRegion(id);
+        ArrayList<Rectangle> moved = new ArrayList<>(region.rectangles.size());
+        for (Rectangle rectangle : region.rectangles) {
+            moved.add(new Rectangle((short)(rectangle.x + dx),
+                    (short)(rectangle.y + dy), rectangle.width, rectangle.height));
+        }
+        region.rectangles.clear();
+        region.rectangles.addAll(moved);
+    }
+
+    private void invertRegion(XInputStream inputStream) throws XRequestError {
+        int sourceId = inputStream.readInt();
+        short x = inputStream.readShort();
+        short y = inputStream.readShort();
+        int width = inputStream.readUnsignedShort();
+        int height = inputStream.readUnsignedShort();
+        int destId = inputStream.readInt();
+        Region source = requireRegion(sourceId);
+        Region dest = requireRegion(destId);
+        ArrayList<Rectangle> box = new ArrayList<>(1);
+        box.add(new Rectangle(x, y, width, height));
+        ArrayList<Rectangle> inverted = combineRectangles(
+                box, source.rectangles, COMBINE_SUBTRACT);
+        dest.rectangles.clear();
+        dest.rectangles.addAll(inverted);
+    }
+
+    private void regionExtents(XInputStream inputStream) throws XRequestError {
+        int sourceId = inputStream.readInt();
+        int destId = inputStream.readInt();
+        Region source = requireRegion(sourceId);
+        Region dest = requireRegion(destId);
+        dest.rectangles.clear();
+        int[] box = extentsOf(source);
+        if (box != null) {
+            dest.rectangles.add(new Rectangle((short)box[0], (short)box[1],
+                    box[2], box[3]));
+        }
+    }
+
+    private static int[] extentsOf(Region region) {
+        if (region.rectangles.isEmpty()) return null;
+        Rectangle first = region.rectangles.get(0);
+        int minX = first.x;
+        int minY = first.y;
+        int maxX = first.x + first.width;
+        int maxY = first.y + first.height;
+        for (int i = 1; i < region.rectangles.size(); i++) {
+            Rectangle rectangle = region.rectangles.get(i);
+            minX = Math.min(minX, rectangle.x);
+            minY = Math.min(minY, rectangle.y);
+            maxX = Math.max(maxX, rectangle.x + rectangle.width);
+            maxY = Math.max(maxY, rectangle.y + rectangle.height);
+        }
+        return new int[]{minX, minY, maxX - minX, maxY - minY};
     }
 
     private Region requireRegion(int id) throws XRequestError {
@@ -347,21 +459,11 @@ public class XFixesExtension extends Extension {
         }
         if (region == null) throw badRegion(id);
 
-        int minX = 0, minY = 0, maxX = 0, maxY = 0;
-        if (!region.rectangles.isEmpty()) {
-            Rectangle first = region.rectangles.get(0);
-            minX = first.x;
-            minY = first.y;
-            maxX = first.x + first.width;
-            maxY = first.y + first.height;
-            for (int i = 1; i < region.rectangles.size(); i++) {
-                Rectangle rectangle = region.rectangles.get(i);
-                minX = Math.min(minX, rectangle.x);
-                minY = Math.min(minY, rectangle.y);
-                maxX = Math.max(maxX, rectangle.x + rectangle.width);
-                maxY = Math.max(maxY, rectangle.y + rectangle.height);
-            }
-        }
+        int[] box = extentsOf(region);
+        int minX = box != null ? box[0] : 0;
+        int minY = box != null ? box[1] : 0;
+        int width = box != null ? box[2] : 0;
+        int height = box != null ? box[3] : 0;
 
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
@@ -370,8 +472,8 @@ public class XFixesExtension extends Extension {
             outputStream.writeInt(region.rectangles.size() * 2);
             outputStream.writeShort((short)minX);
             outputStream.writeShort((short)minY);
-            outputStream.writeShort((short)(maxX - minX));
-            outputStream.writeShort((short)(maxY - minY));
+            outputStream.writeShort((short)width);
+            outputStream.writeShort((short)height);
             outputStream.writePad(16);
             for (Rectangle rectangle : region.rectangles) {
                 outputStream.writeShort(rectangle.x);
@@ -613,6 +715,21 @@ public class XFixesExtension extends Extension {
                 break;
             case ClientOpcodes.CREATE_REGION:
                 createRegion(client, inputStream);
+                break;
+            case ClientOpcodes.CREATE_REGION_FROM_WINDOW:
+                createRegionFromWindow(client, inputStream);
+                break;
+            case ClientOpcodes.SET_REGION:
+                setRegion(client, inputStream);
+                break;
+            case ClientOpcodes.INVERT_REGION:
+                invertRegion(inputStream);
+                break;
+            case ClientOpcodes.TRANSLATE_REGION:
+                translateRegion(inputStream);
+                break;
+            case ClientOpcodes.REGION_EXTENTS:
+                regionExtents(inputStream);
                 break;
             case ClientOpcodes.DESTROY_REGION:
                 destroyRegion(client, inputStream);
