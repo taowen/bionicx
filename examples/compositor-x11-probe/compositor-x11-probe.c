@@ -500,6 +500,52 @@ static bool paint_burst(Display *display, Drawable dest, Window shaped,
     return uploaded && shadow != None && read_ok;
 }
 
+static bool present_output(Display *display, Window output, Pixmap named) {
+    XWindowAttributes attrs = {0};
+    if (!XGetWindowAttributes(display, output, &attrs)) return false;
+    int render_event = 0, render_error = 0;
+    int major = 0, minor = 0;
+    if (!XRenderQueryExtension(display, &render_event, &render_error)
+            || !XRenderQueryVersion(display, &major, &minor))
+        return false;
+    XRenderPictFormat *format = XRenderFindVisualFormat(display, attrs.visual);
+    if (format == NULL)
+        format = XRenderFindStandardFormat(display, PictStandardARGB32);
+    if (format == NULL) return false;
+    XRenderPictureAttributes subwindow = {.subwindow_mode = IncludeInferiors};
+    Picture dest = XRenderCreatePicture(display, output, format,
+                                        CPSubwindowMode, &subwindow);
+    if (dest == None) return false;
+    unsigned depth = attrs.depth > 0 ? (unsigned)attrs.depth : 32;
+    Pixmap back = XCreatePixmap(display, output, 80, 80, depth);
+    Picture source = back != None
+            ? XRenderCreatePicture(display, back, format, 0, NULL) : None;
+    if (source == None) return false;
+    XRenderColor color = {.red = 0x2222, .green = 0x4444, .blue = 0x6666,
+                          .alpha = 0xffff};
+    XRenderFillRectangle(display, PictOpSrc, source, &color, 0, 0, 80, 80);
+    XRenderComposite(display, PictOpSrc, source, None, dest,
+                     0, 0, 0, 0, 0, 0, 80, 80);
+    bool named_ok = named == None;
+    if (named != None) {
+        Picture window_pic = XRenderCreatePicture(display, named, format,
+                                                  CPSubwindowMode, &subwindow);
+        named_ok = window_pic != None;
+        if (window_pic != None) {
+            XRenderComposite(display, PictOpSrc, window_pic, None, dest,
+                             0, 0, 0, 0, 0, 0, 8, 8);
+            XRenderFreePicture(display, window_pic);
+        }
+    }
+    XSync(display, False);
+    unsigned long pixel = 0;
+    bool read_ok = read_pixel(display, output, &pixel);
+    XRenderFreePicture(display, source);
+    XRenderFreePicture(display, dest);
+    if (back != None) XFreePixmap(display, back);
+    return named_ok && read_ok;
+}
+
 typedef struct {
     uint8_t reqType;
     uint8_t glxCode;
@@ -800,6 +846,15 @@ int main(int argc, char **argv) {
            burst_ok ? "A8/repeat/clip/Composite after UngrabServer"
                     : "paint burst desynced or rejected");
     RECORD(burst_ok);
+
+    before = x_errors;
+    bool present_ok = output != 0
+            && present_output(comp, output, (Pixmap)named)
+            && x_errors == before;
+    result("compositor-present-output", present_ok,
+           present_ok ? "CreatePicture child and named pixmap"
+                      : "present Composite rejected");
+    RECORD(present_ok);
 
     damage_destroy(comp, dmg_op, damage);
     if (output != 0) XDestroyWindow(comp, output);

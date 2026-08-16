@@ -8,8 +8,9 @@ libX11 only. Two connections follow the xfwm4 compositor order:
 xfwm4-style child output window on the overlay, the GLX
 `ClientInfo` / `SetClientInfoARB` / `SetClientInfo2ARB` handshake,
 and a paint burst of 8-bit A8 / 1x1 repeat / `SetPictureClipRegion` /
-`Composite` plus a large A8 `PutImage` immediately after `UngrabServer`.
-Does not start `xfwm4` or `xfsettingsd`.
+`Composite` plus a large A8 `PutImage` immediately after `UngrabServer`,
+then `CreatePicture` on the overlay child and a named pixmap to present
+into that output. Does not start `xfwm4` or `xfsettingsd`.
 
 ```sh
 ANDROID_SERIAL=<serial> examples/compositor-x11-probe/install-and-run.sh

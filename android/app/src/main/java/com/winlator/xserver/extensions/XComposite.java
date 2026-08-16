@@ -79,11 +79,25 @@ public class XComposite extends Extension {
         }
     }
 
-    // Overlay stays on screen even when its parent has RedirectSubwindows.
-    // Other redirected children keep a backing pixmap and are skipped by the
-    // GL renderer via offscreenStorage.
+    private boolean isOverlayTree(Window window) {
+        while (window != null) {
+            if (window == overlayWindow) return true;
+            window = window.getParent();
+        }
+        return false;
+    }
+
+    // Overlay and its output children stay on screen even when root has
+    // RedirectSubwindows. Other redirected children keep a backing pixmap
+    // and are skipped by the GL renderer via offscreenStorage.
     private void applyRedirectStorage(Window window) {
-        if (window == null || window == overlayWindow) return;
+        if (window == null) return;
+        if (isOverlayTree(window)) {
+            if (window.isInputOutput() && window.getContent() != null)
+                window.getContent().setOffscreenStorage(false);
+            for (Window child : window.getChildren()) applyRedirectStorage(child);
+            return;
+        }
         if (window.isInputOutput() && window.getContent() != null) {
             window.getContent().setOffscreenStorage(isRedirected(window));
         }
@@ -159,7 +173,7 @@ public class XComposite extends Extension {
     }
 
     private boolean isRedirected(Window window) {
-        if (window == overlayWindow) return false;
+        if (isOverlayTree(window)) return false;
         if (window.getTag("compositeRedirectParent") != null) return true;
         Window parent = window.getParent();
         while (parent != null) {

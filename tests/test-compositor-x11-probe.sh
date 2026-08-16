@@ -30,6 +30,11 @@ grep -F 'overlay-child-output' \
     "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
 grep -F 'compositor-paint-burst' \
     "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
+grep -F 'compositor-present-output' \
+    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
+grep -F 'isOverlayTree' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XComposite.java" \
+    >/dev/null
 grep -F 'setActivePosition(start)' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/XClientRequestHandler.java" \
     >/dev/null
@@ -38,7 +43,7 @@ if grep -E 'xfsettingsd|xfwm4|icewm' \
     echo "compositor probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=12 failed=0' \
+grep -F 'passed=13 failed=0' \
     "$repo_dir/examples/compositor-x11-probe/install-and-run.sh" >/dev/null
 grep -F 'rootfs_payload=none' \
     "$repo_dir/examples/compositor-x11-probe/build-bundle.sh" >/dev/null
