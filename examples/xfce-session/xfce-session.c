@@ -318,6 +318,12 @@ static int compositor_selection_owned(Display *display) {
     return XGetSelectionOwner(display, cm) != None;
 }
 
+static int named_selection_owned(Display *display, const char *name) {
+    Atom atom = XInternAtom(display, name, True);
+    if (atom == None) return 0;
+    return XGetSelectionOwner(display, atom) != None;
+}
+
 static int accept_session(Display *display, char *app2_path) {
     int passed = 0;
     int failed = 0;
@@ -344,6 +350,15 @@ static int accept_session(Display *display, char *app2_path) {
     result("xfce-compositor", cm_ok,
            cm_ok ? "_NET_WM_CM_S0" : "compositor selection unowned");
     RECORD(cm_ok);
+
+    int settings_ok = 0;
+    for (int i = 0; i < 40 && !settings_ok; ++i) {
+        settings_ok = named_selection_owned(display, "_XSETTINGS_S0");
+        if (!settings_ok) sleep_ms(100);
+    }
+    result("xfce-settings", settings_ok,
+           settings_ok ? "_XSETTINGS_S0" : "settings selection unowned");
+    RECORD(settings_ok);
 
     Window panel = wait_class(display, root, "Xfce4-panel", 8000);
     if (panel == None)
@@ -485,14 +500,18 @@ int main(int argc, char **argv) {
 
     const char *prefix = argv[argi];
     char xfwm4[512];
+    char settings[512];
     char panel[512];
     char desktop[512];
     join_path(xfwm4, sizeof(xfwm4), prefix, "xfwm4");
+    join_path(settings, sizeof(settings), prefix, "xfsettingsd");
     join_path(panel, sizeof(panel), prefix, "xfce4-panel");
     join_path(desktop, sizeof(desktop), prefix, "xfdesktop");
 
     char *wm_argv[] = {xfwm4, "--compositor=on", "--vblank=off",
                        "--sm-client-disable", NULL};
+    char *settings_argv[] = {settings, "--disable-wm-check",
+                             "--sm-client-disable", NULL};
     char *panel_argv[] = {panel, "--disable-wm-check", "--sm-client-disable",
                           NULL};
     char *desktop_argv[] = {desktop, "--disable-wm-check", NULL};
@@ -515,6 +534,8 @@ int main(int argc, char **argv) {
         sleep_ms(2000);
     }
 
+    start(settings_argv);
+    sleep_ms(400);
     start(panel_argv);
     sleep_ms(400);
     start(desktop_argv);

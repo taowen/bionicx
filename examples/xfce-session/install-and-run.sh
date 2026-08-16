@@ -40,7 +40,7 @@ adb -s "$serial" exec-out screencap -p > \
 log="$(adb -s "$serial" logcat -d -v brief)"
 result="$(grep -E 'BXTEST|BXSUMMARY|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log")"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY xfce-session-accept passed=10 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY xfce-session-accept passed=11 failed=0" <<<"$result"
 grep -Fq "enabled D-Bus session service" <<<"$result"
 if grep -F 'Conversion from ISO-8859-1 to UTF-8 is not supported' <<<"$log"; then
     echo "xfce-session must convert latin1 clipboard text" >&2

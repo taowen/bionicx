@@ -9,6 +9,7 @@ grep -F 'XDG_CURRENT_DESKTOP' "$repo_dir/profiles/xfce-session.json" >/dev/null
 grep -F 'xfce-session-launch' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F 'xfce-wm' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F 'xfce-compositor' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
+grep -F 'xfce-settings' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F 'xfce-panel' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F 'session-switch-thunar' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F 'session-resize-thunar' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
@@ -46,9 +47,10 @@ if grep -F 'force_map_tree' \
     exit 1
 fi
 grep -F 'xfwm4' "$repo_dir/packages/trixie-popular.txt" >/dev/null
+grep -F 'xfce4-settings' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'xfce4-panel' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'xfdesktop4' "$repo_dir/packages/trixie-popular.txt" >/dev/null
-grep -F 'passed=10 failed=0' \
+grep -F 'passed=11 failed=0' \
     "$repo_dir/examples/xfce-session/install-and-run.sh" >/dev/null
 grep -F 'does not support the XSync extension' \
     "$repo_dir/examples/xfce-session/install-and-run.sh" >/dev/null
