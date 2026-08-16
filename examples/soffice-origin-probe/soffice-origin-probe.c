@@ -80,6 +80,20 @@ int main(void) {
                   strstr(mapped_reglo, "libreoffice/program") != NULL,
           mapped_reglo[0] != '\0' ? mapped_reglo : "libreglo.so not mapped");
 
+    char gen_plugin[512];
+    char gtk3_plugin[512];
+    char swlo[512];
+    snprintf(gen_plugin, sizeof(gen_plugin),
+             "%s/usr/lib/libreoffice/program/libvclplug_genlo.so", root);
+    snprintf(gtk3_plugin, sizeof(gtk3_plugin),
+             "%s/usr/lib/libreoffice/program/libvclplug_gtk3lo.so", root);
+    snprintf(swlo, sizeof(swlo),
+             "%s/usr/lib/libreoffice/program/libswlo.so", root);
+    check("gen-plugin", access(gen_plugin, R_OK) == 0, gen_plugin);
+    check("gtk3-plugin", access(gtk3_plugin, R_OK) == 0, gtk3_plugin);
+    void *writer = dlopen(swlo, RTLD_NOW);
+    check("dlopen-swlo", writer != NULL, writer != NULL ? swlo : dlerror());
+
     printf("BXSUMMARY soffice-origin passed=%d failed=%d\n", passed, failed);
     return failed ? 1 : 0;
 }

@@ -37,13 +37,13 @@ exec > >(tee "$log") 2>&1
 echo "BXINFO seed"
 "${adb[@]}" shell run-as "$package_id" cat files/rootfs/.bionicx-rootfs-seed-id
 
-# --- KeePassXC: CLI probe (create/add/ls/show/reopen/persist), then GUI, then show
+# --- KeePassXC: seed the kdbx fixture, then GUI, then show
 ANDROID_SERIAL="$serial" \
 BIONICX_SCREENSHOT="$evidence/keepassxc.png" \
     "$repo_dir/examples/popular-apps/install-and-run.sh" keepassxc \
-    | tee "$evidence/keepassxc-cli-probe.log"
+    | tee "$evidence/keepassxc-seed.log"
 grep -Fq "BXSUMMARY keepassxc-cli passed=6 failed=0" \
-    "$evidence/keepassxc-cli-probe.log"
+    "$evidence/keepassxc-seed.log"
 sleep 8
 shot "$evidence/keepassxc.png"
 show="$(exec_rootfs \

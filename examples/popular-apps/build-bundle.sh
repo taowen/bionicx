@@ -11,7 +11,7 @@ esac
 
 find "$output_dir" -mindepth 1 -delete 2>/dev/null || true
 mkdir -p "$output_dir/app/bin" "$output_dir/app/fixtures"
-cp "$repo_dir/examples/keepassxc-cli-probe/keepassxc-deferred-open" \
+cp "$repo_dir/examples/keepassxc/keepassxc-deferred-open" \
     "$output_dir/app/bin/keepassxc-deferred-open"
 chmod 755 "$output_dir/app/bin/keepassxc-deferred-open"
 cp -a "$repo_dir/examples/popular-apps/fixtures/." \

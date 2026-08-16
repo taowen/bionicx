@@ -26,7 +26,7 @@ echo "==== host probes ===="
 "$repo_dir/tests/test-new-device-guide.sh"
 "$repo_dir/tests/test-glx-probe-seed-safe.sh"
 "$repo_dir/tests/test-krita-glx-destroy-probe.sh"
-"$repo_dir/tests/test-keepassxc-cli-probe.sh"
+"$repo_dir/tests/test-keepassxc-seed.sh"
 "$repo_dir/tests/test-popular-durable-workflows.sh"
 "$repo_dir/tests/test-dpkg-consistency.sh"
 "$repo_dir/tests/test-firefox-online.sh"
@@ -117,10 +117,10 @@ echo "BXTEST PASS audit-after-reboot empty"
 
 echo "==== device probes after reboot ===="
 ANDROID_SERIAL="$serial" \
-    "$repo_dir/examples/keepassxc-cli-probe/install-and-run.sh" \
-    | tee "$evidence/keepassxc-cli-probe-reboot.log"
+    "$repo_dir/examples/keepassxc/seed-db.sh" \
+    | tee "$evidence/keepassxc-seed-reboot.log"
 grep -Fq "BXSUMMARY keepassxc-cli passed=6 failed=0" \
-    "$evidence/keepassxc-cli-probe-reboot.log"
+    "$evidence/keepassxc-seed-reboot.log"
 
 ANDROID_SERIAL="$serial" \
 BIONICX_SCREENSHOT="$evidence/glx-probe-reboot.png" \

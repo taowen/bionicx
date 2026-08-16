@@ -8,6 +8,18 @@ grep -F 'libuno_cppuhelpergcc3.so.3' \
     "$repo_dir/examples/soffice-origin-probe/soffice-origin-probe.c" >/dev/null
 grep -F 'reglo-mapped' \
     "$repo_dir/examples/soffice-origin-probe/soffice-origin-probe.c" >/dev/null
+grep -F 'libvclplug_gtk3lo.so' \
+    "$repo_dir/examples/soffice-origin-probe/soffice-origin-probe.c" >/dev/null
+grep -F 'dlopen-swlo' \
+    "$repo_dir/examples/soffice-origin-probe/soffice-origin-probe.c" >/dev/null
+grep -F 'SAL_USE_VCLPLUGIN' \
+    "$repo_dir/profiles/libreoffice-writer.json" >/dev/null
+grep -F 'DISABLE_EXTENSION_SYNCHRONIZATION' \
+    "$repo_dir/profiles/libreoffice-writer.json" >/dev/null
+grep -F 'usr/bin/soffice' \
+    "$repo_dir/profiles/libreoffice-writer.json" >/dev/null
+grep -F 'libreoffice-gtk3' \
+    "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'OBJECT_DIR' \
     "$repo_dir/tools/rootfs-elf-fixup.sh" >/dev/null
 grep -F 'object_directory' \

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Create, unlock, list and show a KeePassXC database via keepassxc-cli.
+# Seed the KeePassXC app fixture via keepassxc-cli. Not a protocol probe:
+# the DatabaseWidget NULL d_ptr repro is keepassxc-db-widget-probe.
 # App-only: the fixture must not replace the device seed.
 set -euo pipefail
 
@@ -42,8 +43,9 @@ check() {
 "${adb[@]}" shell run-as "$package_id" mkdir -p \
     files/apps/keepassxc/bin files/apps/keepassxc/fixtures files/homes/keepassxc
 tmp_open="/data/local/tmp/bionicx-keepassxc-deferred-open"
-"${adb[@]}" push "$repo_dir/examples/keepassxc-cli-probe/keepassxc-deferred-open" \
+"${adb[@]}" push "$repo_dir/examples/keepassxc/keepassxc-deferred-open" \
     "$tmp_open" >/dev/null
+"${adb[@]}" shell chmod 644 "$tmp_open"
 "${adb[@]}" shell run-as "$package_id" cp "$tmp_open" \
     files/apps/keepassxc/bin/keepassxc-deferred-open
 "${adb[@]}" shell run-as "$package_id" chmod 755 \
@@ -52,8 +54,9 @@ tmp_open="/data/local/tmp/bionicx-keepassxc-deferred-open"
 "${adb[@]}" shell run-as "$package_id" rm -f \
     files/apps/keepassxc/fixtures/bionicx.kdbx
 tmp="/data/local/tmp/bionicx-keepassxc.key"
-"${adb[@]}" push "$repo_dir/examples/keepassxc-cli-probe/fixtures/bionicx.key" \
+"${adb[@]}" push "$repo_dir/examples/keepassxc/fixtures/bionicx.key" \
     "$tmp" >/dev/null
+"${adb[@]}" shell chmod 644 "$tmp"
 "${adb[@]}" shell run-as "$package_id" cp "$tmp" \
     files/apps/keepassxc/fixtures/bionicx.key
 "${adb[@]}" shell rm "$tmp"
@@ -68,7 +71,7 @@ else
 fi
 
 add_out="$(cli add --key-file "$fixture/bionicx.key" --no-password \
-    -u bionicx --url https://example.com --notes BionicX-probe \
+    -u bionicx --url https://example.com --notes BionicX-keepassxc \
     --generate -L 20 "$fixture/bionicx.kdbx" login 2>&1 || true)"
 printf '%s\n' "$add_out"
 if grep -Fq 'Successfully added entry login.' <<<"$add_out"; then

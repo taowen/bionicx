@@ -3,3 +3,5 @@ google-chrome-stable	151.0.7922.108-1	23f5d27be6ad6f5d69c1c11b602d4ed25a8499cfdf
 wps-office	11.1.0.11720	172d8bcf3e3bc756994ae5adf66f63f22691e1ab0d18986c50bb6b6ab7f62948	https://github.com/Pi-Apps-Coders/files/releases/download/large-files/wps-office_11.1.0.11720_arm64.deb
 libwebp6	0.6.1-2.1+deb11u2	edeb260e528fecae77457a63a468e55837a98079fdd7f1e20e9813c358f8c755	https://deb.debian.org/debian-security/pool/updates/main/libw/libwebp/libwebp6_0.6.1-2.1+deb11u2_arm64.deb
 libtiff5	4.2.0-1+deb11u5	6896296ef6193ff77434c5d1d09dd9a333633f7a208ab1cc7de3b286d2d45824	https://deb.debian.org/debian/pool/main/t/tiff/libtiff5_4.2.0-1+deb11u5_arm64.deb
+code	1.133.0-1786487973	b20bfb21c5b3656e3411391c5c18df1782aedd7cd3bda0b9c08363ea261fca4b	https://update.code.visualstudio.com/1.133.0/linux-deb-arm64/stable
+bytedance-feishu-stable	7.66.11-0	da73070ae272d9d622a24c11ddd1409084de0601fc2bda6827d82424da78d9a4	https://sf3-cn.feishucdn.com/obj/ee-appcenter/36c6e858/Feishu-linux_arm64-7.66.11.deb

@@ -112,8 +112,12 @@ static int click_named_window(Display *d, const char *needle, double fx,
 }
 
 static void tap(Display *d, KeyCode code) {
-    XTestFakeKeyEvent(d, code, True, CurrentTime);
-    XTestFakeKeyEvent(d, code, False, CurrentTime);
+    XTestFakeKeyEvent(d, code, True, 0);
+    XFlush(d);
+    usleep(20000);
+    XTestFakeKeyEvent(d, code, False, 0);
+    XFlush(d);
+    usleep(10000);
 }
 
 static void send_combo(Display *d, Window w, KeySym sym, unsigned modifiers) {
@@ -121,15 +125,31 @@ static void send_combo(Display *d, Window w, KeySym sym, unsigned modifiers) {
     KeyCode code = XKeysymToKeycode(d, sym);
     KeyCode shift = XKeysymToKeycode(d, XK_Shift_L);
     KeyCode control = XKeysymToKeycode(d, XK_Control_L);
-    if (modifiers & ControlMask)
-        XTestFakeKeyEvent(d, control, True, CurrentTime);
-    if (modifiers & ShiftMask)
-        XTestFakeKeyEvent(d, shift, True, CurrentTime);
+    if (code == 0) {
+        fprintf(stderr, "no keycode for keysym 0x%lx\n", (unsigned long)sym);
+        return;
+    }
+    if (modifiers & ControlMask) {
+        XTestFakeKeyEvent(d, control, True, 0);
+        XFlush(d);
+        usleep(20000);
+    }
+    if (modifiers & ShiftMask) {
+        XTestFakeKeyEvent(d, shift, True, 0);
+        XFlush(d);
+        usleep(20000);
+    }
     tap(d, code);
-    if (modifiers & ShiftMask)
-        XTestFakeKeyEvent(d, shift, False, CurrentTime);
-    if (modifiers & ControlMask)
-        XTestFakeKeyEvent(d, control, False, CurrentTime);
+    if (modifiers & ShiftMask) {
+        XTestFakeKeyEvent(d, shift, False, 0);
+        XFlush(d);
+        usleep(10000);
+    }
+    if (modifiers & ControlMask) {
+        XTestFakeKeyEvent(d, control, False, 0);
+        XFlush(d);
+        usleep(10000);
+    }
 }
 
 static int type_ascii(Display *d, Window w, const char *text) {
@@ -163,6 +183,9 @@ static int type_ascii(Display *d, Window w, const char *text) {
             sym = XK_period;
         } else if (ch == '/') {
             sym = XK_slash;
+        } else if (ch == '$') {
+            sym = XK_dollar;
+            modifiers = ShiftMask;
         } else if (ch == '(') {
             sym = XK_parenleft;
             modifiers = ShiftMask;
@@ -183,9 +206,10 @@ int main(int argc, char **argv) {
     if (argc < 2) {
         fprintf(stderr,
                 "usage: x11-send-key escape|return|tab|space|f5|"
-                "ctrl-a|ctrl-c|ctrl-l|ctrl-v|ctrl-s|ctrl-p|end|type TEXT|"
-                "click X Y|click-frac FX FY|click-window TITLE FX FY|"
-                "list-windows\n");
+                "ctrl-a|ctrl-c|ctrl-f|ctrl-j|ctrl-l|ctrl-v|ctrl-s|ctrl-p|ctrl-shift-p|"
+                "ctrl-grave|ctrl-backslash|end|"
+                "type TEXT|click X Y|click-frac FX FY|"
+                "click-window TITLE FX FY|list-windows\n");
         return 2;
     }
     Display *d = XOpenDisplay(NULL);
@@ -217,6 +241,10 @@ int main(int argc, char **argv) {
         send_combo(d, focus, XK_a, ControlMask);
     else if (strcmp(argv[1], "ctrl-c") == 0)
         send_combo(d, focus, XK_c, ControlMask);
+    else if (strcmp(argv[1], "ctrl-f") == 0)
+        send_combo(d, focus, XK_f, ControlMask);
+    else if (strcmp(argv[1], "ctrl-j") == 0)
+        send_combo(d, focus, XK_j, ControlMask);
     else if (strcmp(argv[1], "ctrl-l") == 0)
         send_combo(d, focus, XK_l, ControlMask);
     else if (strcmp(argv[1], "ctrl-v") == 0)
@@ -225,6 +253,12 @@ int main(int argc, char **argv) {
         send_combo(d, focus, XK_s, ControlMask);
     else if (strcmp(argv[1], "ctrl-p") == 0)
         send_combo(d, focus, XK_p, ControlMask);
+    else if (strcmp(argv[1], "ctrl-shift-p") == 0)
+        send_combo(d, focus, XK_p, ControlMask | ShiftMask);
+    else if (strcmp(argv[1], "ctrl-grave") == 0)
+        send_combo(d, focus, XK_grave, ControlMask);
+    else if (strcmp(argv[1], "ctrl-backslash") == 0)
+        send_combo(d, focus, XK_backslash, ControlMask);
     else if (strcmp(argv[1], "type") == 0 && argc >= 3)
         rc = type_ascii(d, focus, argv[2]);
     else if (strcmp(argv[1], "click") == 0 && argc >= 4) {

@@ -15,6 +15,7 @@ every colliding system SONAME is only a symlink back to that file.
 ANDROID_SERIAL=<serial> examples/soffice-origin-probe/install-and-run.sh
 ```
 
-Expect `BXSUMMARY soffice-origin passed=5 failed=0`, `soffice.bin --version`
-to print a LibreOffice banner, and `--terminate_after_init` to exit 0. The
-probe must not replace the shared seed.
+Expect `BXSUMMARY soffice-origin passed=8 failed=0`, gtk3/generic VCL
+plugins present, `dlopen(libswlo.so)`, `soffice.bin --version` to print a
+LibreOffice banner, and `--terminate_after_init` to exit 0. The probe must
+not replace the shared seed and must not fork a convert-to Writer session.

@@ -7,7 +7,7 @@ runner="$repo_dir/examples/popular-workflows/run.sh"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/krita-export.json"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/qbittorrent.json"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/keepassxc.json"
-grep -F 'keepassxc-cli-probe' "$runner" >/dev/null
+grep -F 'keepassxc-seed.log' "$runner" >/dev/null
 grep -F 'passed=6 failed=0' "$runner" >/dev/null
 grep -F 'krita-glx-destroy-probe' "$runner" >/dev/null
 grep -F 'passed=4 failed=0' "$runner" >/dev/null

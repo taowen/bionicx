@@ -7,7 +7,7 @@ Packages remain `ii`: Krita `1:5.2.9+dfsg-1+deb13u1`, qBittorrent
 
 ## KeePassXC
 
-`examples/keepassxc-cli-probe` is 6/6 (`db-create` / `add` / `ls` /
+`examples/keepassxc/seed-db.sh` is 6/6 (`db-create` / `add` / `ls` /
 `show` / `reopen` / `persist`, 1918-byte `.kdbx`). The untraced
 `keepassxc` profile then opens that same file through
 `keepassxc-deferred-open` + D-Bus. The compositor shows Title `login`,

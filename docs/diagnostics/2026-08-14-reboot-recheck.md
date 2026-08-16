@@ -16,7 +16,7 @@ firefox-online) still print PASS.
 Device after reboot (seed unchanged, audit empty, qBit/Krita files
 intact):
 
-- `keepassxc-cli-probe` 6/6
+- KeePassXC `seed-db.sh` 6/6
 - `glx-probe` `BXSUMMARY host-glx passed=26 failed=0` (CreateContext
   no longer NULL; unsared GLES3 fallback if the keyguard hid the
   compositor surface). `screencap` can truncate if adb drops.

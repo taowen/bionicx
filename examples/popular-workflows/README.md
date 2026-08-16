@@ -3,8 +3,9 @@
 Runs the existing probes first, then the untraced GUI profiles on the
 shared seed:
 
-- KeePassXC: `keepassxc-cli-probe` (create/add/ls/show/reopen/persist),
+- KeePassXC: `examples/keepassxc/seed-db.sh` (create/add/ls/show/reopen/persist),
   then the deferred-open GUI and a CLI `show` of the same `.kdbx`.
+  The DatabaseWidget NULL `d_ptr` repro is `keepassxc-db-widget-probe`.
 - qBittorrent: hash-pinned 256 KiB payload plus `.fastresume`, GUI,
   force-stop persist, cold relaunch.
 - Krita: `krita-glx-destroy-probe` (`glXDestroyContext(NULL)`), GUI of

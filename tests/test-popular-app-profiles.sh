@@ -24,7 +24,7 @@ grep -F -- '--keyfile' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F 'keepassxc-deferred-open' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F 'keepassxc-deferred-open' \
     "$repo_dir/examples/popular-apps/build-bundle.sh" >/dev/null
-grep -F 'keepassxc-cli-probe' \
+grep -F 'keepassxc/seed-db.sh' \
     "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
 grep -F 'GLADIO_X11_SOCKET' "$repo_dir/profiles/keepassxc.json" >/dev/null
 grep -F 'build-gladio.sh' \

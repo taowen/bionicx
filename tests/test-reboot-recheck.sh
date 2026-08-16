@@ -5,7 +5,7 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 runner="$repo_dir/examples/reboot-recheck/run.sh"
 grep -F 'am force-stop' "$runner" >/dev/null
 grep -F 'reboot' "$runner" >/dev/null
-grep -F 'keepassxc-cli-probe' "$runner" >/dev/null
+grep -F 'keepassxc/seed-db.sh' "$runner" >/dev/null
 grep -F 'passed=6 failed=0' "$runner" >/dev/null
 grep -F 'glx-probe' "$runner" >/dev/null
 grep -F 'passed=5 failed=0' "$runner" >/dev/null

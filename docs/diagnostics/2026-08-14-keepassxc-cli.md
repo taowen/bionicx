@@ -2,7 +2,7 @@
 
 ## Controlled client
 
-`examples/keepassxc-cli-probe` drives Debian `keepassxc-cli` on the shared
+`examples/keepassxc/seed-db.sh` drives Debian `keepassxc-cli` on the shared
 seed: key-file v2.0 `db-create`, `add login`, `ls`, `show` Title/UserName/URL,
 reopen, and a non-empty `.kdbx`. Device result:
 

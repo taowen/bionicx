@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# KeePassXC DatabaseWidget-shaped QStackedWidget/QSplitter tree, then the
-# real keepassxc kdbx open path. App-only: do not replace the seed.
+# KeePassXC DatabaseWidget-shaped QStackedWidget/QSplitter tree.
+# App-only: do not replace the seed. Does not launch keepassxc.
 set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -55,53 +55,4 @@ result="$("${adb[@]}" logcat -d -v brief \
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY keepassxc-db-widget passed=4 failed=0" <<<"$result"
 grep -Fq "keepassxc-db-widget-probe exited with 0" <<<"$result"
-
-# Real KeePassXC: map first, then D-Bus open the fixture. Command-line
-# --keyfile before bringToFront() is the NULL d_ptr 139 path.
-"$repo_dir/examples/keepassxc-cli-probe/install-and-run.sh"
-"$repo_dir/tools/install-profile.sh" \
-    --profile "$repo_dir/profiles/keepassxc.json" \
-    --serial "$serial"
-
-screenshot="${BIONICX_SCREENSHOT:-$repo_dir/build/keepassxc-db-widget-device.png}"
-"${adb[@]}" logcat -c
-"${adb[@]}" shell am force-stop "$package_id"
-"${adb[@]}" shell "run-as $package_id sh -c 'kill -9 \$(pidof bionicx-exec) 2>/dev/null; true'"
-sleep 0.3
-"${adb[@]}" shell am start -W \
-    -n "$package_id/com.winlator.BionicXActivity" >/dev/null
-
-alive=0
-for _ in $(seq 1 20); do
-    if "${adb[@]}" shell "run-as $package_id sh -c 'pidof keepassxc'" \
-            | grep -q '[0-9]'; then
-        alive=1
-        break
-    fi
-    sleep 0.5
-done
-# Wait for the deferred D-Bus open to switch to the unlocked view.
-sleep 4
-if ! "${adb[@]}" shell "run-as $package_id sh -c 'pidof keepassxc'" \
-        | grep -q '[0-9]'; then
-    alive=0
-fi
-"${adb[@]}" exec-out screencap -p > "$screenshot"
-bytes="$(wc -c < "$screenshot" | tr -d ' ')"
-echo "screenshot $screenshot bytes=$bytes alive=$alive"
-"${adb[@]}" logcat -d -v brief | grep -E \
-    'BionicX|keepassxc|fatal|exited|signal=' | tail -n 40
-if [[ "$alive" -ne 1 ]]; then
-    echo "keepassxc deferred open died" >&2
-    exit 1
-fi
-if "${adb[@]}" logcat -d -v brief | grep -Fq 'keepassxc exited with 139'; then
-    echo "keepassxc still SIGSEGV 139 after deferred open" >&2
-    exit 1
-fi
-if [[ "$bytes" -lt 55000 ]]; then
-    echo "keepassxc screenshot too small for unlocked database UI" >&2
-    exit 1
-fi
-echo "BXTEST PASS keepassxc-deferred-open alive screenshot=$bytes"
-echo "BXSUMMARY keepassxc-db-widget-gui passed=1 failed=0"
+echo "keepassxc DatabaseWidget probe: PASS"

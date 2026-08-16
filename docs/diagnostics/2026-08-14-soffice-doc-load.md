@@ -17,7 +17,9 @@ Three shared-seed gaps stacked:
    first-run setup. The profile now runs `${RUNTIME}/bin/sh` on
    `${RUNTIME}/usr/bin/soffice` so that restart happens.
 
-`soffice-doc-probe` is 8/8 on `01408BH601027129`: gtk3 plugin present,
+`soffice-origin-probe` now asserts gtk3/generic VCL plugins and
+`dlopen(libswlo.so)` without forking `--convert-to`. The former
+`soffice-doc-probe` was 8/8 on `01408BH601027129`: gtk3 plugin present,
 `libswlo.so` loads, `--convert-to txt:Text` writes the fixture heading.
 Untraced Writer opens `bionicx-writer.odt` and shows
 `LibreOffice Writer on BionicX`.

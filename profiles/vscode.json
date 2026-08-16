@@ -1,0 +1,58 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "vscode",
+  "name": "Visual Studio Code ARM64",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "hostServices": [
+    "dbus",
+    "vulkan"
+  ],
+  "launch": {
+    "executable": "${RUNTIME}/usr/share/code/code",
+    "workingDirectory": "${RUNTIME}/usr/share/code",
+    "argv0": "${RUNTIME}/usr/share/code/code",
+    "arguments": [
+      "--no-sandbox",
+      "--disable-breakpad",
+      "--disable-crashpad-for-testing",
+      "--disable-gpu-watchdog",
+      "--disable-dev-shm-usage",
+      "--disable-gpu-sandbox",
+      "--ozone-platform=x11",
+      "--use-gl=angle",
+      "--use-angle=vulkan",
+      "--disable-features=SkiaGraphite",
+      "--enable-logging=stderr",
+      "--disable-workspace-trust",
+      "--user-data-dir=${HOME}/profile-vscode",
+      "${HOME}/workspace"
+    ],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "XDG_RUNTIME_DIR": "${TMP}/runtime",
+      "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
+      "VK_ICD_FILENAMES": "${APP}/share/vulkan/icd.d/vortek_icd.json",
+      "VORTEK_SERVER_PATH": "${RUNTIME}/tmp/.vortek/V0",
+      "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
+      "GSETTINGS_BACKEND": "memory",
+      "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
+      "NO_AT_BRIDGE": "1",
+      "SHELL": "${RUNTIME}/usr/bin/bash",
+      "SSL_CERT_FILE": "${RUNTIME}/etc/ssl/certs/ca-certificates.crt",
+      "SSL_CERT_DIR": "${RUNTIME}/etc/ssl/certs",
+      "NODE_EXTRA_CA_CERTS": "${RUNTIME}/etc/ssl/certs/ca-certificates.crt",
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
+      "LANG": "C.UTF-8",
+      "TERM": "xterm-256color",
+      "GTK_IM_MODULE": "gtk-im-context-simple",
+      "QT_IM_MODULE": "simple",
+      "XMODIFIERS": "@im=none"
+    }
+  }
+}

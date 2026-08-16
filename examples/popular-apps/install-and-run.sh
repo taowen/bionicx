@@ -44,7 +44,7 @@ if [[ "$profile_name" == krita ]]; then
 fi
 
 if [[ "$profile_name" == keepassxc ]]; then
-    "$repo_dir/examples/keepassxc-cli-probe/install-and-run.sh"
+    "$repo_dir/examples/keepassxc/seed-db.sh"
 fi
 
 if [[ "$profile_name" == firefox-esr-online ]]; then
