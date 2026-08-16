@@ -26,5 +26,5 @@ done
 result="$(adb -s "$serial" logcat -d -v brief \
     | grep -E 'BXTEST|BXSUMMARY|BXERROR')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY input-settings-x11 passed=9 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY input-settings-x11 passed=10 failed=0" <<<"$result"
 echo "input-settings X11 probe: PASS"

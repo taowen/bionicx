@@ -8,6 +8,7 @@ import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.xserver.Keyboard;
 import com.winlator.xserver.XClient;
+import com.winlator.xserver.XKeycode;
 import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
@@ -81,13 +82,23 @@ public abstract class KeyboardRequests {
     }
 
     public static void getModifierMapping(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
+        byte[] map = {
+            XKeycode.KEY_SHIFT_L.id, XKeycode.KEY_SHIFT_R.id,
+            XKeycode.KEY_CAPS_LOCK.id, 0,
+            XKeycode.KEY_CTRL_L.id, XKeycode.KEY_CTRL_R.id,
+            XKeycode.KEY_ALT_L.id, XKeycode.KEY_ALT_R.id,
+            XKeycode.KEY_NUM_LOCK.id, 0,
+            0, 0,
+            XKeycode.KEY_SUPER_L.id, XKeycode.KEY_SUPER_R.id,
+            0, 0
+        };
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
-            outputStream.writeByte((byte)1);
+            outputStream.writeByte((byte)Keyboard.KEYCODES_PER_MODIFIER);
             outputStream.writeShort(client.getSequenceNumber());
-            outputStream.writeInt(2);
+            outputStream.writeInt(map.length / 4);
             outputStream.writePad(24);
-            outputStream.writePad(8);
+            outputStream.write(map);
         }
     }
 }

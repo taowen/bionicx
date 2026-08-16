@@ -36,9 +36,7 @@ public class XKeyboardExtension extends Extension {
             | XKB_EXPLICIT_COMPONENTS_MASK | XKB_MODIFIER_MAP_MASK
             | XKB_VIRTUAL_MOD_MAP_MASK;
     private static final int REQUIRED_KEY_TYPES = 4;
-    private static final int MODIFIER_ACTION_COUNT = 8;
     private static final int ESCAPE_KEYCODE = 9;
-    private static final int LAST_MAPPED_KEYCODE = 126;
     private static final int XK_ESCAPE = 0xff1b;
     private static final int XKB_COMPONENT_NAMES_MASK = 0x3f;
     private static final int XKB_KEY_TYPE_NAMES_MASK = 1 << 6;
@@ -140,12 +138,25 @@ public class XKeyboardExtension extends Extension {
     private int getTotalKeysyms() {
         int totalKeysyms = 0;
         for (int keycode = Keyboard.MIN_KEYCODE;
-             keycode <= LAST_MAPPED_KEYCODE; keycode++) {
+             keycode <= Keyboard.MAX_KEYCODE; keycode++) {
             int lower = xServer.keyboard.getKeysym(keycode, 0);
             int upper = xServer.keyboard.getKeysym(keycode, 1);
             if (lower != 0) totalKeysyms += upper != 0 && upper != lower ? 2 : 1;
         }
         return totalKeysyms;
+    }
+
+    private int countModifierActions() {
+        return countModifierMapKeys();
+    }
+
+    private int countModifierMapKeys() {
+        int count = 0;
+        for (int keycode = Keyboard.MIN_KEYCODE;
+             keycode <= Keyboard.MAX_KEYCODE; keycode++) {
+            if (getModifierActionMask(keycode) != 0) count++;
+        }
+        return count;
     }
 
     private int getMapVariableBytes(int present) {
@@ -155,28 +166,14 @@ public class XKeyboardExtension extends Extension {
         if ((present & XKB_KEY_SYMS_MASK) != 0)
             bytes += Keyboard.KEYS_COUNT * 8 + getTotalKeysyms() * 4;
         if ((present & XKB_KEY_ACTIONS_MASK) != 0)
-            bytes += Keyboard.KEYS_COUNT + MODIFIER_ACTION_COUNT * 8;
+            bytes += Keyboard.KEYS_COUNT + countModifierActions() * 8;
+        if ((present & XKB_MODIFIER_MAP_MASK) != 0)
+            bytes += (countModifierMapKeys() * 2 + 3) & ~3;
         return bytes;
     }
 
     private int getModifierActionMask(int keycode) {
-        switch (keycode) {
-            case 50:
-            case 62:
-                return 1; // Shift
-            case 66:
-                return 2; // Lock
-            case 37:
-            case 105:
-                return 4; // Control
-            case 64:
-            case 108:
-                return 8; // Mod1 / Alt
-            case 77:
-                return 16; // Mod2 / NumLock
-            default:
-                return 0;
-        }
+        return Keyboard.getModifierFlag((byte)keycode);
     }
 
     private boolean isLockingModifier(int keycode) {
@@ -187,11 +184,14 @@ public class XKeyboardExtension extends Extension {
                                int requested) {
         int present = requested & XKB_XKBCOMMON_MAP_MASK;
         int totalKeysyms = getTotalKeysyms();
+        int modifierActions = countModifierActions();
+        int modifierMapKeys = countModifierMapKeys();
         int variableBytes = getMapVariableBytes(present);
         int replyLength = (8 + variableBytes) / 4;
         boolean hasTypes = (present & XKB_KEY_TYPES_MASK) != 0;
         boolean hasKeySyms = (present & XKB_KEY_SYMS_MASK) != 0;
         boolean hasActions = (present & XKB_KEY_ACTIONS_MASK) != 0;
+        boolean hasModMap = (present & XKB_MODIFIER_MAP_MASK) != 0;
 
         outputStream.writeByte(RESPONSE_CODE_SUCCESS);
         outputStream.writeByte((byte)CORE_KEYBOARD_ID);
@@ -208,7 +208,7 @@ public class XKeyboardExtension extends Extension {
         outputStream.writeShort((short)(hasKeySyms ? totalKeysyms : 0));
         outputStream.writeByte((byte)(hasKeySyms ? Keyboard.KEYS_COUNT : 0));
         outputStream.writeByte((byte)Keyboard.MIN_KEYCODE); // first action key
-        outputStream.writeShort((short)(hasActions ? MODIFIER_ACTION_COUNT : 0));
+        outputStream.writeShort((short)(hasActions ? modifierActions : 0));
         outputStream.writeByte((byte)(hasActions ? Keyboard.KEYS_COUNT : 0));
         outputStream.writeByte((byte)0); // first behavior key
         outputStream.writeByte((byte)0); // behavior keys
@@ -216,9 +216,9 @@ public class XKeyboardExtension extends Extension {
         outputStream.writeByte((byte)0); // first explicit key
         outputStream.writeByte((byte)0); // explicit keys
         outputStream.writeByte((byte)0); // total explicit
-        outputStream.writeByte((byte)0); // first modifier-map key
-        outputStream.writeByte((byte)0); // modifier-map keys
-        outputStream.writeByte((byte)0); // total modifier-map entries
+        outputStream.writeByte((byte)(hasModMap ? Keyboard.MIN_KEYCODE : 0));
+        outputStream.writeByte((byte)(hasModMap ? Keyboard.KEYS_COUNT : 0));
+        outputStream.writeByte((byte)(hasModMap ? modifierMapKeys : 0));
         outputStream.writeByte((byte)0); // first virtual-mod-map key
         outputStream.writeByte((byte)0); // virtual-mod-map keys
         outputStream.writeByte((byte)0); // total virtual-mod-map entries
@@ -293,6 +293,18 @@ public class XKeyboardExtension extends Extension {
             outputStream.writeByte((byte)mask);
             outputStream.writeByte((byte)mask);
             outputStream.writePad(4);
+        }
+        if (hasModMap) {
+            int written = 0;
+            for (int keycode = Keyboard.MIN_KEYCODE;
+                 keycode <= Keyboard.MAX_KEYCODE; keycode++) {
+                int mask = getModifierActionMask(keycode);
+                if (mask == 0) continue;
+                outputStream.writeByte((byte)keycode);
+                outputStream.writeByte((byte)mask);
+                written += 2;
+            }
+            if ((written & 3) != 0) outputStream.writePad(4 - (written & 3));
         }
     }
 

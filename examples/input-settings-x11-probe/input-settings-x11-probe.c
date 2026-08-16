@@ -2,6 +2,7 @@
 
 #include <X11/XKBlib.h>
 #include <X11/Xlib.h>
+#include <X11/keysym.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -185,6 +186,32 @@ int main(int argc, char **argv) {
     result("input-under-server", grab_ok,
            grab_ok ? "under GrabServer" : "blocked or error");
     RECORD(grab_ok);
+
+    before = x_errors;
+    KeyCode super_l = XKeysymToKeycode(display, XK_Super_L);
+    KeyCode super_r = XKeysymToKeycode(display, XK_Super_R);
+    XModifierKeymap *modmap = XGetModifierMapping(display);
+    KeyCode peer_super = XKeysymToKeycode(peer, XK_Super_L);
+    unsigned int xkb_mods = XkbKeysymToModifiers(display, XK_Super_L);
+    bool mod4_ok = false;
+    if (modmap != NULL && super_l != 0) {
+        int stride = modmap->max_keypermod;
+        for (int slot = 0; slot < stride; slot++) {
+            KeyCode mapped = modmap->modifiermap[6 * stride + slot];
+            if (mapped == super_l || (super_r != 0 && mapped == super_r)) {
+                mod4_ok = true;
+                break;
+            }
+        }
+    }
+    if (modmap != NULL) XFreeModifiermap(modmap);
+    XSync(display, False);
+    XSync(peer, False);
+    bool super_ok = super_l != 0 && peer_super == super_l && mod4_ok
+            && (xkb_mods & Mod4Mask) && x_errors == before;
+    result("mod4-super", super_ok,
+           super_ok ? "Super_L is Mod4" : "Super/Mod4 mapping missing");
+    RECORD(super_ok);
 
     printf("BXSUMMARY input-settings-x11 passed=%d failed=%d xerrors=%d\n",
            passed, failed, x_errors);

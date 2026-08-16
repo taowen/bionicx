@@ -12,6 +12,7 @@ import java.util.ArrayList;
 
 public class Keyboard {
     public static final byte KEYSYMS_PER_KEYCODE = 2;
+    public static final byte KEYCODES_PER_MODIFIER = 2;
     public static final short KEYS_COUNT = 248;
     public static final short MAX_KEYCODE = 255;
     public static final short MIN_KEYCODE = 8;
@@ -82,20 +83,20 @@ public class Keyboard {
     }
 
     public void setKeysyms(byte keycode, int minKeysym, int majKeysym) {
-        int index = keycode - MIN_KEYCODE;
+        int index = keysymIndex(keycode);
         keysyms[index*KEYSYMS_PER_KEYCODE+0] = minKeysym;
         keysyms[index*KEYSYMS_PER_KEYCODE+1] = majKeysym;
     }
 
     public int getKeysym(int keycode, int level) {
-        int index = keycode - MIN_KEYCODE;
+        int index = keysymIndex(keycode);
         if (index < 0 || index >= KEYS_COUNT || level < 0
                 || level >= KEYSYMS_PER_KEYCODE) return 0;
         return keysyms[index * KEYSYMS_PER_KEYCODE + level];
     }
 
     public boolean hasKeysym(byte keycode, int keysym) {
-        int index = keycode - MIN_KEYCODE;
+        int index = keysymIndex(keycode);
         return keysyms[index*KEYSYMS_PER_KEYCODE+0] == keysym || keysyms[index*KEYSYMS_PER_KEYCODE+1] == keysym;
     }
 
@@ -204,11 +205,11 @@ public class Keyboard {
         XKeycode[] customKeys = XKeycode.getCustomKeys();
         for (XKeycode xKeycode : customKeys) if (hasKeysym(xKeycode.id, keysym)) return xKeycode;
         for (XKeycode xKeycode : customKeys) {
-            int index = xKeycode.id - MIN_KEYCODE;
+            int index = keysymIndex(xKeycode.id);
             if (keysyms[index*KEYSYMS_PER_KEYCODE+0] == 0) return xKeycode;
         }
         for (XKeycode xKeycode : customKeys) {
-            int index = xKeycode.id - MIN_KEYCODE;
+            int index = keysymIndex(xKeycode.id);
             keysyms[index*KEYSYMS_PER_KEYCODE+0] = 0;
             keysyms[index*KEYSYMS_PER_KEYCODE+1] = 0;
         }
@@ -236,6 +237,8 @@ public class Keyboard {
         keycodeMap[KeyEvent.KEYCODE_CTRL_RIGHT] = XKeycode.KEY_CTRL_R;
         keycodeMap[KeyEvent.KEYCODE_ALT_LEFT] = XKeycode.KEY_ALT_L;
         keycodeMap[KeyEvent.KEYCODE_ALT_RIGHT] = XKeycode.KEY_ALT_R;
+        keycodeMap[KeyEvent.KEYCODE_META_LEFT] = XKeycode.KEY_SUPER_L;
+        keycodeMap[KeyEvent.KEYCODE_META_RIGHT] = XKeycode.KEY_SUPER_R;
         keycodeMap[KeyEvent.KEYCODE_TAB] = XKeycode.KEY_TAB;
         keycodeMap[KeyEvent.KEYCODE_SPACE] = XKeycode.KEY_SPACE;
         keycodeMap[KeyEvent.KEYCODE_A] = XKeycode.KEY_A;
@@ -342,6 +345,8 @@ public class Keyboard {
         keyboard.setKeysyms(XKeycode.KEY_CTRL_R.id, 65508, 0);
         keyboard.setKeysyms(XKeycode.KEY_ALT_L.id, 65511, 0);
         keyboard.setKeysyms(XKeycode.KEY_ALT_R.id, 65512, 0);
+        keyboard.setKeysyms(XKeycode.KEY_SUPER_L.id, 65515, 0);
+        keyboard.setKeysyms(XKeycode.KEY_SUPER_R.id, 65516, 0);
         keyboard.setKeysyms(XKeycode.KEY_CAPS_LOCK.id, 65509, 0);
         keyboard.setKeysyms(XKeycode.KEY_NUM_LOCK.id, 65407, 0);
         keyboard.setKeysyms(XKeycode.KEY_TAB.id, 65289, 0);
@@ -424,16 +429,7 @@ public class Keyboard {
     }
 
     public static boolean isModifier(byte keycode) {
-        return
-            keycode == XKeycode.KEY_SHIFT_L.id ||
-            keycode == XKeycode.KEY_SHIFT_R.id ||
-            keycode == XKeycode.KEY_CTRL_L.id ||
-            keycode == XKeycode.KEY_CTRL_R.id ||
-            keycode == XKeycode.KEY_ALT_L.id ||
-            keycode == XKeycode.KEY_ALT_R.id ||
-            keycode == XKeycode.KEY_CAPS_LOCK.id ||
-            keycode == XKeycode.KEY_NUM_LOCK.id
-        ;
+        return getModifierFlag(keycode) != 0;
     }
 
     public static int getModifierFlag(byte keycode) {
@@ -452,7 +448,14 @@ public class Keyboard {
         else if (keycode == XKeycode.KEY_NUM_LOCK.id) {
             return 16;
         }
+        else if (keycode == XKeycode.KEY_SUPER_L.id || keycode == XKeycode.KEY_SUPER_R.id) {
+            return 64;
+        }
         return 0;
+    }
+
+    private static int keysymIndex(int keycode) {
+        return (keycode & 0xff) - MIN_KEYCODE;
     }
 
     public static boolean isModifierSticky(byte keycode) {

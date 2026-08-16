@@ -92,6 +92,8 @@ public enum XKeycode {
     KEY_KP_DIVIDE(106),
     KEY_PRTSCN(107),
     KEY_ALT_R(108),
+    KEY_SUPER_L(133),
+    KEY_SUPER_R(134),
     KEY_HOME(110),
     KEY_UP(111),
     KEY_PRIOR(112),
