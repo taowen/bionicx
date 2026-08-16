@@ -18,10 +18,10 @@ import com.winlator.xserver.errors.XRequestError;
 
 import java.io.IOException;
 
-/** RandR 1.3 model of BionicX's single Android display. */
+/** RandR 1.5: GetMonitors plus the GTK init_randr15 follow-up requests. */
 public class XRandRExtension extends Extension {
     public static final int MAJOR_VERSION = 1;
-    public static final int MINOR_VERSION = 3;
+    public static final int MINOR_VERSION = 5;
     private static final byte FIRST_EVENT = 72;
     private static final byte FIRST_ERROR = -116;
     private static final String OUTPUT_NAME = "BionicX-0";
@@ -42,6 +42,7 @@ public class XRandRExtension extends Extension {
         private static final byte SET_SCREEN_SIZE = 7;
         private static final byte GET_SCREEN_RESOURCES = 8;
         private static final byte GET_OUTPUT_INFO = 9;
+        private static final byte LIST_OUTPUT_PROPERTIES = 10;
         private static final byte GET_OUTPUT_PROPERTY = 15;
         private static final byte GET_CRTC_INFO = 20;
         private static final byte SET_CRTC_CONFIG = 21;
@@ -51,6 +52,8 @@ public class XRandRExtension extends Extension {
         private static final byte GET_SCREEN_RESOURCES_CURRENT = 25;
         private static final byte SET_OUTPUT_PRIMARY = 30;
         private static final byte GET_OUTPUT_PRIMARY = 31;
+        private static final byte GET_PROVIDERS = 32;
+        private static final byte GET_MONITORS = 42;
     }
 
     public XRandRExtension(XServer xServer, byte majorOpcode) {
@@ -284,8 +287,8 @@ public class XRandRExtension extends Extension {
         inputStream.skip(2);
         Window window = xServer.windowManager.getWindow(windowId);
         if (window == null) throw new BadWindow(windowId);
-        // RandR 1.3 defines screen, CRTC, output and output-property masks.
-        if ((eventMask & ~0x0f) != 0) throw new BadValue(eventMask);
+        // RandR 1.5 adds provider, resource, and lease notify bits.
+        if ((eventMask & ~0xff) != 0) throw new BadValue(eventMask);
         client.setRandrEventMask(window, eventMask);
     }
 
@@ -354,6 +357,21 @@ public class XRandRExtension extends Extension {
         }
     }
 
+    private void listOutputProperties(XClient client, XInputStream inputStream,
+                                      XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int requestedOutput = inputStream.readInt();
+        if (requestedOutput != outputId) throw badOutput(requestedOutput);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeShort((short)0); // nAtoms
+            outputStream.writePad(22);
+        }
+    }
+
     private void getOutputProperty(XClient client, XInputStream inputStream,
                                    XOutputStream outputStream)
             throws IOException, XRequestError {
@@ -376,6 +394,59 @@ public class XRandRExtension extends Extension {
             outputStream.writeInt(0); // bytes after
             outputStream.writeInt(0); // items
             outputStream.writePad(12);
+        }
+    }
+
+    private void getProviders(XClient client, XInputStream inputStream,
+                              XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        if (xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(0);
+            outputStream.writeInt(1); // timestamp
+            outputStream.writeShort((short)0); // nProviders
+            outputStream.writePad(18);
+        }
+    }
+
+    private void getMonitors(XClient client, XInputStream inputStream,
+                             XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int windowId = inputStream.readInt();
+        inputStream.skip(4); // get_active + pad
+        if (xServer.windowManager.getWindow(windowId) == null)
+            throw new BadWindow(windowId);
+
+        int width = Short.toUnsignedInt(xServer.screenInfo.width);
+        int height = Short.toUnsignedInt(xServer.screenInfo.height);
+        int mmWidth = Short.toUnsignedInt(xServer.screenInfo.getWidthInMillimeters());
+        int mmHeight = Short.toUnsignedInt(xServer.screenInfo.getHeightInMillimeters());
+        int nameAtom = Atom.internAtom(OUTPUT_NAME);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(7);
+            outputStream.writeInt(1); // timestamp
+            outputStream.writeInt(1); // nmonitors
+            outputStream.writeInt(1); // noutputs
+            outputStream.writePad(12);
+            outputStream.writeInt(nameAtom);
+            outputStream.writeByte((byte)1); // primary
+            outputStream.writeByte((byte)1); // automatic
+            outputStream.writeShort((short)1); // noutput
+            outputStream.writeShort((short)0); // x
+            outputStream.writeShort((short)0); // y
+            outputStream.writeShort((short)width);
+            outputStream.writeShort((short)height);
+            outputStream.writeInt(mmWidth);
+            outputStream.writeInt(mmHeight);
+            outputStream.writeInt(outputId);
         }
     }
 
@@ -426,6 +497,15 @@ public class XRandRExtension extends Extension {
                 break;
             case ClientOpcodes.GET_OUTPUT_PROPERTY:
                 getOutputProperty(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.LIST_OUTPUT_PROPERTIES:
+                listOutputProperties(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_PROVIDERS:
+                getProviders(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_MONITORS:
+                getMonitors(client, inputStream, outputStream);
                 break;
             default:
                 throw new BadImplementation();

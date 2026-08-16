@@ -28,8 +28,11 @@ static void result(const char *name, bool ok, const char *detail) {
 int main(int argc, char **argv) {
     int duration = argc > 1 ? atoi(argv[1]) : 3;
     Display *display = XOpenDisplay(NULL);
-    if (display == NULL) {
+    Display *peer = XOpenDisplay(NULL);
+    if (display == NULL || peer == NULL) {
         fprintf(stderr, "BXFAIL open X11 connection\n");
+        if (display != NULL) XCloseDisplay(display);
+        if (peer != NULL) XCloseDisplay(peer);
         return 2;
     }
     XSetErrorHandler(on_x_error);
@@ -37,11 +40,19 @@ int main(int argc, char **argv) {
     int event_base = 0;
     int error_base = 0;
     int major = 1;
-    int minor = 3;
+    int minor = 5;
+    int peer_major = 1;
+    int peer_minor = 5;
     if (!XRRQueryExtension(display, &event_base, &error_base)
-            || !XRRQueryVersion(display, &major, &minor) || major < 1) {
-        fprintf(stderr, "BXFAIL RANDR unavailable\n");
+            || !XRRQueryVersion(display, &major, &minor) || major < 1
+            || minor < 5
+            || !XRRQueryExtension(peer, &event_base, &error_base)
+            || !XRRQueryVersion(peer, &peer_major, &peer_minor)
+            || peer_major < 1 || peer_minor < 5) {
+        fprintf(stderr, "BXFAIL RANDR 1.5 unavailable major=%d minor=%d\n",
+                major, minor);
         XCloseDisplay(display);
+        XCloseDisplay(peer);
         return 2;
     }
 
@@ -51,6 +62,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "BXFAIL no RandR resources\n");
         if (res != NULL) XRRFreeScreenResources(res);
         XCloseDisplay(display);
+        XCloseDisplay(peer);
         return 2;
     }
     RRCrtc crtc = res->crtcs[0];
@@ -126,6 +138,65 @@ int main(int argc, char **argv) {
     RECORD(size_ok);
 
     before = x_errors;
+    int nmonitors = 0;
+    int peer_nmonitors = 0;
+    XRRMonitorInfo *monitors = XRRGetMonitors(display, root, True, &nmonitors);
+    XRRMonitorInfo *peer_monitors = XRRGetMonitors(peer,
+            DefaultRootWindow(peer), True, &peer_nmonitors);
+    XSync(display, False);
+    XSync(peer, False);
+    bool monitors_ok = monitors != NULL && nmonitors == 1
+            && monitors[0].noutput >= 1 && monitors[0].width == width
+            && monitors[0].height == height && monitors[0].primary
+            && peer_monitors != NULL && peer_nmonitors == 1
+            && peer_monitors[0].width == width && x_errors == before;
+    result("randr-monitors", monitors_ok,
+           monitors_ok ? "GetMonitors" : "GetMonitors failed");
+    RECORD(monitors_ok);
+
+    before = x_errors;
+    XRROutputInfo *output_info = XRRGetOutputInfo(display, res, output);
+    int edid_format = 0;
+    Atom edid_type = None;
+    unsigned long edid_nitems = 0;
+    unsigned long edid_bytes = 0;
+    unsigned char *edid_prop = NULL;
+    Atom edid_atom = XInternAtom(display, "EDID", False);
+    int edid_status = output_info == NULL ? -1
+            : XRRGetOutputProperty(display, output, edid_atom, 0, 128,
+                                   False, False, AnyPropertyType, &edid_type,
+                                   &edid_format, &edid_nitems, &edid_bytes,
+                                   &edid_prop);
+    int natoms = -1;
+    Atom *props = output_info == NULL ? NULL
+            : XRRListOutputProperties(display, output, &natoms);
+    char *monitor_name = NULL;
+    if (monitors != NULL && monitors[0].name != None)
+        monitor_name = XGetAtomName(display, monitors[0].name);
+    XRRSelectInput(display, root,
+                   RRScreenChangeNotifyMask | RRCrtcChangeNotifyMask
+                   | RROutputChangeNotifyMask | RROutputPropertyNotifyMask
+                   | RRProviderChangeNotifyMask);
+    XSync(display, False);
+    bool gtk_ok = output_info != NULL
+            && output_info->connection == RR_Connected
+            && output_info->crtc != None
+            && output_info->name != NULL
+            && edid_status == Success
+            && natoms == 0
+            && monitor_name != NULL && monitor_name[0] != '\0'
+            && x_errors == before;
+    result("randr15-gtk", gtk_ok,
+           gtk_ok ? "init_randr15 requests" : "GTK RandR 1.5 path failed");
+    RECORD(gtk_ok);
+    if (output_info != NULL) XRRFreeOutputInfo(output_info);
+    if (edid_prop != NULL) XFree(edid_prop);
+    if (props != NULL) XFree(props);
+    if (monitor_name != NULL) XFree(monitor_name);
+    if (monitors != NULL) XRRFreeMonitors(monitors);
+    if (peer_monitors != NULL) XRRFreeMonitors(peer_monitors);
+
+    before = x_errors;
     XGrabServer(display);
     XRRSetOutputPrimary(display, root, output);
     if (info != NULL) {
@@ -146,6 +217,7 @@ int main(int argc, char **argv) {
     sleep((unsigned)(duration > 0 && duration <= 30 ? duration : 3));
     if (info != NULL) XRRFreeCrtcInfo(info);
     XRRFreeScreenResources(res);
+    XCloseDisplay(peer);
     XCloseDisplay(display);
     return failed == 0 && x_errors == 0 ? 0 : 1;
 }
