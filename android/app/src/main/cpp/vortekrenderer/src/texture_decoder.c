@@ -11,7 +11,7 @@
 #define CACHE_DIR APP_CACHE_DIR "/vortek"
 #define CACHE_MIN_IMAGE_WIDTH 1024
 
-static bool isCanDecompressFormat(VkFormat format) {
+bool isCanDecompressFormat(VkFormat format) {
     switch (format) {
         case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
         case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
@@ -140,7 +140,7 @@ static void writeImageToCache(TextureDecoder* textureDecoder, TextureDecoder_Ima
 }
 
 TextureDecoder* TextureDecoder_create(VkContext* context, VkPhysicalDeviceFeatures* supportedFeatures) {
-    if (supportedFeatures->textureCompressionBC) return NULL;
+    (void)supportedFeatures;
     TextureDecoder* textureDecoder = calloc(1, sizeof(TextureDecoder));
     textureDecoder->imageCacheSize = context->imageCacheSize;
     textureDecoder->threadPool = context->threadPool;
@@ -230,20 +230,30 @@ VkResult TextureDecoder_createImage(TextureDecoder* textureDecoder, VkDevice dev
     newImage->width = imageInfo->extent.width;
     newImage->height = imageInfo->extent.height;
 
-    imageInfo->format = DECOMPRESSED_FORMAT;
     imageInfo->flags &= ~VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT;
     imageInfo->mipLevels = 1;
 
-    VkImageFormatListCreateInfo* formatListInfo = findNextVkStructure(imageInfo->pNext, VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO);
-    if (formatListInfo && formatListInfo->pViewFormats) {
-        formatListInfo->viewFormatCount = 1;
-        VkFormat* viewFormats = (VkFormat*)formatListInfo->pViewFormats;
-        viewFormats[0] = DECOMPRESSED_FORMAT;
+    static const VkFormat unpackedFormats[] = {
+        DECOMPRESSED_FORMAT,
+        VK_FORMAT_R8G8B8A8_UNORM,
+    };
+    VkImage image = VK_NULL_HANDLE;
+    result = VK_ERROR_FORMAT_NOT_SUPPORTED;
+    for (size_t i = 0; i < ARRAY_SIZE(unpackedFormats); i++) {
+        imageInfo->format = unpackedFormats[i];
+        VkImageFormatListCreateInfo* formatListInfo = findNextVkStructure(imageInfo->pNext, VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO);
+        if (formatListInfo && formatListInfo->pViewFormats) {
+            formatListInfo->viewFormatCount = 1;
+            VkFormat* viewFormats = (VkFormat*)formatListInfo->pViewFormats;
+            viewFormats[0] = unpackedFormats[i];
+        }
+        result = vulkanWrapper.vkCreateImage(device, imageInfo, NULL, &image);
+        if (result == VK_SUCCESS) {
+            newImage->unpackedFormat = unpackedFormats[i];
+            break;
+        }
     }
-
-    VkImage image;
-    result = vulkanWrapper.vkCreateImage(device, imageInfo, NULL, &image);
-    if (result != VK_SUCCESS) goto error;;
+    if (result != VK_SUCCESS) goto error;
 
     VkBufferCreateInfo imageBufferInfo = {0};
     imageBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -315,6 +325,13 @@ void TextureDecoder_removeBoundBuffer(TextureDecoder* textureDecoder, VkBuffer b
         MEMFREE(boundBuffer);
         ArrayList_removeAt(&textureDecoder->boundBuffers, index);
     }
+}
+
+VkFormat TextureDecoder_unpackedFormat(TextureDecoder* textureDecoder, VkImage image) {
+    int index = indexOfImage(textureDecoder, image);
+    if (index == -1) return DECOMPRESSED_FORMAT;
+    TextureDecoder_Image* targetImage = textureDecoder->images.elements[index];
+    return targetImage->unpackedFormat ? targetImage->unpackedFormat : DECOMPRESSED_FORMAT;
 }
 
 bool isCompressedFormat(VkFormat format) {

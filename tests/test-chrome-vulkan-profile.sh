@@ -31,6 +31,14 @@ grep -F 'build-gladio.sh' "$repo_dir/examples/chrome/build-bundle.sh" >/dev/null
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/chrome-example.json"
 grep -F 'https://www.baidu.com' "$repo_dir/profiles/chrome-example.json" >/dev/null
 grep -F -- '--use-angle=vulkan' "$repo_dir/profiles/chrome-example.json" >/dev/null
+grep -F '"SSL_CERT_FILE": "${RUNTIME}/etc/ssl/certs/ca-certificates.crt"' \
+    "$repo_dir/profiles/chrome-example.json" >/dev/null
+grep -F '"SSL_CERT_DIR": "${RUNTIME}/etc/ssl/certs"' \
+    "$repo_dir/profiles/chrome-example.json" >/dev/null
+grep -F '"SSL_CERT_FILE": "${RUNTIME}/etc/ssl/certs/ca-certificates.crt"' \
+    "$repo_dir/profiles/chrome-vulkan.json" >/dev/null
+grep -F '"SSL_CERT_FILE": "${RUNTIME}/etc/ssl/certs/ca-certificates.crt"' \
+    "$repo_dir/profiles/chrome-smoke.json" >/dev/null
 if grep -F -- '--single-process' "$repo_dir/profiles/chrome-example.json" >/dev/null; then
     echo "chrome baidu must use a real renderer process" >&2
     exit 1

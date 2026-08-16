@@ -7,18 +7,21 @@ probe_dir="$repo_dir/examples/vulkan-probe"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-present.json"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-lifetime.json"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-frames.json"
+"$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-bcn.json"
 "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/vulkan-probe.json"
 grep -F 'minImageCount >= 2' "$probe_dir"/*.[ch] >/dev/null
 for name in vulkan-wsi-loader vulkan-wsi-window vulkan-wsi-device \
             vulkan-wsi-present-support vulkan-wsi-surface \
             vulkan-present-swapchain vulkan-present-pipeline vulkan-present \
-            vulkan-frames vulkan-lifetime; do
+            vulkan-frames vulkan-lifetime vulkan-bcn-feature vulkan-bcn-bc1 \
+            vulkan-bcn-bc7 vulkan-bcn-timeline; do
     grep -F "$name" "$probe_dir"/*.[ch] >/dev/null
 done
 test -f "$probe_dir/vulkan-wsi.c"
 test -f "$probe_dir/vulkan-present.c"
 test -f "$probe_dir/vulkan-lifetime.c"
 test -f "$probe_dir/vulkan-frames.c"
+test -f "$probe_dir/vulkan-bcn.c"
 test -f "$probe_dir/assert-frames.py"
 test ! -f "$probe_dir/vulkan-probe.c"
 grep -Fq 'passed=5' "$probe_dir/install-and-run.sh"
@@ -33,6 +36,8 @@ grep -Fq 'host-vulkan-frames' "$probe_dir/assert-frames.py"
 grep -Fq 'green < 20_000' "$probe_dir/assert-frames.py"
 grep -F 'preferred_format' "$probe_dir"/*.[ch] >/dev/null
 grep -F 'vkCmdBindVertexBuffers2' "$probe_dir"/*.[ch] >/dev/null
+grep -F 'vkCmdSetViewportWithCount' "$probe_dir/vulkan-present.c" >/dev/null
+grep -F 'vkCmdSetScissorWithCount' "$probe_dir/vulkan-present.c" >/dev/null
 grep -F 'red_mask == 0xff0000UL' "$probe_dir"/*.[ch] >/dev/null
 grep -F 'VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME' \
     "$probe_dir"/*.[ch] >/dev/null
@@ -45,12 +50,16 @@ grep -F 'compile vulkan-wsi' "$probe_dir/build-bundle.sh" >/dev/null
 grep -F 'compile vulkan-present' "$probe_dir/build-bundle.sh" >/dev/null
 grep -F 'compile vulkan-lifetime' "$probe_dir/build-bundle.sh" >/dev/null
 grep -F 'compile vulkan-frames' "$probe_dir/build-bundle.sh" >/dev/null
+grep -F 'compile vulkan-bcn' "$probe_dir/build-bundle.sh" >/dev/null
 grep -F -- '--app-root' "$probe_dir/install-and-run.sh" >/dev/null
 if grep -F -- '--runtime-root' "$probe_dir/install-and-run.sh" >/dev/null; then
     echo "vulkan-probe install must not replace the shared seed" >&2
     exit 1
 fi
-grep -F 'return 2' \
+grep -F 'return 3' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
+    >/dev/null
+grep -F 'int imageCount = 3' \
     "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/xwindow_swapchain.c" \
     >/dev/null
 grep -F 'VK_ERROR_OUT_OF_DATE_KHR' \
@@ -162,5 +171,61 @@ if grep -F 'vkAllocateCommandBuffers(swapchain->device' \
     exit 1
 fi
 grep -F 'vulkan-frames.json' "$probe_dir/install-and-run.sh" >/dev/null
+grep -F 'vulkan-bcn.json' "$probe_dir/install-and-run.sh" >/dev/null
+grep -F 'advertised == create_ok' "$probe_dir/vulkan-bcn.c" >/dev/null
+grep -F 'getCompressedImageFormatProperties(format, &imageFormatProperties)' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/vulkan_helper.c" >/dev/null
+grep -F 'isCanDecompressFormat(requestedFormat)' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'TextureDecoder_containsImage(context->textureDecoder, createInfo.image)' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'VK_FORMAT_R8G8B8A8_UNORM' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/texture_decoder.c" >/dev/null
+grep -F 'TextureDecoder_unpackedFormat' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'retainSupportedDeviceExtensions' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'dropTimelineFromCreateInfo' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'vkCmdBindVertexBuffers2' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'else if (vulkanWrapper.vkCmdBindVertexBuffers)' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'else if (vulkanWrapper.vkCmdSetViewport)' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'else if (vulkanWrapper.vkCmdSetScissor)' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'TimelineSemaphore_create' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'TimelineSemaphore_filterSubmits' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'vkGetFenceStatus(req->device, req->fence)' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" >/dev/null
+grep -F 'hostTimeline' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/include/vk_context.h" >/dev/null
+grep -F 'globalEmulatedDeviceExtensions' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/vulkan_helper.c" >/dev/null
+grep -F 'timelineFeatures->timelineSemaphore = VK_TRUE' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/vulkan_helper.c" >/dev/null
+grep -F 'probe_create_device_basic' "$probe_dir/vulkan-bcn.c" >/dev/null
+grep -F 'vulkan-bcn-timeline' "$probe_dir/vulkan-bcn.c" >/dev/null
+grep -F 'vkGetSemaphoreCounterValue' "$probe_dir/vulkan-bcn.c" >/dev/null
+grep -F 'submitted == 100' "$probe_dir/vulkan-bcn.c" >/dev/null
+grep -F 'TimelineSemaphore_flushSubmitSignals' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" \
+    >/dev/null
+grep -F 'stashEmulatedSignal' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/timeline_semaphore.c" \
+    >/dev/null
+grep -F 'vt_send(context->clientRing, result, &value, sizeof(uint64_t))' \
+    "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" \
+    >/dev/null
+if grep -F 'vt_send(context->clientRing, result, &semaphore, sizeof(uint64_t))' \
+        "$repo_dir/android/app/src/main/cpp/vortekrenderer/src/request_handler.c" \
+        >/dev/null; then
+    echo "GetSemaphoreCounterValue must send the counter, not the handle" >&2
+    exit 1
+fi
+grep -F 'passed=4 failed=0' "$probe_dir/install-and-run.sh" >/dev/null
 grep -F 'assert-frames.py' "$probe_dir/install-and-run.sh" >/dev/null
 echo "vulkan probes split into wsi/present/frames/lifetime: PASS"

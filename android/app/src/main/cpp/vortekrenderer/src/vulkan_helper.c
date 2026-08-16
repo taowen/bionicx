@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "vulkan_helper.h"
+#include "texture_decoder.h"
 #include "dma_utils.h"
 
 #define VK_MAKE_VERSION_STR(s, v) sprintf(s, "%d.%d.%d", VK_VERSION_MAJOR(v), VK_VERSION_MINOR(v), VK_VERSION_PATCH(v))
@@ -273,6 +274,79 @@ void checkDeviceMemoryProperties(VkContext* context, VkPhysicalDeviceMemoryPrope
     }
 }
 
+void dropTimelineFromCreateInfo(VkDeviceCreateInfo* createInfo) {
+    if (!createInfo) return;
+    createInfo->pNext = removeNextVkStructure(
+            (void*)createInfo->pNext,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+    VkPhysicalDeviceVulkan12Features* vulkan12Features = findNextVkStructure(
+            (void*)createInfo->pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
+    if (vulkan12Features) vulkan12Features->timelineSemaphore = VK_FALSE;
+    if (!createInfo->ppEnabledExtensionNames) return;
+    uint32_t kept = 0;
+    for (uint32_t i = 0; i < createInfo->enabledExtensionCount; i++) {
+        const char* name = createInfo->ppEnabledExtensionNames[i];
+        if (name && strcmp(name, "VK_KHR_timeline_semaphore") == 0)
+            continue;
+        ((const char**)createInfo->ppEnabledExtensionNames)[kept++] = name;
+    }
+    createInfo->enabledExtensionCount = kept;
+}
+
+void retainSupportedDeviceExtensions(VkPhysicalDevice physicalDevice,
+                                     char*** extensions, uint32_t* extensionCount) {
+    if (!extensions || !*extensions || !extensionCount || *extensionCount == 0)
+        return;
+    uint32_t availableCount = 0;
+    if (vulkanWrapper.vkEnumerateDeviceExtensionProperties(
+                physicalDevice, NULL, &availableCount, NULL) != VK_SUCCESS)
+        return;
+    VkExtensionProperties* available = malloc(
+            availableCount * sizeof(VkExtensionProperties));
+    if (!available) return;
+    if (vulkanWrapper.vkEnumerateDeviceExtensionProperties(
+                physicalDevice, NULL, &availableCount, available) != VK_SUCCESS) {
+        free(available);
+        return;
+    }
+    uint32_t kept = 0;
+    for (uint32_t i = 0; i < *extensionCount; i++) {
+        const char* name = (*extensions)[i];
+        bool found = false;
+        for (uint32_t j = 0; j < availableCount; j++) {
+            if (strcmp(name, available[j].extensionName) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (found)
+            (*extensions)[kept++] = (*extensions)[i];
+    }
+    *extensionCount = kept;
+    free(available);
+}
+
+static bool deviceHasExtension(VkPhysicalDevice physicalDevice, const char* name) {
+    uint32_t count = 0;
+    if (vulkanWrapper.vkEnumerateDeviceExtensionProperties(
+                physicalDevice, NULL, &count, NULL) != VK_SUCCESS)
+        return false;
+    VkExtensionProperties* properties = malloc(count * sizeof(*properties));
+    if (!properties) return false;
+    bool found = false;
+    if (vulkanWrapper.vkEnumerateDeviceExtensionProperties(
+                physicalDevice, NULL, &count, properties) == VK_SUCCESS) {
+        for (uint32_t i = 0; i < count; i++) {
+            if (strcmp(properties[i].extensionName, name) == 0) {
+                found = true;
+                break;
+            }
+        }
+    }
+    free(properties);
+    return found;
+}
+
 void disableUnsupportedDeviceFeatures(VkPhysicalDevice physicalDevice, VkDeviceCreateInfo* createInfo) {
     VkPhysicalDeviceTransformFeedbackFeaturesEXT* transformFeedbackFeatures = findNextVkStructure(createInfo->pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT);
     if (transformFeedbackFeatures) {
@@ -280,6 +354,30 @@ void disableUnsupportedDeviceFeatures(VkPhysicalDevice physicalDevice, VkDeviceC
         features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         features.pNext = transformFeedbackFeatures;
         vulkanWrapper.vkGetPhysicalDeviceFeatures2(physicalDevice, &features);
+    }
+
+    VkPhysicalDeviceTimelineSemaphoreFeatures* timelineFeatures = findNextVkStructure(
+            (void*)createInfo->pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+    VkPhysicalDeviceVulkan12Features* vulkan12Features = findNextVkStructure(
+            (void*)createInfo->pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
+    bool hostTimeline = deviceHasExtension(physicalDevice, "VK_KHR_timeline_semaphore");
+    if (hostTimeline && vulkanWrapper.vkGetPhysicalDeviceFeatures2) {
+        VkPhysicalDeviceTimelineSemaphoreFeatures supportedTimeline = {0};
+        supportedTimeline.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+        VkPhysicalDeviceFeatures2 features2 = {0};
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.pNext = &supportedTimeline;
+        vulkanWrapper.vkGetPhysicalDeviceFeatures2(physicalDevice, &features2);
+        hostTimeline = supportedTimeline.timelineSemaphore == VK_TRUE;
+    }
+    if (!hostTimeline) {
+        if (timelineFeatures) {
+            createInfo->pNext = removeNextVkStructure(
+                    (void*)createInfo->pNext,
+                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+            timelineFeatures = NULL;
+        }
+        if (vulkan12Features) vulkan12Features->timelineSemaphore = VK_FALSE;
     }
 
     VkPhysicalDeviceFeatures* enabledFeatures = (VkPhysicalDeviceFeatures*)createInfo->pEnabledFeatures;
@@ -351,12 +449,16 @@ VkExtensionProperties* getExposedDeviceExtensionProperties(VkContext* context, V
 
     injectExtensions2(context, &dstProperties, propertyCount,
                       globalImplementedDeviceExtensions, ARRAY_SIZE(globalImplementedDeviceExtensions), NULL, 0);
+    injectExtensions2(context, &dstProperties, propertyCount,
+                      globalEmulatedDeviceExtensions, ARRAY_SIZE(globalEmulatedDeviceExtensions), NULL, 0);
     return dstProperties;
 }
 
 void checkFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties* formatProperties) {
     if (isCompressedFormat(format) && formatProperties->linearTilingFeatures == 0 && formatProperties->optimalTilingFeatures == 0) {
-        vulkanWrapper.vkGetPhysicalDeviceFormatProperties(physicalDevice, DECOMPRESSED_FORMAT, formatProperties);
+        VkImageFormatProperties imageFormatProperties = {0};
+        if (getCompressedImageFormatProperties(format, &imageFormatProperties) == VK_SUCCESS)
+            vulkanWrapper.vkGetPhysicalDeviceFormatProperties(physicalDevice, DECOMPRESSED_FORMAT, formatProperties);
     }
     else if (isFormatScaled(format)) {
         formatProperties->bufferFeatures |= VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
@@ -431,6 +533,13 @@ void checkDeviceFeatures(VkPhysicalDeviceFeatures* features, void* pNext) {
     features->fragmentStoresAndAtomics = VK_TRUE;
     features->multiDrawIndirect = VK_TRUE;
     features->tessellationShader = VK_TRUE;
+
+    VkPhysicalDeviceTimelineSemaphoreFeatures* timelineFeatures = findNextVkStructure(
+            pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+    if (timelineFeatures) timelineFeatures->timelineSemaphore = VK_TRUE;
+    VkPhysicalDeviceVulkan12Features* vulkan12Features = findNextVkStructure(
+            pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
+    if (vulkan12Features) vulkan12Features->timelineSemaphore = VK_TRUE;
 
     VkPhysicalDeviceMapMemoryPlacedFeaturesEXT* mapMemoryPlacedFeatures = findNextVkStructure(pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT);
     if (mapMemoryPlacedFeatures) {

@@ -4,6 +4,7 @@
 #include "sysvshared_memory.h"
 
 #include <sys/eventfd.h>
+#include <time.h>
 
 /* SYNC_FD export of an already-signaled fence returns fd=-1. SCM_RIGHTS
  * cannot send -1, so the client blocked forever in recv_fds. Hand the
@@ -27,11 +28,30 @@ typedef struct WaitFenceRequest {
 
 static void* waitFenceThread(void* param) {
     WaitFenceRequest* req = param;
-    VkResult result = vulkanWrapper.vkWaitForFences(
-            req->device, 1, &req->fence, VK_TRUE, req->timeout);
-    if (result == VK_SUCCESS) {
-        uint64_t value = 1;
-        write(req->notifyFd, &value, sizeof(value));
+    /* Do not vkWaitForFences here. Adreno 650 deadlocks that call
+     * against a QueueSubmit on the RPC thread that signals the same
+     * fence. Polling GetFenceStatus stays off the queue. */
+    struct timespec start;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    for (;;) {
+        VkResult result = vulkanWrapper.vkGetFenceStatus(req->device, req->fence);
+        if (result == VK_SUCCESS) {
+            uint64_t value = 1;
+            write(req->notifyFd, &value, sizeof(value));
+            break;
+        }
+        if (result != VK_NOT_READY)
+            break;
+        if (req->timeout != UINT64_MAX) {
+            struct timespec now;
+            clock_gettime(CLOCK_MONOTONIC, &now);
+            uint64_t elapsedNs =
+                    (uint64_t)(now.tv_sec - start.tv_sec) * 1000000000ull
+                    + (uint64_t)(now.tv_nsec - start.tv_nsec);
+            if (elapsedNs >= req->timeout)
+                break;
+        }
+        usleep(1000);
     }
     CLOSEFD(req->notifyFd);
     free(req);
@@ -236,10 +256,32 @@ void vt_handle_vkCreateDevice(VkContext* context) {
     injectExtensions(context, (char***)&createInfo.ppEnabledExtensionNames, &createInfo.enabledExtensionCount,
                      extraExtensions, ARRAY_SIZE(extraExtensions),
                      globalImplementedDeviceExtensions, ARRAY_SIZE(globalImplementedDeviceExtensions));
+    retainSupportedDeviceExtensions(physicalDevice,
+            (char***)&createInfo.ppEnabledExtensionNames,
+            &createInfo.enabledExtensionCount);
 
-    VkDevice device;
+    bool hostTimeline = false;
+    for (uint32_t i = 0; i < createInfo.enabledExtensionCount; i++) {
+        if (createInfo.ppEnabledExtensionNames[i]
+                && strcmp(createInfo.ppEnabledExtensionNames[i],
+                          "VK_KHR_timeline_semaphore") == 0) {
+            hostTimeline = true;
+            break;
+        }
+    }
+    VkDevice device = VK_NULL_HANDLE;
     VkResult result = vulkanWrapper.vkCreateDevice(physicalDevice, &createInfo, NULL, &device);
-    if (result == VK_SUCCESS) initVulkanDevice(context, physicalDevice, device);
+    if (result != VK_SUCCESS) {
+        dropTimelineFromCreateInfo(&createInfo);
+        createInfo.pNext = NULL;
+        createInfo.pEnabledFeatures = NULL;
+        hostTimeline = false;
+        result = vulkanWrapper.vkCreateDevice(physicalDevice, &createInfo, NULL, &device);
+    }
+    if (result == VK_SUCCESS) {
+        context->hostTimeline = hostTimeline;
+        initVulkanDevice(context, physicalDevice, device);
+    }
 
     VT_SERIALIZE_CMD(VkDevice, device);
     vt_send(context->clientRing, result, outputBuffer, bufferSize);
@@ -344,7 +386,12 @@ void vt_handle_vkQueueSubmit(VkContext* context) {
     /* Do not vkQueueWaitIdle here. The client may already be blocked in
      * WaitForFences on another thread; the RPC thread must stay free to
      * process the submit that signals that fence. */
-    VkResult result = vulkanWrapper.vkQueueSubmit(queue, submitCount, submits, fence);
+    bool hostWork = TimelineSemaphore_filterSubmits(submits, submitCount);
+    VkResult result = VK_SUCCESS;
+    if (hostWork || fence)
+        result = vulkanWrapper.vkQueueSubmit(queue, submitCount, submits, fence);
+    if (result == VK_SUCCESS)
+        TimelineSemaphore_flushSubmitSignals();
     if (result == VK_ERROR_DEVICE_LOST) context->status = result;
 
     if (clientWaiting) vt_send(context->clientRing, result, NULL, 0);
@@ -681,7 +728,8 @@ void vt_handle_vkCreateSemaphore(VkContext* context) {
     VkDevice device = VkObject_fromId(deviceId);
 
     VkSemaphore semaphore;
-    VkResult result = vulkanWrapper.vkCreateSemaphore(device, &createInfo, NULL, &semaphore);
+    VkResult result = TimelineSemaphore_create(device, &createInfo,
+                                               context->hostTimeline, &semaphore);
 
     VT_SERIALIZE_CMD(VkSemaphore, semaphore);
     vt_send(context->clientRing, result, outputBuffer, bufferSize);
@@ -695,7 +743,7 @@ void vt_handle_vkDestroySemaphore(VkContext* context) {
     VkDevice device = VkObject_fromId(deviceId);
     VkSemaphore semaphore = VkObject_fromId(semaphoreId);
 
-    vulkanWrapper.vkDestroySemaphore(device, semaphore, NULL);
+    TimelineSemaphore_destroy(device, semaphore);
 }
 
 void vt_handle_vkCreateEvent(VkContext* context) {
@@ -875,13 +923,26 @@ void vt_handle_vkCreateImage(VkContext* context) {
     vt_unserialize_vkCreateImage((VkDevice)&deviceId, &createInfo, NULL, NULL, context->inputBuffer, &context->memoryPool);
     VkDevice device = VkObject_fromId(deviceId);
 
-    VkImage image;
-    VkResult result;
-    if (context->textureDecoder && isCompressedFormat(createInfo.format)) {
-        result = TextureDecoder_createImage(context->textureDecoder, device, &createInfo, &image);
-        if (result == VK_SUCCESS) RingBuffer_setStatus(context->clientRing, RING_STATUS_WAIT);
+    VkImage image = VK_NULL_HANDLE;
+    VkResult result = VK_ERROR_FORMAT_NOT_SUPPORTED;
+    VkFormat requestedFormat = createInfo.format;
+    if (isCompressedFormat(requestedFormat)) {
+        result = vulkanWrapper.vkCreateImage(device, &createInfo, NULL, &image);
+        if (result != VK_SUCCESS && context->textureDecoder
+                && isCanDecompressFormat(requestedFormat)) {
+            VkImageCreateInfo decodeInfo = createInfo;
+            decodeInfo.pNext = NULL;
+            decodeInfo.flags = 0;
+            decodeInfo.format = requestedFormat;
+            decodeInfo.mipLevels = 1;
+            result = TextureDecoder_createImage(context->textureDecoder, device,
+                                               &decodeInfo, &image);
+            if (result == VK_SUCCESS)
+                RingBuffer_setStatus(context->clientRing, RING_STATUS_WAIT);
+        }
+    } else {
+        result = vulkanWrapper.vkCreateImage(device, &createInfo, NULL, &image);
     }
-    else result = vulkanWrapper.vkCreateImage(device, &createInfo, NULL, &image);
 
     VT_SERIALIZE_CMD(VkImage, image);
     vt_send(context->clientRing, result, outputBuffer, bufferSize);
@@ -924,8 +985,11 @@ void vt_handle_vkCreateImageView(VkContext* context) {
     vt_unserialize_vkCreateImageView((VkDevice)&deviceId, &createInfo, NULL, NULL, context->inputBuffer, &context->memoryPool);
     VkDevice device = VkObject_fromId(deviceId);
 
-    if (context->textureDecoder && isCompressedFormat(createInfo.format)) {
-        createInfo.format = DECOMPRESSED_FORMAT;
+    if (context->textureDecoder
+            && TextureDecoder_containsImage(context->textureDecoder, createInfo.image)
+            && isCompressedFormat(createInfo.format)) {
+        createInfo.format = TextureDecoder_unpackedFormat(
+                context->textureDecoder, createInfo.image);
         createInfo.subresourceRange.levelCount = 1;
     }
 
@@ -2825,8 +2889,8 @@ void vt_handle_vkGetSemaphoreCounterValue(VkContext* context) {
     VkSemaphore semaphore = VkObject_fromId(semaphoreId);
 
     uint64_t value = 0;
-    VkResult result = vulkanWrapper.vkGetSemaphoreCounterValue(device, semaphore, &value);
-    vt_send(context->clientRing, result, &semaphore, sizeof(uint64_t));
+    VkResult result = TimelineSemaphore_counter(device, semaphore, &value);
+    vt_send(context->clientRing, result, &value, sizeof(uint64_t));
 }
 
 void vt_handle_vkWaitSemaphores(VkContext* context) {
@@ -2840,7 +2904,7 @@ void vt_handle_vkSignalSemaphore(VkContext* context) {
     vt_unserialize_vkSignalSemaphore((VkDevice)&deviceId, &signalInfo, context->inputBuffer, &context->memoryPool);
     VkDevice device = VkObject_fromId(deviceId);
 
-    VkResult result = vulkanWrapper.vkSignalSemaphore(device, &signalInfo);
+    VkResult result = TimelineSemaphore_signal(device, &signalInfo);
     vt_send(context->clientRing, result, NULL, 0);
 }
 
@@ -3051,7 +3115,11 @@ void vt_handle_vkCmdSetViewportWithCount(VkContext* context) {
     VkViewport viewports[viewportCount];
     vt_unserialize_vkCmdSetViewportWithCount(VK_NULL_HANDLE, NULL, viewports, context->inputBuffer, &context->memoryPool);
 
-    vulkanWrapper.vkCmdSetViewportWithCount(commandBuffer, viewportCount, viewports);
+    if (vulkanWrapper.vkCmdSetViewportWithCount) {
+        vulkanWrapper.vkCmdSetViewportWithCount(commandBuffer, viewportCount, viewports);
+    } else if (vulkanWrapper.vkCmdSetViewport) {
+        vulkanWrapper.vkCmdSetViewport(commandBuffer, 0, viewportCount, viewports);
+    }
 }
 
 void vt_handle_vkCmdSetScissorWithCount(VkContext* context) {
@@ -3064,7 +3132,11 @@ void vt_handle_vkCmdSetScissorWithCount(VkContext* context) {
     VkRect2D scissors[scissorCount];
     vt_unserialize_vkCmdSetScissorWithCount(VK_NULL_HANDLE, NULL, scissors, context->inputBuffer, &context->memoryPool);
 
-    vulkanWrapper.vkCmdSetScissorWithCount(commandBuffer, scissorCount, scissors);
+    if (vulkanWrapper.vkCmdSetScissorWithCount) {
+        vulkanWrapper.vkCmdSetScissorWithCount(commandBuffer, scissorCount, scissors);
+    } else if (vulkanWrapper.vkCmdSetScissor) {
+        vulkanWrapper.vkCmdSetScissor(commandBuffer, 0, scissorCount, scissors);
+    }
 }
 
 static bool vt_vkCmdBindVertexBuffers2OptionalArrays(
@@ -3125,8 +3197,13 @@ void vt_handle_vkCmdBindVertexBuffers2(VkContext* context) {
     vt_vkCmdBindVertexBuffers2OptionalArrays(context, &hasSizes, &hasStrides);
     VkDeviceSize* optionalSizes = hasSizes ? sizes : NULL;
     VkDeviceSize* optionalStrides = hasStrides ? strides : NULL;
-    vulkanWrapper.vkCmdBindVertexBuffers2(commandBuffer, firstBinding,
-            bindingCount, buffers, offsets, optionalSizes, optionalStrides);
+    if (vulkanWrapper.vkCmdBindVertexBuffers2) {
+        vulkanWrapper.vkCmdBindVertexBuffers2(commandBuffer, firstBinding,
+                bindingCount, buffers, offsets, optionalSizes, optionalStrides);
+    } else if (vulkanWrapper.vkCmdBindVertexBuffers) {
+        vulkanWrapper.vkCmdBindVertexBuffers(commandBuffer, firstBinding,
+                bindingCount, buffers, offsets);
+    }
 }
 
 void vt_handle_vkCmdSetDepthTestEnable(VkContext* context) {

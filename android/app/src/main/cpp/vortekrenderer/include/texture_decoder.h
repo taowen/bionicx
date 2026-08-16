@@ -6,6 +6,7 @@
 typedef struct TextureDecoder_Image {
     VkImage image;
     VkFormat format;
+    VkFormat unpackedFormat;
     short width;
     short height;
     VkBuffer buffer;
@@ -43,6 +44,8 @@ extern void TextureDecoder_destroyImage(TextureDecoder* textureDecoder, VkDevice
 extern void TextureDecoder_addBoundBuffer(TextureDecoder* textureDecoder, ResourceMemory* resourceMemory, VkBuffer buffer, VkDeviceSize memoryOffset);
 extern void TextureDecoder_removeBoundBuffer(TextureDecoder* textureDecoder, VkBuffer buffer);
 extern bool isCompressedFormat(VkFormat format);
+extern bool isCanDecompressFormat(VkFormat format);
+extern VkFormat TextureDecoder_unpackedFormat(TextureDecoder* textureDecoder, VkImage image);
 extern VkResult getCompressedImageFormatProperties(VkFormat format, VkImageFormatProperties* pImageFormatProperties);
 
 #endif

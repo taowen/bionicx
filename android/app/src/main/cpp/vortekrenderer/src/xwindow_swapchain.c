@@ -155,7 +155,9 @@ static VkResult createPublishBuffer(VkDevice device, XWindowSwapchain* swapchain
 }
 
 int getSurfaceMinImageCount() {
-    return 2;
+    /* Blit+CPU publish holds one image. Two images makes every other
+     * acquire wait on that blit (Mali ~20ms). Three keeps a spare. */
+    return 3;
 }
 
 VkSurfaceFormatKHR* getSurfaceFormats(uint32_t* formatCount) {
@@ -181,9 +183,7 @@ VkSurfaceFormatKHR* getSurfaceFormats(uint32_t* formatCount) {
 XWindowSwapchain* XWindowSwapchain_create(VkDevice device, VkQueue graphicsQueue, VkSwapchainCreateInfoKHR* swapchainInfo, JMethods* jmethods, int windowId) {
     XWindowSwapchain* swapchain = calloc(1, sizeof(XWindowSwapchain));
     swapchain->windowId = windowId;
-    int imageCount = (int)swapchainInfo->minImageCount;
-    if (imageCount < 2) imageCount = 2;
-    if (imageCount > 3) imageCount = 3;
+    int imageCount = 3;
     swapchain->imageCount = imageCount;
     swapchain->images = calloc(swapchain->imageCount, sizeof(XWindowSwapchain_Image));
     swapchain->imageFormat = swapchainInfo->imageFormat;

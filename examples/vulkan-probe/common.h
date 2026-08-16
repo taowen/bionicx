@@ -53,6 +53,7 @@ int probe_pick_physical(ProbeEnv *env);
 void probe_create_surfaces(ProbeEnv *env);
 void probe_query_surface(ProbeEnv *env);
 int probe_create_device(ProbeEnv *env);
+int probe_create_device_basic(ProbeEnv *env);
 int probe_create_swapchain(ProbeEnv *env);
 void probe_env_destroy(ProbeEnv *env);
 

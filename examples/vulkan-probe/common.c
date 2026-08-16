@@ -233,6 +233,30 @@ int probe_create_device(ProbeEnv *env) {
     return env->queue != VK_NULL_HANDLE;
 }
 
+int probe_create_device_basic(ProbeEnv *env) {
+    float priority = 1.0f;
+    VkDeviceQueueCreateInfo queue_info = {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueFamilyIndex = env->graphics_family,
+        .queueCount = 1,
+        .pQueuePriorities = &priority,
+    };
+    const char *extensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+    VkDeviceCreateInfo create_info = {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .queueCreateInfoCount = 1,
+        .pQueueCreateInfos = &queue_info,
+        .enabledExtensionCount = 1,
+        .ppEnabledExtensionNames = extensions,
+    };
+    if (env->graphics_family == UINT32_MAX) return 0;
+    if (vkCreateDevice(env->physical_device, &create_info, NULL,
+                       &env->device) != VK_SUCCESS)
+        return 0;
+    vkGetDeviceQueue(env->device, env->graphics_family, 0, &env->queue);
+    return env->queue != VK_NULL_HANDLE;
+}
+
 int probe_create_swapchain(ProbeEnv *env) {
     VkCompositeAlphaFlagBitsKHR composite =
             VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;

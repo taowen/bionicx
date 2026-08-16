@@ -478,6 +478,14 @@ int main(void) {
         vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 pipeline_layout, 0, 1, &descriptor_set, 0,
                                 NULL);
+        VkViewport dynamic_viewport = {
+            .width = (float)env.swapchain_info.imageExtent.width,
+            .height = (float)env.swapchain_info.imageExtent.height,
+            .maxDepth = 1,
+        };
+        VkRect2D dynamic_scissor = { .extent = env.swapchain_info.imageExtent };
+        vkCmdSetViewportWithCount(command_buffer, 1, &dynamic_viewport);
+        vkCmdSetScissorWithCount(command_buffer, 1, &dynamic_scissor);
         VkDeviceSize vertex_offset = 0;
         vkCmdBindVertexBuffers2(command_buffer, 0, 1, &vertex_buffer,
                                &vertex_offset, NULL, NULL);
