@@ -11,6 +11,11 @@ grep -F 'XGrabServer' \
     "$repo_dir/examples/sync-x11-probe/sync-x11-probe.c" >/dev/null
 grep -F 'sync-await-grab' \
     "$repo_dir/examples/sync-x11-probe/sync-x11-probe.c" >/dev/null
+grep -F 'sync-fence' \
+    "$repo_dir/examples/sync-x11-probe/sync-x11-probe.c" >/dev/null
+grep -F 'CREATE_FENCE' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/SyncExtension.java" \
+    >/dev/null
 grep -F 'XOpenDisplay' \
     "$repo_dir/examples/sync-x11-probe/sync-x11-probe.c" >/dev/null
 grep -F 'CREATE_COUNTER' \
@@ -24,7 +29,7 @@ if grep -E 'xfsettingsd|xfwm4|icewm' \
     echo "sync probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=8 failed=0' \
+grep -F 'passed=9 failed=0' \
     "$repo_dir/examples/sync-x11-probe/install-and-run.sh" >/dev/null
 grep -F 'rootfs_payload=none' \
     "$repo_dir/examples/sync-x11-probe/build-bundle.sh" >/dev/null

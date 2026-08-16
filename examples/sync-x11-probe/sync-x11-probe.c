@@ -196,6 +196,103 @@ static void await_ge(Display *display, int opcode, uint32_t cid,
     UnlockDisplay(display);
 }
 
+typedef struct {
+    uint8_t reqType;
+    uint8_t syncReqType;
+    uint16_t length;
+    uint32_t drawable;
+    uint32_t fid;
+    uint8_t initiallyTriggered;
+    uint8_t pad[3];
+} sync_create_fence_req;
+
+typedef struct {
+    uint8_t reqType;
+    uint8_t syncReqType;
+    uint16_t length;
+    uint32_t fid;
+} sync_fence_req;
+
+typedef struct {
+    uint8_t type;
+    uint8_t triggered;
+    uint16_t sequenceNumber;
+    uint32_t length;
+    uint32_t pad[6];
+} sync_query_fence_rep;
+
+static void create_fence(Display *display, int opcode, uint32_t drawable,
+                         uint32_t fid, int triggered) {
+    LockDisplay(display);
+    sync_create_fence_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->syncReqType = 14;
+    req->length = 4;
+    req->drawable = drawable;
+    req->fid = fid;
+    req->initiallyTriggered = triggered ? 1 : 0;
+    req->pad[0] = req->pad[1] = req->pad[2] = 0;
+    UnlockDisplay(display);
+}
+
+static void trigger_fence(Display *display, int opcode, uint32_t fid) {
+    LockDisplay(display);
+    sync_fence_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->syncReqType = 15;
+    req->length = 2;
+    req->fid = fid;
+    UnlockDisplay(display);
+}
+
+static void reset_fence(Display *display, int opcode, uint32_t fid) {
+    LockDisplay(display);
+    sync_fence_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->syncReqType = 16;
+    req->length = 2;
+    req->fid = fid;
+    UnlockDisplay(display);
+}
+
+static void destroy_fence(Display *display, int opcode, uint32_t fid) {
+    LockDisplay(display);
+    sync_fence_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->syncReqType = 17;
+    req->length = 2;
+    req->fid = fid;
+    UnlockDisplay(display);
+}
+
+static bool query_fence(Display *display, int opcode, uint32_t fid,
+                        int *triggered) {
+    sync_query_fence_rep reply;
+    LockDisplay(display);
+    sync_fence_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->syncReqType = 18;
+    req->length = 2;
+    req->fid = fid;
+    if (!_XReply(display, (xReply *)&reply, 0, xTrue)) {
+        UnlockDisplay(display);
+        return false;
+    }
+    *triggered = reply.triggered;
+    UnlockDisplay(display);
+    return true;
+}
+
+static void await_fence(Display *display, int opcode, uint32_t fid) {
+    LockDisplay(display);
+    sync_fence_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->syncReqType = 19;
+    req->length = 2;
+    req->fid = fid;
+    UnlockDisplay(display);
+}
+
 static void queue_get_input_focus(Display *display) {
     LockDisplay(display);
     xReq *req = reserve(display, 4);
@@ -311,6 +408,65 @@ int main(int argc, char **argv) {
     snprintf(detail, sizeof(detail), "value=%lld", (long long)grabbed_value);
     result("sync-grab", grab_ok, detail);
     RECORD(grab_ok);
+
+    Window root = DefaultRootWindow(display);
+    uint32_t fence = (uint32_t)XAllocID(display);
+    int triggered = 1;
+    create_fence(display, opcode, (uint32_t)root, fence, 0);
+    XSync(display, False);
+    bool fence_idle = query_fence(display, opcode, fence, &triggered)
+            && triggered == 0 && x_errors == 0;
+    trigger_fence(display, opcode, fence);
+    XSync(display, False);
+    bool fence_fired = query_fence(display, opcode, fence, &triggered)
+            && triggered == 1 && x_errors == 0;
+    await_fence(display, opcode, fence);
+    XSync(display, False);
+    reset_fence(display, opcode, fence);
+    XSync(display, False);
+    bool fence_reset = query_fence(display, opcode, fence, &triggered)
+            && triggered == 0 && x_errors == 0;
+    uint32_t peer_fence = (uint32_t)XAllocID(display);
+    create_fence(display, opcode, (uint32_t)root, peer_fence, 0);
+    XSync(display, False);
+    await_fence(peer, opcode, peer_fence);
+    queue_get_input_focus(peer);
+    _XFlush(peer);
+    trigger_fence(display, opcode, peer_fence);
+    XSync(display, False);
+    xGetInputFocusReply fence_focus = {0};
+    LockDisplay(peer);
+    bool fence_peer = _XReply(peer, (xReply *)&fence_focus, 0, xTrue)
+            && x_errors == 0;
+    UnlockDisplay(peer);
+    uint32_t grab_fence = (uint32_t)XAllocID(display);
+    create_fence(display, opcode, (uint32_t)root, grab_fence, 0);
+    XSync(display, False);
+    await_fence(display, opcode, grab_fence);
+    XGrabServer(display);
+    queue_get_input_focus(display);
+    _XFlush(display);
+    trigger_fence(peer, opcode, grab_fence);
+    _XFlush(peer);
+    xGetInputFocusReply fence_grab_focus = {0};
+    LockDisplay(display);
+    bool fence_grab = _XReply(display, (xReply *)&fence_grab_focus, 0, xTrue)
+            && x_errors == 0;
+    UnlockDisplay(display);
+    XUngrabServer(display);
+    XSync(display, False);
+    int before_fence = x_errors;
+    destroy_fence(display, opcode, fence);
+    XSync(display, False);
+    int gone_triggered = 0;
+    bool fence_gone = !query_fence(display, opcode, fence, &gone_triggered);
+    XSync(display, False);
+    bool fence_ok = fence_idle && fence_fired && fence_reset && fence_peer
+            && fence_grab && fence_gone && x_errors > before_fence;
+    result("sync-fence", fence_ok,
+           fence_ok ? "Create/Trigger/Await/Reset/Destroy"
+                    : "fence family failed");
+    RECORD(fence_ok);
 
     int before = x_errors;
     destroy_counter(display, opcode, cid);
