@@ -247,7 +247,24 @@ public abstract class DrawRequests {
             short y = inputStream.readShort();
             short width = inputStream.readShort();
             short height = inputStream.readShort();
-            drawable.fillRect(x, y, width, height, graphicsContext.getForeground());
+            java.util.List<GraphicsContext.ClipRectangle> clips =
+                    graphicsContext.getClipRectangles();
+            if (clips == null) {
+                drawable.fillRect(x, y, width, height, graphicsContext.getForeground());
+            } else {
+                int color = graphicsContext.getForeground();
+                for (GraphicsContext.ClipRectangle clip : clips) {
+                    int left = Math.max(x, graphicsContext.getClipXOrigin() + clip.x);
+                    int top = Math.max(y, graphicsContext.getClipYOrigin() + clip.y);
+                    int right = Math.min(x + width,
+                            graphicsContext.getClipXOrigin() + clip.x + clip.width);
+                    int bottom = Math.min(y + height,
+                            graphicsContext.getClipYOrigin() + clip.y + clip.height);
+                    if (left < right && top < bottom) {
+                        drawable.fillRect(left, top, right - left, bottom - top, color);
+                    }
+                }
+            }
             length -= 8;
         }
     }

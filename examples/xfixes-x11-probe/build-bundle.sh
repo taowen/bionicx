@@ -16,7 +16,7 @@ podman run --rm --network host --userns=keep-id \
     aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
         examples/xfixes-x11-probe/xfixes-x11-probe.c \
         -o "${output_dir#"$repo_dir/"}/app/bin/xfixes-x11-probe" \
-        -lXfixes -lX11
+        -lXfixes -lXrender -lX11
 interpreter=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
 rpath=/data/user/0/io.taowen.bx/files/rootfs/usr/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu
 patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \

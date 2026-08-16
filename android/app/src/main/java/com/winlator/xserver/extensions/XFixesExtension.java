@@ -12,6 +12,8 @@ import com.winlator.xserver.Cursor;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.Window;
+import com.winlator.xserver.GraphicsContext;
+import com.winlator.xserver.errors.BadGraphicsContext;
 import com.winlator.xserver.Atom;
 import com.winlator.xserver.SelectionManager;
 import com.winlator.xserver.events.XFixesSelectionNotify;
@@ -61,7 +63,9 @@ public class XFixesExtension extends Extension {
         private static final byte TRANSLATE_REGION = 17;
         private static final byte REGION_EXTENTS = 18;
         private static final byte FETCH_REGION = 19;
+        private static final byte SET_GC_CLIP_REGION = 20;
         private static final byte SET_WINDOW_SHAPE_REGION = 21;
+        private static final byte SET_PICTURE_CLIP_REGION = 22;
         private static final byte SET_CURSOR_NAME = 23;
         private static final byte GET_CURSOR_NAME = 24;
         private static final byte GET_CURSOR_IMAGE_AND_NAME = 25;
@@ -522,6 +526,59 @@ public class XFixesExtension extends Extension {
         xServer.inputDeviceManager.updatePointWindow();
     }
 
+    private void setGCClipRegion(XInputStream inputStream) throws XRequestError {
+        int gcId = inputStream.readInt();
+        int regionId = inputStream.readInt();
+        short xOrigin = inputStream.readShort();
+        short yOrigin = inputStream.readShort();
+        GraphicsContext gc = xServer.graphicsContextManager.getGraphicsContext(gcId);
+        if (gc == null) throw new BadGraphicsContext(gcId);
+        gc.setClipXOrigin(xOrigin);
+        gc.setClipYOrigin(yOrigin);
+        if (regionId == 0) {
+            gc.clearClipMask();
+            return;
+        }
+        Region region = requireRegion(regionId);
+        ArrayList<GraphicsContext.ClipRectangle> rectangles =
+                new ArrayList<>(region.rectangles.size());
+        for (Rectangle rectangle : region.rectangles) {
+            rectangles.add(new GraphicsContext.ClipRectangle(rectangle.x,
+                    rectangle.y, rectangle.width, rectangle.height));
+        }
+        gc.setClipRectangles(rectangles);
+    }
+
+    private void setPictureClipRegion(XInputStream inputStream)
+            throws XRequestError {
+        int pictureId = inputStream.readInt();
+        int regionId = inputStream.readInt();
+        short xOrigin = inputStream.readShort();
+        short yOrigin = inputStream.readShort();
+        Extension render = xServer.getExtensionByName("RENDER");
+        if (!(render instanceof XRenderExtension)) throw new BadImplementation();
+        if (regionId == 0) {
+            ((XRenderExtension)render).setPictureClip(pictureId, xOrigin, yOrigin,
+                    null, null, null, null);
+            return;
+        }
+        Region region = requireRegion(regionId);
+        int count = region.rectangles.size();
+        int[] xs = new int[count];
+        int[] ys = new int[count];
+        int[] widths = new int[count];
+        int[] heights = new int[count];
+        for (int i = 0; i < count; i++) {
+            Rectangle rectangle = region.rectangles.get(i);
+            xs[i] = rectangle.x;
+            ys[i] = rectangle.y;
+            widths[i] = rectangle.width;
+            heights[i] = rectangle.height;
+        }
+        ((XRenderExtension)render).setPictureClip(pictureId, xOrigin, yOrigin,
+                xs, ys, widths, heights);
+    }
+
     private void setCursorName(XInputStream inputStream) throws XRequestError {
         int cursorId = inputStream.readInt();
         int nameLength = inputStream.readUnsignedShort();
@@ -749,8 +806,14 @@ public class XFixesExtension extends Extension {
             case ClientOpcodes.FETCH_REGION:
                 fetchRegion(client, inputStream, outputStream);
                 break;
+            case ClientOpcodes.SET_GC_CLIP_REGION:
+                setGCClipRegion(inputStream);
+                break;
             case ClientOpcodes.SET_WINDOW_SHAPE_REGION:
                 setWindowShapeRegion(inputStream);
+                break;
+            case ClientOpcodes.SET_PICTURE_CLIP_REGION:
+                setPictureClipRegion(inputStream);
                 break;
             case ClientOpcodes.SET_CURSOR_NAME:
                 setCursorName(inputStream);

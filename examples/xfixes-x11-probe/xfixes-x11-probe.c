@@ -1,8 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/Xfixes.h>
+#include <X11/extensions/Xrender.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +21,16 @@ static int on_x_error(Display *display, XErrorEvent *event) {
             event->resourceid, text);
     ++x_errors;
     return 0;
+}
+
+static unsigned long pixel_at(Display *display, Window window, int x, int y) {
+    XImage *image = XGetImage(display, window, x, y, 1, 1, AllPlanes, ZPixmap);
+    unsigned long pixel = 0;
+    if (image != NULL) {
+        pixel = XGetPixel(image, 0, 0);
+        XDestroyImage(image);
+    }
+    return pixel;
 }
 
 static void result(const char *name, bool ok, const char *detail) {
@@ -186,6 +198,58 @@ int main(int argc, char **argv) {
            transform_ok ? "Set/Translate/Invert/Extents/FromWindow"
                         : "region transform failed");
     RECORD(transform_ok);
+
+    before = x_errors;
+    XRectangle clip = {10, 10, 40, 40};
+    XserverRegion clip_region = XFixesCreateRegion(display, &clip, 1);
+    GC gc = XCreateGC(display, window, 0, NULL);
+    XSetForeground(display, gc, 0x224466);
+    XFixesSetGCClipRegion(display, gc, 0, 0, None);
+    XFillRectangle(display, window, gc, 0, 0, 200, 120);
+    XSync(display, False);
+    unsigned long base = pixel_at(display, window, 0, 0);
+    XSetForeground(display, gc, 0xffffff);
+    XFixesSetGCClipRegion(display, gc, 0, 0, clip_region);
+    XFillRectangle(display, window, gc, 0, 0, 200, 120);
+    XSync(display, False);
+    unsigned long gc_out = pixel_at(display, window, 0, 0);
+    unsigned long gc_in = pixel_at(display, window, 10, 10);
+    bool gc_clip = gc_out == base && gc_in != gc_out;
+    XSetForeground(display, gc, 0x224466);
+    XFixesSetGCClipRegion(display, gc, 0, 0, None);
+    XFillRectangle(display, window, gc, 0, 0, 200, 120);
+    XRenderPictFormat *format = XRenderFindVisualFormat(display,
+            DefaultVisual(display, screen));
+    bool picture_clip = false;
+    unsigned long pic_out = 0;
+    unsigned long pic_in = 0;
+    if (format != NULL) {
+        Picture picture = XRenderCreatePicture(display, window, format, 0, NULL);
+        XRenderColor white = {0xffff, 0xffff, 0xffff, 0xffff};
+        XFixesSetPictureClipRegion(display, picture, 0, 0, clip_region);
+        XRenderFillRectangle(display, PictOpSrc, picture, &white, 0, 0, 200, 120);
+        XSync(display, False);
+        pic_out = pixel_at(display, window, 0, 0);
+        pic_in = pixel_at(display, window, 10, 10);
+        picture_clip = pic_out == base && pic_in != pic_out;
+        XRenderFreePicture(display, picture);
+    }
+    XFixesDestroyRegion(display, clip_region);
+    XFreeGC(display, gc);
+    XSync(display, False);
+    bool clip_ok = gc_clip && picture_clip && x_errors == before;
+    char clip_detail[160];
+    if (clip_ok) {
+        snprintf(clip_detail, sizeof(clip_detail),
+                 "SetGCClipRegion/SetPictureClipRegion");
+    } else {
+        snprintf(clip_detail, sizeof(clip_detail),
+                 "base=%lx gc=%d/%lx/%lx pic=%d/%lx/%lx fmt=%d err=%d",
+                 base, gc_clip, gc_out, gc_in, picture_clip, pic_out, pic_in,
+                 format != NULL, x_errors - before);
+    }
+    result("xfixes-region-clip", clip_ok, clip_detail);
+    RECORD(clip_ok);
 
     before = x_errors;
     XGrabServer(display);

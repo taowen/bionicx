@@ -383,6 +383,24 @@ public class XRenderExtension extends Extension {
         picture.clipMask = null;
     }
 
+    public void setPictureClip(int pictureId, int xOrigin, int yOrigin,
+                               int[] xs, int[] ys, int[] widths, int[] heights)
+            throws XRequestError {
+        Picture picture = requirePicture(pictureId);
+        picture.clipX = xOrigin;
+        picture.clipY = yOrigin;
+        picture.clipMask = null;
+        if (xs == null) {
+            picture.clipRectangles = null;
+            return;
+        }
+        ArrayList<ClipRectangle> rectangles = new ArrayList<>(xs.length);
+        for (int i = 0; i < xs.length; i++) {
+            rectangles.add(new ClipRectangle(xs[i], ys[i], widths[i], heights[i]));
+        }
+        picture.clipRectangles = rectangles;
+    }
+
     private void registerPicture(XClient client, Picture picture)
             throws XRequestError {
         if (!client.isValidResourceId(picture.id))
