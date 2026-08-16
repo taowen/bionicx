@@ -10,6 +10,7 @@ import com.winlator.xconnector.XStreamLock;
 import com.winlator.xserver.errors.XRequestError;
 import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.extensions.Extension;
+import com.winlator.xserver.extensions.SyncExtension;
 import com.winlator.xserver.requests.AtomRequests;
 import com.winlator.xserver.requests.CursorRequests;
 import com.winlator.xserver.requests.ColorRequests;
@@ -42,6 +43,10 @@ public class XClientRequestHandler implements RequestHandler {
 
         XClient serverGrabClient = xClient.xServer.getServerGrabClient();
         if (serverGrabClient != null && serverGrabClient != xClient)
+            return false;
+        Extension sync = xClient.xServer.getExtensionByName("SYNC");
+        if (sync instanceof SyncExtension
+                && ((SyncExtension)sync).isAwaiting(xClient))
             return false;
         if (xClient.isAuthenticated()) {
             return handleNormalRequest(xClient, inputStream, outputStream);
@@ -618,20 +623,38 @@ public class XClientRequestHandler implements RequestHandler {
     }
 
     public void processDeferredRequests(XServer xServer) {
-        for (XClient deferred : xServer.getClientsSnapshot()) {
-            if (xServer.getServerGrabClient() != null) return;
-            try {
-                XInputStream input = deferred.getInputStream();
-                XOutputStream output = deferred.getOutputStream();
-                while (input != null && output != null
-                        && handleRequest(deferred)) {
-                    if (xServer.getServerGrabClient() != null) return;
+        for (;;) {
+            XClient grabber = xServer.getServerGrabClient();
+            if (grabber != null) {
+                try {
+                    if (!handleRequest(grabber)) return;
+                }
+                catch (IOException e) {
+                    Log.e(TAG, "deferred request I/O failure fd=" + grabber.fd,
+                            e);
+                    return;
+                }
+                continue;
+            }
+            boolean progressed = false;
+            for (XClient deferred : xServer.getClientsSnapshot()) {
+                if (xServer.getServerGrabClient() != null) break;
+                try {
+                    XInputStream input = deferred.getInputStream();
+                    XOutputStream output = deferred.getOutputStream();
+                    while (input != null && output != null
+                            && xServer.getServerGrabClient() == null
+                            && handleRequest(deferred)) {
+                        progressed = true;
+                    }
+                }
+                catch (IOException e) {
+                    Log.e(TAG, "deferred request I/O failure fd=" + deferred.fd,
+                            e);
                 }
             }
-            catch (IOException e) {
-                Log.e(TAG, "deferred request I/O failure fd=" + deferred.fd,
-                        e);
-            }
+            if (xServer.getServerGrabClient() != null) continue;
+            if (!progressed) return;
         }
     }
 }

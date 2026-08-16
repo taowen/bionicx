@@ -21,6 +21,8 @@ public class XServerComponent extends EnvironmentComponent {
     public void start() {
         if (connector != null) return;
         XClientRequestHandler requestHandler = new XClientRequestHandler();
+        xServer.setDeferredRequestPump(
+                () -> requestHandler.processDeferredRequests(xServer));
         connector = new XConnectorEpoll(socketConfig,
                 new XClientConnectionHandler(xServer, requestHandler),
                 requestHandler);

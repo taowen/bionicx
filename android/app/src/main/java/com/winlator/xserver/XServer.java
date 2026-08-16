@@ -11,6 +11,7 @@ import com.winlator.xserver.extensions.GLXExtension;
 import com.winlator.xserver.extensions.MITSHMExtension;
 import com.winlator.xserver.extensions.PresentExtension;
 import com.winlator.xserver.extensions.ShapeExtension;
+import com.winlator.xserver.extensions.SyncExtension;
 import com.winlator.xserver.extensions.XComposite;
 import com.winlator.xserver.extensions.XDamageExtension;
 import com.winlator.xserver.extensions.XFixesExtension;
@@ -52,6 +53,7 @@ public class XServer {
     private boolean relativeMouseMovement = false;
     private final ArrayList<XClient> clients = new ArrayList<>();
     private XClient serverGrabClient;
+    private Runnable deferredRequestPump;
 
     public XServer(XServerDisplayActivity activity, ScreenInfo screenInfo) {
         this.activity = activity;
@@ -224,6 +226,15 @@ public class XServer {
         return true;
     }
 
+    public void setDeferredRequestPump(Runnable pump) {
+        deferredRequestPump = pump;
+    }
+
+    public void pumpDeferredRequests() {
+        Runnable pump = deferredRequestPump;
+        if (pump != null) pump.run();
+    }
+
     public boolean removeClient(XClient client) {
         boolean releasedServerGrab = ungrabServer(client);
         try (XLock lock = lock(Lockable.INPUT_DEVICE)) {
@@ -267,9 +278,7 @@ public class XServer {
             // ancillary data. Do not advertise DRI3 until that contract is
             // implemented; Gladio's host-GLES path does not depend on it.
             new PresentExtension(this, opcode--),
-            // The bundled SYNC handler implements only fence opcodes (14+),
-            // not the legacy counters Qt creates with opcode 2. Advertising
-            // it makes Qt enable SYNC and then receive BadImplementation.
+            new SyncExtension(this, opcode--),
             new XComposite(this, opcode--),
             new XRenderExtension(this, opcode--),
             new XFixesExtension(this, opcode--),
