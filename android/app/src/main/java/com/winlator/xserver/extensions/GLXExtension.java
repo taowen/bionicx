@@ -59,8 +59,11 @@ public class GLXExtension extends Extension {
         private static final byte GET_VISUAL_CONFIGS = 14;
         private static final byte QUERY_EXTENSIONS_STRING = 18;
         private static final byte QUERY_SERVER_STRING = 19;
+        private static final byte CLIENT_INFO = 20;
         private static final byte GET_FB_CONFIGS = 21;
+        private static final byte SET_CLIENT_INFO_ARB = 33;
         private static final byte CREATE_CONTEXT_ATTRIBS_ARB = 34;
+        private static final byte SET_CLIENT_INFO2_ARB = 35;
     }
 
     @Override
@@ -345,6 +348,11 @@ public class GLXExtension extends Extension {
         }
     }
 
+    private void acceptClientInfo(XClient client, XInputStream inputStream) {
+        int remaining = client.getRemainingRequestLength();
+        if (remaining > 0) inputStream.skip(remaining);
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
         int opcode = client.getRequestData();
@@ -378,6 +386,11 @@ public class GLXExtension extends Extension {
                 break;
             case ClientOpcodes.CREATE_CONTEXT_ATTRIBS_ARB:
                 createContextAttribsARB(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.CLIENT_INFO:
+            case ClientOpcodes.SET_CLIENT_INFO_ARB:
+            case ClientOpcodes.SET_CLIENT_INFO2_ARB:
+                acceptClientInfo(client, inputStream);
                 break;
             default:
                 throw new BadImplementation();

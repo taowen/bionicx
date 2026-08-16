@@ -21,12 +21,17 @@ grep -F 'XLowerWindow' \
     "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
 grep -F 'XGrabServer' \
     "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
+grep -F 'SET_CLIENT_INFO_ARB' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/GLXExtension.java" \
+    >/dev/null
+grep -F 'glx_set_client_info_arb' \
+    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
 if grep -E 'xfsettingsd|xfwm4|icewm' \
         "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null; then
     echo "compositor probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=9 failed=0' \
+grep -F 'passed=10 failed=0' \
     "$repo_dir/examples/compositor-x11-probe/install-and-run.sh" >/dev/null
 grep -F 'rootfs_payload=none' \
     "$repo_dir/examples/compositor-x11-probe/build-bundle.sh" >/dev/null

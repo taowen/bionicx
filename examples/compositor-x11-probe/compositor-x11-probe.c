@@ -384,6 +384,82 @@ static bool blit_pixmap_to_overlay(Display *display, Pixmap pixmap,
     return true;
 }
 
+typedef struct {
+    uint8_t reqType;
+    uint8_t glxCode;
+    uint16_t length;
+    uint32_t major;
+    uint32_t minor;
+    uint32_t numbytes;
+} glx_client_info_req;
+
+typedef struct {
+    uint8_t reqType;
+    uint8_t glxCode;
+    uint16_t length;
+    uint32_t numVersions;
+    uint32_t numGLExts;
+    uint32_t numGLXExts;
+    uint32_t verMajor;
+    uint32_t verMinor;
+} glx_set_client_info_arb_req;
+
+typedef struct {
+    uint8_t reqType;
+    uint8_t glxCode;
+    uint16_t length;
+    uint32_t numVersions;
+    uint32_t numGLExts;
+    uint32_t numGLXExts;
+    uint32_t verMajor;
+    uint32_t verMinor;
+    uint32_t profile;
+} glx_set_client_info2_arb_req;
+
+static void glx_client_info(Display *display, int opcode) {
+    LockDisplay(display);
+    glx_client_info_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->glxCode = 20;
+    req->length = (uint16_t)(sizeof(*req) / 4);
+    req->major = 1;
+    req->minor = 4;
+    req->numbytes = 0;
+    UnlockDisplay(display);
+    _XFlush(display);
+}
+
+static void glx_set_client_info_arb(Display *display, int opcode) {
+    LockDisplay(display);
+    glx_set_client_info_arb_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->glxCode = 33;
+    req->length = (uint16_t)(sizeof(*req) / 4);
+    req->numVersions = 1;
+    req->numGLExts = 0;
+    req->numGLXExts = 0;
+    req->verMajor = 1;
+    req->verMinor = 4;
+    UnlockDisplay(display);
+    _XFlush(display);
+}
+
+static void glx_set_client_info2_arb(Display *display, int opcode) {
+    LockDisplay(display);
+    glx_set_client_info2_arb_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->glxCode = 35;
+    req->length = (uint16_t)(sizeof(*req) / 4);
+    req->numVersions = 1;
+    req->numGLExts = 0;
+    req->numGLXExts = 0;
+    req->verMajor = 1;
+    req->verMinor = 4;
+    req->profile = 0;
+    UnlockDisplay(display);
+    _XFlush(display);
+}
+
 static bool is_top_child(Display *display, Window root, Window target) {
     Window ret_root = 0;
     Window parent = 0;
@@ -443,6 +519,22 @@ int main(int argc, char **argv) {
         snprintf(version_detail, sizeof(version_detail), "QueryVersion failed");
     result("compositor-versions", versions_ok, version_detail);
     RECORD(versions_ok);
+
+    before = x_errors;
+    int glx_op = 0, glx_ev = 0, glx_err = 0;
+    bool glx_ok = XQueryExtension(comp, "GLX", &glx_op, &glx_ev, &glx_err)
+            && glx_op != 0;
+    if (glx_ok) {
+        glx_client_info(comp, glx_op);
+        glx_set_client_info_arb(comp, glx_op);
+        glx_set_client_info2_arb(comp, glx_op);
+        XSync(comp, False);
+        glx_ok = x_errors == before;
+    }
+    result("compositor-glx-client-info", glx_ok,
+           glx_ok ? "ClientInfo/SetClientInfoARB/2ARB"
+                  : "GLX client-info rejected");
+    RECORD(glx_ok);
 
     before = x_errors;
     Window overlay = (Window)get_overlay_window(comp, cmp_op, (uint32_t)root);
