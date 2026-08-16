@@ -15,7 +15,8 @@ podman run --rm --network host --userns=keep-id \
     --volume "$repo_dir:/work:Z" --workdir /work "$builder_image" \
     aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
         examples/compositor-x11-probe/compositor-x11-probe.c \
-        -o "${output_dir#"$repo_dir/"}/app/bin/compositor-x11-probe" -lX11
+        -o "${output_dir#"$repo_dir/"}/app/bin/compositor-x11-probe" \
+        -lXrender -lXfixes -lX11
 interpreter=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
 rpath=/data/user/0/io.taowen.bx/files/rootfs/usr/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu
 patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \

@@ -5,6 +5,8 @@
 #include <X11/Xmd.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/Xfixes.h>
+#include <X11/extensions/Xrender.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -386,6 +388,120 @@ static bool blit_pixmap_to_overlay(Display *display, Pixmap pixmap,
 
 typedef struct {
     uint8_t reqType;
+    uint8_t shapeReqType;
+    uint16_t length;
+    uint32_t window;
+    uint8_t enable;
+    uint8_t pad[3];
+} shape_select_req;
+
+static void shape_select_input(Display *display, int opcode, uint32_t window) {
+    LockDisplay(display);
+    shape_select_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->shapeReqType = 6;
+    req->length = (uint16_t)(sizeof(*req) / 4);
+    req->window = window;
+    req->enable = 1;
+    req->pad[0] = req->pad[1] = req->pad[2] = 0;
+    UnlockDisplay(display);
+    _XFlush(display);
+}
+
+static bool put_a8_image(Display *display, Pixmap pixmap, unsigned width,
+                         unsigned height, int value) {
+    char *pixels = calloc(width * height, 1u);
+    if (pixels == NULL) return false;
+    memset(pixels, value, width * height);
+    XImage *image = XCreateImage(display, DefaultVisual(display,
+            DefaultScreen(display)), 8, ZPixmap, 0, pixels, width, height,
+            8, (int)width);
+    GC gc = XCreateGC(display, pixmap, 0, NULL);
+    if (image == NULL || gc == None) {
+        if (image != NULL) XDestroyImage(image);
+        else free(pixels);
+        if (gc != None) XFreeGC(display, gc);
+        return false;
+    }
+    XPutImage(display, pixmap, gc, image, 0, 0, 0, 0, width, height);
+    XDestroyImage(image);
+    XFreeGC(display, gc);
+    return true;
+}
+
+static bool paint_burst(Display *display, Drawable dest, Window shaped,
+                        int shape_op) {
+    int render_event = 0, render_error = 0;
+    int major = 0, minor = 0;
+    if (!XRenderQueryExtension(display, &render_event, &render_error)
+            || !XRenderQueryVersion(display, &major, &minor))
+        return false;
+    XRenderPictFormat *argb = XRenderFindStandardFormat(display,
+            PictStandardARGB32);
+    XRenderPictFormat *a8 = XRenderFindStandardFormat(display, PictStandardA8);
+    if (argb == NULL || a8 == NULL) return false;
+
+    Pixmap back = XCreatePixmap(display, dest, 80, 80, 32);
+    Pixmap solid_pm = XCreatePixmap(display, dest, 1, 1, 32);
+    Pixmap mask_pm = XCreatePixmap(display, dest, 16, 16, 8);
+    Pixmap shadow_pm = XCreatePixmap(display, dest, 80, 80, 8);
+    if (back == None || solid_pm == None || mask_pm == None || shadow_pm == None)
+        return false;
+
+    XRenderPictureAttributes subwindow = {.subwindow_mode = IncludeInferiors};
+    XRenderPictureAttributes repeat = {.repeat = RepeatNormal};
+    Picture dest_pic = XRenderCreatePicture(display, back, argb,
+                                            CPSubwindowMode, &subwindow);
+    Picture solid = XRenderCreatePicture(display, solid_pm, argb, CPRepeat,
+                                         &repeat);
+    Picture mask = XRenderCreatePicture(display, mask_pm, a8, 0, NULL);
+    if (dest_pic == None || solid == None || mask == None) return false;
+
+    XRenderColor black = {.alpha = 0xffff};
+    XRenderColor cover = {.red = 0xffff, .alpha = 0xffff};
+    XRenderColor half = {.alpha = 0x8000};
+    XGrabServer(display);
+    XRenderFillRectangle(display, PictOpSrc, solid, &black, 0, 0, 1, 1);
+    XRenderFillRectangle(display, PictOpSrc, dest_pic, &cover, 0, 0, 80, 80);
+    XRenderFillRectangle(display, PictOpSrc, mask, &half, 0, 0, 16, 16);
+    XRectangle clip = {.width = 16, .height = 16};
+    XserverRegion region = XFixesCreateRegion(display, &clip, 1);
+    if (region == None) {
+        XUngrabServer(display);
+        return false;
+    }
+    XFixesSetPictureClipRegion(display, dest_pic, 0, 0, region);
+    if (shape_op != 0) shape_select_input(display, shape_op, (uint32_t)shaped);
+    XRenderComposite(display, PictOpOver, solid, mask, dest_pic,
+                     0, 0, 0, 0, 0, 0, 16, 16);
+    XUngrabServer(display);
+    bool uploaded = put_a8_image(display, shadow_pm, 80, 80, 0x80);
+    Picture shadow = uploaded
+            ? XRenderCreatePicture(display, shadow_pm, a8, 0, NULL) : None;
+    if (shadow != None)
+        XRenderComposite(display, PictOpOver, solid, shadow, dest_pic,
+                         0, 0, 0, 0, 16, 0, 80, 80);
+    Window focus = 0;
+    int revert = 0;
+    XGetInputFocus(display, &focus, &revert);
+    XSync(display, False);
+    unsigned long pixel = 0;
+    bool read_ok = read_pixel(display, back, &pixel);
+
+    XFixesDestroyRegion(display, region);
+    if (shadow != None) XRenderFreePicture(display, shadow);
+    XRenderFreePicture(display, mask);
+    XRenderFreePicture(display, solid);
+    XRenderFreePicture(display, dest_pic);
+    XFreePixmap(display, shadow_pm);
+    XFreePixmap(display, mask_pm);
+    XFreePixmap(display, solid_pm);
+    XFreePixmap(display, back);
+    return uploaded && shadow != None && read_ok;
+}
+
+typedef struct {
+    uint8_t reqType;
     uint8_t glxCode;
     uint16_t length;
     uint32_t major;
@@ -671,6 +787,19 @@ int main(int argc, char **argv) {
            child_ok ? "overlay child output paintable"
                     : "overlay child lost after RedirectSubwindows(root)");
     RECORD(child_ok);
+
+    before = x_errors;
+    int shape_op = 0, shape_ev = 0, shape_err = 0;
+    bool have_shape = XQueryExtension(comp, "SHAPE", &shape_op, &shape_ev,
+                                      &shape_err) && shape_op != 0;
+    Drawable burst_dest = output != 0 ? output : overlay;
+    bool burst_ok = burst_dest != 0
+            && paint_burst(comp, burst_dest, toplevel, have_shape ? shape_op : 0)
+            && x_errors == before;
+    result("compositor-paint-burst", burst_ok,
+           burst_ok ? "A8/repeat/clip/Composite after UngrabServer"
+                    : "paint burst desynced or rejected");
+    RECORD(burst_ok);
 
     damage_destroy(comp, dmg_op, damage);
     if (output != 0) XDestroyWindow(comp, output);

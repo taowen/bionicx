@@ -627,7 +627,7 @@ public class XClientRequestHandler implements RequestHandler {
             XClient grabber = xServer.getServerGrabClient();
             if (grabber != null) {
                 try {
-                    if (!handleRequest(grabber)) return;
+                    if (!handleCompleteRequest(grabber)) return;
                 }
                 catch (IOException e) {
                     Log.e(TAG, "deferred request I/O failure fd=" + grabber.fd,
@@ -644,7 +644,7 @@ public class XClientRequestHandler implements RequestHandler {
                     XOutputStream output = deferred.getOutputStream();
                     while (input != null && output != null
                             && xServer.getServerGrabClient() == null
-                            && handleRequest(deferred)) {
+                            && handleCompleteRequest(deferred)) {
                         progressed = true;
                     }
                 }
@@ -656,5 +656,13 @@ public class XClientRequestHandler implements RequestHandler {
             if (xServer.getServerGrabClient() != null) continue;
             if (!progressed) return;
         }
+    }
+
+    private boolean handleCompleteRequest(XClient client) throws IOException {
+        XInputStream input = client.getInputStream();
+        int start = input != null ? input.getActivePosition() : 0;
+        boolean complete = handleRequest(client);
+        if (!complete && input != null) input.setActivePosition(start);
+        return complete;
     }
 }
