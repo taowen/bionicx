@@ -26,5 +26,5 @@ done
 result="$(adb -s "$serial" logcat -d -v brief \
     | grep -E 'BXTEST|BXSUMMARY|BXERROR')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY compositor-x11 passed=13 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY compositor-x11 passed=14 failed=0" <<<"$result"
 echo "Compositor X11 probe: PASS"

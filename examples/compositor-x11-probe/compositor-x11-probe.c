@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <X11/Xlibint.h>
 #include <X11/Xmd.h>
 #include <X11/Xproto.h>
@@ -546,6 +547,119 @@ static bool present_output(Display *display, Window output, Pixmap named) {
     return named_ok && read_ok;
 }
 
+/* Full-screen overlay child, screen-sized root pixmap, 1x1 picture that
+ * outlives FreePixmap, and CreatePicture on another client's root-tile
+ * pixmap. Matches the compositor output-buffer setup. */
+static bool output_buffer(Display *comp, Display *app, Window overlay) {
+    int screen = DefaultScreen(comp);
+    unsigned width = (unsigned)DisplayWidth(comp, screen);
+    unsigned height = (unsigned)DisplayHeight(comp, screen);
+    int depth = DefaultDepth(comp, screen);
+    Visual *visual = DefaultVisual(comp, screen);
+    if (overlay == 0 || width < 8 || height < 8 || visual == NULL)
+        return false;
+    int render_event = 0, render_error = 0;
+    int major = 0, minor = 0;
+    if (!XRenderQueryExtension(comp, &render_event, &render_error)
+            || !XRenderQueryVersion(comp, &major, &minor))
+        return false;
+    XRenderPictFormat *format = XRenderFindVisualFormat(comp, visual);
+    XRenderPictFormat *argb = XRenderFindStandardFormat(comp,
+                                                        PictStandardARGB32);
+    if (format == NULL || argb == NULL) return false;
+
+    Window output = XCreateWindow(comp, overlay, 0, 0, width, height, 0,
+                                  depth, InputOutput, visual, 0, NULL);
+    if (output == 0) return false;
+    XMapRaised(comp, output);
+    XSync(comp, False);
+
+    XRenderPictureAttributes subwindow = {.subwindow_mode = IncludeInferiors};
+    Picture dest = XRenderCreatePicture(comp, output, format, CPSubwindowMode,
+                                        &subwindow);
+    Pixmap back = XCreatePixmap(comp, DefaultRootWindow(comp), width, height,
+                                (unsigned)depth);
+    GC gc = back != None ? XCreateGC(comp, back, 0, NULL) : None;
+    if (gc != None) {
+        XSetForeground(comp, gc, 0x224466);
+        XFillRectangle(comp, back, gc, 0, 0, 8, 8);
+        XFreeGC(comp, gc);
+    }
+    Picture source = back != None
+            ? XRenderCreatePicture(comp, back, format, 0, NULL) : None;
+
+    Pixmap solid_pm = XCreatePixmap(comp, output, 1, 1, 32);
+    XRenderPictureAttributes repeat = {.repeat = RepeatNormal};
+    Picture solid = solid_pm != None
+            ? XRenderCreatePicture(comp, solid_pm, argb, CPRepeat, &repeat)
+            : None;
+    XRenderColor fill = {.red = 0xcccc, .green = 0x3333, .blue = 0x1111,
+                         .alpha = 0xffff};
+    if (solid != None) {
+        XRenderFillRectangle(comp, PictOpSrc, solid, &fill, 0, 0, 1, 1);
+        XFreePixmap(comp, solid_pm);
+        solid_pm = None;
+    }
+
+    Window root = DefaultRootWindow(app);
+    Pixmap tile = XCreatePixmap(app, root, 16, 16, (unsigned)depth);
+    GC tile_gc = tile != None ? XCreateGC(app, tile, 0, NULL) : None;
+    if (tile_gc != None) {
+        XSetForeground(app, tile_gc, 0x336699);
+        XFillRectangle(app, tile, tile_gc, 0, 0, 16, 16);
+        XFreeGC(app, tile_gc);
+    }
+    Atom xrootpmap = XInternAtom(app, "_XROOTPMAP_ID", False);
+    if (tile != None && xrootpmap != None)
+        XChangeProperty(app, root, xrootpmap, XA_PIXMAP, 32, PropModeReplace,
+                        (unsigned char *)&tile, 1);
+    XSync(app, False);
+
+    Atom actual = None;
+    int prop_format = 0;
+    unsigned long nitems = 0, bytes_after = 0;
+    unsigned char *prop = NULL;
+    Pixmap seen = None;
+    Atom seen_atom = XInternAtom(comp, "_XROOTPMAP_ID", False);
+    if (seen_atom != None
+            && XGetWindowProperty(comp, DefaultRootWindow(comp), seen_atom,
+                                  0, 4, False, XA_PIXMAP, &actual,
+                                  &prop_format, &nitems, &bytes_after,
+                                  &prop) == Success
+            && prop != NULL && nitems == 1 && prop_format == 32)
+        memcpy(&seen, prop, 4);
+    if (prop != NULL) XFree(prop);
+    XRenderPictureAttributes tile_repeat = {.repeat = RepeatNormal};
+    Picture tile_pic = seen != None
+            ? XRenderCreatePicture(comp, seen, format, CPRepeat, &tile_repeat)
+            : None;
+
+    if (source != None && dest != None)
+        XRenderComposite(comp, PictOpSrc, source, None, dest,
+                         0, 0, 0, 0, 0, 0, 8, 8);
+    if (solid != None && dest != None)
+        XRenderComposite(comp, PictOpSrc, solid, None, dest,
+                         0, 0, 0, 0, 0, 0, 8, 8);
+    if (tile_pic != None && dest != None)
+        XRenderComposite(comp, PictOpSrc, tile_pic, None, dest,
+                         0, 0, 0, 0, 0, 0, 8, 8);
+    XSync(comp, False);
+    unsigned long pixel = 0;
+    bool read_ok = dest != None && read_pixel(comp, output, &pixel);
+
+    if (tile_pic != None) XRenderFreePicture(comp, tile_pic);
+    if (solid != None) XRenderFreePicture(comp, solid);
+    if (source != None) XRenderFreePicture(comp, source);
+    if (dest != None) XRenderFreePicture(comp, dest);
+    if (solid_pm != None) XFreePixmap(comp, solid_pm);
+    if (back != None) XFreePixmap(comp, back);
+    if (tile != None) XFreePixmap(app, tile);
+    XDestroyWindow(comp, output);
+    XSync(comp, False);
+    return dest != None && source != None && solid != None && tile_pic != None
+            && read_ok;
+}
+
 typedef struct {
     uint8_t reqType;
     uint8_t glxCode;
@@ -856,8 +970,21 @@ int main(int argc, char **argv) {
                       : "present Composite rejected");
     RECORD(present_ok);
 
+    if (output != 0) {
+        XDestroyWindow(comp, output);
+        output = 0;
+        XSync(comp, False);
+    }
+    before = x_errors;
+    bool buffer_ok = overlay != 0
+            && output_buffer(comp, app, overlay)
+            && x_errors == before;
+    result("compositor-output-buffer", buffer_ok,
+           buffer_ok ? "screen pixmap, freed 1x1, peer root tile"
+                     : "output buffer CreatePicture/Composite failed");
+    RECORD(buffer_ok);
+
     damage_destroy(comp, dmg_op, damage);
-    if (output != 0) XDestroyWindow(comp, output);
     release_overlay_window(comp, cmp_op, (uint32_t)root);
     unredirect_subwindows(comp, cmp_op, (uint32_t)root, 1);
     XSync(comp, False);
