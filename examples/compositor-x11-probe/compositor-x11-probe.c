@@ -547,6 +547,40 @@ static bool present_output(Display *display, Window output, Pixmap named) {
     return named_ok && read_ok;
 }
 
+/* Core PutImage/Fill leave alpha 0 in 32-bit drawables. A visual-format
+ * picture of that pixmap must still Composite as opaque. */
+static bool visual_opaque(Display *display, Window output, Pixmap named) {
+    if (output == 0 || named == None) return false;
+    int render_event = 0, render_error = 0;
+    int major = 0, minor = 0;
+    if (!XRenderQueryExtension(display, &render_event, &render_error)
+            || !XRenderQueryVersion(display, &major, &minor))
+        return false;
+    XRenderPictFormat *format = XRenderFindVisualFormat(display,
+            DefaultVisual(display, DefaultScreen(display)));
+    if (format == NULL) return false;
+    XRenderPictureAttributes subwindow = {.subwindow_mode = IncludeInferiors};
+    Picture dest = XRenderCreatePicture(display, output, format,
+                                        CPSubwindowMode, &subwindow);
+    Picture source = XRenderCreatePicture(display, named, format,
+                                          CPSubwindowMode, &subwindow);
+    if (dest == None || source == None) return false;
+    XRenderColor clear = {.alpha = 0xffff};
+    XRenderFillRectangle(display, PictOpSrc, dest, &clear, 0, 0, 8, 8);
+    XRenderComposite(display, PictOpSrc, source, None, dest,
+                     0, 0, 0, 0, 0, 0, 8, 8);
+    XSync(display, False);
+    unsigned long from_named = 0;
+    unsigned long from_dest = 0;
+    bool ok = read_pixel(display, named, &from_named)
+            && read_pixel(display, output, &from_dest)
+            && (from_named & 0xffffff) != 0
+            && (from_dest & 0xffffff) == (from_named & 0xffffff);
+    XRenderFreePicture(display, source);
+    XRenderFreePicture(display, dest);
+    return ok;
+}
+
 /* Full-screen overlay child, screen-sized root pixmap, 1x1 picture that
  * outlives FreePixmap, and CreatePicture on another client's root-tile
  * pixmap. Matches the compositor output-buffer setup. */
@@ -1022,6 +1056,15 @@ int main(int argc, char **argv) {
            present_ok ? "CreatePicture child and named pixmap"
                       : "present Composite rejected");
     RECORD(present_ok);
+
+    before = x_errors;
+    bool opaque_ok = output != 0
+            && visual_opaque(comp, output, (Pixmap)named)
+            && x_errors == before;
+    result("compositor-visual-opaque", opaque_ok,
+           opaque_ok ? "24-in-32 named pixmap composites opaque"
+                     : "visual-format Composite dropped core pixels");
+    RECORD(opaque_ok);
 
     if (output != 0) {
         XDestroyWindow(comp, output);

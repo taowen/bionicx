@@ -736,7 +736,14 @@ public class XRenderExtension extends Extension {
         else if (x < 0 || y < 0 || x >= width || y >= height) return 0;
         if (picture.format == a8Format)
             return (picture.drawable.getPixelArgb(x, y) & 0xff) << 24;
-        return picture.drawable.getPixelArgb(x, y);
+        int pixel = picture.drawable.getPixelArgb(x, y);
+        // Core drawing stores 24-in-32 with an unused alpha byte of 0.
+        // PictOpSrc would otherwise copy those samples as fully transparent
+        // and leave the compositor output empty.
+        if (picture.format == argb32Format && (pixel >>> 24) == 0
+                && (pixel & 0x00ffffff) != 0)
+            return 0xff000000 | (pixel & 0x00ffffff);
+        return pixel;
     }
 
     private ArrayList<ClipRectangle> clippedRectangles(Picture picture,

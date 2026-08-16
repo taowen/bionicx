@@ -13,8 +13,9 @@ then `CreatePicture` on the overlay child and a named pixmap to present
 into that output, then a full-screen overlay child with a screen-sized
 root pixmap, a 1x1 picture that outlives `FreePixmap`, and
 `CreatePicture` on another connection's `_XROOTPMAP_ID` tile, and a
-depth-24 pixmap used as a compositor tile. Does not start `xfwm4` or
-`xfsettingsd`.
+depth-24 pixmap used as a compositor tile, and a visual-format
+`Composite` of a core-drawn 24-in-32 named pixmap that must stay
+opaque. Does not start `xfwm4` or `xfsettingsd`.
 
 ```sh
 ANDROID_SERIAL=<serial> examples/compositor-x11-probe/install-and-run.sh
