@@ -484,26 +484,60 @@ public abstract class WindowRequests {
     }
 
     public static void sendEvent(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
+        boolean propagate = client.getRequestData() != 0;
         int windowId = inputStream.readInt();
-
-        if (windowId == 0 || windowId == 1) {
-            client.skipRequest();
-            return;
-        }
-
-        Window destination = client.xServer.windowManager.getWindow(windowId);
-        if (destination == null) throw new BadWindow(windowId);
-
         Bitmask eventMask = new Bitmask(inputStream.readInt());
-
         byte[] data = new byte[32];
         inputStream.read(data);
         Event event = new RawEvent(data);
 
+        Window destination = resolveSendEventDestination(client, windowId);
+        if (destination == null) return;
+
         if (eventMask.isEmpty()) {
-            destination.originClient.sendEvent(event);
+            if (destination.originClient != null) destination.originClient.sendEvent(event);
+            return;
         }
-        else destination.sendEvent(eventMask, event);
+        if (propagate) {
+            destination = destination.getAncestorWithEventMask(eventMask);
+            if (destination == null) return;
+        }
+        destination.sendEvent(eventMask, event);
+    }
+
+    // PointerWindow (0) is the window containing the pointer. InputFocus (1)
+    // is None (discard), PointerRoot (the pointer window), or the focus
+    // window. If the focus window contains the pointer, including descendants,
+    // destination is the pointer window — GTK menus and IM use that path.
+    // WarpPointer only updates coordinates, so look up from the current
+    // pointer rather than the cached pointWindow.
+    private static Window resolveSendEventDestination(XClient client, int windowId) throws XRequestError {
+        WindowManager windows = client.xServer.windowManager;
+        if (windowId == 0) {
+            Window pointed = windows.findPointWindow(
+                    client.xServer.pointer.getClampedX(),
+                    client.xServer.pointer.getClampedY(),
+                    true);
+            return pointed != null ? pointed : windows.rootWindow;
+        }
+        if (windowId == 1) {
+            Window focused = windows.getFocusedWindow();
+            if (focused == null) return null;
+            Window pointed = windows.findPointWindow(
+                    client.xServer.pointer.getClampedX(),
+                    client.xServer.pointer.getClampedY(),
+                    true);
+            if (windows.isPointerRootFocus()) {
+                return pointed != null ? pointed : windows.rootWindow;
+            }
+            if (pointed != null && (pointed == focused || focused.isAncestorOf(pointed))) {
+                return pointed;
+            }
+            return focused;
+        }
+        Window destination = windows.getWindow(windowId);
+        if (destination == null) throw new BadWindow(windowId);
+        return destination;
     }
 
     public static void getScreenSaver(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
