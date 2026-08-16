@@ -83,6 +83,38 @@ int main(int argc, char **argv) {
     LOAD(g_bytes_unref);
     LOAD(g_error_free);
 
+    char *(*g_convert)(const char *, long, const char *, const char *,
+            size_t *, size_t *, GlibError **) = NULL;
+    void (*g_free)(void *) = NULL;
+    void *libglib = dlopen("libglib-2.0.so.0", RTLD_NOW | RTLD_GLOBAL);
+    if (libglib != NULL) {
+        *(void **)(&g_convert) = dlsym(libglib, "g_convert");
+        *(void **)(&g_free) = dlsym(libglib, "g_free");
+    }
+    static const char latin1[] = { (char)0xC4, 'p', 'f', 'e', 'l', 0 };
+    static const char utf8[] = {
+        (char)0xC3, (char)0x84, 'p', 'f', 'e', 'l', 0
+    };
+    GlibError *convert_error = NULL;
+    char *converted = g_convert != NULL
+            ? g_convert(latin1, -1, "UTF-8", "ISO-8859-1", NULL, NULL,
+                    &convert_error)
+            : NULL;
+    int convert_ok = converted != NULL && strcmp(converted, utf8) == 0;
+    if (convert_ok) {
+        snprintf(detail, sizeof(detail), "ISO-8859-1");
+    }
+    else if (convert_error != NULL && convert_error->message != NULL) {
+        snprintf(detail, sizeof(detail), "%s", convert_error->message);
+    }
+    else {
+        snprintf(detail, sizeof(detail), "g_convert unavailable");
+    }
+    result("gtk-latin1-convert", convert_ok, detail);
+    RECORD(convert_ok);
+    if (converted != NULL && g_free != NULL) g_free(converted);
+    if (convert_error != NULL) g_error_free(convert_error);
+
     int init_ok = gtk_init_check(&argc, &argv) != 0;
     result("gtk-init", init_ok, init_ok ? "DISPLAY connected" : "failed");
     RECORD(init_ok);

@@ -6,6 +6,11 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     "$repo_dir/profiles/gtk-template-probe.json"
 grep -F 'gtkstatusbar.ui' \
     "$repo_dir/examples/gtk-template-probe/gtk-template-probe.c" >/dev/null
+grep -F 'ISO-8859-1' \
+    "$repo_dir/examples/gtk-template-probe/gtk-template-probe.c" >/dev/null
+grep -F 'GCONV_PATH=' \
+    "$repo_dir/android/app/src/main/java/com/winlator/BionicXActivity.java" \
+    >/dev/null
 grep -F 'strchr(path, '"'"'/'"'"') == NULL' \
     "$repo_dir/native/runtime/fhs-exec.c" >/dev/null
 grep -F 'ld.so.conf.bionicx' \

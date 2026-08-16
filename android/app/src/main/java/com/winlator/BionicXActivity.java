@@ -184,6 +184,11 @@ public final class BionicXActivity extends Activity {
             command.add("FONTCONFIG_FILE=fonts.conf");
             command.add("--env");
             command.add("FONTCONFIG_SYSROOT=" + profile.expand(this, "${RUNTIME}"));
+            if (!profile.environment.containsKey("GCONV_PATH")) {
+                command.add("--env");
+                command.add("GCONV_PATH=" + profile.expand(this,
+                        "${RUNTIME}/usr/lib/aarch64-linux-gnu/gconv"));
+            }
             if (profile.hostServices.contains("dbus")
                     && !profile.environment.containsKey("DBUS_SESSION_BUS_ADDRESS")) {
                 command.add("--env");

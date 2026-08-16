@@ -46,6 +46,10 @@ public final class DBusComponent extends EnvironmentComponent {
                 "--cwd", home.getAbsolutePath(),
                 "--env", "HOME=" + home.getAbsolutePath(),
                 "--env", "TMPDIR=" + parent.getAbsolutePath(),
+                "--env", "XDG_RUNTIME_DIR=" + parent.getAbsolutePath(),
+                "--env", "DISPLAY=:0",
+                "--env", "GCONV_PATH=" + new File(rootfs,
+                        "usr/lib/aarch64-linux-gnu/gconv").getAbsolutePath(),
                 "--env", "LD_LIBRARY_PATH=" + new File(rootfs, "usr/lib") + ":"
                         + new File(rootfs, "usr/lib/aarch64-linux-gnu"),
                 "--env", "LD_PRELOAD=" + runtime.getAbsolutePath(),
