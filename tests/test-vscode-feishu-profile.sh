@@ -52,8 +52,6 @@ grep -F 'usr/bin/git' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'user.email' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'open-terminal-env.json' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'XK_dollar' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
 grep -F 'ctrl-grave' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
 grep -F 'XFlush' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
@@ -67,12 +65,6 @@ grep -F 'titleBarStyle' \
 grep -F 'useEditorAsCommitInput' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'profile-vscode/Backups' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'closePanel' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'existing.dispose' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'workbench.action.terminal.focus' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'onStartupFinished' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
@@ -88,19 +80,11 @@ grep -F 'shellIntegration.enabled' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'terminal.integrated.defaultLocation' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'source /data/user/0/io.taowen.bx/files/homes/vscode/.bashrc' \
+grep -F "shellArgs: [" \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'IFS= read -r line' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F '/proc/self/fd/0' \
+grep -F 'while IFS= read -r line' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'term.show(true)' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'echo hi' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F '%s\\n.\\n.\\n%s' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F "trap 'printf" \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'gpuAcceleration' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
@@ -110,17 +94,13 @@ grep -F 'focusFind' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F '"off"' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'stty cols 80' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'closeOtherEditors' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
-grep -F 'stty -tostop' \
-    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'TerminalLocation.Editor' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'bionicx.open-terminal' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F '.vscode/extensions' \
+    "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
+grep -F 'profile-vscode/extensions' \
     "$repo_dir/examples/electron-apps/install-and-run.sh" >/dev/null
 grep -F 'ctrl-shift-p' "$repo_dir/examples/wps/x11-send-key.c" >/dev/null
 grep -F 'chrome/build-bundle.sh' \

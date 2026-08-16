@@ -38,10 +38,8 @@ ensure_vscode_git() {
             test -d files/homes/vscode/workspace/.git >/dev/null 2>&1; then
         "${adb[@]}" shell run-as "$package_id" sh -c \
             "printf 'bionicx vscode workspace\\n' > files/homes/vscode/workspace/README"
-        "${adb[@]}" shell run-as "$package_id" sh -c \
-            "printf '.vscode/open-terminal-env.json\\n' > files/homes/vscode/workspace/.gitignore"
         vscode_git init
-        vscode_git add README .gitignore
+        vscode_git add README
     fi
     # Git cannot infer an email from Android's passwd/hostname, so commits
     # fail with "Please tell me who you are" until this is set.
@@ -77,6 +75,7 @@ ensure_vscode_settings() {
 }
 EOF
     "${adb[@]}" push "$settings" "$tmp" >/dev/null
+    "${adb[@]}" shell chmod 644 "$tmp"
     "${adb[@]}" shell run-as "$package_id" sh -c \
         "mkdir -p files/homes/vscode/profile-vscode/User && cp $tmp files/homes/vscode/profile-vscode/User/settings.json"
     "${adb[@]}" shell rm -f "$tmp"
@@ -95,6 +94,7 @@ EOF
 ]
 EOF
     "${adb[@]}" push "$keybindings" "$keys_tmp" >/dev/null
+    "${adb[@]}" shell chmod 644 "$keys_tmp"
     "${adb[@]}" shell run-as "$package_id" sh -c \
         "cp $keys_tmp files/homes/vscode/profile-vscode/User/keybindings.json"
     "${adb[@]}" shell rm -f "$keys_tmp"
@@ -131,101 +131,31 @@ EOF
 }
 EOF
     cat > "$ext_src/extension.js" <<'EOF'
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
 const vscode = require('vscode');
-function reportPath(folder) {
-  const dir = folder ? folder.uri.fsPath : '/tmp';
-  const outDir = path.join(dir, '.vscode');
-  fs.mkdirSync(outDir, { recursive: true });
-  return path.join(outDir, 'open-terminal-env.json');
-}
 function activate() {
-  let osShell = '';
-  try { osShell = os.userInfo().shell; } catch (e) { osShell = String(e); }
-  const shell = process.env.SHELL || '/bin/bash';
-  const folder = vscode.workspace.workspaceFolders &&
-    vscode.workspace.workspaceFolders[0];
-  const report = {
-    shell: process.env.SHELL || '',
-    home: process.env.HOME || '',
-    path: process.env.PATH || '',
-    term: process.env.TERM || '',
-    osShell: osShell,
-    existsBinBash: fs.existsSync('/bin/bash'),
-    existsPtmx: fs.existsSync('/dev/ptmx'),
-    terminals: vscode.window.terminals.length
-  };
-  const write = () => {
-    try {
-      fs.writeFileSync(reportPath(folder), JSON.stringify(report, null, 2));
-    } catch (e) {}
-  };
-  write();
-  vscode.window.onDidOpenTerminal(t => {
-    report.opened = t.name;
-    report.terminalsAfter = vscode.window.terminals.length;
-    write();
-  });
-  vscode.window.onDidCloseTerminal(t => {
-    report.closed = t.name;
-    report.exit = t.exitStatus ? t.exitStatus.code : null;
-    report.exitReason = t.exitStatus ? t.exitStatus.reason : null;
-    write();
-  });
-  const start = async () => {
+  setTimeout(async () => {
     try {
       await vscode.commands.executeCommand(
           'workbench.action.closeAuxiliaryBar');
-    } catch (e) {
-      report.closeBarError = String(e);
-    }
-    try {
-      for (const existing of vscode.window.terminals) {
-        try { existing.dispose(); } catch (e) {}
-      }
-      const term = vscode.window.createTerminal({
-        name: 'bash',
-        location: vscode.TerminalLocation.Editor,
-        shellPath: '/bin/bash',
-        shellArgs: [
-          '-c',
-          "source /data/user/0/io.taowen.bx/files/homes/vscode/.bashrc; exec >/proc/self/fd/0 2>/proc/self/fd/0; stty -tostop -ixon 2>/dev/null; trap '' TTOU TTIN; trap 'printf \"\\n%s\" \"${PS1:-bionicx@localhost:~$ }\"' INT; printf '\\033[?2004l'; echo hi > /data/user/0/io.taowen.bx/cache/pty-eval.log; sleep 0.8; printf '%s\\n.\\n.\\n%s' hi \"${PS1:-bionicx@localhost:~$ }\"; while IFS= read -r line; do eval \"$line\"; printf '%s' \"${PS1:-bionicx@localhost:~$ }\"; stty cols 81 >/dev/null 2>&1; stty cols 80 >/dev/null 2>&1; printf '\\033[?25l\\033[?25h'; done"
-        ]
-      });
-      term.show(true);
-      try {
-        await vscode.commands.executeCommand(
-            'workbench.action.closeOtherEditors');
-      } catch (e) {}
-      try {
-        await vscode.commands.executeCommand(
-            'workbench.action.closePanel');
-      } catch (e) {}
-      try {
-        await vscode.commands.executeCommand(
-            'workbench.action.terminal.focus');
-      } catch (e) {}
-      setTimeout(() => {
-        try { term.show(true); } catch (e) {}
-      }, 4000);
-      report.created = true;
-    } catch (e) {
-      report.createError = String(e);
-    }
-    await new Promise(r => setTimeout(r, 2500));
-    report.terminalsAfter = vscode.window.terminals.length;
-    report.names = vscode.window.terminals.map(t => t.name);
-    report.exits = vscode.window.terminals.map(
-        t => t.exitStatus ? t.exitStatus.code : null);
-    write();
-  };
-  setTimeout(start, 2500);
+    } catch (e) {}
+    const term = vscode.window.createTerminal({
+      name: 'bash',
+      location: vscode.TerminalLocation.Editor,
+      shellPath: '/bin/bash',
+      shellArgs: [
+        '-c',
+        "source /data/user/0/io.taowen.bx/files/homes/vscode/.bashrc; exec >/proc/self/fd/0 2>/proc/self/fd/0; stty -tostop -ixon 2>/dev/null; trap '' TTOU TTIN; trap 'printf \"\\n%s\" \"${PS1:-bionicx@localhost:~$ }\"' INT; printf '\\033[?2004l'; echo hi > /data/user/0/io.taowen.bx/cache/pty-eval.log; sleep 0.8; printf '%s\\n.\\n.\\n%s' hi \"${PS1:-bionicx@localhost:~$ }\"; while IFS= read -r line; do eval \"$line\"; printf '%s' \"${PS1:-bionicx@localhost:~$ }\"; stty cols 81 >/dev/null 2>&1; stty cols 80 >/dev/null 2>&1; printf '\\033[?25l\\033[?25h'; done"
+      ]
+    });
+    term.show(true);
+  }, 2500);
 }
 function deactivate() {}
 module.exports = { activate, deactivate };
 EOF
+    # This Debian VS Code still scans ~/.vscode/extensions even with
+    # --user-data-dir=profile-vscode. Keep the profile copy in sync so a
+    # later --extensions-dir change cannot revive the old terminal.new seed.
     local ext_root="$files/homes/vscode/.vscode/extensions"
     local ext_json="$repo_dir/build/tmp/vscode-extensions.json"
     cat > "$ext_json" <<EOF
@@ -254,7 +184,8 @@ EOF
     "${adb[@]}" push "$ext_src/package.json" "$pkg_tmp" >/dev/null
     "${adb[@]}" push "$ext_src/extension.js" "$js_tmp" >/dev/null
     "${adb[@]}" push "$ext_json" "$json_tmp" >/dev/null
-    "${adb[@]}" shell "run-as $package_id sh -c 'mkdir -p files/homes/vscode/.vscode/extensions/$ext_name && cp $pkg_tmp files/homes/vscode/.vscode/extensions/$ext_name/package.json && cp $js_tmp files/homes/vscode/.vscode/extensions/$ext_name/extension.js && cp $json_tmp files/homes/vscode/.vscode/extensions/extensions.json'"
+    "${adb[@]}" shell chmod 644 "$pkg_tmp" "$js_tmp" "$json_tmp"
+    "${adb[@]}" shell "run-as $package_id sh -c 'mkdir -p files/homes/vscode/.vscode/extensions/$ext_name files/homes/vscode/profile-vscode/extensions/$ext_name && cp $pkg_tmp files/homes/vscode/.vscode/extensions/$ext_name/package.json && cp $js_tmp files/homes/vscode/.vscode/extensions/$ext_name/extension.js && cp $json_tmp files/homes/vscode/.vscode/extensions/extensions.json && cp $pkg_tmp files/homes/vscode/profile-vscode/extensions/$ext_name/package.json && cp $js_tmp files/homes/vscode/profile-vscode/extensions/$ext_name/extension.js && cp $json_tmp files/homes/vscode/profile-vscode/extensions/extensions.json'"
     "${adb[@]}" shell rm -f "$pkg_tmp" "$js_tmp" "$json_tmp"
     # Drop hot-exit backups so injected keystrokes do not reopen as dirty files.
     "${adb[@]}" shell run-as "$package_id" sh -c \

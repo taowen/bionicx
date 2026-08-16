@@ -10,6 +10,6 @@ BIONICX_ELECTRON_PROFILE=profiles/feishu.json \
 ANDROID_SERIAL=<serial> examples/electron-apps/install-and-run.sh
 ```
 
-The VS Code terminal uses `bash -c` with a read/eval loop because
-`bash -i` still exits 0 under node-pty. That remaining failure belongs
-to a forkpty/`login_tty` probe, not to clicking around the IDE.
+The editor-tab terminal is a `bash -c` read/eval loop. The unpacked
+extension is seeded into both `~/.vscode/extensions` (what this build
+loads) and `profile-vscode/extensions`.
