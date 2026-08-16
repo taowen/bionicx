@@ -124,6 +124,26 @@ int main(int argc, char **argv) {
     RECORD(save_ok);
 
     before = x_errors;
+    XRectangle first = {0, 0, 100, 100};
+    XRectangle second = {50, 50, 100, 100};
+    XserverRegion region_a = XFixesCreateRegion(display, &first, 1);
+    XserverRegion region_b = XFixesCreateRegion(display, &second, 1);
+    XserverRegion region_out = XFixesCreateRegion(display, NULL, 0);
+    XFixesIntersectRegion(display, region_out, region_a, region_b);
+    XFixesUnionRegion(display, region_out, region_a, region_b);
+    XFixesSubtractRegion(display, region_out, region_a, region_b);
+    XFixesDestroyRegion(display, region_a);
+    XFixesDestroyRegion(display, region_b);
+    XFixesDestroyRegion(display, region_out);
+    XSync(display, False);
+    XSync(peer, False);
+    bool region_ok = region_a != None && region_b != None && region_out != None
+            && x_errors == before;
+    result("xfixes-region-combine", region_ok,
+           region_ok ? "Intersect/Union/Subtract" : "region combine failed");
+    RECORD(region_ok);
+
+    before = x_errors;
     XGrabServer(display);
     XFixesSelectCursorInput(display, window, XFixesDisplayCursorNotifyMask);
     image = XFixesGetCursorImage(display);

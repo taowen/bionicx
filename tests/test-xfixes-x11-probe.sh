@@ -11,6 +11,10 @@ grep -F 'XFixesHideCursor' \
     "$repo_dir/examples/xfixes-x11-probe/xfixes-x11-probe.c" >/dev/null
 grep -F 'XFixesChangeSaveSet' \
     "$repo_dir/examples/xfixes-x11-probe/xfixes-x11-probe.c" >/dev/null
+grep -F 'XFixesIntersectRegion' \
+    "$repo_dir/examples/xfixes-x11-probe/xfixes-x11-probe.c" >/dev/null
+grep -F 'INTERSECT_REGION' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XFixesExtension.java" >/dev/null
 grep -F 'GET_CURSOR_IMAGE_AND_NAME' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XFixesExtension.java" >/dev/null
 grep -F 'HIDE_CURSOR' \
@@ -20,7 +24,7 @@ if grep -E 'xfsettingsd|xfwm4|icewm' \
     echo "xfixes probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=7 failed=0' \
+grep -F 'passed=8 failed=0' \
     "$repo_dir/examples/xfixes-x11-probe/install-and-run.sh" >/dev/null
 grep -F 'rootfs_payload=none' \
     "$repo_dir/examples/xfixes-x11-probe/build-bundle.sh" >/dev/null

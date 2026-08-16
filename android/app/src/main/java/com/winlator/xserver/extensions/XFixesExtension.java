@@ -51,6 +51,10 @@ public class XFixesExtension extends Extension {
         private static final byte GET_CURSOR_IMAGE = 4;
         private static final byte CREATE_REGION = 5;
         private static final byte DESTROY_REGION = 10;
+        private static final byte COPY_REGION = 12;
+        private static final byte UNION_REGION = 13;
+        private static final byte INTERSECT_REGION = 14;
+        private static final byte SUBTRACT_REGION = 15;
         private static final byte FETCH_REGION = 19;
         private static final byte SET_WINDOW_SHAPE_REGION = 21;
         private static final byte SET_CURSOR_NAME = 23;
@@ -161,6 +165,104 @@ public class XFixesExtension extends Extension {
             }
             owned.add(id);
         }
+    }
+
+    private Region requireRegion(int id) throws XRequestError {
+        synchronized (regions) {
+            Region region = regions.get(id);
+            if (region == null) throw badRegion(id);
+            return region;
+        }
+    }
+
+    private void copyRegion(XInputStream inputStream) throws XRequestError {
+        int sourceId = inputStream.readInt();
+        int destId = inputStream.readInt();
+        Region source = requireRegion(sourceId);
+        Region dest = requireRegion(destId);
+        ArrayList<Rectangle> copied = new ArrayList<>(source.rectangles);
+        dest.rectangles.clear();
+        dest.rectangles.addAll(copied);
+    }
+
+    private void combineRegion(XInputStream inputStream, int op)
+            throws XRequestError {
+        int source1Id = inputStream.readInt();
+        int source2Id = inputStream.readInt();
+        int destId = inputStream.readInt();
+        Region source1 = requireRegion(source1Id);
+        Region source2 = requireRegion(source2Id);
+        Region dest = requireRegion(destId);
+        ArrayList<Rectangle> combined = combineRectangles(
+                source1.rectangles, source2.rectangles, op);
+        dest.rectangles.clear();
+        dest.rectangles.addAll(combined);
+    }
+
+    private static final int COMBINE_UNION = 1;
+    private static final int COMBINE_INTERSECT = 2;
+    private static final int COMBINE_SUBTRACT = 3;
+
+    private static ArrayList<Rectangle> combineRectangles(
+            ArrayList<Rectangle> left, ArrayList<Rectangle> right, int op) {
+        ArrayList<Rectangle> out = new ArrayList<>();
+        if (op == COMBINE_UNION) {
+            out.addAll(left);
+            out.addAll(right);
+            return out;
+        }
+        if (op == COMBINE_INTERSECT) {
+            for (Rectangle a : left) {
+                for (Rectangle b : right) {
+                    Rectangle hit = intersectRect(a, b);
+                    if (hit != null) out.add(hit);
+                }
+            }
+            return out;
+        }
+        out.addAll(left);
+        for (Rectangle hole : right) {
+            ArrayList<Rectangle> next = new ArrayList<>();
+            for (Rectangle piece : out) next.addAll(subtractRect(piece, hole));
+            out = next;
+        }
+        return out;
+    }
+
+    private static Rectangle intersectRect(Rectangle a, Rectangle b) {
+        int x1 = Math.max(a.x, b.x);
+        int y1 = Math.max(a.y, b.y);
+        int x2 = Math.min(a.x + a.width, b.x + b.width);
+        int y2 = Math.min(a.y + a.height, b.y + b.height);
+        if (x2 <= x1 || y2 <= y1) return null;
+        return new Rectangle((short)x1, (short)y1, x2 - x1, y2 - y1);
+    }
+
+    private static ArrayList<Rectangle> subtractRect(Rectangle piece,
+                                                     Rectangle hole) {
+        ArrayList<Rectangle> out = new ArrayList<>(4);
+        Rectangle overlap = intersectRect(piece, hole);
+        if (overlap == null) {
+            out.add(piece);
+            return out;
+        }
+        int px2 = piece.x + piece.width;
+        int py2 = piece.y + piece.height;
+        int ox2 = overlap.x + overlap.width;
+        int oy2 = overlap.y + overlap.height;
+        if (piece.y < overlap.y)
+            out.add(new Rectangle(piece.x, piece.y, piece.width,
+                    overlap.y - piece.y));
+        if (oy2 < py2)
+            out.add(new Rectangle(piece.x, (short)oy2, piece.width,
+                    py2 - oy2));
+        if (piece.x < overlap.x)
+            out.add(new Rectangle(piece.x, overlap.y,
+                    overlap.x - piece.x, overlap.height));
+        if (ox2 < px2)
+            out.add(new Rectangle((short)ox2, overlap.y,
+                    px2 - ox2, overlap.height));
+        return out;
     }
 
     private void destroyRegion(XClient client, XInputStream inputStream)
@@ -291,14 +393,15 @@ public class XFixesExtension extends Extension {
 
         Window window = xServer.windowManager.getWindow(windowId);
         if (window == null) throw new BadWindow(windowId);
-        // ShapeInput is the only kind that affects BionicX's current renderer:
-        // it clips pointer hit testing. Do not claim bounding/clip rendering
-        // semantics until the GL compositor can apply those regions too.
-        if (shapeKind != 2) throw new BadImplementation();
+        // Bounding and clip shapes are accepted so compositors can unshape
+        // the overlay. They do not change the GL renderer yet.
+        if (shapeKind > 2) throw new BadValue(shapeKind);
 
         if (regionId == 0) {
-            window.setInputShape(null, 0, 0);
-            xServer.inputDeviceManager.updatePointWindow();
+            if (shapeKind == 2) {
+                window.setInputShape(null, 0, 0);
+                xServer.inputDeviceManager.updatePointWindow();
+            }
             return;
         }
 
@@ -307,6 +410,7 @@ public class XFixesExtension extends Extension {
             region = regions.get(regionId);
         }
         if (region == null) throw badRegion(regionId);
+        if (shapeKind != 2) return;
         ArrayList<Window.ShapeRectangle> copied = new ArrayList<>(region.rectangles.size());
         for (Rectangle rectangle : region.rectangles) {
             copied.add(new Window.ShapeRectangle(rectangle.x, rectangle.y,
@@ -512,6 +616,18 @@ public class XFixesExtension extends Extension {
                 break;
             case ClientOpcodes.DESTROY_REGION:
                 destroyRegion(client, inputStream);
+                break;
+            case ClientOpcodes.COPY_REGION:
+                copyRegion(inputStream);
+                break;
+            case ClientOpcodes.UNION_REGION:
+                combineRegion(inputStream, COMBINE_UNION);
+                break;
+            case ClientOpcodes.INTERSECT_REGION:
+                combineRegion(inputStream, COMBINE_INTERSECT);
+                break;
+            case ClientOpcodes.SUBTRACT_REGION:
+                combineRegion(inputStream, COMBINE_SUBTRACT);
                 break;
             case ClientOpcodes.FETCH_REGION:
                 fetchRegion(client, inputStream, outputStream);

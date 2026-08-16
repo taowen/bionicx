@@ -114,6 +114,18 @@ typedef struct {
 
 typedef struct {
     uint8_t reqType;
+    uint8_t xfixesReqType;
+    uint16_t length;
+    uint32_t window;
+    uint8_t shapeKind;
+    uint8_t pad[3];
+    int16_t xOff;
+    int16_t yOff;
+    uint32_t region;
+} __attribute__((packed)) xfixes_shape_req;
+
+typedef struct {
+    uint8_t reqType;
     uint8_t damageReqType;
     uint16_t length;
     uint32_t damage;
@@ -243,6 +255,23 @@ static void release_overlay_window(Display *display, int opcode,
     req->compositeReqType = 8;
     req->length = 2;
     req->window = window;
+    UnlockDisplay(display);
+    _XFlush(display);
+}
+
+static void set_window_shape_region(Display *display, int opcode,
+                                    uint32_t window, uint8_t kind) {
+    LockDisplay(display);
+    xfixes_shape_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->xfixesReqType = 21;
+    req->length = (uint16_t)(sizeof(*req) / 4);
+    req->window = window;
+    req->shapeKind = kind;
+    req->pad[0] = req->pad[1] = req->pad[2] = 0;
+    req->xOff = 0;
+    req->yOff = 0;
+    req->region = 0;
     UnlockDisplay(display);
     _XFlush(display);
 }
@@ -379,11 +408,15 @@ int main(int argc, char **argv) {
 
     int cmp_op = 0, cmp_ev = 0, cmp_err = 0;
     int dmg_op = 0, dmg_ev = 0, dmg_err = 0;
+    int fixes_op = 0, fixes_ev = 0, fixes_err = 0;
     if (!XQueryExtension(comp, "Composite", &cmp_op, &cmp_ev, &cmp_err)
             || cmp_op == 0
             || !XQueryExtension(comp, "DAMAGE", &dmg_op, &dmg_ev, &dmg_err)
-            || dmg_op == 0 || dmg_ev <= 0) {
-        fprintf(stderr, "BXFAIL Composite or DAMAGE unavailable\n");
+            || dmg_op == 0 || dmg_ev <= 0
+            || !XQueryExtension(comp, "XFIXES", &fixes_op, &fixes_ev,
+                                &fixes_err)
+            || fixes_op == 0) {
+        fprintf(stderr, "BXFAIL Composite, DAMAGE or XFIXES unavailable\n");
         XCloseDisplay(comp);
         XCloseDisplay(app);
         return 2;
@@ -438,6 +471,19 @@ int main(int argc, char **argv) {
            overlay_ok ? "overlay still paintable"
                       : "overlay lost after RedirectSubwindows(root)");
     RECORD(overlay_ok);
+
+    before = x_errors;
+    if (overlay != 0) {
+        set_window_shape_region(comp, fixes_op, (uint32_t)overlay, 0);
+        set_window_shape_region(comp, fixes_op, (uint32_t)overlay, 1);
+        set_window_shape_region(comp, fixes_op, (uint32_t)overlay, 2);
+    }
+    XSync(comp, False);
+    bool shape_ok = overlay != 0 && x_errors == before;
+    result("overlay-shape-regions", shape_ok,
+           shape_ok ? "Bounding/Clip/Input None"
+                    : "SetWindowShapeRegion failed");
+    RECORD(shape_ok);
 
     before = x_errors;
     Window toplevel = XCreateSimpleWindow(app, root, 80, 80, 160, 100, 0,
