@@ -377,7 +377,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
         xServer.grabManager.activatePassiveKeyGrab(focusedWindow, keycode,
                 xServer.keyboard.getModifiersMask().getBits());
         updatePointWindow();
-        sendXiKeyEvent(XInputExtension.XI_KEY_PRESS, keycode);
+        sendXiKeyEvent(XInputExtension.XI_KEY_PRESS, keycode, focusedWindow);
 
         Window eventWindow = null;
         Window child = null;
@@ -442,7 +442,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             return;
         }
         updatePointWindow();
-        sendXiKeyEvent(XInputExtension.XI_KEY_RELEASE, keycode);
+        sendXiKeyEvent(XInputExtension.XI_KEY_RELEASE, keycode, focusedWindow);
 
         Window eventWindow = null;
         Window child = null;
@@ -544,8 +544,8 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                 xServer.pointer.getX(), xServer.pointer.getY());
     }
 
-    private void sendXiKeyEvent(int eventType, byte keycode) {
-        Window focusedWindow = xServer.windowManager.getFocusedWindow();
+    private void sendXiKeyEvent(int eventType, byte keycode,
+                                Window focusedWindow) {
         getXInputExtension().sendDeviceEvent(3, eventType, keycode & 0xff,
                 focusedWindow, xServer.pointer.getX(), xServer.pointer.getY());
     }

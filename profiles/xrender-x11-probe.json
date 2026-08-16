@@ -1,0 +1,23 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "xrender-x11-probe",
+  "name": "BionicX Render probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "launch": {
+    "executable": "${APP}/bin/xrender-x11-probe",
+    "workingDirectory": "${APP}",
+    "arguments": [
+      "2"
+    ],
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LANG": "C.UTF-8"
+    }
+  }
+}

@@ -5,6 +5,7 @@
 #include <X11/cursorfont.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/Xrender.h>
+#include <X11/extensions/shape.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -266,6 +267,19 @@ int main(int argc, char **argv) {
            grab_ok ? "under GrabServer" : "blocked or error");
     RECORD(grab_ok);
     if (image != NULL) XFree(image);
+
+    before = x_errors;
+    XRectangle input = {.x = 0, .y = 0, .width = 100, .height = 80};
+    XserverRegion input_region = XFixesCreateRegion(display, &input, 1);
+    if (input_region != 0)
+        XFixesSetWindowShapeRegion(display, window, ShapeInput, 0, 0,
+                                   input_region);
+    XSync(display, False);
+    bool shape_ok = input_region != 0 && x_errors == before;
+    result("xfixes-shape-input", shape_ok,
+           shape_ok ? "ShapeInput" : "SetWindowShapeRegion failed");
+    RECORD(shape_ok);
+    if (input_region != 0) XFixesDestroyRegion(display, input_region);
 
     printf("BXSUMMARY xfixes-x11 passed=%d failed=%d xerrors=%d\n",
            passed, failed, x_errors);

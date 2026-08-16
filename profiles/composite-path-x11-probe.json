@@ -1,25 +1,23 @@
 {
   "$schema": "../schemas/profile.schema.json",
   "schemaVersion": 3,
-  "id": "x11-desktop-probe",
-  "name": "BionicX X11 desktop extension probe",
+  "id": "composite-path-x11-probe",
+  "name": "BionicX Composite redirect+overlay+Damage path probe",
   "display": {
     "dpi": 144,
     "socket": "filesystem"
   },
   "launch": {
-    "executable": "${APP}/bin/x11-desktop-probe",
+    "executable": "${APP}/bin/composite-path-x11-probe",
     "workingDirectory": "${APP}",
     "arguments": [
-      "--duration",
-      "8"
+      "3"
     ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
       "HOME": "${HOME}",
       "TMPDIR": "${TMP}",
-      "LANG": "en_US.UTF-8",
-      "LOCPATH": "${RUNTIME}/usr/lib/locale"
+      "LANG": "C.UTF-8"
     }
   }
 }

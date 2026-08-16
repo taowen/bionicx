@@ -19,6 +19,10 @@ grep -F 'XFixesCreateRegionFromWindow' \
     "$repo_dir/examples/xfixes-x11-probe/xfixes-x11-probe.c" >/dev/null
 grep -F 'XFixesSetPictureClipRegion' \
     "$repo_dir/examples/xfixes-x11-probe/xfixes-x11-probe.c" >/dev/null
+grep -F 'XFixesSetWindowShapeRegion' \
+    "$repo_dir/examples/xfixes-x11-probe/xfixes-x11-probe.c" >/dev/null
+grep -F 'ShapeInput' \
+    "$repo_dir/examples/xfixes-x11-probe/xfixes-x11-probe.c" >/dev/null
 grep -F 'SET_PICTURE_CLIP_REGION' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XFixesExtension.java" \
     >/dev/null
@@ -35,7 +39,7 @@ if grep -E 'xfsettingsd|xfwm4|icewm' \
     echo "xfixes probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=10 failed=0' \
+grep -F 'passed=11 failed=0' \
     "$repo_dir/examples/xfixes-x11-probe/install-and-run.sh" >/dev/null
 grep -F 'rootfs_payload=none' \
     "$repo_dir/examples/xfixes-x11-probe/build-bundle.sh" >/dev/null

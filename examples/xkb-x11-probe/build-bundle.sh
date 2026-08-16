@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-output_dir="${1:-$repo_dir/build/x11-desktop-probe-bundle}"
+output_dir="${1:-$repo_dir/build/xkb-x11-probe-bundle}"
 output_dir="$(realpath -m "$output_dir")"
 case "$output_dir/" in
     "$repo_dir/build/"*) ;;
@@ -14,14 +14,13 @@ builder_image="$("$repo_dir/tools/ensure-glibc-builder.sh")"
 podman run --rm --network host --userns=keep-id \
     --volume "$repo_dir:/work:Z" --workdir /work "$builder_image" \
     aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
-        examples/x11-desktop-probe/x11-desktop-probe.c \
-        -o "${output_dir#"$repo_dir/"}/app/bin/x11-desktop-probe" \
-        -lXrender -lXfixes -lXrandr -lXi -lXext \
-        -lxkbcommon-x11 -lxkbcommon -lxcb-xkb -lX11-xcb -lX11 -lxcb
+        examples/xkb-x11-probe/xkb-x11-probe.c \
+        -o "${output_dir#"$repo_dir/"}/app/bin/xkb-x11-probe" \
+        -lXtst -lxkbcommon-x11 -lxkbcommon -lxcb-xkb -lX11-xcb -lX11 -lxcb
 interpreter=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
 rpath=/data/user/0/io.taowen.bx/files/rootfs/usr/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu
 patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \
-    "$output_dir/app/bin/x11-desktop-probe"
+    "$output_dir/app/bin/xkb-x11-probe"
 printf 'required_package=libxkbcommon-x11-0\nrootfs_payload=none\n' \
     > "$output_dir/BUILD-INFO"
 echo "$output_dir"

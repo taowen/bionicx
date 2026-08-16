@@ -1,13 +1,17 @@
+#define _DEFAULT_SOURCE
 #define _POSIX_C_SOURCE 200809L
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
+#include <X11/keysym.h>
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/XInput2.h>
+#include <X11/extensions/XTest.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static int x_errors;
@@ -201,6 +205,58 @@ int main(int argc, char **argv) {
     result("xi2-focus", focus_ok,
            focus_ok ? "XISet/GetFocus" : "focus failed");
     RECORD(focus_ok);
+
+    unsigned char key_mask_bytes[XIMaskLen(XI_LASTEVENT)] = {0};
+    XISetMask(key_mask_bytes, XI_KeyPress);
+    XIEventMask key_mask = {
+        .deviceid = 3,
+        .mask_len = sizeof(key_mask_bytes),
+        .mask = key_mask_bytes,
+    };
+    XISelectEvents(display, window, &key_mask, 1);
+    XSetInputFocus(display, PointerRoot, RevertToPointerRoot, CurrentTime);
+    XIWarpPointer(display, 2, None, window, 0, 0, 0, 0, 100, 60);
+    XSync(display, True);
+    KeyCode letter = XKeysymToKeycode(peer, XK_a);
+    KeyCode control = XKeysymToKeycode(peer, XK_Control_L);
+    if (letter != 0 && control != 0) {
+        XTestFakeKeyEvent(peer, control, True, 0);
+        XFlush(peer);
+        usleep(20000);
+        XTestFakeKeyEvent(peer, letter, True, 0);
+        XFlush(peer);
+        usleep(20000);
+        XTestFakeKeyEvent(peer, letter, False, 0);
+        XTestFakeKeyEvent(peer, control, False, 0);
+        XFlush(peer);
+    }
+    bool key_ok = false;
+    int letter_mods = -1;
+    for (int i = 0; i < 40 && !key_ok; ++i) {
+        if (!XPending(display)) {
+            usleep(25000);
+            continue;
+        }
+        XEvent event;
+        XNextEvent(display, &event);
+        if (event.type != GenericEvent || event.xcookie.extension != opcode)
+            continue;
+        if (!XGetEventData(display, &event.xcookie)) continue;
+        XIDeviceEvent *device_event = event.xcookie.data;
+        if (device_event != NULL && device_event->evtype == XI_KeyPress
+                && device_event->detail == letter) {
+            letter_mods = device_event->mods.effective;
+            if ((letter_mods & ControlMask) != 0) key_ok = true;
+        }
+        XFreeEventData(display, &event.xcookie);
+    }
+    char key_detail[64];
+    if (key_ok) snprintf(key_detail, sizeof(key_detail),
+                         "Control+key mods=0x%x", letter_mods);
+    else snprintf(key_detail, sizeof(key_detail),
+                  "mods=0x%x", letter_mods);
+    result("xi2-key-pointer-root", key_ok, key_detail);
+    RECORD(key_ok);
 
     before = x_errors;
     int grab = XIGrabDevice(display, 2, window, 1, None,

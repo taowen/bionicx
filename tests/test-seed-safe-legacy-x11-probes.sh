@@ -10,7 +10,8 @@ probes=(
     clipboard-x11-probe
     session-x11-probe
     font-xft-probe
-    x11-desktop-probe
+    xrender-x11-probe
+    xkb-x11-probe
     network-x11-probe
     runtime-probe
     save-set-x11-probe
