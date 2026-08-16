@@ -108,6 +108,21 @@ int main(int argc, char **argv) {
     RECORD(crtc_ok);
 
     before = x_errors;
+    XRRCrtcTransformAttributes *transform = NULL;
+    Status transform_status = XRRGetCrtcTransform(display, crtc, &transform);
+    XSync(display, False);
+    bool transform_ok = transform_status != 0 && transform != NULL
+            && transform->currentTransform.matrix[0][0] == 0x10000
+            && transform->currentTransform.matrix[1][1] == 0x10000
+            && transform->currentTransform.matrix[2][2] == 0x10000
+            && x_errors == before;
+    result("randr-crtc-transform", transform_ok,
+           transform_ok ? "GetCrtcTransform identity"
+                        : "GetCrtcTransform failed");
+    RECORD(transform_ok);
+    if (transform != NULL) XFree(transform);
+
+    before = x_errors;
     int gamma_size = XRRGetCrtcGammaSize(display, crtc);
     XRRCrtcGamma *gamma = XRRGetCrtcGamma(display, crtc);
     bool gamma_ok = false;

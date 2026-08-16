@@ -50,6 +50,7 @@ public class XRandRExtension extends Extension {
         private static final byte GET_CRTC_GAMMA = 23;
         private static final byte SET_CRTC_GAMMA = 24;
         private static final byte GET_SCREEN_RESOURCES_CURRENT = 25;
+        private static final byte GET_CRTC_TRANSFORM = 27;
         private static final byte SET_OUTPUT_PRIMARY = 30;
         private static final byte GET_OUTPUT_PRIMARY = 31;
         private static final byte GET_PROVIDERS = 32;
@@ -328,6 +329,42 @@ public class XRandRExtension extends Extension {
         }
     }
 
+    private void writeIdentityTransform(XOutputStream outputStream)
+            throws IOException {
+        // 3x3 16.16 identity. xfsettingsd reads this after GetCrtcInfo.
+        outputStream.writeInt(0x10000);
+        outputStream.writeInt(0);
+        outputStream.writeInt(0);
+        outputStream.writeInt(0);
+        outputStream.writeInt(0x10000);
+        outputStream.writeInt(0);
+        outputStream.writeInt(0);
+        outputStream.writeInt(0);
+        outputStream.writeInt(0x10000);
+    }
+
+    private void getCrtcTransform(XClient client, XInputStream inputStream,
+                                  XOutputStream outputStream)
+            throws IOException, XRequestError {
+        int crtc = inputStream.readInt();
+        if (crtc != crtcId) throw badCrtc(crtc);
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(16);
+            writeIdentityTransform(outputStream);
+            outputStream.writeByte((byte)1); // hasTransforms
+            outputStream.writePad(3);
+            writeIdentityTransform(outputStream);
+            outputStream.writePad(4);
+            outputStream.writeShort((short)0); // pendingNparams
+            outputStream.writeShort((short)0); // pendingNfilter
+            outputStream.writeShort((short)0); // currentNparams
+            outputStream.writeShort((short)0); // currentNfilter
+        }
+    }
+
     private void getCrtcInfo(XClient client, XInputStream inputStream,
                              XOutputStream outputStream)
             throws IOException, XRequestError {
@@ -470,6 +507,9 @@ public class XRandRExtension extends Extension {
             case ClientOpcodes.GET_SCREEN_RESOURCES:
             case ClientOpcodes.GET_SCREEN_RESOURCES_CURRENT:
                 getScreenResources(client, inputStream, outputStream);
+                break;
+            case ClientOpcodes.GET_CRTC_TRANSFORM:
+                getCrtcTransform(client, inputStream, outputStream);
                 break;
             case ClientOpcodes.GET_OUTPUT_PRIMARY:
                 getOutputPrimary(client, inputStream, outputStream);
