@@ -278,6 +278,9 @@ public class WindowManager extends XResourceManager {
         }
 
         if (resized && window.isInputOutput()) {
+            // Replacing the backing buffer disconnects NameWindowPixmap
+            // aliases that shared the previous pixels. Clients must name
+            // a new pixmap after ConfigureWindow.
             Drawable oldContent = window.getContent();
             drawableManager.removeDrawable(oldContent.id);
             Drawable newContent = drawableManager.createDrawable(oldContent.id, width, height, oldContent.visual);
