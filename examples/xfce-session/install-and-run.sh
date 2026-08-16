@@ -18,6 +18,11 @@ patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \
     --serial "$serial"
 adb -s "$serial" logcat -c
 adb -s "$serial" shell am force-stop io.taowen.bx
+# Thunar persists last-window-maximized and a near-screen size; xfwm4
+# then ignores ConfigureRequest, which makes session-resize look like
+# an X bug.
+cat "$repo_dir/examples/xfce-session/thunar-geometry.xml" | \
+    adb -s "$serial" shell "run-as io.taowen.bx sh -c 'mkdir -p files/homes/xfce-session/.config/xfce4/xfconf/xfce-perchannel-xml && cat > files/homes/xfce-session/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml'"
 adb -s "$serial" shell am start -W -n io.taowen.bx/com.winlator.BionicXActivity
 mapped="${BIONICX_XFCE_MAPPED:-$repo_dir/build/xfce-session-mapped.png}"
 for i in $(seq 1 80); do
@@ -32,11 +37,35 @@ for i in $(seq 1 80); do
 done
 adb -s "$serial" exec-out screencap -p > \
     "${BIONICX_XFCE_SCREENSHOT:-$repo_dir/build/xfce-session-device.png}"
-result="$(adb -s "$serial" logcat -d -v brief \
-    | grep -E 'BXTEST|BXSUMMARY|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan')"
+log="$(adb -s "$serial" logcat -d -v brief)"
+result="$(grep -E 'BXTEST|BXSUMMARY|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log")"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY xfce-session-accept passed=9 failed=0" <<<"$result"
 grep -Fq "enabled D-Bus session service" <<<"$result"
+if grep -F 'Conversion from ISO-8859-1 to UTF-8 is not supported' <<<"$log"; then
+    echo "xfce-session must convert latin1 clipboard text" >&2
+    exit 1
+fi
+if grep -F 'cannot open display' <<<"$log"; then
+    echo "D-Bus-activated GTK apps must inherit DISPLAY" >&2
+    exit 1
+fi
+if grep -F 'does not support the XRes extension' <<<"$log"; then
+    echo "xfwm4 must see X-Resource" >&2
+    exit 1
+fi
+if grep -F 'does not support the XSync extension' <<<"$log"; then
+    echo "xfwm4 must see SYNC" >&2
+    exit 1
+fi
+if grep -F 'Unsupported keyboard modifier' <<<"$log"; then
+    echo "xfwm4 must map Super/Mod4" >&2
+    exit 1
+fi
+if grep -F 'XRandR initialization error' <<<"$log"; then
+    echo "xfwm4 must see RandR 1.5" >&2
+    exit 1
+fi
 if adb -s "$serial" shell run-as io.taowen.bx \
         find files/apps -name 'libc.so.6' | grep -q .; then
     echo "xfce-session must not grow a per-app libc.so.6" >&2

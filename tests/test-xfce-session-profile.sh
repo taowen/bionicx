@@ -11,11 +11,26 @@ grep -F 'xfce-wm' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F 'xfce-panel' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F 'session-switch-thunar' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F 'session-resize-thunar' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
+grep -F 'thunar-geometry.xml' \
+    "$repo_dir/examples/xfce-session/install-and-run.sh" >/dev/null
+grep -F 'last-window-maximized' \
+    "$repo_dir/examples/xfce-session/thunar-geometry.xml" >/dev/null
+grep -F 'value="800"' \
+    "$repo_dir/examples/xfce-session/thunar-geometry.xml" >/dev/null
 grep -F '_NET_SUPPORTING_WM_CHECK' \
     "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F -- '--compositor=off' "$repo_dir/examples/xfce-session/xfce-session.c" >/dev/null
 grep -F 'REDIRECT_SUBWINDOWS' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XComposite.java" >/dev/null
+grep -F 'DISPLAY=:0' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xenvironment/components/DBusComponent.java" \
+    >/dev/null
+grep -F 'GCONV_PATH=' \
+    "$repo_dir/android/app/src/main/java/com/winlator/BionicXActivity.java" \
+    >/dev/null
+grep -F 'new XResExtension' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/XServer.java" \
+    >/dev/null
 grep -F 'grabOwner' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/WindowManager.java" >/dev/null
 if grep -F 'window.isDock()' \
@@ -32,6 +47,12 @@ grep -F 'xfwm4' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'xfce4-panel' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'xfdesktop4' "$repo_dir/packages/trixie-popular.txt" >/dev/null
 grep -F 'passed=9 failed=0' \
+    "$repo_dir/examples/xfce-session/install-and-run.sh" >/dev/null
+grep -F 'does not support the XSync extension' \
+    "$repo_dir/examples/xfce-session/install-and-run.sh" >/dev/null
+grep -F 'Unsupported keyboard modifier' \
+    "$repo_dir/examples/xfce-session/install-and-run.sh" >/dev/null
+grep -F 'XRandR initialization error' \
     "$repo_dir/examples/xfce-session/install-and-run.sh" >/dev/null
 if grep -F -- '--runtime-root' \
         "$repo_dir/examples/xfce-session/install-and-run.sh" >/dev/null; then

@@ -248,6 +248,7 @@ static void activate(Display *display, Window client) {
     XSync(display, False);
 }
 
+
 static int wait_focus(Display *display, Window client, int timeout_ms) {
     int waited = 0;
     while (waited <= timeout_ms) {
@@ -364,8 +365,16 @@ static int accept_session(Display *display, char *app2_path) {
 
     XWindowAttributes before = {0};
     XGetWindowAttributes(display, thunar, &before);
+    int screen = DefaultScreen(display);
     unsigned new_width = (unsigned)before.width + 96;
     unsigned new_height = (unsigned)before.height + 48;
+    if (before.width + 96 >= DisplayWidth(display, screen)
+            || before.height + 48 >= DisplayHeight(display, screen)) {
+        if (before.width > 200)
+            new_width = (unsigned)before.width - 96;
+        if (before.height > 120)
+            new_height = (unsigned)before.height - 48;
+    }
     XResizeWindow(display, thunar, new_width, new_height);
     XSync(display, False);
     int resized = 0;
@@ -380,8 +389,11 @@ static int accept_session(Display *display, char *app2_path) {
         }
         sleep_ms(100);
     }
-    result("session-resize-thunar", resized,
-           resized ? detail : "geometry unchanged");
+    if (!resized) {
+        snprintf(detail, sizeof(detail), "geometry unchanged %dx%d",
+                 before.width, before.height);
+    }
+    result("session-resize-thunar", resized, detail);
     RECORD(resized);
 
     send_close(display, mousepad);
