@@ -51,6 +51,7 @@ public class Drawable extends XResource {
 
     public void setOffscreenStorage(boolean offscreenStorage) {
         this.offscreenStorage = offscreenStorage;
+        if (!offscreenStorage && texture != null) texture.setNeedsUpdate(true);
     }
 
     public Texture getTexture() {
@@ -513,10 +514,10 @@ public class Drawable extends XResource {
     }
 
     public void forceUpdate() {
-        if (!offscreenStorage) {
+        if (!offscreenStorage && texture != null) {
             texture.setNeedsUpdate(true);
-            if (onDrawListener != null) onDrawListener.run();
         }
+        if (onDrawListener != null) onDrawListener.run();
     }
 
     public boolean isUseSharedData() {

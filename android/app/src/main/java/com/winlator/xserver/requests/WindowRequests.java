@@ -479,7 +479,8 @@ public abstract class WindowRequests {
             outputStream.writeShort((short)children.size());
             outputStream.writePad(14);
 
-            for (int i = children.size()-1; i >= 0; i--) outputStream.writeInt(children.get(i).id);
+            // X11: children from bottom-most (first) to top-most (last).
+            for (int i = 0; i < children.size(); i++) outputStream.writeInt(children.get(i).id);
         }
     }
 
