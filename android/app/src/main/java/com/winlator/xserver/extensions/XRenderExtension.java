@@ -279,6 +279,7 @@ public class XRenderExtension extends Extension {
     }
 
     private boolean formatMatchesDrawable(int format, Drawable drawable) {
+        if (drawable == null || drawable.visual == null) return false;
         return (format == argb32Format && drawable.visual.depth == 32)
                 || (format == a8Format && drawable.visual.depth == 8)
                 || (format == a1Format && drawable.visual.depth == 1);

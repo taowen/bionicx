@@ -36,6 +36,11 @@ grep -F 'compositor-output-buffer' \
     "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
 grep -F '_XROOTPMAP_ID' \
     "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
+grep -F 'compositor-rgb-pixmap' \
+    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
+grep -F 'depth == 24' \
+    "$repo_dir/android/app/src/main/java/com/winlator/xserver/PixmapManager.java" \
+    >/dev/null
 grep -F 'isOverlayTree' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XComposite.java" \
     >/dev/null
@@ -47,7 +52,7 @@ if grep -E 'xfsettingsd|xfwm4|icewm' \
     echo "compositor probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=14 failed=0' \
+grep -F 'passed=15 failed=0' \
     "$repo_dir/examples/compositor-x11-probe/install-and-run.sh" >/dev/null
 grep -F 'rootfs_payload=none' \
     "$repo_dir/examples/compositor-x11-probe/build-bundle.sh" >/dev/null

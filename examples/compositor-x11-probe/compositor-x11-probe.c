@@ -660,6 +660,59 @@ static bool output_buffer(Display *comp, Display *app, Window overlay) {
             && read_ok;
 }
 
+/* Advertised depth-24 pixmap used as a compositor tile. Wallpaper clients
+ * create these even when the screen visual is 32-bit TrueColor. */
+static bool rgb_pixmap(Display *display, Window overlay) {
+    int count = 0;
+    XPixmapFormatValues *formats = XListPixmapFormats(display, &count);
+    bool have24 = false;
+    if (formats != NULL) {
+        for (int i = 0; i < count; i++)
+            if (formats[i].depth == 24) have24 = true;
+        XFree(formats);
+    }
+    if (!have24 || overlay == 0) return false;
+    int render_event = 0, render_error = 0;
+    int major = 0, minor = 0;
+    if (!XRenderQueryExtension(display, &render_event, &render_error)
+            || !XRenderQueryVersion(display, &major, &minor))
+        return false;
+    XRenderPictFormat *format = XRenderFindVisualFormat(display,
+            DefaultVisual(display, DefaultScreen(display)));
+    if (format == NULL)
+        format = XRenderFindStandardFormat(display, PictStandardARGB32);
+    if (format == NULL) return false;
+
+    Window output = XCreateSimpleWindow(display, overlay, 0, 0, 64, 64,
+                                        0, 0, 0);
+    if (output == 0) return false;
+    XMapWindow(display, output);
+    XRenderPictureAttributes subwindow = {.subwindow_mode = IncludeInferiors};
+    Picture dest = XRenderCreatePicture(display, output, format,
+                                        CPSubwindowMode, &subwindow);
+    Pixmap tile = XCreatePixmap(display, DefaultRootWindow(display),
+                                32, 32, 24);
+    Picture source = tile != None
+            ? XRenderCreatePicture(display, tile, format, 0, NULL) : None;
+    XRenderColor color = {.red = 0xaaaa, .green = 0x5555, .blue = 0x2222,
+                          .alpha = 0xffff};
+    if (source != None && dest != None) {
+        XRenderFillRectangle(display, PictOpSrc, source, &color, 0, 0, 32, 32);
+        XRenderComposite(display, PictOpSrc, source, None, dest,
+                         0, 0, 0, 0, 0, 0, 32, 32);
+    }
+    XSync(display, False);
+    unsigned long pixel = 0;
+    bool read_ok = dest != None && source != None
+            && read_pixel(display, output, &pixel);
+    if (source != None) XRenderFreePicture(display, source);
+    if (dest != None) XRenderFreePicture(display, dest);
+    if (tile != None) XFreePixmap(display, tile);
+    XDestroyWindow(display, output);
+    XSync(display, False);
+    return read_ok;
+}
+
 typedef struct {
     uint8_t reqType;
     uint8_t glxCode;
@@ -983,6 +1036,14 @@ int main(int argc, char **argv) {
            buffer_ok ? "screen pixmap, freed 1x1, peer root tile"
                      : "output buffer CreatePicture/Composite failed");
     RECORD(buffer_ok);
+
+    before = x_errors;
+    bool rgb_ok = overlay != 0 && rgb_pixmap(comp, overlay)
+            && x_errors == before;
+    result("compositor-rgb-pixmap", rgb_ok,
+           rgb_ok ? "depth-24 pixmap CreatePicture"
+                  : "depth-24 pixmap rejected");
+    RECORD(rgb_ok);
 
     damage_destroy(comp, dmg_op, damage);
     release_overlay_window(comp, cmp_op, (uint32_t)root);

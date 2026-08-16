@@ -61,7 +61,9 @@ public class PixmapManager extends XResourceManager {
     }
 
     public Visual getVisualForDepth(byte depth) {
-        if (depth == visual.depth) return visual;
+        // Depth 24 is advertised as a pixmap format and stored in the same
+        // 32-bit TrueColor buffer as the screen visual (8 bits unused).
+        if (depth == visual.depth || depth == 24) return visual;
         for (Visual visual : supportedVisuals) {
             if (depth == visual.depth) return visual;
         }
