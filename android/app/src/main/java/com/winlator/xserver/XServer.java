@@ -19,6 +19,7 @@ import com.winlator.xserver.extensions.XInputExtension;
 import com.winlator.xserver.extensions.XKeyboardExtension;
 import com.winlator.xserver.extensions.XRandRExtension;
 import com.winlator.xserver.extensions.XRenderExtension;
+import com.winlator.xserver.extensions.XResExtension;
 import com.winlator.xserver.extensions.XTestExtension;
 
 import java.nio.charset.Charset;
@@ -288,7 +289,8 @@ public class XServer {
             new XKeyboardExtension(this, opcode--),
             new XTestExtension(this, opcode--),
             new GLXExtension(this, opcode--),
-            new XDamageExtension(this, opcode--)
+            new XDamageExtension(this, opcode--),
+            new XResExtension(this, opcode--)
         };
     }
 

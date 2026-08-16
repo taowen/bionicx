@@ -42,6 +42,24 @@ public class PixmapManager extends XResourceManager {
         pixmaps.remove(id);
     }
 
+    public int countForClient(int idBase, int idMask) {
+        int count = 0;
+        for (int i = 0; i < pixmaps.size(); i++) {
+            if ((pixmaps.keyAt(i) | idMask) == (idBase | idMask)) count++;
+        }
+        return count;
+    }
+
+    public long bytesForClient(int idBase, int idMask) {
+        long bytes = 0;
+        for (int i = 0; i < pixmaps.size(); i++) {
+            if ((pixmaps.keyAt(i) | idMask) != (idBase | idMask)) continue;
+            Pixmap pixmap = pixmaps.valueAt(i);
+            bytes += (long)pixmap.drawable.width * pixmap.drawable.height * 4;
+        }
+        return bytes;
+    }
+
     public Visual getVisualForDepth(byte depth) {
         if (depth == visual.depth) return visual;
         for (Visual visual : supportedVisuals) {
