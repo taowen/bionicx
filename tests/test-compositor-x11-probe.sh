@@ -49,6 +49,18 @@ grep -F 'depth == 24' \
 grep -F 'isOverlayTree' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XComposite.java" \
     >/dev/null
+grep -F 'isOverlayWindow' \
+    "$repo_dir/android/app/src/main/java/com/winlator/renderer/GLRenderer.java" \
+    >/dev/null
+grep -F 'isOverlayOutput' \
+    "$repo_dir/android/app/src/main/java/com/winlator/renderer/GLRenderer.java" \
+    >/dev/null
+if awk '/public void forceUpdate/,/^    }/' \
+        "$repo_dir/android/app/src/main/java/com/winlator/xserver/Drawable.java" \
+        | grep -F 'offscreenStorage' >/dev/null; then
+    echo "offscreen drawables must still mark textures dirty" >&2
+    exit 1
+fi
 grep -F 'setActivePosition(start)' \
     "$repo_dir/android/app/src/main/java/com/winlator/xserver/XClientRequestHandler.java" \
     >/dev/null

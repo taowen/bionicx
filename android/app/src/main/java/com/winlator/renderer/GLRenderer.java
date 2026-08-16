@@ -30,6 +30,7 @@ import com.winlator.xserver.WindowManager;
 import com.winlator.xserver.XLock;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.extensions.GLXExtension;
+import com.winlator.xserver.extensions.XComposite;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -253,9 +254,14 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
         windowMaterial.setUniformVec2(windowMaterial.uniforms.viewSize, xServer.screenInfo.width, xServer.screenInfo.height);
         quadVertices.bind(windowMaterial.programId);
 
+        XComposite composite = (XComposite)xServer.getExtensionByName("Composite");
+        boolean overlayActive = composite != null && composite.hasOverlay();
         try (XLock lock = xServer.lock(XServer.Lockable.DRAWABLE_MANAGER)) {
             for (RenderableWindow window : renderableWindows) {
-                if (!window.content.isOffscreenStorage()) {
+                // Redirected contents stay offscreen. When an overlay is up,
+                // still draw them under the output child so an unpainted
+                // overlay cannot cover the session in opaque black.
+                if (overlayActive || !window.content.isOffscreenStorage()) {
                     renderWindowDrawable(window.content, window.rootX, window.rootY, window.transparent, window.fullscreenTransformation);
                 }
             }
@@ -309,6 +315,14 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
     private void collectRenderableWindows(Window window, int x, int y) {
         if (!window.isRenderable()) return;
+        XComposite composite = (XComposite)xServer.getExtensionByName("Composite");
+        // Overlay is a shape hole. Its output child is often an unpainted
+        // or unused-alpha curtain; redirected window pixmaps carry the pixels.
+        if (composite != null
+                && (composite.isOverlayWindow(window)
+                    || composite.isOverlayOutput(window))) {
+            return;
+        }
         if (window != xServer.windowManager.rootWindow && window.isInputOutput()
                 && window.attributes.isViewable()) {
             Window parent = window.getParent();

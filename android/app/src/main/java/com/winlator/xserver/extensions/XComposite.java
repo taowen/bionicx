@@ -79,6 +79,19 @@ public class XComposite extends Extension {
         }
     }
 
+    public boolean isOverlayWindow(Window window) {
+        return overlayWindow != null && window == overlayWindow;
+    }
+
+    public boolean hasOverlay() {
+        return overlayWindow != null
+                && xServer.windowManager.getWindow(overlayWindow.id) != null;
+    }
+
+    public boolean isOverlayOutput(Window window) {
+        return isOverlayTree(window) && window != overlayWindow;
+    }
+
     private boolean isOverlayTree(Window window) {
         while (window != null) {
             if (window == overlayWindow) return true;
