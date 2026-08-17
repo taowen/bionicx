@@ -34,6 +34,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
     private final ArrayList<Callback<XClient>> onDestroyListeners = new ArrayList<>();
     private int lastOpcode;
     private int lastRequestData;
+    private boolean usedXiPassivePointerGrab;
 
     public XClient(long nativePtr, int fd, XServer xServer) {
         super(nativePtr, fd);
@@ -149,6 +150,14 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
     public void noteRequest(int opcode, int data) {
         lastOpcode = opcode;
         lastRequestData = data;
+    }
+
+    public void noteXiPassivePointerGrab() {
+        usedXiPassivePointerGrab = true;
+    }
+
+    public boolean usedXiPassivePointerGrab() {
+        return usedXiPassivePointerGrab;
     }
 
     public String describeLastRequest() {

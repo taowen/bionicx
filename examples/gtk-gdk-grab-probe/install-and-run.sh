@@ -15,7 +15,7 @@ adb -s "$serial" logcat -c
 adb -s "$serial" shell am force-stop io.taowen.bx
 adb -s "$serial" shell am start -W \
     -n io.taowen.bx/com.winlator.BionicXActivity >/dev/null
-for i in $(seq 1 30); do
+for i in $(seq 1 45); do
     if adb -s "$serial" logcat -d -v brief \
             | grep -Fq 'BXSUMMARY gtk-gdk-grab'; then
         echo "gtk-gdk-grab probe finished at ${i}s"
@@ -24,7 +24,7 @@ for i in $(seq 1 30); do
     sleep 1
 done
 result="$(adb -s "$serial" logcat -d -v brief \
-    | grep -E 'BXTEST|BXSUMMARY|BXINFO gdk-grab-im|BXINFO gdk-filter')"
+    | grep -E 'BXTEST|BXSUMMARY|BXINFO gdk-grab-im|BXINFO gdk-filter|BXINFO gdk-grab-core')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY gtk-gdk-grab passed=8 failed=0" <<<"$result"
 echo "gtk-gdk-grab probe: PASS"

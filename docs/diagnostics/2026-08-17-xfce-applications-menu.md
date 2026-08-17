@@ -160,4 +160,24 @@ BXINFO gdk-filter type=35 send=0 ext=147 data=1 evtype=4
 `type=4` core `ButtonPress` never appears (`core=0 send=0`). Only
 XI2 GenericEvent (`type=35`, cookie present, `evtype=4`) reaches the
 filter. A simple `XOpenIM` does not change that
-(`gdk-grab-im … xi=1 allow=1`). Do not add a 13th xfce accept click.
+(`gdk-grab-im … xi=1 allow=1`).
+
+A core-only grabber that matches the seed WM (`XGrabButton` only, no
+`XIQueryVersion` / `XIGrabButton`, `GDK_CORE_DEVICE_EVENTS=1`) is:
+
+```text
+BXINFO gdk-grab-core core=0 send=0 xi=0 allow=0
+```
+
+That grab never thaws. After delivering the exclusive sync press, the
+server now replays to the owner when the grab client never sent
+`XIGrabButton`. Live Applications click:
+
+```text
+grab-core-replay client=0x800000
+grab-press sent=0x1000005 client=0x1000000 mask=6529151 send=0
+click-menu opened grab=0->1 menu 185x324
+```
+
+`session-applications-menu` still maps 185x324 before the click. Do
+not add a 13th xfce accept click.

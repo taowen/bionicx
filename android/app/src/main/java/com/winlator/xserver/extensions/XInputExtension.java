@@ -1172,6 +1172,7 @@ public class XInputExtension extends Extension {
             int coreMods = coreModifiers(modifier);
             boolean ok = true;
             if (grabType == 0) {
+                client.noteXiPassivePointerGrab();
                 ok = xServer.grabManager.addPassiveButtonGrab(window,
                         detail & 0xff, coreMods, ownerEvents,
                         new Bitmask(coreMask), client, cursor, grabMode == 0);

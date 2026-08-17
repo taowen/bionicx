@@ -135,6 +135,18 @@ static int claim_compositor(Display *display) {
     return XGetSelectionOwner(display, cm) == owner;
 }
 
+static int grab_target_core(Display *display, Window target) {
+    XGrabButton(display, 1, AnyModifier, target, False, ButtonPressMask,
+                GrabModeSync, GrabModeAsync, None, None);
+    XSync(display, False);
+    return 1;
+}
+
+static void ungrab_target_core(Display *display, Window target) {
+    XUngrabButton(display, 1, AnyModifier, target);
+    XSync(display, False);
+}
+
 static int grab_target(Display *display, Window target) {
     unsigned char mask_bytes[XIMaskLen(XI_LASTEVENT)] = {0};
     XISetMask(mask_bytes, XI_ButtonPress);
@@ -165,6 +177,9 @@ int main(int argc, char **argv) {
     int failed = 0;
 #define RECORD(value) do { if (value) ++passed; else ++failed; } while (0)
     char detail[160];
+    int core_only = argc > 1 && strcmp(argv[1], "--core-only") == 0;
+    if (core_only)
+        setenv("GDK_CORE_DEVICE_EVENTS", "1", 1);
 
     void *gtk = dlopen("libgtk-3.so.0", RTLD_NOW | RTLD_GLOBAL);
     if (gtk == NULL) {
@@ -246,7 +261,8 @@ int main(int argc, char **argv) {
                                &xi_event, &xi_error);
     int major = 2;
     int minor = 0;
-    if (xi_ok) xi_ok = XIQueryVersion(gdk_dpy, &major, &minor) == Success;
+    if (xi_ok && !core_only)
+        xi_ok = XIQueryVersion(gdk_dpy, &major, &minor) == Success;
     gdk_window_add_filter(NULL, (void *)on_x_event, NULL);
 
     Window self = (Window)gdk_x11_window_get_xid(gdk_window);
@@ -255,6 +271,19 @@ int main(int argc, char **argv) {
     gdk_window_get_origin(gdk_window, &origin_x, &origin_y);
     int self_x = origin_x + gdk_window_get_width(gdk_window) / 2;
     int self_y = origin_y + gdk_window_get_height(gdk_window) / 2;
+
+    if (core_only) {
+        filter_core = filter_xi = filter_send = filter_allow = filter_logs = 0;
+        if (gdk_dpy != NULL && grab_target_core(gdk_dpy, self)
+                && xtest_click(self_x, self_y)) {
+            pump(gtk_events_pending, gtk_main_iteration_do, 800);
+            ungrab_target_core(gdk_dpy, self);
+        }
+        printf("BXINFO gdk-grab-core core=%d send=%d xi=%d allow=%d\n",
+               filter_core, filter_send, filter_xi, filter_allow);
+        fflush(stdout);
+        return 0;
+    }
 
     filter_core = filter_xi = filter_send = filter_allow = filter_logs = 0;
     int self_ok = 0;

@@ -214,6 +214,19 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                             ? grabClient.describeLastRequest() : "none"));
             xServer.grabManager.watchClientRequests(grabClient, 24);
         }
+        // A core-only sync grabber (no XIGrabButton) never AllowEvents:
+        // GDK's XFilterEvent eats core ButtonPress and the filter has no
+        // XI2 button branch. Replay the activating press to the owner.
+        if (xServer.grabManager.isPassiveSynchronousPointerGrab()) {
+            XClient coreGrabber = xServer.grabManager.getClient();
+            if (coreGrabber != null && !coreGrabber.usedXiPassivePointerGrab()) {
+                if (xServer.pointer.getY() < 40)
+                    Log.i("BionicX", "BXINFO grab-core-replay client="
+                            + GrabManager.describeClient(coreGrabber));
+                xServer.grabManager.deactivatePointerGrabForReplay();
+                replayPointerButtonPress(button);
+            }
+        }
     }
 
     public void replayPointerButtonPress(Pointer.Button button) {
