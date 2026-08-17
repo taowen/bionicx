@@ -19,7 +19,7 @@ public class Drawable extends XResource {
     public final short width;
     public final short height;
     public final Visual visual;
-    private Texture texture = new Texture(this);
+    private Texture texture;
     private ByteBuffer data;
     private boolean useSharedData;
     private Runnable onDrawListener;
@@ -41,6 +41,7 @@ public class Drawable extends XResource {
         this.width = (short)width;
         this.height = (short)height;
         this.visual = visual;
+        this.texture = new Texture(this);
         this.data = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.LITTLE_ENDIAN);
     }
 
@@ -546,6 +547,25 @@ public class Drawable extends XResource {
             if (texture != null) texture.setNeedsUpdate(true);
         }
         if (onDrawListener != null) onDrawListener.run();
+    }
+
+    public void forceOpaqueRgb(int x, int y, int w, int h) {
+        if (data == null || w <= 0 || h <= 0) return;
+        int stride = getStride();
+        synchronized (renderLock) {
+            for (int row = 0; row < h; row++) {
+                int destY = y + row;
+                if (destY < 0 || destY >= height) continue;
+                for (int column = 0; column < w; column++) {
+                    int destX = x + column;
+                    if (destX < 0 || destX >= width) continue;
+                    int offset = (destY * stride + destX) * 4;
+                    int pixel = data.getInt(offset);
+                    if ((pixel >>> 24) == 0)
+                        data.putInt(offset, 0xff000000 | (pixel & 0x00ffffff));
+                }
+            }
+        }
     }
 
     private void unionDirty(int x, int y, int w, int h) {

@@ -329,8 +329,11 @@ public class XRenderExtension extends Extension {
 
     private Drawable pictureDrawable(Picture picture) {
         if (picture == null) return null;
-        if (picture.drawableId != 0)
-            return xServer.drawableManager.getDrawable(picture.drawableId);
+        if (picture.drawableId != 0) {
+            Drawable live = xServer.drawableManager.getDrawable(
+                    picture.drawableId);
+            if (live != null) return live;
+        }
         return picture.drawable;
     }
 
@@ -830,6 +833,71 @@ public class XRenderExtension extends Extension {
         return masked;
     }
 
+    private boolean tryCompositeFast(Picture source, Picture destination,
+            Drawable sourceDrawable, Drawable destinationDrawable,
+            Picture mask, Drawable maskDrawable, int operation,
+            int sourceX, int sourceY, int destinationX, int destinationY,
+            int width, int height) {
+        if (mask != null || maskDrawable != null) return false;
+        if (destinationDrawable == null) return false;
+        if (operation != PICT_OP_SRC && operation != PICT_OP_CLEAR)
+            return false;
+        boolean solid = source != null && source.solidColor != null
+                && source.gradient == null && source.radialGradient == null;
+        boolean blit = sourceDrawable != null && source != null
+                && source.solidColor == null && source.gradient == null
+                && source.radialGradient == null
+                && source.format != a8Format && source.format != a1Format
+                && source.repeat == 0;
+        if (operation == PICT_OP_SRC && !solid && !blit) return false;
+        for (ClipRectangle rectangle : clippedRectangles(destination,
+                destinationX, destinationY, width, height)) {
+            if (operation == PICT_OP_CLEAR) {
+                destinationDrawable.fillRect(rectangle.x, rectangle.y,
+                        rectangle.width, rectangle.height, 0);
+                continue;
+            }
+            if (solid) {
+                destinationDrawable.fillRect(rectangle.x, rectangle.y,
+                        rectangle.width, rectangle.height, source.solidColor);
+                continue;
+            }
+            int srcX = sourceX + (rectangle.x - destinationX);
+            int srcY = sourceY + (rectangle.y - destinationY);
+            int copyX = rectangle.x;
+            int copyY = rectangle.y;
+            int copyW = rectangle.width;
+            int copyH = rectangle.height;
+            if (srcX < 0) {
+                copyX -= srcX;
+                copyW += srcX;
+                srcX = 0;
+            }
+            if (srcY < 0) {
+                copyY -= srcY;
+                copyH += srcY;
+                srcY = 0;
+            }
+            if (srcX + copyW > sourceDrawable.width)
+                copyW = sourceDrawable.width - srcX;
+            if (srcY + copyH > sourceDrawable.height)
+                copyH = sourceDrawable.height - srcY;
+            if (copyX != rectangle.x || copyY != rectangle.y
+                    || copyW != rectangle.width || copyH != rectangle.height)
+                destinationDrawable.fillRect(rectangle.x, rectangle.y,
+                        rectangle.width, rectangle.height, 0);
+            if (copyW > 0 && copyH > 0) {
+                destinationDrawable.copyArea((short)srcX, (short)srcY,
+                        (short)copyX, (short)copyY, (short)copyW, (short)copyH,
+                        sourceDrawable);
+                if (source.format == rgb24Format)
+                    destinationDrawable.forceOpaqueRgb(copyX, copyY, copyW,
+                            copyH);
+            }
+        }
+        return true;
+    }
+
     private void composite(XClient client, XInputStream inputStream)
             throws XRequestError {
         int operation = inputStream.readUnsignedByte();
@@ -866,6 +934,10 @@ public class XRenderExtension extends Extension {
                 || destination == null || destinationDrawable == null)
             throw new BadValue(0);
         if (mask != null && maskDrawable == null) throw new BadMatch();
+        if (tryCompositeFast(source, destination, sourceDrawable,
+                destinationDrawable, mask, maskDrawable, operation,
+                sourceX, sourceY, destinationX, destinationY, width, height))
+            return;
         for (ClipRectangle rectangle : clippedRectangles(destination,
                 destinationX, destinationY, width, height)) {
             int offsetX = rectangle.x - destinationX;
