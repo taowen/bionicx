@@ -65,6 +65,7 @@ public class XRenderExtension extends Extension {
         private static final byte SET_PICTURE_CLIP_RECTANGLES = 6;
         private static final byte FREE_PICTURE = 7;
         private static final byte COMPOSITE = 8;
+        private static final byte COMPOSITE_TRAPEZOIDS = 10;
         private static final byte CREATE_GLYPH_SET = 17;
         private static final byte REFERENCE_GLYPH_SET = 18;
         private static final byte FREE_GLYPH_SET = 19;
@@ -1000,6 +1001,78 @@ public class XRenderExtension extends Extension {
         if (remaining > 0) inputStream.skip(remaining);
     }
 
+    private static double fromFixed(int value) {
+        return value / 65536.0;
+    }
+
+    private static double lineX(int x1, int y1, int x2, int y2, double y) {
+        double firstY = fromFixed(y1);
+        double secondY = fromFixed(y2);
+        double delta = secondY - firstY;
+        if (Math.abs(delta) < 1.0e-6) return fromFixed(x1);
+        double amount = (y - firstY) / delta;
+        return fromFixed(x1) + amount * (fromFixed(x2) - fromFixed(x1));
+    }
+
+    private void compositeTrapezoids(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int operation = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        Picture source;
+        Picture destination;
+        synchronized (pictures) {
+            source = pictures.get(inputStream.readInt());
+            destination = pictures.get(inputStream.readInt());
+        }
+        inputStream.readInt(); // mask format; opaque coverage is enough
+        inputStream.skip(4); // xSrc, ySrc
+        Drawable drawable = pictureDrawable(destination);
+        if (source == null || destination == null || drawable == null)
+            throw new BadValue(0);
+        if (operation != PICT_OP_SRC && operation != PICT_OP_OVER)
+            throw new BadValue(operation);
+
+        int remaining = client.getRemainingRequestLength();
+        while (remaining >= 40) {
+            int top = inputStream.readInt();
+            int bottom = inputStream.readInt();
+            int leftX1 = inputStream.readInt();
+            int leftY1 = inputStream.readInt();
+            int leftX2 = inputStream.readInt();
+            int leftY2 = inputStream.readInt();
+            int rightX1 = inputStream.readInt();
+            int rightY1 = inputStream.readInt();
+            int rightX2 = inputStream.readInt();
+            int rightY2 = inputStream.readInt();
+            remaining -= 40;
+            int y0 = Math.max(0, (int)Math.ceil(fromFixed(top)));
+            int y1 = Math.min(drawable.height, (int)Math.floor(fromFixed(bottom)));
+            for (int y = y0; y < y1; y++) {
+                double mid = y + 0.5;
+                double left = lineX(leftX1, leftY1, leftX2, leftY2, mid);
+                double right = lineX(rightX1, rightY1, rightX2, rightY2, mid);
+                if (right < left) {
+                    double swap = left;
+                    left = right;
+                    right = swap;
+                }
+                int x0 = (int)Math.ceil(left);
+                int x1 = (int)Math.floor(right);
+                for (ClipRectangle rectangle : clippedRectangles(destination,
+                        x0, y, x1 - x0, 1)) {
+                    int color = pictureColor(source, rectangle.x, rectangle.y);
+                    if (operation == PICT_OP_OVER)
+                        drawable.blendSolidRect(rectangle.x, rectangle.y,
+                                rectangle.width, rectangle.height, color);
+                    else
+                        drawable.fillRect(rectangle.x, rectangle.y,
+                                rectangle.width, rectangle.height, color);
+                }
+            }
+        }
+        if (remaining > 0) inputStream.skip(remaining);
+    }
+
     @Override
     public void handleRequest(XClient client, XInputStream inputStream,
                               XOutputStream outputStream)
@@ -1025,6 +1098,9 @@ public class XRenderExtension extends Extension {
                 break;
             case ClientOpcodes.COMPOSITE:
                 composite(client, inputStream);
+                break;
+            case ClientOpcodes.COMPOSITE_TRAPEZOIDS:
+                compositeTrapezoids(client, inputStream);
                 break;
             case ClientOpcodes.FILL_RECTANGLES:
                 fillRectangles(client, inputStream);
@@ -1063,6 +1139,8 @@ public class XRenderExtension extends Extension {
                 createRadialGradient(client, inputStream);
                 break;
             default:
+                Log.w("BionicXRender", "unsupported opcode="
+                        + (client.getRequestData() & 0xff));
                 throw new BadImplementation();
         }
     }

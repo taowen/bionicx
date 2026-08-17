@@ -362,6 +362,52 @@ static void probe_window_picture_resize(Display *display) {
     XDestroyWindow(display, window);
 }
 
+static void probe_trapezoids(Display *display) {
+    int screen = DefaultScreen(display);
+    Window root = RootWindow(display, screen);
+    XRenderPictFormat *argb32 = XRenderFindStandardFormat(
+            display, PictStandardARGB32);
+    XRenderPictFormat *a8 = XRenderFindStandardFormat(display, PictStandardA8);
+    Pixmap pixmap = argb32 ? XCreatePixmap(display, root, 48, 48, 32) : None;
+    Picture dest = pixmap != None && argb32
+            ? XRenderCreatePicture(display, pixmap, argb32, 0, NULL) : 0;
+    XRenderColor black = {.alpha = 0xffff};
+    XRenderColor white = {
+        .red = 0xffff, .green = 0xffff, .blue = 0xffff, .alpha = 0xffff
+    };
+    Picture solid = dest ? XRenderCreateSolidFill(display, &white) : 0;
+    if (dest)
+        XRenderFillRectangle(display, PictOpSrc, dest, &black, 0, 0, 48, 48);
+    XTrapezoid trap = {
+        .top = XDoubleToFixed(8.0),
+        .bottom = XDoubleToFixed(40.0),
+        .left = {
+            .p1 = {.x = XDoubleToFixed(8.0), .y = XDoubleToFixed(8.0)},
+            .p2 = {.x = XDoubleToFixed(8.0), .y = XDoubleToFixed(40.0)}
+        },
+        .right = {
+            .p1 = {.x = XDoubleToFixed(40.0), .y = XDoubleToFixed(8.0)},
+            .p2 = {.x = XDoubleToFixed(40.0), .y = XDoubleToFixed(40.0)}
+        }
+    };
+    if (dest && solid)
+        XRenderCompositeTrapezoids(display, PictOpSrc, solid, dest, a8,
+                                   0, 0, &trap, 1);
+    XSync(display, False);
+    XImage *image = pixmap != None
+            ? XGetImage(display, pixmap, 24, 24, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    unsigned long pixel = image ? XGetPixel(image, 0, 0) : 0;
+    if (image) XDestroyImage(image);
+    char detail[64];
+    snprintf(detail, sizeof(detail), "pixel=0x%06lx", pixel & 0xffffff);
+    result("trapezoids", dest && solid && (pixel & 0xffffff) == 0xffffff,
+           detail);
+    if (solid) XRenderFreePicture(display, solid);
+    if (dest) XRenderFreePicture(display, dest);
+    if (pixmap != None) XFreePixmap(display, pixmap);
+}
+
 int main(int argc, char **argv) {
     int duration = argc > 1 ? atoi(argv[1]) : 2;
     XSetErrorHandler(handle_x_error);
@@ -380,6 +426,7 @@ int main(int argc, char **argv) {
     XSync(display, False);
     probe_render(display, window);
     probe_window_picture_resize(display);
+    probe_trapezoids(display);
     printf("BXSUMMARY xrender-x11 passed=%d failed=%d xerrors=%d\n",
            passed, checks - passed, x_errors);
     fflush(stdout);
