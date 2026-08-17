@@ -278,9 +278,9 @@ public class XInputExtension extends Extension {
         Window child = sourceWindow == eventWindow ? null : sourceWindow;
         int buttonState = xiButtonState();
         if (deviceId == MASTER_POINTER_ID && detail > 0
-                && detail <= POINTER_BUTTONS) {
-            if (eventType == XI_BUTTON_PRESS) buttonState &= ~(1 << detail);
-            else if (eventType == XI_BUTTON_RELEASE) buttonState |= 1 << detail;
+                && detail <= POINTER_BUTTONS
+                && eventType == XI_BUTTON_RELEASE) {
+            buttonState &= ~(1 << detail);
         }
         return client.sendEvent(new XInputDeviceEvent(getMajorOpcode(), deviceId,
                 eventType, detail, xServer.windowManager.rootWindow,

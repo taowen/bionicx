@@ -79,18 +79,15 @@ as enough. Live xfwm4 is GDK 3.24 (`sources/gtk-3.24`):
   XI2 branch became `XFWM_EVENT_XEVENT`.
 
 `gtk-xi-allow-menu` used to treat a core `ButtonPress` on the stub WM
-as success, so an 84-byte XI2 `DeviceEvent` (group short, button mask
-over those fields) still passed. GDK reads `buttons.mask` after
-`XGetEventData`; that cookie was empty. The probe now requires
-`buttons.mask_len >= 4` and ignores core presses for that case. After
-the 96-byte layout, vivo `gtk-xi-allow-menu` reports
-`cookie=1 detail=1 mask_len=4`.
+as success. Official `xXIGroupInfo` is four CARD8s, so DeviceEvent is
+80 bytes plus the button word (84, `length=13`) and Enter/Leave is 76
+(`length=11`). Treating group as four CARD32s emitted 96/88-byte
+events and left `buttons.mask` on zeros; `mask_len >= 4` still passed.
+The probe now requires button 1 in that mask and ignores core presses.
 
 The live Applications click still writes the press to xfwm4 and still
-never AllowEvents. XI2 Enter/Leave used the same short group encoding,
-so `XGetEventData` could over-read into the following ButtonPress.
-`xi2-enter-cookie` now requires `buttons.mask_len >= 4`. A failed
-client write now keeps the unsent tail instead of dropping it.
+never AllowEvents. A failed client write now keeps the unsent tail
+instead of dropping it. Frozen grabs no longer emit XI2 ButtonRelease.
 
 `grab-press-io` during the 12 accept tests is not xfwm4: it is
 Mousepad `0x2400000` and `0x2800000`. After the Applications click

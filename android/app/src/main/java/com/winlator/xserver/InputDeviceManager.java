@@ -338,18 +338,17 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
 
     @Override
     public void onPointerButtonRelease(Pointer.Button button) {
-        sendXiPointerEvent(XInputExtension.XI_BUTTON_RELEASE, button.code());
         if (xServer.isRelativeMouseMovement()) {
             WinHandler winHandler = xServer.getWinHandler();
             winHandler.mouseEvent(MouseEventFlags.getFlagFor(button, false), 0, 0, 0);
+            return;
         }
-        else {
-            if (xServer.grabManager.isPointerSynchronous()) {
-                frozenPointerEvents.add(new PendingPointerEvent(button));
-                return;
-            }
-            deliverPointerButtonRelease(button);
+        if (xServer.grabManager.isPointerSynchronous()) {
+            frozenPointerEvents.add(new PendingPointerEvent(button));
+            return;
         }
+        sendXiPointerEvent(XInputExtension.XI_BUTTON_RELEASE, button.code());
+        deliverPointerButtonRelease(button);
     }
 
     private void deliverPointerButtonRelease(Pointer.Button button) {

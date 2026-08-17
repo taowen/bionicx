@@ -128,13 +128,14 @@ static void drain_wm(Display *manager) {
                 && event.xcookie.extension == xi_opcode
                 && XGetEventData(manager, &event.xcookie)) {
             XIDeviceEvent *xi = event.xcookie.data;
-            /* GDK reads buttons.mask after XGetEventData. A short
-             * DeviceEvent can still set evtype and still leave mask
-             * NULL; that must not count as a press. */
+            /* GDK reads buttons.mask after XGetEventData. A group
+             * that is 12 bytes too long still yields mask_len >= 4
+             * of zeros; require button 1 so the word is on-offset. */
             if (xi != NULL && xi->evtype == XI_ButtonPress
-                    && xi->detail > 0 && xi->event != None
+                    && xi->detail == 1 && xi->event != None
                     && xi->buttons.mask != NULL
-                    && xi->buttons.mask_len >= 4) {
+                    && xi->buttons.mask_len >= 4
+                    && (xi->buttons.mask[0] & 2) != 0) {
                 evw = xi->event;
                 is_press = 1;
                 wm_xi_cookie = 1;
