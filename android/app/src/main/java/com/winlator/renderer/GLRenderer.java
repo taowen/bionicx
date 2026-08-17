@@ -124,7 +124,9 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
                 latch.countDown();
             }
         });
-        xServerView.requestRender();
+        /* queueEvent already notifies the WHEN_DIRTY GL thread. requestRender
+         * would present the whole 2640x1216 scene after every Composite.
+         * Window dirty flush coalesces presents onto vsync instead. */
         try {
             if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) return false;
         }
