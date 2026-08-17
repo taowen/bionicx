@@ -27,5 +27,10 @@ if ! grep -F 'IconThemeName' \
     echo "xfce-session must pin Adwaita instead of the Tango stub" >&2
     exit 1
 fi
+if ! grep -F 'XDG_MENU_PREFIX' \
+        "$repo_dir/profiles/xfce-session.json" >/dev/null; then
+    echo "xfce-session must set XDG_MENU_PREFIX so garcon finds xfce-applications.menu" >&2
+    exit 1
+fi
 chmod +x "$repo_dir/examples/xfce-session/install-and-run.sh"
 echo "xfce session profile launches xfwm4 plus two package apps: PASS"

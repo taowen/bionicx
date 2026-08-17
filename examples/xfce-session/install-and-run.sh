@@ -7,7 +7,7 @@ mkdir -p "$repo_dir/build/xfce-session-bundle/app/bin"
 podman run --rm --userns=keep-id --volume "$repo_dir:/work:Z" --workdir /work \
     "$builder" aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
     examples/xfce-session/xfce-session.c \
-    -o build/xfce-session-bundle/app/bin/xfce-session -lX11
+    -o build/xfce-session-bundle/app/bin/xfce-session -lX11 -lXtst
 interpreter=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
 rpath=/data/user/0/io.taowen.bx/files/rootfs/usr/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu
 patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \
@@ -44,7 +44,7 @@ adb -s "$serial" exec-out screencap -p > \
 log="$(adb -s "$serial" logcat -d -v brief)"
 result="$(grep -E 'BXTEST|BXSUMMARY|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log")"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY xfce-session-accept passed=11 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY xfce-session-accept passed=12 failed=0" <<<"$result"
 grep -Fq "enabled D-Bus session service" <<<"$result"
 if grep -F 'Conversion from ISO-8859-1 to UTF-8 is not supported' <<<"$log"; then
     echo "xfce-session must convert latin1 clipboard text" >&2

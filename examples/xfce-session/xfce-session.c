@@ -3,6 +3,8 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
+#include <X11/extensions/XTest.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -15,7 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 
-static pid_t children[8];
+static pid_t children[12];
 static size_t child_count;
 
 static int on_x_error(Display *display, XErrorEvent *event) {
@@ -62,7 +64,7 @@ static pid_t start(char *const argv[]) {
         perror(argv[0]);
         _exit(127);
     }
-    if (child > 0 && child_count < 8) children[child_count++] = child;
+    if (child > 0 && child_count < 12) children[child_count++] = child;
     return child;
 }
 
@@ -172,6 +174,108 @@ static Window find_class(Display *display, Window root, const char *wanted) {
     int visited = 0;
     walk_class(display, root, wanted, &best, &best_area, 0, &visited, 1);
     return best;
+}
+
+static void walk_widest(Display *display, Window window, const char *wanted,
+                        Window *best, int *best_width, int depth, int *visited) {
+    if (depth > 8 || *visited > 400) return;
+    ++*visited;
+    XClassHint hint = {0};
+    if (XGetClassHint(display, window, &hint)) {
+        int match = class_matches(&hint, wanted);
+        if (hint.res_name != NULL) XFree(hint.res_name);
+        if (hint.res_class != NULL) XFree(hint.res_class);
+        if (match) {
+            XWindowAttributes attributes = {0};
+            if (XGetWindowAttributes(display, window, &attributes)
+                    && attributes.map_state == IsViewable
+                    && attributes.width > *best_width) {
+                *best = window;
+                *best_width = attributes.width;
+            }
+        }
+    }
+    Window query_root = None;
+    Window parent = None;
+    Window *kids = NULL;
+    unsigned count = 0;
+    if (!XQueryTree(display, window, &query_root, &parent, &kids, &count))
+        return;
+    for (unsigned i = 0; i < count; ++i)
+        walk_widest(display, kids[i], wanted, best, best_width, depth + 1,
+                    visited);
+    if (kids != NULL) XFree(kids);
+}
+
+static Window find_widest_class(Display *display, Window root,
+                                const char *wanted) {
+    Window best = None;
+    int best_width = 0;
+    int visited = 0;
+    walk_widest(display, root, wanted, &best, &best_width, 0, &visited);
+    return best;
+}
+
+static int window_listed(const Window *windows, int count, Window window) {
+    for (int i = 0; i < count; ++i) {
+        if (windows[i] == window) return 1;
+    }
+    return 0;
+}
+
+static int is_screen_sized(Display *display, const XWindowAttributes *attributes) {
+    int screen = DefaultScreen(display);
+    int width = DisplayWidth(display, screen);
+    int height = DisplayHeight(display, screen);
+    return attributes->width >= width - 16
+            && attributes->height >= height - 16;
+}
+
+static int collect_override(Display *display, Window root, Window *out,
+                            int max, int menus_only) {
+    Window query_root = None;
+    Window parent = None;
+    Window *kids = NULL;
+    unsigned count = 0;
+    int found = 0;
+    if (!XQueryTree(display, root, &query_root, &parent, &kids, &count)
+            || kids == NULL)
+        return 0;
+    for (unsigned i = 0; i < count && found < max; ++i) {
+        XWindowAttributes attributes = {0};
+        if (!XGetWindowAttributes(display, kids[i], &attributes)) continue;
+        if (attributes.map_state != IsViewable || !attributes.override_redirect)
+            continue;
+        if (menus_only) {
+            if (is_screen_sized(display, &attributes)) continue;
+            if (attributes.width < 80 || attributes.height < 80) continue;
+        }
+        out[found++] = kids[i];
+    }
+    XFree(kids);
+    return found;
+}
+
+static int wait_new_menu(Display *display, Window root, const Window *before,
+                         int before_n, int timeout_ms, char *detail,
+                         size_t detail_size) {
+    int waited = 0;
+    while (waited <= timeout_ms) {
+        Window after[32];
+        int after_n = collect_override(display, root, after, 32, 1);
+        for (int k = 0; k < after_n; ++k) {
+            if (window_listed(before, before_n, after[k])) continue;
+            XWindowAttributes attributes = {0};
+            if (!XGetWindowAttributes(display, after[k], &attributes))
+                continue;
+            snprintf(detail, detail_size, "menu %dx%d", attributes.width,
+                     attributes.height);
+            return 1;
+        }
+        sleep_ms(100);
+        waited += 100;
+    }
+    return 0;
 }
 
 static Window wait_class(Display *display, Window root, const char *wanted,
@@ -324,7 +428,8 @@ static int named_selection_owned(Display *display, const char *name) {
     return XGetSelectionOwner(display, atom) != None;
 }
 
-static int accept_session(Display *display, char *app2_path) {
+static int accept_session(Display *display, const char *prefix,
+                          char *app2_path) {
     int passed = 0;
     int failed = 0;
 #define RECORD(value) do { if (value) ++passed; else ++failed; } while (0)
@@ -377,6 +482,72 @@ static int accept_session(Display *display, char *app2_path) {
              (unsigned long)thunar, (unsigned long)mousepad);
     result("session-two-mapped", mapped, detail);
     RECORD(mapped);
+
+    int menu_ok = 0;
+    KeyCode escape = XKeysymToKeycode(display, XK_Escape);
+    if (escape != 0) {
+        XTestFakeKeyEvent(display, escape, True, 0);
+        XTestFakeKeyEvent(display, escape, False, 20);
+        XSync(display, False);
+        sleep_ms(200);
+    }
+    Window existing[32];
+    int existing_n = collect_override(display, root, existing, 32, 0);
+    char popup[512];
+    snprintf(popup, sizeof(popup), "%s/xfce4-popup-applicationsmenu", prefix);
+    char *popup_argv[] = {popup, NULL};
+    pid_t popup_pid = start(popup_argv);
+    printf("BXINFO applications-popup pid=%d before_or=%d\n",
+           (int)popup_pid, existing_n);
+    fflush(stdout);
+    menu_ok = wait_new_menu(display, root, existing, existing_n, 2000, detail,
+                            sizeof(detail));
+    if (!menu_ok) {
+        Window bar = find_widest_class(display, root, "Xfce4-panel");
+        if (bar == None) bar = find_widest_class(display, root, "xfce4-panel");
+        if (bar == None) bar = panel;
+        XWindowAttributes bar_attr = {0};
+        int event_base = 0;
+        int error_base = 0;
+        int major = 0;
+        int minor = 0;
+        if (bar != None
+                && XTestQueryExtension(display, &event_base, &error_base,
+                                       &major, &minor)
+                && XGetWindowAttributes(display, bar, &bar_attr)) {
+            int root_x = 0;
+            int root_y = 0;
+            Window child = None;
+            int local_x = bar_attr.width > 24 ? 12 : bar_attr.width / 2;
+            int local_y = bar_attr.height > 2 ? bar_attr.height / 2 : 12;
+            XTranslateCoordinates(display, bar, root, local_x, local_y,
+                                  &root_x, &root_y, &child);
+            printf("BXINFO applications-click bar=0x%lx click=%d,%d\n",
+                   (unsigned long)bar, root_x, root_y);
+            fflush(stdout);
+            XTestFakeMotionEvent(display, DefaultScreen(display), root_x,
+                                 root_y, 0);
+            XTestFakeButtonEvent(display, 1, True, 30);
+            XTestFakeButtonEvent(display, 1, False, 30);
+            XSync(display, False);
+            char click_detail[256];
+            menu_ok = wait_new_menu(display, root, existing, existing_n, 2000,
+                                    click_detail, sizeof(click_detail));
+            if (menu_ok) {
+                snprintf(detail, sizeof(detail), "%s", click_detail);
+            } else {
+                snprintf(detail, sizeof(detail),
+                         "no popup after helper and click %d,%d",
+                         root_x, root_y);
+            }
+        } else {
+            snprintf(detail, sizeof(detail),
+                     "xfce4-popup-applicationsmenu did not map a menu");
+        }
+    }
+    result("session-applications-menu", menu_ok, detail);
+    RECORD(menu_ok);
+
     if (!mapped) {
         printf("BXSUMMARY xfce-session-accept passed=%d failed=%d\n",
                passed, failed);
@@ -556,7 +727,7 @@ int main(int argc, char **argv) {
             result("session-display", 0, "DISPLAY");
             accept_status = 1;
         } else {
-            accept_status = accept_session(display, argv[argi + 2]);
+            accept_status = accept_session(display, prefix, argv[argi + 2]);
         }
     }
     if (display != NULL) XCloseDisplay(display);
