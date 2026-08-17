@@ -459,6 +459,34 @@ static void probe_glyphs32(Display *display) {
     if (pixmap != None) XFreePixmap(display, pixmap);
 }
 
+static void probe_rgb24(Display *display) {
+    int before = x_errors;
+    XRenderPictFormat *rgb24 = XRenderFindStandardFormat(
+            display, PictStandardRGB24);
+    Window root = DefaultRootWindow(display);
+    Pixmap pixmap = rgb24 ? XCreatePixmap(display, root, 16, 16, 24) : None;
+    Picture dest = pixmap != None
+            ? XRenderCreatePicture(display, pixmap, rgb24, 0, NULL) : 0;
+    if (dest) {
+        XRenderColor white = {.red = 0xffff, .green = 0xffff,
+                              .blue = 0xffff, .alpha = 0xffff};
+        XRenderFillRectangle(display, PictOpSrc, dest, &white, 0, 0, 16, 16);
+    }
+    XImage *image = dest
+            ? XGetImage(display, pixmap, 8, 8, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    unsigned long pixel = image != NULL ? XGetPixel(image, 0, 0) : 0;
+    if (image != NULL) XDestroyImage(image);
+    char detail[80];
+    snprintf(detail, sizeof(detail), "pixel=0x%06lx errors=%d",
+             pixel & 0xffffff, x_errors - before);
+    result("rgb24", rgb24 && dest
+           && (pixel & 0xffffff) == 0xffffff
+           && x_errors == before, detail);
+    if (dest) XRenderFreePicture(display, dest);
+    if (pixmap != None) XFreePixmap(display, pixmap);
+}
+
 int main(int argc, char **argv) {
     int duration = argc > 1 ? atoi(argv[1]) : 2;
     XSetErrorHandler(handle_x_error);
@@ -479,6 +507,7 @@ int main(int argc, char **argv) {
     probe_window_picture_resize(display);
     probe_trapezoids(display);
     probe_glyphs32(display);
+    probe_rgb24(display);
     printf("BXSUMMARY xrender-x11 passed=%d failed=%d xerrors=%d\n",
            passed, checks - passed, x_errors);
     fflush(stdout);

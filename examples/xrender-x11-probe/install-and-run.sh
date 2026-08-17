@@ -26,5 +26,5 @@ done
 result="$(adb -s "$serial" logcat -d -v brief \
     | grep -E 'BXTEST|BXSUMMARY|BXERROR')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY xrender-x11 passed=4 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY xrender-x11 passed=5 failed=0" <<<"$result"
 echo "Render X11 probe: PASS"

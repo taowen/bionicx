@@ -6,7 +6,8 @@ pixmap clips, nearest filter, solid/gradient sources, creation-time
 repeat, a 24-in-32 fill Over a near-transparent title tile so unused
 destination alpha stays opaque, and a window Picture that still paints
 after the window grows from 1x1, CompositeTrapezoids fills a convex
-trap, and CompositeGlyphs32 paints a 32-bit glyph id. Advertises
+trap, CompositeGlyphs32 paints a 32-bit glyph id, and PictStandardRGB24
+fills a depth-24 pixmap. Advertises
 Render 0.4 so cairo will send those traps. Does not start a desktop
 daemon.
 

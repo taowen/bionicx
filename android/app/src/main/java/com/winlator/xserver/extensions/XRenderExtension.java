@@ -48,6 +48,7 @@ public class XRenderExtension extends Extension {
     private static final int SUBPIXEL_UNKNOWN = 0;
 
     private final int argb32Format = IDGenerator.generate();
+    private final int rgb24Format = IDGenerator.generate();
     private final int a8Format = IDGenerator.generate();
     private final int a1Format = IDGenerator.generate();
     private final SparseArray<Picture> pictures = new SparseArray<>();
@@ -246,21 +247,25 @@ public class XRenderExtension extends Extension {
     private void queryPictFormats(XClient client, XOutputStream outputStream)
             throws IOException {
         Visual visual = xServer.pixmapManager.visual;
-        int payloadBytes = 3 * 28 + 8 + (8 + 8) + 8 + 4;
+        int payloadBytes = 4 * 28 + 8 + (8 + 8) + 8 + 8 + 4;
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(RESPONSE_CODE_SUCCESS);
             outputStream.writeByte((byte)0);
             outputStream.writeShort(client.getSequenceNumber());
             outputStream.writeInt(payloadBytes / 4);
-            outputStream.writeInt(3); // formats
+            outputStream.writeInt(4); // formats
             outputStream.writeInt(1); // screens
-            outputStream.writeInt(2); // depths
+            outputStream.writeInt(3); // depths
             outputStream.writeInt(1); // visuals
             outputStream.writeInt(1); // subpixel orders
             outputStream.writeInt(0);
 
             writeDirectFormat(outputStream, argb32Format, 32,
                     16, 0xff, 8, 0xff, 0, 0xff, 24, 0xff);
+            // cairo-xlib looks up PictStandardRGB24 for opaque surfaces.
+            // Depth-24 pixmaps share the 32-bit TrueColor buffer.
+            writeDirectFormat(outputStream, rgb24Format, 24,
+                    16, 0xff, 8, 0xff, 0, 0xff, 0, 0);
             // Xft uses an alpha-only Render format for glyph sets. It need not
             // correspond to a screen depth or a core-protocol Pixmap format.
             writeDirectFormat(outputStream, a8Format, 8,
@@ -268,7 +273,7 @@ public class XRenderExtension extends Extension {
             writeDirectFormat(outputStream, a1Format, 1,
                     0, 0, 0, 0, 0, 0, 0, 1);
 
-            outputStream.writeInt(2); // depths on this screen
+            outputStream.writeInt(3); // depths on this screen
             outputStream.writeInt(argb32Format); // fallback
 
             outputStream.writeByte((byte)32);
@@ -277,6 +282,11 @@ public class XRenderExtension extends Extension {
             outputStream.writeInt(0);
             outputStream.writeInt(visual.id);
             outputStream.writeInt(argb32Format);
+
+            outputStream.writeByte((byte)24);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort((short)0);
+            outputStream.writeInt(0);
 
             outputStream.writeByte((byte)1);
             outputStream.writeByte((byte)0);
@@ -290,6 +300,7 @@ public class XRenderExtension extends Extension {
     private boolean formatMatchesDrawable(int format, Drawable drawable) {
         if (drawable == null || drawable.visual == null) return false;
         return (format == argb32Format && drawable.visual.depth == 32)
+                || (format == rgb24Format && drawable.visual.depth == 32)
                 || (format == a8Format && drawable.visual.depth == 8)
                 || (format == a1Format && drawable.visual.depth == 1);
     }
@@ -303,7 +314,8 @@ public class XRenderExtension extends Extension {
 
         Drawable drawable = xServer.drawableManager.getDrawable(drawableId);
         if (drawable == null) throw new BadDrawable(drawableId);
-        if (format != argb32Format && format != a8Format && format != a1Format)
+        if (format != argb32Format && format != rgb24Format
+                && format != a8Format && format != a1Format)
             throw new BadValue(format);
         if (!formatMatchesDrawable(format, drawable)) throw new BadMatch();
 
@@ -762,6 +774,8 @@ public class XRenderExtension extends Extension {
         // Core drawing stores 24-in-32 with an unused alpha byte of 0.
         // PictOpSrc would otherwise copy those samples as fully transparent
         // and leave the compositor output empty.
+        if (picture.format == rgb24Format)
+            return 0xff000000 | (pixel & 0x00ffffff);
         if (picture.format == argb32Format && (pixel >>> 24) == 0
                 && (pixel & 0x00ffffff) != 0)
             return 0xff000000 | (pixel & 0x00ffffff);

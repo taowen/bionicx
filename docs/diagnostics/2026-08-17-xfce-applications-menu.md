@@ -196,6 +196,10 @@ sync grab stayed frozen. It is not a separate paint bug.
 Reopened Mousepad chrome paints (title `Untitled 1`, Adwaita menubar).
 The editor pixmap is 100% `0xfcfcfc` because the buffer is empty. An
 XTEST `bx` after `_NET_ACTIVE_WINDOW` still leaves the editor crop
-without letter ink (about 17 mid pixels, caret-sized). Next dump is
-whether GtkTextView paints known buffer text, not whether Untitled is
-white.
+without letter ink (about 17 mid pixels, caret-sized).
+
+Isolated `gtk-textview` sets `BxGlyphs` in-process. The widget window
+has paper+ink (`light=7498 mid=124 dark=58`). The TEXT child is a
+full-size pixmap that stays `pixel=0x000000`. A compositor shows that
+child, so the editor looks blank. `PictStandardRGB24` is now
+advertised for cairo's opaque surfaces.
