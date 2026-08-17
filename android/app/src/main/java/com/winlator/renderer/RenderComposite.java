@@ -13,9 +13,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 
 /**
- * Glamor-style Render Composite: the GLES texture is the drawable truth.
- * Porter-Duff Over and A8 glyphs run on the GPU. GetImage downloads
- * only when the CPU reads pixels (BGRA glReadPixels, no swizzle).
+ * Glamor-style Render: GLES texture is the 32-bit drawable.
+ * Fill/copy/Porter-Duff/glyphs run here. GetImage downloads on demand.
  */
 public class RenderComposite {
     private static final String TAG = "BionicXRenderGL";
@@ -74,6 +73,17 @@ public class RenderComposite {
                         boolean maskIsA8, Drawable destination, int destX,
                         int destY, int width, int height, Integer solidArgb,
                         List<int[]> clips) {
+        return composite(3, source, sourceRepeat, sourceX, sourceY, mask,
+                maskX, maskY, maskIsA8, destination, destX, destY, width,
+                height, solidArgb, clips);
+    }
+
+    public boolean composite(int operation, Drawable source,
+                        boolean sourceRepeat, int sourceX, int sourceY,
+                        Drawable mask, int maskX, int maskY,
+                        boolean maskIsA8, Drawable destination, int destX,
+                        int destY, int width, int height, Integer solidArgb,
+                        List<int[]> clips) {
         if (destination == null || destination.getData() == null
                 || clips == null || clips.isEmpty())
             return false;
@@ -110,12 +120,15 @@ public class RenderComposite {
                 return true;
             CompositeMaterial shader = activeShader();
             boolean fetch = shader.usesFramebufferFetch();
+            boolean readsDest = operation != 0 && operation != 1;
             boolean maskFromDest = mask != null && mask == destination;
-            if ((!fetch || maskFromDest) && !blitDestinationToScratch(destTexture,
+            if ((readsDest && !fetch || maskFromDest)
+                    && !blitDestinationToScratch(destTexture,
                     destination.width, destination.height, dirtyLeft, dirtyTop,
                     dirtyRight - dirtyLeft, dirtyBottom - dirtyTop))
                 return false;
             shader.use();
+            shader.setUniformFloat(shader.uniforms.op, operation);
             quadVertices.bind(shader.programId);
             GLES20.glDisable(GLES20.GL_BLEND);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,
@@ -127,6 +140,7 @@ public class RenderComposite {
                 shader.setUniformInt(shader.uniforms.dstTexture, 0);
             }
             boolean solid = solidArgb != null;
+            shader.setUniformInt(shader.uniforms.srcUnusedAlpha, solid ? 0 : 1);
             boolean srcFromDst = fetch && source != null
                     && source == destination && !solid;
             shader.setUniformInt(shader.uniforms.solidSrc, solid ? 1 : 0);
@@ -254,6 +268,8 @@ public class RenderComposite {
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, scratch.getTextureId());
                 shader.setUniformInt(shader.uniforms.dstTexture, 0);
             }
+            shader.setUniformFloat(shader.uniforms.op, 3);
+            shader.setUniformInt(shader.uniforms.srcUnusedAlpha, 0);
             shader.setUniformInt(shader.uniforms.solidSrc, 1);
             shader.setUniformInt(shader.uniforms.hasSrc, 0);
             shader.setUniformInt(shader.uniforms.hasMask, 1);
@@ -293,7 +309,14 @@ public class RenderComposite {
         }
     }
 
+    private static int opaqueRgb(int argb) {
+        if ((argb >>> 24) == 0 && (argb & 0x00ffffff) != 0)
+            return 0xff000000 | argb;
+        return argb;
+    }
+
     private void setSolidColor(int argb) {
+        argb = opaqueRgb(argb);
         float inv = 1.0f / 255.0f;
         material.setUniformVec4(material.uniforms.solidColor,
                 ((argb >>> 16) & 0xff) * inv,
@@ -324,6 +347,8 @@ public class RenderComposite {
         textureMaterial.setUniformInt(textureMaterial.uniforms.dstTexture, 0);
         textureMaterial.setUniformInt(textureMaterial.uniforms.hasSrc, 0);
         textureMaterial.setUniformInt(textureMaterial.uniforms.hasMask, 0);
+        textureMaterial.setUniformFloat(textureMaterial.uniforms.op, 3);
+        textureMaterial.setUniformInt(textureMaterial.uniforms.srcUnusedAlpha, 0);
         textureMaterial.setUniformInt(textureMaterial.uniforms.solidSrc, 1);
         textureMaterial.setUniformInt(textureMaterial.uniforms.srcFromDst, 0);
         textureMaterial.setUniformVec4(textureMaterial.uniforms.solidColor,
@@ -338,6 +363,71 @@ public class RenderComposite {
         quadVertices.disable();
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         return true;
+    }
+
+    public boolean fill(Drawable destination, int argb, List<int[]> clips) {
+        if (destination == null || clips == null || clips.isEmpty())
+            return false;
+        Texture destTexture = destination.getTexture();
+        if (destTexture == null) return false;
+        synchronized (destination.renderLock) {
+            destTexture.updateFromDrawable();
+            if (!destTexture.ensureFramebuffer()) return false;
+            int dirtyLeft = destination.width;
+            int dirtyTop = destination.height;
+            int dirtyRight = 0;
+            int dirtyBottom = 0;
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,
+                    destTexture.getFramebuffer());
+            GLES20.glViewport(0, 0, destination.width, destination.height);
+            GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
+            argb = opaqueRgb(argb);
+            float inv = 1.0f / 255.0f;
+            GLES20.glClearColor(((argb >>> 16) & 0xff) * inv,
+                    ((argb >>> 8) & 0xff) * inv,
+                    (argb & 0xff) * inv,
+                    ((argb >>> 24) & 0xff) * inv);
+            for (int[] clip : clips) {
+                if (clip[2] <= 0 || clip[3] <= 0) continue;
+                dirtyLeft = Math.min(dirtyLeft, clip[0]);
+                dirtyTop = Math.min(dirtyTop, clip[1]);
+                dirtyRight = Math.max(dirtyRight, clip[0] + clip[2]);
+                dirtyBottom = Math.max(dirtyBottom, clip[1] + clip[3]);
+                GLES20.glScissor(clip[0], clip[1], clip[2], clip[3]);
+                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+            }
+            GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+            if (dirtyRight <= dirtyLeft || dirtyBottom <= dirtyTop)
+                return true;
+            destination.markGpuPixelsCurrent(dirtyLeft, dirtyTop,
+                    dirtyRight - dirtyLeft, dirtyBottom - dirtyTop);
+            return true;
+        }
+    }
+
+    public boolean forceOpaqueRgb(Drawable destination, int x, int y,
+                                  int width, int height) {
+        if (destination == null || width <= 0 || height <= 0) return false;
+        Texture destTexture = destination.getTexture();
+        if (destTexture == null) return false;
+        synchronized (destination.renderLock) {
+            destTexture.updateFromDrawable();
+            if (!destTexture.ensureFramebuffer()) return false;
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,
+                    destTexture.getFramebuffer());
+            GLES20.glViewport(0, 0, destination.width, destination.height);
+            GLES20.glColorMask(false, false, false, true);
+            GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
+            GLES20.glScissor(x, y, width, height);
+            GLES20.glClearColor(0, 0, 0, 1);
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+            GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
+            GLES20.glColorMask(true, true, true, true);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+            destination.markGpuPixelsCurrent(x, y, width, height);
+            return true;
+        }
     }
 
     public boolean downloadGpuDirty(Drawable destination) {

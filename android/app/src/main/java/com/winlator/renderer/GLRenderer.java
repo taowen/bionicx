@@ -137,19 +137,30 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
         return !failed.get();
     }
 
+    public boolean composite(int operation, Drawable source,
+            boolean sourceRepeat, int sourceX, int sourceY, Drawable mask,
+            int maskX, int maskY, boolean maskIsA8, Drawable destination,
+            int destX, int destY, int width, int height, Integer solidArgb,
+            java.util.List<int[]> clips) {
+        AtomicBoolean ok = new AtomicBoolean();
+        boolean ran = runSync(() -> {
+            ok.set(renderComposite.composite(operation, source, sourceRepeat,
+                    sourceX, sourceY, mask, maskX, maskY, maskIsA8,
+                    destination, destX, destY, width, height, solidArgb,
+                    clips));
+            viewportNeedsUpdate = true;
+        }, 5000);
+        return ran && ok.get();
+    }
+
     public boolean compositeOver(Drawable source, boolean sourceRepeat,
             int sourceX, int sourceY, Drawable mask, int maskX, int maskY,
             boolean maskIsA8, Drawable destination, int destX, int destY,
             int width, int height, Integer solidArgb,
             java.util.List<int[]> clips) {
-        AtomicBoolean ok = new AtomicBoolean();
-        boolean ran = runSync(() -> {
-            ok.set(renderComposite.over(source, sourceRepeat, sourceX, sourceY,
-                    mask, maskX, maskY, maskIsA8, destination, destX, destY,
-                    width, height, solidArgb, clips));
-            viewportNeedsUpdate = true;
-        }, 5000);
-        return ran && ok.get();
+        return composite(3, source, sourceRepeat, sourceX, sourceY, mask,
+                maskX, maskY, maskIsA8, destination, destX, destY, width,
+                height, solidArgb, clips);
     }
 
     public boolean compositeGlyphs(Drawable destination, int color,
@@ -175,6 +186,27 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
         boolean ran = runSync(() -> {
             ok.set(renderComposite.copy(source, srcX, srcY, destination,
                     dstX, dstY, width, height));
+            viewportNeedsUpdate = true;
+        }, 5000);
+        return ran && ok.get();
+    }
+
+    public boolean fillGpu(Drawable destination, int argb,
+            java.util.List<int[]> clips) {
+        AtomicBoolean ok = new AtomicBoolean();
+        boolean ran = runSync(() -> {
+            ok.set(renderComposite.fill(destination, argb, clips));
+            viewportNeedsUpdate = true;
+        }, 5000);
+        return ran && ok.get();
+    }
+
+    public boolean forceOpaqueGpu(Drawable destination, int x, int y,
+            int width, int height) {
+        AtomicBoolean ok = new AtomicBoolean();
+        boolean ran = runSync(() -> {
+            ok.set(renderComposite.forceOpaqueRgb(destination, x, y,
+                    width, height));
             viewportNeedsUpdate = true;
         }, 5000);
         return ran && ok.get();

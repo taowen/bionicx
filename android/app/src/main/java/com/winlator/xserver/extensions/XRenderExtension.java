@@ -7,9 +7,7 @@ import android.util.Log;
 
 import com.winlator.core.Callback;
 import com.winlator.renderer.GLRenderer;
-import com.winlator.renderer.GPUImage;
 import com.winlator.renderer.RenderComposite;
-import com.winlator.renderer.Texture;
 import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
@@ -663,11 +661,7 @@ public class XRenderExtension extends Extension {
     }
 
     private int sourceColor(Picture source) {
-        if (source.solidColor != null) return source.solidColor;
-        Drawable drawable = pictureDrawable(source);
-        if (drawable == null) return 0xff000000;
-        ByteBuffer data = drawable.getData();
-        return data != null && data.capacity() >= 4 ? data.getInt(0) : 0xff000000;
+        return pictureColor(source, 0, 0);
     }
 
     private static int interpolateColor(int first, int second, double amount) {
@@ -838,91 +832,9 @@ public class XRenderExtension extends Extension {
         return masked;
     }
 
-    private boolean tryCompositeFast(Picture source, Picture destination,
-            Drawable sourceDrawable, Drawable destinationDrawable,
-            Picture mask, Drawable maskDrawable, int operation,
-            int sourceX, int sourceY, int destinationX, int destinationY,
-            int width, int height) {
-        if (mask != null || maskDrawable != null) return false;
-        if (destinationDrawable == null) return false;
-        if (operation != PICT_OP_SRC && operation != PICT_OP_CLEAR)
-            return false;
-        boolean solid = source != null && source.solidColor != null
-                && source.gradient == null && source.radialGradient == null;
-        boolean blit = sourceDrawable != null && source != null
-                && source.solidColor == null && source.gradient == null
-                && source.radialGradient == null
-                && source.format != a8Format && source.format != a1Format
-                && source.repeat == 0;
-        if (operation == PICT_OP_SRC && !solid && !blit) return false;
-        for (ClipRectangle rectangle : clippedRectangles(destination,
-                destinationX, destinationY, width, height)) {
-            if (operation == PICT_OP_CLEAR) {
-                destinationDrawable.fillRect(rectangle.x, rectangle.y,
-                        rectangle.width, rectangle.height, 0);
-                continue;
-            }
-            if (solid) {
-                destinationDrawable.fillRect(rectangle.x, rectangle.y,
-                        rectangle.width, rectangle.height, source.solidColor);
-                continue;
-            }
-            int srcX = sourceX + (rectangle.x - destinationX);
-            int srcY = sourceY + (rectangle.y - destinationY);
-            int copyX = rectangle.x;
-            int copyY = rectangle.y;
-            int copyW = rectangle.width;
-            int copyH = rectangle.height;
-            if (srcX < 0) {
-                copyX -= srcX;
-                copyW += srcX;
-                srcX = 0;
-            }
-            if (srcY < 0) {
-                copyY -= srcY;
-                copyH += srcY;
-                srcY = 0;
-            }
-            if (srcX + copyW > sourceDrawable.width)
-                copyW = sourceDrawable.width - srcX;
-            if (srcY + copyH > sourceDrawable.height)
-                copyH = sourceDrawable.height - srcY;
-            if (copyX != rectangle.x || copyY != rectangle.y
-                    || copyW != rectangle.width || copyH != rectangle.height)
-                destinationDrawable.fillRect(rectangle.x, rectangle.y,
-                        rectangle.width, rectangle.height, 0);
-            if (copyW > 0 && copyH > 0) {
-                destinationDrawable.copyArea((short)srcX, (short)srcY,
-                        (short)copyX, (short)copyY, (short)copyW, (short)copyH,
-                        sourceDrawable);
-                if (source.format == rgb24Format)
-                    destinationDrawable.forceOpaqueRgb(copyX, copyY, copyW,
-                            copyH);
-            }
-        }
-        return true;
-    }
-
-    private void maybeAttachAhb(Drawable drawable) {
-        if (drawable == null) return;
-        synchronized (drawable.renderLock) {
-            if (!RenderComposite.shouldUseAhb(drawable)) return;
-            GPUImage image = new GPUImage(drawable, true, true);
-            if (image.getHardwareBufferPtr() == 0) return;
-            image.setPreferEglImage(true);
-            Texture previous = drawable.replaceTextureKeepCpuBuffer(image);
-            GLRenderer renderer = xServer.getRenderer();
-            if (previous != null && renderer != null)
-                renderer.xServerView.queueEvent(previous::destroy);
-        }
-    }
-
-    private boolean tryCompositeGpu(Picture source, Picture destination,
-            Drawable sourceDrawable, Drawable destinationDrawable,
-            Picture mask, Drawable maskDrawable, int operation,
-            int sourceX, int sourceY, int maskX, int maskY,
-            int destinationX, int destinationY, int width, int height) {
-        if (operation != PICT_OP_OVER) return false;
+    private boolean gpuReady(Drawable destinationDrawable, Picture source,
+            Picture destination, Picture mask, Drawable maskDrawable,
+            int operation) {
         if (destinationDrawable == null || destinationDrawable.getData() == null)
             return false;
         if (destinationDrawable.visual == null
@@ -936,34 +848,59 @@ public class XRenderExtension extends Extension {
                 || source.format == a1Format))
             return false;
         if (mask != null && maskDrawable == null) return false;
+        if (operation != PICT_OP_CLEAR && operation != PICT_OP_SRC
+                && operation != PICT_OP_OVER && operation != PICT_OP_IN
+                && operation != PICT_OP_OUT_REVERSE
+                && operation != PICT_OP_ADD && operation != PICT_OP_SATURATE)
+            return false;
         GLRenderer renderer = xServer.getRenderer();
-        if (renderer == null || !renderer.hasEglContext()) return false;
+        return renderer != null && renderer.hasEglContext();
+    }
+
+    private boolean tryGpu(Picture source, Picture destination,
+            Drawable sourceDrawable, Drawable destinationDrawable,
+            Picture mask, Drawable maskDrawable, int operation,
+            int sourceX, int sourceY, int maskX, int maskY,
+            int destinationX, int destinationY, int width, int height) {
+        if (!gpuReady(destinationDrawable, source, destination, mask,
+                maskDrawable, operation))
+            return false;
+        GLRenderer renderer = xServer.getRenderer();
         ArrayList<int[]> clips = new ArrayList<>();
         for (ClipRectangle rectangle : clippedRectangles(destination,
                 destinationX, destinationY, width, height))
             clips.add(new int[] {rectangle.x, rectangle.y, rectangle.width,
                     rectangle.height});
         if (clips.isEmpty()) return true;
-        maybeAttachAhb(destinationDrawable);
+        boolean noMask = mask == null && maskDrawable == null;
+        boolean solid = source.solidColor != null;
+        if (noMask && (operation == PICT_OP_CLEAR
+                || (operation == PICT_OP_SRC && solid)))
+            return renderer.fillGpu(destinationDrawable,
+                    operation == PICT_OP_CLEAR ? 0 : source.solidColor, clips);
         boolean maskIsA8 = mask != null && (mask.format == a8Format
                 || (maskDrawable.visual != null
                     && maskDrawable.visual.depth != 32));
-        return renderer.compositeOver(source.solidColor != null
-                        ? null : sourceDrawable,
+        return renderer.composite(operation, solid ? null : sourceDrawable,
                 source.repeat == 1, sourceX, sourceY, maskDrawable, maskX,
                 maskY, maskIsA8, destinationDrawable, destinationX,
                 destinationY, width, height, source.solidColor, clips);
     }
 
-    private boolean tryFillOverGpu(Picture destination, Drawable drawable,
-            int color, ArrayList<int[]> clips) {
+    private boolean tryFillGpu(Drawable drawable, int operation, int color,
+            ArrayList<int[]> clips) {
         if (drawable == null || drawable.getData() == null) return false;
+        if (drawable.visual == null || drawable.visual.depth != 32)
+            return false;
         if (clips.isEmpty()) return true;
         GLRenderer renderer = xServer.getRenderer();
         if (renderer == null || !renderer.hasEglContext()) return false;
-        maybeAttachAhb(drawable);
-        return renderer.compositeOver(null, false, 0, 0, null, 0, 0, false,
-                drawable, 0, 0, drawable.width, drawable.height, color, clips);
+        if (operation == PICT_OP_CLEAR || operation == PICT_OP_SRC)
+            return renderer.fillGpu(drawable,
+                    operation == PICT_OP_CLEAR ? 0 : color, clips);
+        return renderer.composite(operation, null, false, 0, 0, null, 0, 0,
+                false, drawable, 0, 0, drawable.width, drawable.height,
+                color, clips);
     }
 
     private boolean tryGlyphsGpu(Picture source, Picture destination,
@@ -980,7 +917,6 @@ public class XRenderExtension extends Extension {
         if (quads.isEmpty()) return true;
         GLRenderer renderer = xServer.getRenderer();
         if (renderer == null || !renderer.hasEglContext()) return false;
-        maybeAttachAhb(destinationDrawable);
         return renderer.compositeGlyphs(destinationDrawable,
                 sourceColor(source), quads);
     }
@@ -1021,11 +957,7 @@ public class XRenderExtension extends Extension {
                 || destination == null || destinationDrawable == null)
             throw new BadValue(0);
         if (mask != null && maskDrawable == null) throw new BadMatch();
-        if (tryCompositeFast(source, destination, sourceDrawable,
-                destinationDrawable, mask, maskDrawable, operation,
-                sourceX, sourceY, destinationX, destinationY, width, height))
-            return;
-        if (tryCompositeGpu(source, destination, sourceDrawable,
+        if (tryGpu(source, destination, sourceDrawable,
                 destinationDrawable, mask, maskDrawable, operation,
                 sourceX, sourceY, maskX, maskY, destinationX, destinationY,
                 width, height))
@@ -1159,8 +1091,8 @@ public class XRenderExtension extends Extension {
 
         int color = colorToArgb(red, green, blue, alpha);
         int remaining = client.getRemainingRequestLength();
-        if (operation == PICT_OP_OVER && picture.format != a8Format
-                && drawable.visual != null && drawable.visual.depth == 32) {
+        if (picture.format != a8Format && drawable.visual != null
+                && drawable.visual.depth == 32) {
             ArrayList<int[]> clips = new ArrayList<>();
             while (remaining >= 8) {
                 int x = inputStream.readShort();
@@ -1174,10 +1106,21 @@ public class XRenderExtension extends Extension {
                 remaining -= 8;
             }
             if (remaining > 0) inputStream.skip(remaining);
-            if (tryFillOverGpu(picture, drawable, color, clips)) return;
-            for (int[] clip : clips)
-                drawable.blendSolidRect(clip[0], clip[1], clip[2], clip[3],
-                        color);
+            if (tryFillGpu(drawable, operation, color, clips)) return;
+            for (int[] clip : clips) {
+                if (operation == PICT_OP_IN) {
+                    int[] colors = new int[clip[2] * clip[3]];
+                    java.util.Arrays.fill(colors, color);
+                    drawable.blendArgbPixels(clip[0], clip[1], clip[2],
+                            clip[3], colors, null, 0, 0, PICT_OP_IN);
+                }
+                else if (operation == PICT_OP_OVER)
+                    drawable.blendSolidRect(clip[0], clip[1], clip[2],
+                            clip[3], color);
+                else
+                    drawable.fillRect(clip[0], clip[1], clip[2], clip[3],
+                            operation == PICT_OP_CLEAR ? 0 : color);
+            }
             return;
         }
         while (remaining >= 8) {

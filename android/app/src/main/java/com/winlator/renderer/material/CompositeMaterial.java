@@ -35,6 +35,8 @@ public class CompositeMaterial extends ShaderMaterial {
         public final Uniform srcRepeat = new Uniform("srcRepeat");
         public final Uniform maskChannel = new Uniform("maskChannel");
         public final Uniform srcFromDst = new Uniform("srcFromDst");
+        public final Uniform srcUnusedAlpha = new Uniform("srcUnusedAlpha");
+        public final Uniform op = new Uniform("op");
     }
 
     @Override
@@ -92,6 +94,8 @@ public class CompositeMaterial extends ShaderMaterial {
             "uniform int srcRepeat;",
             "uniform int maskChannel;",
             "uniform int srcFromDst;",
+            "uniform int srcUnusedAlpha;",
+            "uniform float op;",
             "varying vec2 vSrcUV;",
             "varying vec2 vDstUV;",
             "varying vec2 vMaskUV;",
@@ -127,12 +131,46 @@ public class CompositeMaterial extends ShaderMaterial {
                 "return texel.a;",
             "}",
 
+            "vec4 unusedAlpha(vec4 pixel) {",
+                "if (pixel.a < 0.001 && (pixel.r + pixel.g + pixel.b) > 0.0)",
+                    "pixel.a = 1.0;",
+                "return pixel;",
+            "}",
+
             "void main() {",
-                "vec4 dst = sampleDest();",
-                "if (dst.a < 0.001 && (dst.r + dst.g + dst.b) > 0.0)",
-                    "dst.a = 1.0;",
+                "vec4 dst = unusedAlpha(sampleDest());",
                 "vec4 src = sampleSource(dst);",
+                "if (srcUnusedAlpha != 0) src = unusedAlpha(src);",
                 "src.a *= sampleMask();",
+                "if (op > 0.5 && op < 1.5) {",
+                    "gl_FragColor = src.a <= 0.0 ? vec4(0.0) : vec4(src.rgb, src.a);",
+                    "return;",
+                "}",
+                "if (op > 4.5 && op < 5.5) {",
+                    "float a = src.a * dst.a;",
+                    "gl_FragColor = a <= 0.0 ? vec4(0.0) : vec4(src.rgb, a);",
+                    "return;",
+                "}",
+                "if (op > 7.5 && op < 8.5) {",
+                    "float a = dst.a * (1.0 - src.a);",
+                    "gl_FragColor = a <= 0.0 ? vec4(0.0) : vec4(dst.rgb, a);",
+                    "return;",
+                "}",
+                "if (op > 11.5 && op < 12.5) {",
+                    "float a = min(1.0, src.a + dst.a);",
+                    "vec3 premul = src.rgb * src.a + dst.rgb * dst.a;",
+                    "gl_FragColor = a <= 0.0 ? vec4(0.0)",
+                        ": vec4(min(vec3(1.0), premul / a), a);",
+                    "return;",
+                "}",
+                "if (op > 12.5 && op < 13.5) {",
+                    "float srcContrib = min(src.a, 1.0 - dst.a);",
+                    "float a = srcContrib + dst.a;",
+                    "vec3 premul = src.rgb * srcContrib + dst.rgb * dst.a;",
+                    "gl_FragColor = a <= 0.0 ? vec4(0.0)",
+                        ": vec4(min(vec3(1.0), premul / a), a);",
+                    "return;",
+                "}",
                 "float outA = src.a + dst.a * (1.0 - src.a);",
                 "vec3 outC = outA > 0.0",
                     "? (src.rgb * src.a + dst.rgb * dst.a * (1.0 - src.a)) / outA",

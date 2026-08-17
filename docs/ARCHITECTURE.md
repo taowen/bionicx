@@ -137,12 +137,19 @@ root window.
 
 ### Host GPU presentation
 
-Software X11 follows the glamor model: the GLES texture is the drawable
-source of truth. XRender Over, A8 glyphs and core CopyArea run on the GPU.
-The CPU `ByteBuffer` is a GetImage cache. `glReadPixels` (BGRA, no swizzle)
-runs only when a core request reads or writes pixels the GPU still owns.
-The GL present path samples those textures and uses `tryLock` on
-`DRAWABLE_MANAGER` so a GetImage download cannot deadlock against vsync.
+Software X11 follows the glamor model. One rule: the GLES texture is the
+32-bit drawable. There is one GPU path, not a Fast/CPU fill plus a
+separate Over cache. Clear/Src fill with `glClear`, CopyArea with
+`glBlitFramebuffer`, and Porter-Duff (Src/Over/In/OutReverse/Add/Saturate)
+plus A8 glyphs with one shader. The X request waits for that GPU work
+(GLSurfaceView thread). The CPU `ByteBuffer` is a GetImage /
+`prepare_access` cache: every CPU read (GetImage, `pictureColor`, clip
+masks) downloads first, and a GPU write does not upload stale heap bytes
+back over the texture. `glReadPixels` (BGRA, no swizzle) runs only then,
+not after every Composite. 24-in-32 unused alpha is treated as opaque.
+Present samples the textures and `tryLock`s `DRAWABLE_MANAGER` so a
+download cannot deadlock against vsync. A8 dests, gradients and
+component-alpha stay on the CPU after a download.
 
 A second path remains for native GL clients: DRI3/Present uses `GPUImage`,
 backed by Android `AHardwareBuffer` and imported as `EGLImageKHR`. Mali

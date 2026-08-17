@@ -90,7 +90,8 @@ public class Drawable extends XResource {
     public void markGpuPixelsCurrent(int x, int y, int w, int h) {
         synchronized (renderLock) {
             unionGpuDirty(x, y, w, h);
-            if (texture != null) texture.setNeedsUpdate(hasDirty);
+            /* GPU owns this rect. Do not upload stale CPU bytes over it. */
+            if (texture != null) texture.setNeedsUpdate(false);
         }
         if (onDrawListener != null) onDrawListener.run();
     }
@@ -257,13 +258,13 @@ public class Drawable extends XResource {
 
     public void fillRect(int x, int y, int width, int height, int color) {
         if (this.data == null) return;
+        x = (short)Mathf.clamp(x, 0, this.width-1);
+        y = (short)Mathf.clamp(y, 0, this.height-1);
+        if ((x + width) > this.width) width = (short)((this.width - x));
+        if ((y + height) > this.height) height = (short)((this.height - y));
+        if (tryFillGpu(x, y, width, height, color)) return;
         ensureCpuPixels();
         synchronized (renderLock) {
-            x = (short)Mathf.clamp(x, 0, this.width-1);
-            y = (short)Mathf.clamp(y, 0, this.height-1);
-            if ((x + width) > this.width) width = (short)((this.width - x));
-            if ((y + height) > this.height) height = (short)((this.height - y));
-
             fillRect((short)x, (short)y, (short)width, (short)height, color,
                     this.getStride(), this.data);
             this.data.rewind();
@@ -632,6 +633,7 @@ public class Drawable extends XResource {
 
     public void forceOpaqueRgb(int x, int y, int w, int h) {
         if (data == null || w <= 0 || h <= 0) return;
+        if (tryForceOpaqueGpu(x, y, w, h)) return;
         ensureCpuPixels();
         int stride = getStride();
         synchronized (renderLock) {
@@ -648,6 +650,25 @@ public class Drawable extends XResource {
                 }
             }
         }
+    }
+
+    private boolean tryFillGpu(int x, int y, int width, int height, int color) {
+        if (width <= 0 || height <= 0) return false;
+        if (visual == null || visual.depth != 32) return false;
+        if (texture == null) return false;
+        GLRenderer renderer = xServer != null ? xServer.getRenderer() : null;
+        if (renderer == null || !renderer.hasEglContext()) return false;
+        java.util.ArrayList<int[]> clips = new java.util.ArrayList<>();
+        clips.add(new int[] {x, y, width, height});
+        return renderer.fillGpu(this, color, clips);
+    }
+
+    private boolean tryForceOpaqueGpu(int x, int y, int w, int h) {
+        if (visual == null || visual.depth != 32) return false;
+        if (texture == null) return false;
+        GLRenderer renderer = xServer != null ? xServer.getRenderer() : null;
+        if (renderer == null || !renderer.hasEglContext()) return false;
+        return renderer.forceOpaqueGpu(this, x, y, w, h);
     }
 
     private boolean tryCopyAreaGpu(short srcX, short srcY, short dstX,
