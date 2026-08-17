@@ -18,5 +18,11 @@ BXSUMMARY xfce-session-accept passed=12 failed=0
 ```
 
 The session profile sets `XDG_MENU_PREFIX=xfce-` so garcon loads
-`/etc/xdg/menus/xfce-applications.menu`. Opening the menu by clicking
-the Applications plugin remains pending.
+`/etc/xdg/menus/xfce-applications.menu`.
+
+The Applications plugin opens on `button-press-event` with button 1 and
+no Control. `gtk-menu-probe` `gtk-press-menu` passes that path under a
+framed stub WM (`fired=1 type=4 button=1 state=0x0`). An XTEST click at
+`(20,13)` on the panel bar (`0x1000005` 2640x27, the cyan Applications
+icon) still does not map a menu when `xfwm4` is the WM. The plugin has
+no child X window; a 133x26 child at `x=2507` is the clock.

@@ -9,7 +9,8 @@ reparented into an unmapped frame must emit `UnmapNotify` with
 
 This is the xfwm4 `clientFrame` contract: reparent then map, including
 `TYPE_DOCK` and `GrabServer`. XTEST then clicks the framed dock while
-the frame also selects `ButtonPress`, which is how Applications is hit.
+the frame also selects `ButtonPress`, and a synchronous `GrabButton` on
+the frame `ReplayPointer`s through to the dock.
 
 ```sh
 ANDROID_SERIAL=<serial> examples/reparent-x11-probe/install-and-run.sh

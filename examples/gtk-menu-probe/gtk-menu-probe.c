@@ -13,6 +13,45 @@ typedef struct ListNode {
     struct ListNode *next;
 } ListNode;
 
+typedef struct GdkEventButton {
+    int type;
+    void *window;
+    signed char send_event;
+    unsigned time;
+    double x;
+    double y;
+    double *axes;
+    unsigned state;
+    unsigned button;
+} GdkEventButton;
+
+static int press_fired;
+static int press_type;
+static unsigned press_button;
+static unsigned press_state;
+static void *press_menu;
+static void (*press_popup)(void *, void *, int, int, const void *);
+
+static int on_button_press(void *widget, GdkEventButton *event, void *data) {
+    (void)data;
+    press_fired = 1;
+    if (event != NULL) {
+        press_type = event->type;
+        press_button = event->button;
+        press_state = event->state;
+        printf("BXINFO press type=%d button=%u state=0x%x\n", press_type,
+               press_button, press_state);
+        fflush(stdout);
+        if (event->button == 1 && event->type == 4
+                && (event->state & 4) == 0 && press_popup != NULL
+                && press_menu != NULL) {
+            press_popup(press_menu, widget, 7, 1, event);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static void result(const char *name, int passed, const char *detail) {
     printf("BXTEST %s %s%s%s\n", passed ? "PASS" : "FAIL", name,
            detail && *detail ? " " : "", detail ? detail : "");
@@ -31,13 +70,32 @@ static void *required_symbol(void *library, const char *name) {
     return symbol;
 }
 
+static Window wm_frame = None;
+
 static void drain_wm(Display *manager) {
     if (manager == NULL) return;
     XEvent event = {0};
     while (XPending(manager)) {
         XNextEvent(manager, &event);
         if (event.type == MapRequest) {
-            XMapWindow(manager, event.xmaprequest.window);
+            Window client = event.xmaprequest.window;
+            XWindowAttributes attributes = {0};
+            if (XGetWindowAttributes(manager, client, &attributes)
+                    && !attributes.override_redirect && wm_frame == None) {
+                wm_frame = XCreateSimpleWindow(manager,
+                                               DefaultRootWindow(manager),
+                                               attributes.x, attributes.y,
+                                               (unsigned)attributes.width + 8,
+                                               (unsigned)attributes.height + 4,
+                                               0, 0, 0x404040);
+                XSelectInput(manager, wm_frame,
+                             SubstructureRedirectMask
+                                     | SubstructureNotifyMask
+                                     | ButtonPressMask);
+                XReparentWindow(manager, client, wm_frame, 4, 2);
+                XMapWindow(manager, wm_frame);
+            }
+            XMapWindow(manager, client);
         } else if (event.type == ConfigureRequest) {
             XWindowChanges changes = {
                 .x = event.xconfigurerequest.x,
@@ -140,6 +198,9 @@ int main(int argc, char **argv) {
     void *(*gtk_label_new)(const char *) = NULL;
     void *(*gtk_menu_button_new)(void) = NULL;
     void (*gtk_menu_button_set_popup)(void *, void *) = NULL;
+    void *(*gtk_button_new_with_label)(const char *) = NULL;
+    unsigned long (*g_signal_connect_data)(void *, const char *, void *, void *,
+                                           void *, int) = NULL;
     void (*gtk_container_add)(void *, void *) = NULL;
     void (*gtk_box_pack_start)(void *, void *, int, int, unsigned) = NULL;
     void (*gtk_window_set_default_size)(void *, int, int) = NULL;
@@ -176,6 +237,15 @@ int main(int argc, char **argv) {
             required_symbol(gtk, "gtk_menu_button_new");
     *(void **)(&gtk_menu_button_set_popup) =
             required_symbol(gtk, "gtk_menu_button_set_popup");
+    *(void **)(&gtk_button_new_with_label) =
+            required_symbol(gtk, "gtk_button_new_with_label");
+    void *gobject = dlopen("libgobject-2.0.so.0", RTLD_NOW | RTLD_GLOBAL);
+    if (gobject == NULL) {
+        result("gtk-gobject", 0, dlerror());
+        return 1;
+    }
+    *(void **)(&g_signal_connect_data) =
+            required_symbol(gobject, "g_signal_connect_data");
     *(void **)(&gtk_container_add) = required_symbol(gtk, "gtk_container_add");
     *(void **)(&gtk_box_pack_start) = required_symbol(gtk, "gtk_box_pack_start");
     *(void **)(&gtk_window_set_default_size) =
@@ -237,6 +307,10 @@ int main(int argc, char **argv) {
     void *button = gtk_menu_button_new();
     void *click_menu = gtk_menu_new();
     void *click_item = gtk_menu_item_new_with_label("Open Terminal");
+    void *press_button_w = gtk_button_new_with_label("Applications");
+    void *press_item = gtk_menu_item_new_with_label("Open Terminal");
+    press_menu = gtk_menu_new();
+    press_popup = gtk_menu_popup_at_widget;
     if (window != NULL && box != NULL) {
         gtk_window_set_default_size(window, 320, 200);
         gtk_container_add(window, box);
@@ -246,6 +320,13 @@ int main(int argc, char **argv) {
             gtk_widget_show_all(click_menu);
             gtk_menu_button_set_popup(button, click_menu);
             gtk_box_pack_start(box, button, 0, 0, 0);
+        }
+        if (press_button_w != NULL && press_menu != NULL && press_item != NULL) {
+            gtk_menu_shell_append(press_menu, press_item);
+            gtk_widget_show_all(press_menu);
+            g_signal_connect_data(press_button_w, "button-press-event",
+                                  (void *)on_button_press, NULL, NULL, 0);
+            gtk_box_pack_start(box, press_button_w, 0, 0, 0);
         }
         gtk_widget_show_all(window);
     }
@@ -351,6 +432,67 @@ int main(int argc, char **argv) {
     }
     result("gtk-menu-click", click_ok, detail);
     RECORD(click_ok);
+
+    if (click_menu != NULL) gtk_menu_popdown(click_menu);
+    pump(gtk_events_pending, gtk_main_iteration_do, manager, 200);
+
+    int press_ok = 0;
+    if (press_button_w != NULL && gtk_widget_get_window(press_button_w) != NULL) {
+        int local_x = 0;
+        int local_y = 0;
+        void *toplevel = gtk_widget_get_toplevel(press_button_w);
+        gtk_widget_translate_coordinates(press_button_w, toplevel,
+                                         gtk_widget_get_allocated_width(
+                                                 press_button_w) / 2,
+                                         gtk_widget_get_allocated_height(
+                                                 press_button_w) / 2,
+                                         &local_x, &local_y);
+        int origin_x = 0;
+        int origin_y = 0;
+        gdk_window_get_origin(gtk_widget_get_window(toplevel), &origin_x,
+                              &origin_y);
+        int root_x = origin_x + local_x;
+        int root_y = origin_y + local_y;
+        Display *xtest = XOpenDisplay(NULL);
+        int event_base = 0;
+        int error_base = 0;
+        int major = 0;
+        int minor = 0;
+        if (xtest != NULL && XTestQueryExtension(xtest, &event_base,
+                                                 &error_base, &major, &minor)) {
+            XTestFakeMotionEvent(xtest, DefaultScreen(xtest), root_x, root_y,
+                                 0);
+            XTestFakeButtonEvent(xtest, 1, True, 20);
+            XTestFakeButtonEvent(xtest, 1, False, 20);
+            XSync(xtest, False);
+            pump(gtk_events_pending, gtk_main_iteration_do, manager, 800);
+            int press_count = 0;
+            int press_height = 0;
+            int press_width = largest_temp(gdk_display_get_default,
+                                           gdk_display_get_default_screen,
+                                           gdk_screen_get_root_window,
+                                           gdk_window_peek_children,
+                                           gdk_window_get_window_type,
+                                           gdk_window_is_visible,
+                                           gdk_window_get_width,
+                                           gdk_window_get_height, &press_count,
+                                           &press_height);
+            press_ok = press_fired && press_button == 1 && press_type == 4
+                    && (press_state & 4) == 0 && press_count > 0
+                    && press_width >= 40 && press_height >= 16;
+            snprintf(detail, sizeof(detail),
+                     "fired=%d type=%d button=%u state=0x%x temp=%d %dx%d",
+                     press_fired, press_type, press_button, press_state,
+                     press_count, press_width, press_height);
+        } else {
+            snprintf(detail, sizeof(detail), "XTEST unavailable");
+        }
+        if (xtest != NULL) XCloseDisplay(xtest);
+    } else {
+        snprintf(detail, sizeof(detail), "press button unrealized");
+    }
+    result("gtk-press-menu", press_ok, detail);
+    RECORD(press_ok);
 
     if (manager != NULL) XCloseDisplay(manager);
     printf("BXSUMMARY gtk-menu passed=%d failed=%d\n", passed, failed);

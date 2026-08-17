@@ -276,6 +276,60 @@ int main(int argc, char **argv) {
     }
     RECORD(click_ok);
 
+    int replay_ok = 0;
+    if (dock_ok) {
+        XGrabButton(manager, 1, AnyModifier, dock_frame, False,
+                    ButtonPressMask, GrabModeSync, GrabModeAsync, None, None);
+        XSync(manager, False);
+        int event_base = 0;
+        int error_base = 0;
+        int major = 0;
+        int minor = 0;
+        int root_x = 0;
+        int root_y = 0;
+        Window child = None;
+        XTranslateCoordinates(client, dock, root, 36, 13, &root_x, &root_y,
+                              &child);
+        while (XPending(client)) {
+            XEvent ignored = {0};
+            XNextEvent(client, &ignored);
+        }
+        if (XTestQueryExtension(client, &event_base, &error_base, &major,
+                                &minor)) {
+            XTestFakeMotionEvent(client, screen, root_x, root_y, 0);
+            XTestFakeButtonEvent(client, 1, True, 20);
+            XTestFakeButtonEvent(client, 1, False, 20);
+            XSync(client, False);
+        }
+        int waited = 0;
+        int saw_frame = 0;
+        while (waited <= 800) {
+            XEvent event = {0};
+            while (XCheckTypedWindowEvent(manager, dock_frame, ButtonPress,
+                                          &event)) {
+                saw_frame = 1;
+                XAllowEvents(manager, ReplayPointer, CurrentTime);
+                XFlush(manager);
+            }
+            if (XCheckTypedWindowEvent(client, dock, ButtonPress, &event)) {
+                replay_ok = 1;
+                break;
+            }
+            sleep_ms(20);
+            waited += 20;
+        }
+        XUngrabButton(manager, 1, AnyModifier, dock_frame);
+        char replay_detail[128];
+        snprintf(replay_detail, sizeof(replay_detail),
+                 replay_ok ? "ReplayPointer to dock frame=%d"
+                           : "no replay press frame=%d",
+                 saw_frame);
+        result("dock-replay", replay_ok, replay_detail);
+    } else {
+        result("dock-replay", 0, "dock not framed");
+    }
+    RECORD(replay_ok);
+
     printf("BXSUMMARY reparent-x11 passed=%d failed=%d xerrors=%d\n",
            passed, failed, x_errors);
     fflush(stdout);
