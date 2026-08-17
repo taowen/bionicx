@@ -157,7 +157,10 @@ public class WindowAttributes {
                     backgroundPixmap = null;
                     parentRelativeBackground = false;
                     hasBackground = true;
-                    window.getContent().fillColor(backgroundPixel);
+                    // XChangeWindowAttributes(CWBackPixel) only stores the
+                    // color used by later Map/ClearArea. GDK maps a child,
+                    // then tmp_reset_bg sets the pixel again; filling here
+                    // would wipe the Expose paint (blank GtkTextView).
                     break;
                 case FLAG_BACKING_PIXEL:
                     backingPixel = inputStream.readInt();

@@ -199,7 +199,12 @@ XTEST `bx` after `_NET_ACTIVE_WINDOW` still leaves the editor crop
 without letter ink (about 17 mid pixels, caret-sized).
 
 Isolated `gtk-textview` sets `BxGlyphs` in-process. The widget window
-has paper+ink (`light=7498 mid=124 dark=58`). The TEXT child is a
-full-size pixmap that stays `pixel=0x000000`. A compositor shows that
-child, so the editor looks blank. `PictStandardRGB24` is now
-advertised for cairo's opaque surfaces.
+has paper+ink (`ink=182`). The TEXT child stays `pixel=0x000000` until
+`XClearArea` (`tv-clear` then `ink=182`). `CWBackPixel` no longer
+fills the pixmap (`change-background-keeps-pixels`); GDK's
+`tmp_reset_bg` after Map/Configure must not wipe paint.
+`XSelectInput(Exposure)` on a viewable window generates Expose
+(`select-exposure-mapped`). `PictStandardRGB24` is advertised for
+cairo's opaque surfaces. The TEXT child still needs a later Expose
+before it paints; a compositor that presents that child still shows a
+blank editor until then.

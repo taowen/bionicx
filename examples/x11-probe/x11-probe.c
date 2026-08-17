@@ -397,6 +397,27 @@ int main(int argc, char **argv) {
     XDestroyWindow(display, title);
 
     before = x_errors;
+    Window keep = XCreateSimpleWindow(display, window, 200, 8, 40, 24, 0,
+            0, 0xffffff);
+    XMapWindow(display, keep);
+    XSync(display, False);
+    XSetForeground(display, gc, 0xa0c0e0);
+    XFillRectangle(display, keep, gc, 0, 0, 40, 24);
+    XSetWindowBackground(display, keep, 0x00ff00);
+    XSync(display, False);
+    XImage *keep_image = XGetImage(display, keep, 2, 2, 1, 1, AllPlanes,
+            ZPixmap);
+    unsigned long keep_pixel = keep_image ? XGetPixel(keep_image, 0, 0) : 0;
+    bool keep_ok = x_errors == before && keep_image
+            && (keep_pixel & 0xffffff) == 0xa0c0e0;
+    if (keep_image) XDestroyImage(keep_image);
+    result("change-background-keeps-pixels", keep_ok,
+           keep_ok ? "pixel=0xa0c0e0"
+                   : "CWBackPixel painted over content");
+    RECORD(keep_ok);
+    XDestroyWindow(display, keep);
+
+    before = x_errors;
     XSetForeground(display, gc, 0xa02020);
     XFillRectangle(display, window, gc, 240, 160, 80, 60);
     XSetForeground(display, gc, 0x2060c0);
@@ -584,6 +605,33 @@ int main(int argc, char **argv) {
     result("map-subwindows-exposure", map_subwindows_ok, detail);
     RECORD(map_subwindows_ok);
     XDestroyWindow(display, map_parent);
+
+    while (XPending(display)) {
+        XEvent ignored;
+        XNextEvent(display, &ignored);
+    }
+    before = x_errors;
+    Window select_after = XCreateSimpleWindow(display, window, 40, 40,
+            64, 48, 0, 0, 0xffffff);
+    XMapWindow(display, select_after);
+    XSync(display, False);
+    while (XPending(display)) {
+        XEvent ignored;
+        XNextEvent(display, &ignored);
+    }
+    XSelectInput(display, select_after, ExposureMask);
+    XSync(display, False);
+    bool select_exposed = false;
+    while (XPending(display)) {
+        XEvent event;
+        XNextEvent(display, &event);
+        if (event.type == Expose && event.xexpose.window == select_after)
+            select_exposed = true;
+    }
+    result("select-exposure-mapped", select_exposed && x_errors == before,
+           select_exposed ? "Expose after XSelectInput" : "no Expose");
+    RECORD(select_exposed && x_errors == before);
+    XDestroyWindow(display, select_after);
 
     int translated_x = 0;
     int translated_y = 0;

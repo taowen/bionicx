@@ -13,6 +13,8 @@ Covered operations:
 - GC, Pixmap rendering, `CopyArea`, both PolyPoint coordinate modes, tiled
   window-background pixmaps used by `ClearArea`, and the xfwm4 decoration
   path of `SetBG` then `Map` plus `MoveResize` without `ClearWindow`;
+- `XSelectInput(ExposureMask)` on an already mapped window generates Expose;
+- `XSetWindowBackground` does not paint over existing pixels;
 - a custom cursor and CLIPBOARD selection ownership;
 - cursor-font open/close resource lifetime plus fixed-font query, text metrics
   and font-name enumeration;

@@ -213,16 +213,34 @@ int main(int argc, char **argv) {
     struct Paint glyphs = {0};
     walk_paint(display, top, &glyphs, 0);
     struct Paint textwin = {0};
-    if (text_gdk != NULL) {
-        Window text = (Window)gdk_x11_window_get_xid(text_gdk);
-        if (text != None) sample_window(display, text, &textwin);
-        printf("BXINFO tv-textwin xid=0x%lx ink=%d light=%d mid=%d dark=%d "
+    Window text = None;
+    if (text_gdk != NULL)
+        text = (Window)gdk_x11_window_get_xid(text_gdk);
+    if (text != None) sample_window(display, text, &textwin);
+    printf("BXINFO tv-textwin xid=0x%lx ink=%d light=%d mid=%d dark=%d "
+           "pixel=0x%06lx paper=0x%lx\n",
+           (unsigned long)text, textwin.ink, textwin.light, textwin.mid,
+           textwin.dark, textwin.pixel, textwin.xid);
+    fflush(stdout);
+    if (text != None) {
+        XWindowAttributes attributes = {0};
+        if (XGetWindowAttributes(display, text, &attributes)) {
+            printf("BXINFO tv-textattr 0x%lx class=%d map=%d mask=0x%lx "
+                   "depth=%d\n",
+                   (unsigned long)text, attributes.class,
+                   attributes.map_state,
+                   (unsigned long)attributes.your_event_mask,
+                   attributes.depth);
+            fflush(stdout);
+        }
+        XClearArea(display, text, 0, 0, 0, 0, True);
+        pump(gtk_events_pending, gtk_main_iteration_do, 400);
+        struct Paint cleared = {0};
+        sample_window(display, text, &cleared);
+        printf("BXINFO tv-clear xid=0x%lx ink=%d light=%d mid=%d dark=%d "
                "pixel=0x%06lx paper=0x%lx\n",
-               (unsigned long)text, textwin.ink, textwin.light, textwin.mid,
-               textwin.dark, textwin.pixel, textwin.xid);
-        fflush(stdout);
-    } else {
-        printf("BXINFO tv-textwin none\n");
+               (unsigned long)text, cleared.ink, cleared.light, cleared.mid,
+               cleared.dark, cleared.pixel, cleared.xid);
         fflush(stdout);
     }
     char detail[160];

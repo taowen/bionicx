@@ -24,6 +24,7 @@ import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
 import com.winlator.xserver.events.CreateNotify;
 import com.winlator.xserver.events.Event;
+import com.winlator.xserver.events.Expose;
 import com.winlator.xserver.events.RawEvent;
 
 import java.io.IOException;
@@ -94,10 +95,22 @@ public abstract class WindowRequests {
             window.attributes.update(valueMask, inputStream, client);
 
             if (valueMask.isSet(WindowAttributes.FLAG_EVENT_MASK)) {
+                boolean hadExposure = window.hasEventListenerFor(Event.EXPOSURE);
                 if (isClientCanSelectFor(Event.SUBSTRUCTURE_REDIRECT, window, client) &&
                     isClientCanSelectFor(Event.RESIZE_REDIRECT, window, client) &&
                     isClientCanSelectFor(Event.BUTTON_PRESS, window, client)) {
                     client.setEventListenerForWindow(window, window.attributes.getEventMask());
+                    // XSelectInput on a viewable window with a newly selected
+                    // ExposureMask must generate Expose. GDK maps a GtkTextView
+                    // TEXT child first, then selects Exposure; without this
+                    // the child pixmap stays unpainted and a compositor shows
+                    // a blank editor.
+                    if (!hadExposure
+                            && window.attributes.getEventMask().isSet(
+                                    Event.EXPOSURE)
+                            && window.isInputOutput()
+                            && window.getMapState() == Window.MapState.VIEWABLE)
+                        window.sendEvent(Event.EXPOSURE, new Expose(window));
                 }
                 else throw new BadAccess();
             }
