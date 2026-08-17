@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
 #include <dlfcn.h>
 #include <stdio.h>
@@ -168,6 +169,39 @@ static int largest_temp(void *(*gdk_display_get_default)(void),
     if (count_out != NULL) *count_out = count;
     if (height_out != NULL) *height_out = height;
     return width;
+}
+
+static unsigned long popup_interior_pixel(Display *display) {
+    if (display == NULL) return 0;
+    Window root = DefaultRootWindow(display);
+    Window root_ret = None;
+    Window parent = None;
+    Window *children = NULL;
+    unsigned count = 0;
+    if (!XQueryTree(display, root, &root_ret, &parent, &children, &count))
+        return 0;
+    Window best = None;
+    int best_area = 0;
+    for (unsigned i = 0; i < count; i++) {
+        XWindowAttributes attributes = {0};
+        if (!XGetWindowAttributes(display, children[i], &attributes))
+            continue;
+        if (!attributes.override_redirect
+                || attributes.map_state != IsViewable)
+            continue;
+        int area = attributes.width * attributes.height;
+        if (area > best_area && attributes.width >= 40
+                && attributes.height >= 16) {
+            best = children[i];
+            best_area = area;
+        }
+    }
+    if (children != NULL) XFree(children);
+    if (best == None) return 0;
+    XImage *image = XGetImage(display, best, 8, 8, 1, 1, AllPlanes, ZPixmap);
+    unsigned long pixel = image != NULL ? XGetPixel(image, 0, 0) : 0;
+    if (image != NULL) XDestroyImage(image);
+    return pixel;
 }
 
 int main(int argc, char **argv) {
@@ -374,6 +408,15 @@ int main(int argc, char **argv) {
     RECORD(sized);
     result("gtk-menu-mapped", popup_ok, detail);
     RECORD(popup_ok);
+
+    unsigned long menu_pixel = popup_interior_pixel(manager);
+    int menu_red = (int)((menu_pixel >> 16) & 0xff);
+    int menu_green = (int)((menu_pixel >> 8) & 0xff);
+    int menu_blue = (int)(menu_pixel & 0xff);
+    int painted = menu_red + menu_green + menu_blue >= 0x180;
+    snprintf(detail, sizeof(detail), "pixel=0x%06lx", menu_pixel & 0xffffff);
+    result("gtk-menu-paint", painted, detail);
+    RECORD(painted);
 
     if (menu != NULL) gtk_menu_popdown(menu);
     pump(gtk_events_pending, gtk_main_iteration_do, manager, 200);

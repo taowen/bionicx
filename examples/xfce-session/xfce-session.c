@@ -270,6 +270,46 @@ static int wait_new_menu(Display *display, Window root, const Window *before,
                 continue;
             snprintf(detail, detail_size, "menu %dx%d", attributes.width,
                      attributes.height);
+            sleep_ms(400);
+            XWindowAttributes painted = {0};
+            if (XGetWindowAttributes(display, after[k], &painted))
+                attributes = painted;
+            int sample_x = attributes.width > 80 ? attributes.width / 2 : 8;
+            int sample_y = attributes.height > 80 ? attributes.height / 2 : 8;
+            XImage *image = XGetImage(display, after[k], sample_x, sample_y,
+                                      1, 1, AllPlanes, ZPixmap);
+            unsigned long pixel = image != NULL ? XGetPixel(image, 0, 0) : 0;
+            if (image != NULL) XDestroyImage(image);
+            printf("BXINFO menu-paint 0x%lx %dx%d+%d+%d depth=%d pixel=0x%06lx\n",
+                   (unsigned long)after[k], attributes.width, attributes.height,
+                   attributes.x, attributes.y, attributes.depth,
+                   pixel & 0xffffff);
+            Window menu_root = None;
+            Window menu_parent = None;
+            Window *menu_kids = NULL;
+            unsigned menu_count = 0;
+            if (XQueryTree(display, after[k], &menu_root, &menu_parent,
+                           &menu_kids, &menu_count) && menu_kids != NULL) {
+                for (unsigned c = 0; c < menu_count && c < 6; ++c) {
+                    XWindowAttributes child_attr = {0};
+                    if (!XGetWindowAttributes(display, menu_kids[c],
+                                              &child_attr))
+                        continue;
+                    XImage *child_image = child_attr.width > 4
+                            && child_attr.height > 4
+                            ? XGetImage(display, menu_kids[c], 2, 2, 1, 1,
+                                        AllPlanes, ZPixmap) : NULL;
+                    unsigned long child_pixel = child_image != NULL
+                            ? XGetPixel(child_image, 0, 0) : 0;
+                    if (child_image != NULL) XDestroyImage(child_image);
+                    printf("BXINFO menu-child 0x%lx %dx%d+%d+%d map=%d pixel=0x%06lx\n",
+                           (unsigned long)menu_kids[c], child_attr.width,
+                           child_attr.height, child_attr.x, child_attr.y,
+                           child_attr.map_state, child_pixel & 0xffffff);
+                }
+                XFree(menu_kids);
+            }
+            fflush(stdout);
             return 1;
         }
         sleep_ms(100);

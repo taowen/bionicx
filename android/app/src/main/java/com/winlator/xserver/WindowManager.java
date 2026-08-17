@@ -303,7 +303,6 @@ public class WindowManager extends XResourceManager {
 
         if (resized && window.isInputOutput() && window.attributes.isMapped()) {
             window.attributes.clearBackground(0, 0, 0, 0);
-            window.sendEvent(new Expose(window));
         }
     }
 
@@ -379,6 +378,8 @@ public class WindowManager extends XResourceManager {
                                 window.previousSibling(), x, y, width, height,
                                 borderWidth, stackMode, valueMask));
             }
+            boolean resized = window.getWidth() != width
+                    || window.getHeight() != height;
             changeWindowGeometry(window, x, y, width, height);
 
             window.setBorderWidth(borderWidth);
@@ -387,6 +388,12 @@ public class WindowManager extends XResourceManager {
             Window previousSibling = window.previousSibling();
             window.sendEvent(Event.STRUCTURE_NOTIFY, new ConfigureNotify(window, window, previousSibling, x, y, width, height, borderWidth, overrideRedirect));
             parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY, new ConfigureNotify(parent, window, previousSibling, x, y, width, height, borderWidth, overrideRedirect));
+            // Expose after ConfigureNotify so GTK recreates its cairo
+            // surface at the new size before painting. The Applications
+            // menu maps 32-bit, resizes, and otherwise stays unpainted.
+            if (resized && window.isInputOutput()
+                    && window.attributes.isMapped())
+                window.sendEvent(new Expose(window));
         }
         else parent.sendEvent(Event.SUBSTRUCTURE_REDIRECT, new ConfigureRequest(parent, window, window.previousSibling(), x, y, width, height, borderWidth, stackMode, valueMask));
     }
