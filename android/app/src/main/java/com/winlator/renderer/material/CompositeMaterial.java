@@ -1,7 +1,22 @@
 package com.winlator.renderer.material;
 
 public class CompositeMaterial extends ShaderMaterial {
+    public enum Fetch { TEXTURE, EXT, ARM }
+
     public final Uniforms uniforms = new Uniforms();
+    public final Fetch fetch;
+
+    public CompositeMaterial() {
+        this(Fetch.TEXTURE);
+    }
+
+    public CompositeMaterial(Fetch fetch) {
+        this.fetch = fetch;
+    }
+
+    public boolean usesFramebufferFetch() {
+        return fetch != Fetch.TEXTURE;
+    }
 
     public static class Uniforms {
         public final Uniform destRect = new Uniform("destRect");
@@ -19,6 +34,7 @@ public class CompositeMaterial extends ShaderMaterial {
         public final Uniform solidSrc = new Uniform("solidSrc");
         public final Uniform srcRepeat = new Uniform("srcRepeat");
         public final Uniform maskChannel = new Uniform("maskChannel");
+        public final Uniform srcFromDst = new Uniform("srcFromDst");
     }
 
     @Override
@@ -52,7 +68,18 @@ public class CompositeMaterial extends ShaderMaterial {
 
     @Override
     protected String getFragmentShader() {
+        String fetchExt = fetch == Fetch.EXT
+                ? "#extension GL_EXT_shader_framebuffer_fetch : require"
+                : fetch == Fetch.ARM
+                ? "#extension GL_ARM_shader_framebuffer_fetch : require"
+                : "";
+        String sampleDest = fetch == Fetch.EXT
+                ? "return gl_LastFragData[0];"
+                : fetch == Fetch.ARM
+                ? "return gl_LastFragColorARM;"
+                : "return texture2D(dstTexture, vDstUV);";
         return String.join("\n",
+            fetchExt,
             "precision mediump float;",
 
             "uniform sampler2D srcTexture;",
@@ -64,6 +91,7 @@ public class CompositeMaterial extends ShaderMaterial {
             "uniform int solidSrc;",
             "uniform int srcRepeat;",
             "uniform int maskChannel;",
+            "uniform int srcFromDst;",
             "varying vec2 vSrcUV;",
             "varying vec2 vDstUV;",
             "varying vec2 vMaskUV;",
@@ -73,7 +101,12 @@ public class CompositeMaterial extends ShaderMaterial {
                 "return uv;",
             "}",
 
-            "vec4 sampleSource() {",
+            "vec4 sampleDest() {",
+                sampleDest,
+            "}",
+
+            "vec4 sampleSource(vec4 dst) {",
+                "if (srcFromDst != 0) return dst;",
                 "if (solidSrc != 0) return solidColor;",
                 "if (hasSrc == 0) return vec4(0.0);",
                 "vec2 uv = applyRepeat(vSrcUV);",
@@ -95,10 +128,10 @@ public class CompositeMaterial extends ShaderMaterial {
             "}",
 
             "void main() {",
-                "vec4 dst = texture2D(dstTexture, vDstUV);",
+                "vec4 dst = sampleDest();",
                 "if (dst.a < 0.001 && (dst.r + dst.g + dst.b) > 0.0)",
                     "dst.a = 1.0;",
-                "vec4 src = sampleSource();",
+                "vec4 src = sampleSource(dst);",
                 "src.a *= sampleMask();",
                 "float outA = src.a + dst.a * (1.0 - src.a);",
                 "vec3 outC = outA > 0.0",

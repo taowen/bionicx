@@ -1,5 +1,6 @@
 package com.winlator.renderer;
 
+import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.util.Log;
@@ -8,16 +9,13 @@ import com.winlator.renderer.material.CompositeMaterial;
 import com.winlator.xserver.Drawable;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 import java.util.IdentityHashMap;
 import java.util.List;
 
 /**
  * Glamor-style Render Composite: Porter-Duff Over and A8 glyphs on GLES.
- * Destination CPU heap stays the GetImage cache via glReadPixels. Large
- * destinations may attach an AHardwareBuffer EGLImage after that cache is
- * filled; Mali will not see GPU writes in a permanently locked mapping.
+ * Dest is sampled with framebuffer fetch when the GPU provides it.
+ * GetImage cache is a BGRA glReadPixels into the CPU heap, not a CPU swizzle.
  */
 public class RenderComposite {
     private static final String TAG = "BionicXRenderGL";
@@ -26,17 +24,43 @@ public class RenderComposite {
     private static boolean loggedEglImage;
     private static boolean loggedFramebuffer;
 
-    private final CompositeMaterial material = new CompositeMaterial();
+    private final CompositeMaterial textureMaterial = new CompositeMaterial();
+    private CompositeMaterial fetchMaterial;
+    private boolean fetchChecked;
+    private CompositeMaterial material = textureMaterial;
     private final VertexAttribute quadVertices;
     private final Texture scratch = new Texture(null);
     private int scratchWidth;
     private int scratchHeight;
-    private ByteBuffer readback;
     private final IdentityHashMap<byte[], Texture> glyphTextures =
             new IdentityHashMap<>();
 
     public RenderComposite(VertexAttribute quadVertices) {
         this.quadVertices = quadVertices;
+    }
+
+    private CompositeMaterial activeShader() {
+        if (!fetchChecked) {
+            fetchChecked = true;
+            String extensions = GLES20.glGetString(GLES20.GL_EXTENSIONS);
+            if (extensions == null) extensions = "";
+            CompositeMaterial.Fetch fetch = CompositeMaterial.Fetch.TEXTURE;
+            if (extensions.contains("GL_EXT_shader_framebuffer_fetch"))
+                fetch = CompositeMaterial.Fetch.EXT;
+            else if (extensions.contains("GL_ARM_shader_framebuffer_fetch"))
+                fetch = CompositeMaterial.Fetch.ARM;
+            if (fetch != CompositeMaterial.Fetch.TEXTURE) {
+                try {
+                    fetchMaterial = new CompositeMaterial(fetch);
+                    fetchMaterial.use();
+                }
+                catch (RuntimeException ignored) {
+                    fetchMaterial = null;
+                }
+            }
+        }
+        material = fetchMaterial != null ? fetchMaterial : textureMaterial;
+        return material;
     }
 
     public static boolean shouldUseAhb(Drawable drawable) {
@@ -85,25 +109,33 @@ public class RenderComposite {
             }
             if (dirtyRight <= dirtyLeft || dirtyBottom <= dirtyTop)
                 return true;
-            if (!blitDestinationToScratch(destTexture, destination.width,
-                    destination.height, dirtyLeft, dirtyTop,
+            CompositeMaterial shader = activeShader();
+            boolean fetch = shader.usesFramebufferFetch();
+            boolean maskFromDest = mask != null && mask == destination;
+            if ((!fetch || maskFromDest) && !blitDestinationToScratch(destTexture,
+                    destination.width, destination.height, dirtyLeft, dirtyTop,
                     dirtyRight - dirtyLeft, dirtyBottom - dirtyTop))
                 return false;
-            material.use();
-            quadVertices.bind(material.programId);
+            shader.use();
+            quadVertices.bind(shader.programId);
             GLES20.glDisable(GLES20.GL_BLEND);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,
                     destTexture.getFramebuffer());
             GLES20.glViewport(0, 0, destination.width, destination.height);
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, scratch.getTextureId());
-            material.setUniformInt(material.uniforms.dstTexture, 0);
+            if (!fetch) {
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, scratch.getTextureId());
+                shader.setUniformInt(shader.uniforms.dstTexture, 0);
+            }
             boolean solid = solidArgb != null;
-            material.setUniformInt(material.uniforms.solidSrc, solid ? 1 : 0);
-            material.setUniformInt(material.uniforms.hasSrc,
-                    !solid && source != null ? 1 : 0);
+            boolean srcFromDst = fetch && source != null
+                    && source == destination && !solid;
+            shader.setUniformInt(shader.uniforms.solidSrc, solid ? 1 : 0);
+            shader.setUniformInt(shader.uniforms.hasSrc,
+                    !solid && source != null && !srcFromDst ? 1 : 0);
+            shader.setUniformInt(shader.uniforms.srcFromDst, srcFromDst ? 1 : 0);
             if (solid) setSolidColor(solidArgb);
-            if (!solid && source != null) {
+            if (!solid && source != null && !srcFromDst) {
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
                 int srcId = source == destination
                         ? scratch.getTextureId()
@@ -119,17 +151,17 @@ public class RenderComposite {
                         GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
                 GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
                         GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
-                material.setUniformInt(material.uniforms.srcTexture, 1);
-                material.setUniformVec2(material.uniforms.srcSize,
+                shader.setUniformInt(shader.uniforms.srcTexture, 1);
+                shader.setUniformVec2(shader.uniforms.srcSize,
                         source.width, source.height);
             }
             else {
-                material.setUniformVec2(material.uniforms.srcSize, 1, 1);
+                shader.setUniformVec2(shader.uniforms.srcSize, 1, 1);
             }
-            material.setUniformInt(material.uniforms.srcRepeat,
+            shader.setUniformInt(shader.uniforms.srcRepeat,
                     sourceRepeat ? 1 : 0);
             boolean hasMask = mask != null;
-            material.setUniformInt(material.uniforms.hasMask, hasMask ? 1 : 0);
+            shader.setUniformInt(shader.uniforms.hasMask, hasMask ? 1 : 0);
             if (hasMask) {
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
                 int maskId = mask == destination
@@ -140,19 +172,19 @@ public class RenderComposite {
                         GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
                 GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,
                         GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
-                material.setUniformInt(material.uniforms.maskTexture, 2);
-                material.setUniformVec2(material.uniforms.maskSize,
+                shader.setUniformInt(shader.uniforms.maskTexture, 2);
+                shader.setUniformVec2(shader.uniforms.maskSize,
                         mask.width, mask.height);
-                material.setUniformInt(material.uniforms.maskChannel,
+                shader.setUniformInt(shader.uniforms.maskChannel,
                         maskIsA8 ? 2 : 0);
             }
             else {
-                material.setUniformVec2(material.uniforms.maskSize, 1, 1);
-                material.setUniformInt(material.uniforms.maskChannel, 0);
+                shader.setUniformVec2(shader.uniforms.maskSize, 1, 1);
+                shader.setUniformInt(shader.uniforms.maskChannel, 0);
             }
-            material.setUniformVec2(material.uniforms.destSize,
+            shader.setUniformVec2(shader.uniforms.destSize,
                     destination.width, destination.height);
-            boolean several = clips.size() > 1;
+            boolean several = (!fetch || maskFromDest) && clips.size() > 1;
             for (int[] clip : clips) {
                 int x = clip[0];
                 int y = clip[1];
@@ -163,11 +195,11 @@ public class RenderComposite {
                 int srcOffY = sourceY + (y - destY);
                 int maskOffX = maskX + (x - destX);
                 int maskOffY = maskY + (y - destY);
-                material.setUniformVec4(material.uniforms.destRect,
+                shader.setUniformVec4(shader.uniforms.destRect,
                         x, y, w, h);
-                material.setUniformVec4(material.uniforms.srcRect,
+                shader.setUniformVec4(shader.uniforms.srcRect,
                         srcOffX, srcOffY, w, h);
-                material.setUniformVec4(material.uniforms.maskRect,
+                shader.setUniformVec4(shader.uniforms.maskRect,
                         maskOffX, maskOffY, w, h);
                 GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
                 if (several) copyDestRectToScratch(x, y, w, h);
@@ -210,41 +242,46 @@ public class RenderComposite {
             }
             if (dirtyRight <= dirtyLeft || dirtyBottom <= dirtyTop)
                 return true;
-            if (!blitDestinationToScratch(destTexture, destination.width,
-                    destination.height, dirtyLeft, dirtyTop,
+            CompositeMaterial shader = activeShader();
+            boolean fetch = shader.usesFramebufferFetch();
+            if (!fetch && !blitDestinationToScratch(destTexture,
+                    destination.width, destination.height, dirtyLeft, dirtyTop,
                     dirtyRight - dirtyLeft, dirtyBottom - dirtyTop))
                 return false;
-            material.use();
-            quadVertices.bind(material.programId);
+            shader.use();
+            quadVertices.bind(shader.programId);
             GLES20.glDisable(GLES20.GL_BLEND);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,
                     destTexture.getFramebuffer());
             GLES20.glViewport(0, 0, destination.width, destination.height);
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, scratch.getTextureId());
-            material.setUniformInt(material.uniforms.dstTexture, 0);
-            material.setUniformInt(material.uniforms.solidSrc, 1);
-            material.setUniformInt(material.uniforms.hasSrc, 0);
-            material.setUniformInt(material.uniforms.hasMask, 1);
-            material.setUniformInt(material.uniforms.srcRepeat, 0);
-            material.setUniformInt(material.uniforms.maskChannel, 1);
+            if (!fetch) {
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, scratch.getTextureId());
+                shader.setUniformInt(shader.uniforms.dstTexture, 0);
+            }
+            shader.setUniformInt(shader.uniforms.solidSrc, 1);
+            shader.setUniformInt(shader.uniforms.hasSrc, 0);
+            shader.setUniformInt(shader.uniforms.hasMask, 1);
+            shader.setUniformInt(shader.uniforms.srcRepeat, 0);
+            shader.setUniformInt(shader.uniforms.maskChannel, 1);
+            shader.setUniformInt(shader.uniforms.srcFromDst, 0);
             setSolidColor(color);
-            material.setUniformVec2(material.uniforms.srcSize, 1, 1);
-            material.setUniformVec2(material.uniforms.destSize,
+            shader.setUniformVec2(shader.uniforms.srcSize, 1, 1);
+            shader.setUniformVec2(shader.uniforms.destSize,
                     destination.width, destination.height);
-            material.setUniformVec4(material.uniforms.srcRect, 0, 0, 1, 1);
-            boolean several = quads.size() > 1;
+            shader.setUniformVec4(shader.uniforms.srcRect, 0, 0, 1, 1);
+            boolean several = !fetch && quads.size() > 1;
             for (GlyphQuad quad : quads) {
                 Texture glyph = glyphTexture(quad);
                 if (glyph == null) continue;
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, glyph.getTextureId());
-                material.setUniformInt(material.uniforms.maskTexture, 2);
-                material.setUniformVec2(material.uniforms.maskSize,
+                shader.setUniformInt(shader.uniforms.maskTexture, 2);
+                shader.setUniformVec2(shader.uniforms.maskSize,
                         quad.glyphWidth, quad.glyphHeight);
-                material.setUniformVec4(material.uniforms.destRect,
+                shader.setUniformVec4(shader.uniforms.destRect,
                         quad.x, quad.y, quad.width, quad.height);
-                material.setUniformVec4(material.uniforms.maskRect,
+                shader.setUniformVec4(shader.uniforms.maskRect,
                         quad.maskX, quad.maskY, quad.width, quad.height);
                 GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
                 if (several) copyDestRectToScratch(quad.x, quad.y, quad.width,
@@ -291,17 +328,21 @@ public class RenderComposite {
         GLES20.glDisable(GLES20.GL_BLEND);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, destTexture.getTextureId());
-        material.use();
-        quadVertices.bind(material.programId);
-        material.setUniformInt(material.uniforms.dstTexture, 0);
-        material.setUniformInt(material.uniforms.hasSrc, 0);
-        material.setUniformInt(material.uniforms.hasMask, 0);
-        material.setUniformInt(material.uniforms.solidSrc, 1);
-        material.setUniformVec4(material.uniforms.solidColor, 0, 0, 0, 0);
-        material.setUniformVec2(material.uniforms.destSize, destWidth, destHeight);
-        material.setUniformVec4(material.uniforms.destRect, x, y, width, height);
-        material.setUniformVec2(material.uniforms.srcSize, 1, 1);
-        material.setUniformVec2(material.uniforms.maskSize, 1, 1);
+        textureMaterial.use();
+        quadVertices.bind(textureMaterial.programId);
+        textureMaterial.setUniformInt(textureMaterial.uniforms.dstTexture, 0);
+        textureMaterial.setUniformInt(textureMaterial.uniforms.hasSrc, 0);
+        textureMaterial.setUniformInt(textureMaterial.uniforms.hasMask, 0);
+        textureMaterial.setUniformInt(textureMaterial.uniforms.solidSrc, 1);
+        textureMaterial.setUniformInt(textureMaterial.uniforms.srcFromDst, 0);
+        textureMaterial.setUniformVec4(textureMaterial.uniforms.solidColor,
+                0, 0, 0, 0);
+        textureMaterial.setUniformVec2(textureMaterial.uniforms.destSize,
+                destWidth, destHeight);
+        textureMaterial.setUniformVec4(textureMaterial.uniforms.destRect,
+                x, y, width, height);
+        textureMaterial.setUniformVec2(textureMaterial.uniforms.srcSize, 1, 1);
+        textureMaterial.setUniformVec2(textureMaterial.uniforms.maskSize, 1, 1);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
         quadVertices.disable();
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
@@ -329,32 +370,23 @@ public class RenderComposite {
         if (x + width > destination.width) width = destination.width - x;
         if (y + height > destination.height) height = destination.height - y;
         if (width <= 0 || height <= 0) return false;
-        int bytes = width * height * 4;
-        if (readback == null || readback.capacity() < bytes) {
-            readback = ByteBuffer.allocateDirect(bytes)
-                    .order(ByteOrder.LITTLE_ENDIAN);
-        }
-        readback.position(0);
-        readback.limit(bytes);
-        GLES20.glPixelStorei(GLES20.GL_PACK_ALIGNMENT, 4);
-        GLES20.glReadPixels(x, y, width, height, GLES20.GL_RGBA,
-                GLES20.GL_UNSIGNED_BYTE, readback);
         ByteBuffer dest = destination.getData();
         if (dest == null) return false;
         int stride = destination.getImageStride();
-        IntBuffer pixels = readback.order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
-        for (int row = 0; row < height; row++) {
-            int destRow = ((y + row) * stride + x) * 4;
-            for (int column = 0; column < width; column++) {
-                int rgba = pixels.get(row * width + column);
-                int argb = (rgba & 0xff00ff00)
-                        | ((rgba & 0x000000ff) << 16)
-                        | ((rgba & 0x00ff0000) >> 16);
-                dest.putInt(destRow + column * 4, argb);
-            }
-        }
+        dest.position(0);
+        dest.limit(dest.capacity());
+        while (GLES20.glGetError() != GLES20.GL_NO_ERROR) {}
+        GLES20.glPixelStorei(GLES20.GL_PACK_ALIGNMENT, 4);
+        GLES20.glPixelStorei(GLES30.GL_PACK_ROW_LENGTH, stride);
+        GLES20.glPixelStorei(GLES30.GL_PACK_SKIP_ROWS, y);
+        GLES20.glPixelStorei(GLES30.GL_PACK_SKIP_PIXELS, x);
+        GLES20.glReadPixels(x, y, width, height, GLES11Ext.GL_BGRA,
+                GLES20.GL_UNSIGNED_BYTE, dest);
+        GLES20.glPixelStorei(GLES30.GL_PACK_ROW_LENGTH, 0);
+        GLES20.glPixelStorei(GLES30.GL_PACK_SKIP_ROWS, 0);
+        GLES20.glPixelStorei(GLES30.GL_PACK_SKIP_PIXELS, 0);
         dest.rewind();
-        return true;
+        return GLES20.glGetError() == GLES20.GL_NO_ERROR;
     }
 
     private Texture glyphTexture(GlyphQuad quad) {
