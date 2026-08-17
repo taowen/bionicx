@@ -659,6 +659,67 @@ static void dump_find_class(Display *display, Window window, Window root,
     XFree(kids);
 }
 
+static void dump_ancestors(Display *display, Window window, const char *tag) {
+    Window current = window;
+    for (int i = 0; i < 8 && current != None; ++i) {
+        XWindowAttributes attributes = {0};
+        Window query_root = None;
+        Window parent = None;
+        Window *kids = NULL;
+        unsigned count = 0;
+        if (!XGetWindowAttributes(display, current, &attributes)) {
+            accept_log_line("%s 0x%lx gone\n", tag, (unsigned long)current);
+            printf("BXINFO %s 0x%lx gone\n", tag, (unsigned long)current);
+            break;
+        }
+        XQueryTree(display, current, &query_root, &parent, &kids, &count);
+        if (kids != NULL) XFree(kids);
+        printf("BXINFO %s #%d 0x%lx parent=0x%lx %dx%d+%d+%d map=%d or=%d\n",
+               tag, i, (unsigned long)current, (unsigned long)parent,
+               attributes.width, attributes.height, attributes.x, attributes.y,
+               attributes.map_state, attributes.override_redirect);
+        accept_log_line("%s #%d 0x%lx parent=0x%lx %dx%d+%d+%d map=%d or=%d\n",
+                        tag, i, (unsigned long)current, (unsigned long)parent,
+                        attributes.width, attributes.height, attributes.x,
+                        attributes.y, attributes.map_state,
+                        attributes.override_redirect);
+        if (parent == None || parent == query_root) break;
+        current = parent;
+    }
+    fflush(stdout);
+}
+
+static void dump_thin_root(Display *display, Window root) {
+    Window query_root = None;
+    Window parent = None;
+    Window *kids = NULL;
+    unsigned count = 0;
+    if (!XQueryTree(display, root, &query_root, &parent, &kids, &count)
+            || kids == NULL)
+        return;
+    unsigned found = 0;
+    for (unsigned i = 0; i < count; ++i) {
+        XWindowAttributes attributes = {0};
+        if (!XGetWindowAttributes(display, kids[i], &attributes)) continue;
+        if (attributes.height > 80 || attributes.width < 200) continue;
+        printf("BXINFO thin-root 0x%lx %dx%d+%d+%d map=%d or=%d\n",
+               (unsigned long)kids[i], attributes.width, attributes.height,
+               attributes.x, attributes.y, attributes.map_state,
+               attributes.override_redirect);
+        accept_log_line("thin-root 0x%lx %dx%d+%d+%d map=%d or=%d\n",
+                        (unsigned long)kids[i], attributes.width,
+                        attributes.height, attributes.x, attributes.y,
+                        attributes.map_state, attributes.override_redirect);
+        found++;
+    }
+    if (found == 0) {
+        printf("BXINFO thin-root none count=%u\n", count);
+        accept_log_line("thin-root none count=%u\n", count);
+    }
+    XFree(kids);
+    fflush(stdout);
+}
+
 static void dump_root_stack(Display *display, Window root) {
     Window query_root = None;
     Window parent = None;
@@ -748,8 +809,10 @@ static void dump_session_click(Display *display, Window root, Window bar,
     }
     dump_override(display, root, "pre-click-or");
     dump_root_stack(display, root);
+    dump_thin_root(display, root);
     dump_find_class(display, root, root, "Xfce4-panel", 0);
     dump_find_class(display, root, root, "xfce4-panel", 0);
+    dump_find_class(display, root, root, "Wrapper-2.0", 0);
     if (bar != None) {
         XWindowAttributes bar_attr = {0};
         Window query_root = None;
@@ -766,6 +829,9 @@ static void dump_session_click(Display *display, Window root, Window bar,
                         (unsigned long)bar, (unsigned long)parent,
                         bar_attr.width, bar_attr.height, bar_attr.x,
                         bar_attr.y, bar_attr.map_state);
+        dump_ancestors(display, bar, "bar-anc");
+        if (parent != None && parent != root)
+            dump_ancestors(display, parent, "frame-anc");
         dump_children(display, bar, "bar-child");
     }
     int grab = grab_free(display, root);
