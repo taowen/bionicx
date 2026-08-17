@@ -40,7 +40,11 @@ public class WindowMaterial extends ShaderMaterial {
 
             "void main() {",
                 "vec4 texelColor = texture2D(texture, vUV);",
-                "gl_FragColor = vec4(texelColor.rgb, max(texelColor.a, noAlpha));",
+                // Core 24-in-32 pixels leave alpha 0 with a real RGB color.
+                "float alpha = texelColor.a;",
+                "if (alpha < 0.001 && (texelColor.r + texelColor.g + texelColor.b) > 0.0)",
+                    "alpha = 1.0;",
+                "gl_FragColor = vec4(texelColor.rgb, max(alpha, noAlpha));",
             "}"
         );
     }

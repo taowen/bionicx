@@ -136,6 +136,10 @@ public class WindowManager extends XResourceManager {
     private void exposeNewlyViewableSubtree(Window window) {
         if (window.getMapState() != Window.MapState.VIEWABLE) return;
         if (window.isInputOutput()) {
+            // XMapWindow paints CWBackPixmap/pixel before Expose. xfwm4
+            // title/sides are 1x1 windows that SetBG then Map+MoveResize
+            // without ClearWindow on that path.
+            window.attributes.clearBackground(0, 0, 0, 0);
             window.sendEvent(Event.EXPOSURE, new Expose(window));
             window.sendEvent(Event.VISIBILITY_CHANGE, new VisibilityNotify(
                     window, VisibilityNotify.State.UNOBSCURED));
@@ -298,6 +302,7 @@ public class WindowManager extends XResourceManager {
         }
 
         if (resized && window.isInputOutput() && window.attributes.isMapped()) {
+            window.attributes.clearBackground(0, 0, 0, 0);
             window.sendEvent(new Expose(window));
         }
     }

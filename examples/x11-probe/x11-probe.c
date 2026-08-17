@@ -377,6 +377,26 @@ int main(int argc, char **argv) {
     RECORD(background_ok);
 
     before = x_errors;
+    Window title = XCreateSimpleWindow(display, window, 0, 0, 1, 1, 0,
+                                       BlackPixel(display, screen),
+                                       BlackPixel(display, screen));
+    XSetWindowBackgroundPixmap(display, title, pixmap);
+    XMapWindow(display, title);
+    XMoveResizeWindow(display, title, 8, 8, 80, 29);
+    XSync(display, False);
+    XImage *title_image = XGetImage(display, title, 4, 4, 1, 1,
+                                    AllPlanes, ZPixmap);
+    unsigned long title_pixel = title_image
+            ? XGetPixel(title_image, 0, 0) : 0;
+    bool title_ok = x_errors == before && title_image
+            && (title_pixel & 0x00ffffff) == 0x3264c8;
+    if (title_image) XDestroyImage(title_image);
+    result("map-resize-background", title_ok,
+           title_ok ? "pixel=0x3264c8" : "map+resize left background unpainted");
+    RECORD(title_ok);
+    XDestroyWindow(display, title);
+
+    before = x_errors;
     XSetForeground(display, gc, 0xa02020);
     XFillRectangle(display, window, gc, 240, 160, 80, 60);
     XSetForeground(display, gc, 0x2060c0);

@@ -47,6 +47,7 @@ static void probe_render(Display *display, Window window) {
     unsigned long create_repeat_pixel = 0;
     unsigned long pixmap_clip_inside = 0;
     unsigned long pixmap_clip_outside = 0;
+    unsigned long title_pixel = 0;
     bool ok = XRenderQueryVersion(display, &major, &minor) != 0;
     XRenderPictFormat *format = XRenderFindVisualFormat(
         display, DefaultVisual(display, DefaultScreen(display)));
@@ -189,6 +190,48 @@ static void probe_render(Display *display, Window window) {
         XRenderFreePicture(display, pixmap_clip_picture);
         XFreeGC(display, clip_gc);
         XFreePixmap(display, clip_pixmap);
+
+        /* xfwm4 Default title tiles are near-transparent white Over a
+         * core-drawn 24-in-32 fill. Unused dest alpha must stay opaque
+         * or the compositor output is a black title bar. */
+        XRenderPictFormat *argb32 = XRenderFindStandardFormat(
+                display, PictStandardARGB32);
+        Pixmap frame = argb32
+                ? XCreatePixmap(display, window, 8, 8, 32) : None;
+        Pixmap composed = argb32
+                ? XCreatePixmap(display, window, 8, 8, 32) : None;
+        GC frame_gc = frame != None ? XCreateGC(display, frame, 0, NULL) : None;
+        Picture frame_pic = None;
+        Picture composed_pic = None;
+        if (frame != None && composed != None && frame_gc != None) {
+            XSetForeground(display, frame_gc, 0xc0c0c0);
+            XFillRectangle(display, frame, frame_gc, 0, 0, 8, 8);
+            frame_pic = XRenderCreatePicture(display, frame, argb32, 0, NULL);
+            composed_pic = XRenderCreatePicture(display, composed, argb32,
+                                                0, NULL);
+            if (frame_pic != None && composed_pic != None) {
+                XRenderColor haze = {
+                    .red = 0xffff, .green = 0xffff, .blue = 0xffff,
+                    .alpha = 0x0404
+                };
+                XRenderColor black = {.alpha = 0xffff};
+                XRenderFillRectangle(display, PictOpOver, frame_pic, &haze,
+                                     0, 0, 8, 8);
+                XRenderFillRectangle(display, PictOpSrc, composed_pic, &black,
+                                     0, 0, 8, 8);
+                XRenderComposite(display, PictOpOver, frame_pic, None,
+                                 composed_pic, 0, 0, 0, 0, 0, 0, 8, 8);
+                XImage *title_image = XGetImage(display, composed, 2, 2, 1, 1,
+                                                AllPlanes, ZPixmap);
+                title_pixel = title_image ? XGetPixel(title_image, 0, 0) : 0;
+                if (title_image) XDestroyImage(title_image);
+            }
+        }
+        if (composed_pic != None) XRenderFreePicture(display, composed_pic);
+        if (frame_pic != None) XRenderFreePicture(display, frame_pic);
+        if (frame_gc != None) XFreeGC(display, frame_gc);
+        if (composed != None) XFreePixmap(display, composed);
+        if (frame != None) XFreePixmap(display, frame);
         XRenderFreePicture(display, picture);
     }
     XImage *a8_image = a8_pixmap
@@ -269,9 +312,13 @@ static void probe_render(Display *display, Window window) {
     if (source_image) XDestroyImage(source_image);
     ok = ok && (pixmap_clip_inside & 0xffffff) == 0xff0000
          && (pixmap_clip_outside & 0xffffff) == 0x0000ff;
-    char detail[320];
+    int title_red = (title_pixel >> 16) & 0xff;
+    int title_green = (title_pixel >> 8) & 0xff;
+    int title_blue = title_pixel & 0xff;
+    ok = ok && title_red >= 0xb0 && title_green >= 0xb0 && title_blue >= 0xb0;
+    char detail[384];
     snprintf(detail, sizeof(detail),
-             "version=%d.%d event=%d error=%d a8=%d a8-picture=%d alpha-mask=0x%x in-add=0x%02lx out-reverse=0x%02lx saturate=0x%02lx create-repeat=0x%06lx over=0x%06lx clear=0x%lx mask-over=0x%06lx clip=0x%06lx/0x%06lx pixmap-clip=0x%06lx/0x%06lx gradient=0x%06lx/0x%06lx src=0x%06lx",
+             "version=%d.%d event=%d error=%d a8=%d a8-picture=%d alpha-mask=0x%x in-add=0x%02lx out-reverse=0x%02lx saturate=0x%02lx create-repeat=0x%06lx over=0x%06lx clear=0x%lx mask-over=0x%06lx clip=0x%06lx/0x%06lx pixmap-clip=0x%06lx/0x%06lx gradient=0x%06lx/0x%06lx src=0x%06lx title=0x%06lx",
              major, minor, event_base, error_base, a8 != NULL,
              a8_picture != 0, a8 ? a8->direct.alphaMask : 0,
              in_add_pixel & 0xff, out_reverse_pixel & 0xff,
@@ -281,7 +328,7 @@ static void probe_render(Display *display, Window window) {
              clip_inside & 0xffffff, clip_outside & 0xffffff,
              pixmap_clip_inside & 0xffffff, pixmap_clip_outside & 0xffffff,
              gradient_left & 0xffffff, gradient_right & 0xffffff,
-             source_pixel & 0xffffff);
+             source_pixel & 0xffffff, title_pixel & 0xffffff);
     result("xrender", ok, detail);
 }
 

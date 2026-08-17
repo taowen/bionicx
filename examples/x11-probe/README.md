@@ -10,8 +10,9 @@ Covered operations:
 - top-level and child window creation, mapping, query-tree and translation;
 - atom creation plus the `only_if_exists`/`None` contract, WM properties and
   an exact UTF-8 property round trip plus property-name enumeration;
-- GC, Pixmap rendering, `CopyArea`, both PolyPoint coordinate modes, and tiled
-  window-background pixmaps used by `ClearArea`;
+- GC, Pixmap rendering, `CopyArea`, both PolyPoint coordinate modes, tiled
+  window-background pixmaps used by `ClearArea`, and the xfwm4 decoration
+  path of `SetBG` then `Map` plus `MoveResize` without `ClearWindow`;
 - a custom cursor and CLIPBOARD selection ownership;
 - cursor-font open/close resource lifetime plus fixed-font query, text metrics
   and font-name enumeration;

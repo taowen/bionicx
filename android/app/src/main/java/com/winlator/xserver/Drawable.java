@@ -213,7 +213,7 @@ public class Drawable extends XResource {
                     int a = (mask * sourceAlpha + 127) / 255;
                     if (a == 0) continue;
                     int offset = (dstY * stride + dstX) * 4;
-                    int destination = data.getInt(offset);
+                    int destination = opaqueIfUnusedAlpha(data.getInt(offset));
                     int inverse = 255 - a;
                     int red = (((sourceColor >>> 16) & 0xff) * a
                             + ((destination >>> 16) & 0xff) * inverse + 127) / 255;
@@ -266,7 +266,7 @@ public class Drawable extends XResource {
                     int alpha = (maskAlpha * sourceAlpha + 127) / 255;
                     if (alpha == 0) continue;
                     int offset = (targetY * stride + targetX) * 4;
-                    int destination = data.getInt(offset);
+                    int destination = opaqueIfUnusedAlpha(data.getInt(offset));
                     int inverse = 255 - alpha;
                     int red = (((sourceColor >>> 16) & 0xff) * alpha
                             + ((destination >>> 16) & 0xff) * inverse + 127) / 255;
@@ -323,6 +323,8 @@ public class Drawable extends XResource {
                     }
                     int offset = (targetY * stride + targetX) * 4;
                     int destination = data.getInt(offset);
+                    if (visual.depth != 8)
+                        destination = opaqueIfUnusedAlpha(destination);
                     if (visual.depth == 8) {
                         int destinationAlpha = destination & 0xff;
                         int resultAlpha;
@@ -423,6 +425,18 @@ public class Drawable extends XResource {
             data.rewind();
             forceUpdate();
         }
+    }
+
+    /**
+     * Core drawing stores 24-in-32 with an unused alpha byte of 0.
+     * Render Over must treat those samples as opaque or a later
+     * low-alpha tile (xfwm4 Default title pixmaps) replaces the fill
+     * with a nearly transparent color and the frame goes black.
+     */
+    static int opaqueIfUnusedAlpha(int pixel) {
+        if ((pixel >>> 24) == 0 && (pixel & 0x00ffffff) != 0)
+            return 0xff000000 | (pixel & 0x00ffffff);
+        return pixel;
     }
 
     private static int addStraightChannel(int source, int sourceAlpha,
