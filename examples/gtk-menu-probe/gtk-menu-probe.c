@@ -171,15 +171,15 @@ static int largest_temp(void *(*gdk_display_get_default)(void),
     return width;
 }
 
-static unsigned long popup_interior_pixel(Display *display) {
-    if (display == NULL) return 0;
+static Window largest_override(Display *display, int min_width, int min_height) {
+    if (display == NULL) return None;
     Window root = DefaultRootWindow(display);
     Window root_ret = None;
     Window parent = None;
     Window *children = NULL;
     unsigned count = 0;
     if (!XQueryTree(display, root, &root_ret, &parent, &children, &count))
-        return 0;
+        return None;
     Window best = None;
     int best_area = 0;
     for (unsigned i = 0; i < count; i++) {
@@ -190,18 +190,74 @@ static unsigned long popup_interior_pixel(Display *display) {
                 || attributes.map_state != IsViewable)
             continue;
         int area = attributes.width * attributes.height;
-        if (area > best_area && attributes.width >= 40
-                && attributes.height >= 16) {
+        if (area > best_area && attributes.width >= min_width
+                && attributes.height >= min_height) {
             best = children[i];
             best_area = area;
         }
     }
     if (children != NULL) XFree(children);
+    return best;
+}
+
+static unsigned long popup_interior_pixel(Display *display) {
+    Window best = largest_override(display, 40, 16);
     if (best == None) return 0;
     XImage *image = XGetImage(display, best, 8, 8, 1, 1, AllPlanes, ZPixmap);
     unsigned long pixel = image != NULL ? XGetPixel(image, 0, 0) : 0;
     if (image != NULL) XDestroyImage(image);
     return pixel;
+}
+
+static int popup_light_fraction(Display *display, int *width_out,
+                                int *height_out, int *light_out,
+                                int *total_out) {
+    Window best = largest_override(display, 80, 160);
+    if (best == None) return 0;
+    XWindowAttributes attributes = {0};
+    if (!XGetWindowAttributes(display, best, &attributes)) return 0;
+    XImage *full = XGetImage(display, best, 0, 0, (unsigned)attributes.width,
+                             (unsigned)attributes.height, AllPlanes, ZPixmap);
+    if (full == NULL) return 0;
+    int light = 0;
+    int total = attributes.width * attributes.height;
+    for (int y = 0; y < attributes.height; y++) {
+        for (int x = 0; x < attributes.width; x++) {
+            unsigned long pixel = XGetPixel(full, x, y) & 0xffffff;
+            int red = (int)((pixel >> 16) & 0xff);
+            int green = (int)((pixel >> 8) & 0xff);
+            int blue = (int)(pixel & 0xff);
+            if (red + green + blue >= 0x180) ++light;
+        }
+    }
+    XDestroyImage(full);
+    if (width_out != NULL) *width_out = attributes.width;
+    if (height_out != NULL) *height_out = attributes.height;
+    if (light_out != NULL) *light_out = light;
+    if (total_out != NULL) *total_out = total;
+    return total > 0 ? (light * 100) / total : 0;
+}
+
+static int claim_compositor(Display *display) {
+    if (display == NULL) return 0;
+    void *library = dlopen("libXcomposite.so.1", RTLD_NOW);
+    if (library == NULL) return 0;
+    int (*query)(Display *, int *, int *) = NULL;
+    void (*redirect)(Display *, Window, int) = NULL;
+    *(void **)(&query) = dlsym(library, "XCompositeQueryExtension");
+    *(void **)(&redirect) = dlsym(library, "XCompositeRedirectSubwindows");
+    int event_base = 0;
+    int error_base = 0;
+    if (query == NULL || redirect == NULL
+            || !query(display, &event_base, &error_base))
+        return 0;
+    Window root = DefaultRootWindow(display);
+    Window owner = XCreateSimpleWindow(display, root, -8, -8, 1, 1, 0, 0, 0);
+    Atom cm = XInternAtom(display, "_NET_WM_CM_S0", False);
+    XSetSelectionOwner(display, cm, owner, CurrentTime);
+    redirect(display, root, 1);
+    XSync(display, False);
+    return XGetSelectionOwner(display, cm) == owner;
 }
 
 int main(int argc, char **argv) {
@@ -211,10 +267,12 @@ int main(int argc, char **argv) {
     char detail[256];
 
     Display *manager = XOpenDisplay(NULL);
+    int composited = 0;
     if (manager != NULL) {
         Window root = DefaultRootWindow(manager);
         XSelectInput(manager, root,
                      SubstructureRedirectMask | SubstructureNotifyMask);
+        composited = claim_compositor(manager);
         XSync(manager, False);
     }
 
@@ -327,6 +385,10 @@ int main(int argc, char **argv) {
     *(void **)(&gdk_window_get_height) =
             required_symbol(gtk, "gdk_window_get_height");
 
+    result("gtk-compositor", composited,
+           composited ? "_NET_WM_CM_S0 RedirectSubwindows" : "unclaimed");
+    RECORD(composited);
+
     int init_ok = gtk_init_check(&argc, &argv) != 0;
     result("gtk-init", init_ok, init_ok ? "DISPLAY connected" : "failed");
     RECORD(init_ok);
@@ -375,6 +437,18 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    void *early_menu = gtk_menu_new();
+    if (early_menu != NULL) {
+        for (int i = 0; i < 16; i++) {
+            char label[32];
+            snprintf(label, sizeof(label), "Early item %02d", i + 1);
+            void *early_item = gtk_menu_item_new_with_label(label);
+            if (early_item != NULL)
+                gtk_menu_shell_append(early_menu, early_item);
+        }
+        gtk_widget_show_all(early_menu);
+    }
+
     void *menu = gtk_menu_new();
     void *item = gtk_menu_item_new_with_label("Open Terminal");
     int menu_built = menu != NULL && item != NULL;
@@ -419,6 +493,95 @@ int main(int argc, char **argv) {
     RECORD(painted);
 
     if (menu != NULL) gtk_menu_popdown(menu);
+    pump(gtk_events_pending, gtk_main_iteration_do, manager, 200);
+
+    void *tall_menu = gtk_menu_new();
+    if (tall_menu != NULL) {
+        for (int i = 0; i < 16; i++) {
+            char label[32];
+            snprintf(label, sizeof(label), "Application %02d", i + 1);
+            void *tall_item = gtk_menu_item_new_with_label(label);
+            if (tall_item != NULL) gtk_menu_shell_append(tall_menu, tall_item);
+        }
+        gtk_widget_show_all(tall_menu);
+        gtk_menu_popup_at_widget(tall_menu, window, 7, 1, NULL);
+    }
+    pump(gtk_events_pending, gtk_main_iteration_do, manager, 800);
+    int tall_w = 0;
+    int tall_h = 0;
+    int tall_light = 0;
+    int tall_total = 0;
+    int tall_pct = popup_light_fraction(manager, &tall_w, &tall_h,
+                                        &tall_light, &tall_total);
+    int tall_ok = tall_w >= 80 && tall_h >= 160 && tall_pct >= 50;
+    snprintf(detail, sizeof(detail), "size=%dx%d light=%d/%d %d%%",
+             tall_w, tall_h, tall_light, tall_total, tall_pct);
+    result("gtk-menu-tall-paint", tall_ok, detail);
+    RECORD(tall_ok);
+    if (tall_menu != NULL) gtk_menu_popdown(tall_menu);
+    pump(gtk_events_pending, gtk_main_iteration_do, manager, 200);
+
+    if (early_menu != NULL)
+        gtk_menu_popup_at_widget(early_menu, window, 7, 1, NULL);
+    pump(gtk_events_pending, gtk_main_iteration_do, manager, 800);
+    int early_w = 0;
+    int early_h = 0;
+    int early_light = 0;
+    int early_total = 0;
+    int early_pct = popup_light_fraction(manager, &early_w, &early_h,
+                                         &early_light, &early_total);
+    int early_ok = early_w >= 80 && early_h >= 160 && early_pct >= 50;
+    snprintf(detail, sizeof(detail), "size=%dx%d light=%d/%d %d%%",
+             early_w, early_h, early_light, early_total, early_pct);
+    result("gtk-menu-early-paint", early_ok, detail);
+    RECORD(early_ok);
+    if (early_menu != NULL) gtk_menu_popdown(early_menu);
+    pump(gtk_events_pending, gtk_main_iteration_do, manager, 200);
+
+    void *garcon = dlopen("libgarcon-1.so.0", RTLD_NOW | RTLD_GLOBAL);
+    void *garcon_gtk = dlopen("libgarcon-gtk3-1.so.0", RTLD_NOW | RTLD_GLOBAL);
+    void (*garcon_set_environment_xdg)(const char *) = NULL;
+    void *(*garcon_menu_new_applications)(void) = NULL;
+    void *(*garcon_gtk_menu_new)(void *) = NULL;
+    void (*garcon_gtk_menu_set_menu)(void *, void *) = NULL;
+    if (garcon != NULL && garcon_gtk != NULL) {
+        *(void **)(&garcon_set_environment_xdg) =
+                dlsym(garcon, "garcon_set_environment_xdg");
+        *(void **)(&garcon_menu_new_applications) =
+                dlsym(garcon, "garcon_menu_new_applications");
+        *(void **)(&garcon_gtk_menu_new) =
+                dlsym(garcon_gtk, "garcon_gtk_menu_new");
+        *(void **)(&garcon_gtk_menu_set_menu) =
+                dlsym(garcon_gtk, "garcon_gtk_menu_set_menu");
+    }
+    void *garcon_menu = NULL;
+    if (garcon_set_environment_xdg != NULL
+            && garcon_menu_new_applications != NULL
+            && garcon_gtk_menu_new != NULL
+            && garcon_gtk_menu_set_menu != NULL) {
+        garcon_set_environment_xdg("XFCE");
+        garcon_menu = garcon_gtk_menu_new(NULL);
+        void *applications = garcon_menu_new_applications();
+        if (garcon_menu != NULL && applications != NULL)
+            garcon_gtk_menu_set_menu(garcon_menu, applications);
+        if (garcon_menu != NULL) {
+            gtk_widget_show_all(garcon_menu);
+            gtk_menu_popup_at_widget(garcon_menu, window, 7, 1, NULL);
+        }
+    }
+    pump(gtk_events_pending, gtk_main_iteration_do, manager, 1000);
+    int garcon_w = 0;
+    int garcon_h = 0;
+    int garcon_light = 0;
+    int garcon_total = 0;
+    int garcon_pct = popup_light_fraction(manager, &garcon_w, &garcon_h,
+                                          &garcon_light, &garcon_total);
+    int garcon_ok = garcon_w >= 80 && garcon_h >= 160 && garcon_pct >= 50;
+    snprintf(detail, sizeof(detail), "size=%dx%d light=%d/%d %d%%",
+             garcon_w, garcon_h, garcon_light, garcon_total, garcon_pct);
+    result("gtk-garcon-paint", garcon_ok, detail);
+    RECORD(garcon_ok);
+    if (garcon_menu != NULL) gtk_menu_popdown(garcon_menu);
     pump(gtk_events_pending, gtk_main_iteration_do, manager, 200);
 
     int click_ok = 0;

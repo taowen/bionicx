@@ -15,6 +15,8 @@
       "HOME": "${HOME}",
       "TMPDIR": "${TMP}",
       "XDG_RUNTIME_DIR": "${TMP}/runtime",
+      "XDG_CURRENT_DESKTOP": "XFCE",
+      "XDG_MENU_PREFIX": "xfce-",
       "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
       "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
       "GSETTINGS_BACKEND": "memory",

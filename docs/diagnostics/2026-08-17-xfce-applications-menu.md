@@ -14,6 +14,11 @@ The mapped 185x324 menu has only a 1x1 child. A center GetImage is
 bright=0xfcf4c0`: glyphs and icons land, the background does not.
 GTK menus map 1x1 then `ConfigureWindow`; a window Picture must track
 the replaced backing drawable (`xrender-x11-probe` `window-resize`).
+An isolated `GarconGtkMenu` under a stub compositor paints `94%` light
+(`gtk-garcon-paint` 131x312). The black background is the panel+xfwm4
+session path, not Garcon itself. Debian's panel `dark-mode=true` is
+pinned off and `Net/ThemeName=Adwaita`; the pixmap histogram did not
+change.
 
 `xfce4-popup-applicationsmenu` maps a real menu:
 
