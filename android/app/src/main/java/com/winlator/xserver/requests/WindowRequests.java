@@ -13,6 +13,7 @@ import com.winlator.xserver.Visual;
 import com.winlator.xserver.Window;
 import com.winlator.xserver.WindowAttributes;
 import com.winlator.xserver.WindowManager;
+import com.winlator.xserver.GrabManager;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.errors.BadAccess;
 import com.winlator.xserver.errors.BadDrawable;
@@ -491,6 +492,15 @@ public abstract class WindowRequests {
         byte[] data = new byte[32];
         inputStream.read(data);
         Event event = new RawEvent(data);
+        if (client.xServer.grabManager.isPointerSynchronous()) {
+            android.util.Log.i("BionicX", "BXINFO grab-send-event client="
+                    + GrabManager.describeClient(client)
+                    + " dest=0x" + Integer.toHexString(windowId)
+                    + " type=" + (data[0] & 0x7f)
+                    + " send=" + ((data[0] & 0x80) != 0)
+                    + " mask=" + eventMask.getBits()
+                    + " propagate=" + propagate);
+        }
 
         Window destination = resolveSendEventDestination(client, windowId);
         if (destination == null) return;

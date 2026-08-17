@@ -209,7 +209,10 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                     + " xy=" + xServer.pointer.getX() + ","
                     + xServer.pointer.getY()
                     + " grabs=" + xServer.grabManager.describeGrabsOn(
-                            pointWindow));
+                            pointWindow)
+                    + " last=" + (grabClient != null
+                            ? grabClient.describeLastRequest() : "none"));
+            xServer.grabManager.watchClientRequests(grabClient, 24);
         }
     }
 

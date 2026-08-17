@@ -212,10 +212,11 @@ public class XInputExtension extends Extension {
                         deviceId, eventType);
                 if (selected != null) target = selected;
             }
-            sendDeviceEventToClient(grabClient, deviceId, eventType, detail,
-                    sourceWindow, target, rootX, rootY);
+            boolean sent = sendDeviceEventToClient(grabClient, deviceId,
+                    eventType, detail, sourceWindow, target, rootX, rootY);
             if (xServer.pointer.getY() < 40)
-                Log.i("BionicX", "BXINFO grab-xi sent type=" + eventType
+                Log.i("BionicX", "BXINFO grab-xi "
+                        + (sent ? "sent" : "fail") + " type=" + eventType
                         + " client=" + GrabManager.describeClient(grabClient)
                         + " target=0x" + Integer.toHexString(target.id)
                         + " cookie=" + getMajorOpcode());
@@ -270,7 +271,7 @@ public class XInputExtension extends Extension {
         return eventWindow;
     }
 
-    private void sendDeviceEventToClient(XClient client, int deviceId,
+    private boolean sendDeviceEventToClient(XClient client, int deviceId,
             int eventType, int detail, Window sourceWindow, Window eventWindow,
             short rootX, short rootY) {
         short[] local = eventWindow.rootPointToLocal(rootX, rootY);
@@ -281,7 +282,7 @@ public class XInputExtension extends Extension {
             if (eventType == XI_BUTTON_PRESS) buttonState &= ~(1 << detail);
             else if (eventType == XI_BUTTON_RELEASE) buttonState |= 1 << detail;
         }
-        client.sendEvent(new XInputDeviceEvent(getMajorOpcode(), deviceId,
+        return client.sendEvent(new XInputDeviceEvent(getMajorOpcode(), deviceId,
                 eventType, detail, xServer.windowManager.rootWindow,
                 eventWindow, child, rootX, rootY, local[0], local[1],
                 xServer.keyboard.getBaseModifiers(),

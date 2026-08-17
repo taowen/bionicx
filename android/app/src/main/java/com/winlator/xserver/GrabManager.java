@@ -26,6 +26,8 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
     private final ArrayList<PassiveButtonGrab> passiveButtonGrabs =
             new ArrayList<>();
     private final XServer xServer;
+    private Integer watchClientBase;
+    private int watchRequestsLeft;
 
     public GrabManager(XServer xServer) {
         this.xServer = xServer;
@@ -260,6 +262,19 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
                 + " sync=" + pointerSynchronous
                 + " mask=" + eventMask.getBits()
                 + " ownerEvents=" + ownerEvents);
+        return true;
+    }
+
+    public synchronized void watchClientRequests(XClient client, int count) {
+        watchClientBase = client != null ? client.resourceIDBase : null;
+        watchRequestsLeft = watchClientBase != null ? count : 0;
+    }
+
+    public synchronized boolean consumeWatchedRequest(XClient client) {
+        if (watchRequestsLeft <= 0 || client == null
+                || watchClientBase == null) return false;
+        if (!watchClientBase.equals(client.resourceIDBase)) return false;
+        watchRequestsLeft--;
         return true;
     }
 

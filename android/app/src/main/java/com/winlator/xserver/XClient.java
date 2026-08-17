@@ -32,6 +32,8 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
     private final ArrayMap<Integer, String> openFonts = new ArrayMap<>();
     private final ArrayList<Window> saveSet = new ArrayList<>();
     private final ArrayList<Callback<XClient>> onDestroyListeners = new ArrayList<>();
+    private int lastOpcode;
+    private int lastRequestData;
 
     public XClient(long nativePtr, int fd, XServer xServer) {
         super(nativePtr, fd);
@@ -59,12 +61,15 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
         window.addEventListener(eventListener);
     }
 
-    public void sendEvent(Event event) {
+    public boolean sendEvent(Event event) {
         try {
             event.send(sequenceNumber, outputStream);
+            return true;
         }
         catch (IOException e) {
-            e.printStackTrace();
+            android.util.Log.i("BionicX", "BXINFO grab-press-io client="
+                    + GrabManager.describeClient(this) + " " + e.getMessage());
+            return false;
         }
     }
 
@@ -139,6 +144,18 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
 
     public void setRequestData(byte requestData) {
         this.requestData = requestData;
+    }
+
+    public void noteRequest(int opcode, int data) {
+        lastOpcode = opcode;
+        lastRequestData = data;
+    }
+
+    public String describeLastRequest() {
+        if (lastOpcode == 0 && sequenceNumber == 0) return "none";
+        return "opcode=" + (lastOpcode & 0xff)
+                + " data=" + (lastRequestData & 0xff)
+                + " seq=" + (sequenceNumber & 0xffff);
     }
 
     public void updateXkbEventSelection(int affect, int clear, int selectAll,

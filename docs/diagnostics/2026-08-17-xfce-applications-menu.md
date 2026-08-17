@@ -90,6 +90,34 @@ The live Applications click still writes the press to xfwm4 and still
 never AllowEvents. XI2 Enter/Leave used the same short group encoding,
 so `XGetEventData` could over-read into the following ButtonPress.
 `xi2-enter-cookie` now requires `buttons.mask_len >= 4`. A failed
-client write now keeps the unsent tail instead of dropping it. The
-compositor connection also logged `grab-press-io Failed to send data`
-during the 12 accept tests. Do not add a 13th xfce accept click.
+client write now keeps the unsent tail instead of dropping it.
+
+`grab-press-io` during the 12 accept tests is not xfwm4: it is
+Mousepad `0x2400000` and `0x2800000`. After the Applications click
+xfwm4 is still reading the socket:
+
+```text
+grab-trace … client=0x800000 … last=opcode=25 data=1 seq=9405
+grab-xi sent type=4 … grab-xi sent type=5
+grab-client-req client=0x800000 opcode=25 data=1 seq=9406…
+grab-client-req client=0x800000 opcode=3 data=1 seq=9410
+grab-client-req client=0x800000 opcode=14 data=0 seq=9411
+click-menu none grab=0->1 no popup
+```
+
+opcode 25 is `SendEvent`. While the grab stays frozen:
+
+```text
+grab-send-event client=0x800000 dest=0x1000005 type=22 send=false
+                mask=131072 propagate=true
+grab-send-event client=0x1000000 dest=0x4 type=33 send=false
+                mask=1572864 propagate=false
+```
+
+type 22 is ConfigureNotify to the panel (`StructureNotifyMask`,
+propagate=true — xfwm4 `clientConfigure`, not `handleButtonPress`).
+type 33 is a panel ClientMessage to root. opcode 3/14 are
+GetWindowAttributes/GetGeometry. No core 35 or XI AllowEvents in the
+1.5s wait. xfwm4 is alive and handling tooltip/configure traffic, but
+GDK never dequeued a translatable ButtonPress (`handleButtonPress`
+always AllowEvents). Do not add a 13th xfce accept click.
