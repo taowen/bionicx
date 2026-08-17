@@ -702,6 +702,50 @@ static void dump_class_paint_walk(Display *display, Window window,
     XFree(kids);
 }
 
+static void sample_paint_body(Display *display, Window window, const char *tag) {
+    XWindowAttributes attributes = {0};
+    if (!XGetWindowAttributes(display, window, &attributes)
+            || attributes.map_state != IsViewable
+            || attributes.width < 32 || attributes.height < 80)
+        return;
+    int crop_w = attributes.width > 160 ? 160 : attributes.width;
+    int crop_h = 80;
+    int crop_x = 8;
+    int crop_y = attributes.height > 120 ? 36 : 24;
+    if (crop_x + crop_w > attributes.width)
+        crop_w = attributes.width - crop_x;
+    if (crop_y + crop_h > attributes.height)
+        crop_h = attributes.height - crop_y;
+    if (crop_w < 16 || crop_h < 16) return;
+    XImage *image = XGetImage(display, window, crop_x, crop_y,
+                              (unsigned)crop_w, (unsigned)crop_h,
+                              AllPlanes, ZPixmap);
+    unsigned long pixel = 0;
+    int light = 0;
+    int mid = 0;
+    int dark = 0;
+    if (image != NULL) {
+        pixel = XGetPixel(image, 2, 2) & 0xffffff;
+        for (int y = 0; y < crop_h; ++y) {
+            for (int x = 0; x < crop_w; ++x) {
+                unsigned long p = XGetPixel(image, x, y) & 0xffffff;
+                int lum = (int)(((p >> 16) & 0xff) + ((p >> 8) & 0xff)
+                        + (p & 0xff));
+                if (lum >= 0x180) ++light;
+                else if (lum <= 0x40) ++dark;
+                else ++mid;
+            }
+        }
+        XDestroyImage(image);
+    }
+    printf("BXINFO %s-body 0x%lx %dx%d+%d+%d pixel=0x%06lx light=%d mid=%d "
+           "dark=%d crop=%dx%d+%d+%d\n",
+           tag, (unsigned long)window, attributes.width, attributes.height,
+           attributes.x, attributes.y, pixel, light, mid, dark,
+           crop_w, crop_h, crop_x, crop_y);
+    fflush(stdout);
+}
+
 static void dump_class_paint(Display *display, Window root, const char *wanted,
                              const char *tag) {
     Window window = find_class(display, root, wanted);
@@ -710,8 +754,38 @@ static void dump_class_paint(Display *display, Window root, const char *wanted,
         fflush(stdout);
         return;
     }
+    Window query_root = None;
+    Window parent = None;
+    Window *kids = NULL;
+    unsigned n = 0;
+    if (XQueryTree(display, window, &query_root, &parent, &kids, &n)) {
+        printf("BXINFO %s-tree 0x%lx children=%u\n", tag,
+               (unsigned long)window, n);
+        fflush(stdout);
+        for (unsigned i = 0; i < n; ++i) {
+            XWindowAttributes child_attr = {0};
+            if (!XGetWindowAttributes(display, kids[i], &child_attr)) {
+                printf("BXINFO %s-child 0x%lx gone\n", tag,
+                       (unsigned long)kids[i]);
+                fflush(stdout);
+                continue;
+            }
+            printf("BXINFO %s-child 0x%lx %dx%d+%d+%d map=%d class=%d "
+                   "depth=%d mask=0x%lx\n",
+                   tag, (unsigned long)kids[i], child_attr.width,
+                   child_attr.height, child_attr.x, child_attr.y,
+                   child_attr.map_state, child_attr.class, child_attr.depth,
+                   (unsigned long)child_attr.your_event_mask);
+            fflush(stdout);
+            if (child_attr.map_state == IsViewable
+                    && child_attr.width >= 16 && child_attr.height >= 16)
+                sample_paint_tl(display, kids[i], tag);
+        }
+        if (kids != NULL) XFree(kids);
+    }
     int count = 0;
     dump_class_paint_walk(display, window, tag, 0, &count);
+    sample_paint_body(display, window, tag);
     if (count == 0) {
         printf("BXINFO %s empty 0x%lx\n", tag, (unsigned long)window);
         fflush(stdout);

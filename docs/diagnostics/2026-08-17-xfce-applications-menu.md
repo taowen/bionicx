@@ -193,18 +193,16 @@ post-click-tip none
 The earlier black 116x53 box was the hover tooltip left up while the
 sync grab stayed frozen. It is not a separate paint bug.
 
-Reopened Mousepad chrome paints (title `Untitled 1`, Adwaita menubar).
-The editor pixmap is 100% `0xfcfcfc` because the buffer is empty. An
-XTEST `bx` after `_NET_ACTIVE_WINDOW` still leaves the editor crop
-without letter ink (about 17 mid pixels, caret-sized).
+Reopened Mousepad chrome paints (title `*Untitled 1` after XTEST `bx`).
+The only X child is an InputOnly 1x1 at -1,-1. The editor is drawn on
+the toplevel. A top-left 120x48 crop is menubar chrome. A body crop at
+`+8+36` sees the first line: `pixel=0x454545 light=12779 mid=21`.
 
-Isolated `gtk-textview` sets `BxGlyphs` in-process. The widget window
-has paper+ink (`ink=182`). The TEXT child stays `pixel=0x000000` until
-`XClearArea` (`tv-clear` then `ink=182`). `CWBackPixel` no longer
-fills the pixmap (`change-background-keeps-pixels`); GDK's
-`tmp_reset_bg` after Map/Configure must not wipe paint.
-`XSelectInput(Exposure)` on a viewable window generates Expose
-(`select-exposure-mapped`). `PictStandardRGB24` is advertised for
-cairo's opaque surfaces. The TEXT child still needs a later Expose
-before it paints; a compositor that presents that child still shows a
-blank editor until then.
+Isolated `gtk-textview` (no WM) sets `BxGlyphs` in-process. The widget
+window has paper+ink (`ink=182`). Its native TEXT child stays
+`pixel=0x000000` until `XClearArea` (`tv-clear` then `ink=182`).
+Mousepad under the session compositor does not create that native
+TEXT child. `CWBackPixel` no longer fills the pixmap
+(`change-background-keeps-pixels`). `XSelectInput(Exposure)` on a
+viewable window generates Expose (`select-exposure-mapped`).
+`PictStandardRGB24` is advertised for cairo's opaque surfaces.
