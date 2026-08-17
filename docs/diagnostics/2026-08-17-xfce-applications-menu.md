@@ -34,6 +34,12 @@ The session profile sets `XDG_MENU_PREFIX=xfce-` so garcon loads
 The Applications plugin opens on `button-press-event` with button 1 and
 no Control. `gtk-menu-probe` `gtk-press-menu` passes that path under a
 framed stub WM (`fired=1 type=4 button=1 state=0x0`). An XTEST click at
-`(20,13)` on the panel bar (`0x1000005` 2640x27, the cyan Applications
-icon) still does not map a menu when `xfwm4` is the WM. The plugin has
-no child X window; a 133x26 child at `x=2507` is the clock.
+`(12,13)` on the panel bar (`0x1000005` 2640x27+0+0) still does not map
+a menu when `xfwm4` is the WM. QueryPointer says the hit is correct:
+root child is the xfwm4 frame (`0x8003ff` 2640x27+0+0), frame child is
+the panel client, and the panel has no child at that point. Isolated
+`dock-client-replay` and `overlay-click-through` pass. A SyncPointer
+that left the pointer frozen also ate the later helper popup; that
+thaw is fixed. The remaining gap is the xfwm4 grab plus XI2-then-core
+press not delivering a GTK button-press the plugin accepts. The plugin
+has no child X window; a 133x26 child at `x=2507` is the clock.

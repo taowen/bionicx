@@ -8,6 +8,8 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/Xrender.h>
+#include <X11/extensions/XTest.h>
+#include <X11/extensions/shape.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -1087,6 +1089,53 @@ int main(int argc, char **argv) {
            rgb_ok ? "depth-24 pixmap CreatePicture"
                   : "depth-24 pixmap rejected");
     RECORD(rgb_ok);
+
+    Window click_win = XCreateSimpleWindow(app, root, 0, 0, 240, 32, 0,
+                                           0, 0x00aa44);
+    XSelectInput(app, click_win, ButtonPressMask | StructureNotifyMask);
+    XMapWindow(app, click_win);
+    XSync(app, False);
+    XserverRegion empty = XFixesCreateRegion(comp, NULL, 0);
+    if (overlay != 0) {
+        XFixesSetWindowShapeRegion(comp, overlay, ShapeInput, 0, 0, empty);
+        Window overlay_child = XCreateSimpleWindow(comp, overlay, 0, 0,
+                400, 200, 0, 0, 0x111111);
+        XMapRaised(comp, overlay_child);
+        XSync(comp, False);
+    }
+    XFixesDestroyRegion(comp, empty);
+    while (XPending(app)) {
+        XEvent ignored = {0};
+        XNextEvent(app, &ignored);
+    }
+    int event_base = 0, error_base = 0, xt_major = 0, xt_minor = 0;
+    int click_ok = 0;
+    if (XTestQueryExtension(app, &event_base, &error_base, &xt_major,
+                            &xt_minor)) {
+        XTestFakeMotionEvent(app, DefaultScreen(app), 20, 16, 0);
+        XTestFakeButtonEvent(app, 1, True, 20);
+        XTestFakeButtonEvent(app, 1, False, 20);
+        XSync(app, False);
+    }
+    for (int i = 0; i < 25 && !click_ok; ++i) {
+        XEvent press = {0};
+        if (XCheckTypedWindowEvent(app, click_win, ButtonPress, &press))
+            click_ok = 1;
+        else
+            nanosleep(&(struct timespec){.tv_nsec = 20000000L}, NULL);
+    }
+    Window qroot = None, qchild = None;
+    int qx = 0, qy = 0, wx = 0, wy = 0;
+    unsigned qmask = 0;
+    XQueryPointer(app, root, &qroot, &qchild, &qx, &qy, &wx, &wy, &qmask);
+    char click_detail[128];
+    snprintf(click_detail, sizeof(click_detail),
+             click_ok ? "ButtonPress through overlay child=0x%lx"
+                      : "no press child=0x%lx",
+             (unsigned long)qchild);
+    printf("BXINFO overlay-click-through %s\n", click_detail);
+    fflush(stdout);
+    XDestroyWindow(app, click_win);
 
     damage_destroy(comp, dmg_op, damage);
     release_overlay_window(comp, cmp_op, (uint32_t)root);

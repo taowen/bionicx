@@ -537,6 +537,63 @@ static int accept_session(Display *display, const char *prefix,
            panel != None ? "mapped" : "panel not mapped");
     RECORD(panel != None);
     if (panel == None) dump_mapped(display, root);
+    Window bar = find_widest_class(display, root, "Xfce4-panel");
+    if (bar == None) bar = find_widest_class(display, root, "xfce4-panel");
+    if (bar == None) bar = panel;
+    if (bar != None) {
+        XWindowAttributes bar_attr = {0};
+        if (XGetWindowAttributes(display, bar, &bar_attr)) {
+            int local_x = bar_attr.width > 24 ? 12 : bar_attr.width / 2;
+            int local_y = bar_attr.height > 2 ? bar_attr.height / 2 : 12;
+            int root_x = 0;
+            int root_y = 0;
+            Window ignore = None;
+            XTranslateCoordinates(display, bar, root, local_x, local_y,
+                                  &root_x, &root_y, &ignore);
+            XTestFakeMotionEvent(display, DefaultScreen(display), root_x,
+                                 root_y, 0);
+            XSync(display, False);
+            Window qroot = None;
+            Window qchild = None;
+            int qx = 0, qy = 0, wx = 0, wy = 0;
+            unsigned qmask = 0;
+            XQueryPointer(display, root, &qroot, &qchild, &qx, &qy, &wx, &wy,
+                          &qmask);
+            Window bar_child = None;
+            XQueryPointer(display, bar, &qroot, &bar_child, &qx, &qy, &wx, &wy,
+                          &qmask);
+            Window parent = None;
+            Window query_root = None;
+            Window *kids = NULL;
+            unsigned count = 0;
+            XQueryTree(display, bar, &query_root, &parent, &kids, &count);
+            if (kids != NULL) XFree(kids);
+            XClassHint hint = {0};
+            const char *cls = "none";
+            if (qchild != None && XGetClassHint(display, qchild, &hint)) {
+                cls = hint.res_class != NULL ? hint.res_class
+                        : (hint.res_name != NULL ? hint.res_name : "none");
+            }
+            XWindowAttributes frame_attr = {0};
+            Window frame_child = None;
+            if (parent != None) {
+                XGetWindowAttributes(display, parent, &frame_attr);
+                XQueryPointer(display, parent, &qroot, &frame_child, &qx, &qy,
+                              &wx, &wy, &qmask);
+            }
+            printf("BXINFO click-hit bar=0x%lx %dx%d+%d+%d click=%d,%d "
+                   "root_child=0x%lx class=%s bar_child=0x%lx parent=0x%lx "
+                   "frame=%dx%d+%d+%d frame_child=0x%lx\n",
+                   (unsigned long)bar, bar_attr.width, bar_attr.height,
+                   bar_attr.x, bar_attr.y, root_x, root_y,
+                   (unsigned long)qchild, cls, (unsigned long)bar_child,
+                   (unsigned long)parent, frame_attr.width, frame_attr.height,
+                   frame_attr.x, frame_attr.y, (unsigned long)frame_child);
+            if (hint.res_name != NULL) XFree(hint.res_name);
+            if (hint.res_class != NULL) XFree(hint.res_class);
+            fflush(stdout);
+        }
+    }
 
     Window thunar = wait_class(display, root, "Thunar", 12000);
     Window mousepad = wait_class(display, root, "Mousepad", 8000);

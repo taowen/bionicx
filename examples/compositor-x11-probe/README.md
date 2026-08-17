@@ -15,7 +15,9 @@ root pixmap, a 1x1 picture that outlives `FreePixmap`, and
 `CreatePicture` on another connection's `_XROOTPMAP_ID` tile, and a
 depth-24 pixmap used as a compositor tile, and a visual-format
 `Composite` of a core-drawn 24-in-32 named pixmap that must stay
-opaque. Does not start `xfwm4` or `xfsettingsd`.
+opaque. An XTEST click at the top-left must reach a client under the
+overlay after an empty `ShapeInput` region and a full-screen overlay
+child, matching xfwm4. Does not start `xfwm4` or `xfsettingsd`.
 
 ```sh
 ANDROID_SERIAL=<serial> examples/compositor-x11-probe/install-and-run.sh

@@ -26,5 +26,5 @@ done
 result="$(adb -s "$serial" logcat -d -v brief \
     | grep -E 'BXTEST|BXSUMMARY|BXERROR')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY reparent-x11 passed=7 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY reparent-x11 passed=8 failed=0" <<<"$result"
 echo "reparent X11 probe: PASS"

@@ -150,7 +150,14 @@ public abstract class GrabRequests {
             client.xServer.inputDeviceManager.replayPointerButtonPress(button);
             return;
         }
-        // Async*, Sync*, ReplayKeyboard: freeze is not implemented.
+        // SyncPointer: the grab client ate this press. Thaw and drop the
+        // active grab so the matching release can end the freeze. Leaving
+        // the pointer frozen made later XTEST/helper clicks disappear.
+        if (mode == 1 && client.xServer.grabManager.getClient() == client) {
+            client.xServer.grabManager.deactivatePointerGrab();
+            return;
+        }
+        // Async*, ReplayKeyboard: freeze is not implemented.
         // Accept so GrabServer holders can finish the request.
     }
 
