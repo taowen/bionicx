@@ -162,6 +162,24 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
         return ran && ok.get();
     }
 
+    public boolean downloadToCpu(Drawable destination) {
+        AtomicBoolean ok = new AtomicBoolean();
+        boolean ran = runSync(() -> ok.set(renderComposite.downloadGpuDirty(
+                destination)), 5000);
+        return ran && ok.get();
+    }
+
+    public boolean copyAreaGpu(Drawable source, int srcX, int srcY,
+            Drawable destination, int dstX, int dstY, int width, int height) {
+        AtomicBoolean ok = new AtomicBoolean();
+        boolean ran = runSync(() -> {
+            ok.set(renderComposite.copy(source, srcX, srcY, destination,
+                    dstX, dstY, width, height));
+            viewportNeedsUpdate = true;
+        }, 5000);
+        return ran && ok.get();
+    }
+
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         glThread = Thread.currentThread();
@@ -203,6 +221,20 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
     }
 
     protected void drawFrame() {
+        XLock drawableLock = xServer.tryLock(XServer.Lockable.DRAWABLE_MANAGER);
+        if (drawableLock == null) {
+            scheduleRender();
+            return;
+        }
+        try {
+            drawFrameLocked();
+        }
+        finally {
+            drawableLock.close();
+        }
+    }
+
+    private void drawFrameLocked() {
         if (viewportNeedsUpdate) {
             if (fullscreen) {
                 GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight);
@@ -342,14 +374,12 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
         XComposite composite = (XComposite)xServer.getExtensionByName("Composite");
         boolean overlayActive = composite != null && composite.hasOverlay();
-        try (XLock lock = xServer.lock(XServer.Lockable.DRAWABLE_MANAGER)) {
-            for (RenderableWindow window : renderableWindows) {
-                // Redirected contents stay offscreen. When an overlay is up,
-                // still draw them under the output child so an unpainted
-                // overlay cannot cover the session in opaque black.
-                if (overlayActive || !window.content.isOffscreenStorage()) {
-                    renderWindowDrawable(window.content, window.rootX, window.rootY, window.transparent, window.fullscreenTransformation);
-                }
+        for (RenderableWindow window : renderableWindows) {
+            // Redirected contents stay offscreen. When an overlay is up,
+            // still draw them under the output child so an unpainted
+            // overlay cannot cover the session in opaque black.
+            if (overlayActive || !window.content.isOffscreenStorage()) {
+                renderWindowDrawable(window.content, window.rootX, window.rootY, window.transparent, window.fullscreenTransformation);
             }
         }
 
@@ -361,20 +391,18 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
         cursorMaterial.setUniformVec2(cursorMaterial.uniforms.viewSize, xServer.screenInfo.width, xServer.screenInfo.height);
         quadVertices.bind(cursorMaterial.programId);
 
-        try (XLock lock = xServer.lock(XServer.Lockable.DRAWABLE_MANAGER)) {
-            Window pointWindow = xServer.inputDeviceManager.getPointWindow();
-            Cursor cursor = xServer.grabManager.getPointerGrabCursor();
-            if (cursor == null)
-                cursor = pointWindow != null
-                        ? pointWindow.attributes.getCursor() : null;
-            short x = xServer.pointer.getClampedX();
-            short y = xServer.pointer.getClampedY();
+        Window pointWindow = xServer.inputDeviceManager.getPointWindow();
+        Cursor cursor = xServer.grabManager.getPointerGrabCursor();
+        if (cursor == null)
+            cursor = pointWindow != null
+                    ? pointWindow.attributes.getCursor() : null;
+        short x = xServer.pointer.getClampedX();
+        short y = xServer.pointer.getClampedY();
 
-            if (cursor != null) {
-                if (cursor.isVisible()) renderCursorDrawable(cursor.cursorImage, x - cursor.hotSpotX, y - cursor.hotSpotY);
-            }
-            else renderCursorDrawable(rootCursorDrawable, x, y);
+        if (cursor != null) {
+            if (cursor.isVisible()) renderCursorDrawable(cursor.cursorImage, x - cursor.hotSpotX, y - cursor.hotSpotY);
         }
+        else renderCursorDrawable(rootCursorDrawable, x, y);
 
         quadVertices.disable();
     }
@@ -393,9 +421,18 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
     }
 
     private void updateScene() {
-        try (XLock lock = xServer.lock(XServer.Lockable.WINDOW_MANAGER, XServer.Lockable.DRAWABLE_MANAGER)) {
+        XLock lock = xServer.tryLock(XServer.Lockable.WINDOW_MANAGER,
+                XServer.Lockable.DRAWABLE_MANAGER);
+        if (lock == null) {
+            scheduleSceneUpdate();
+            return;
+        }
+        try {
             renderableWindows.clear();
             collectRenderableWindows(xServer.windowManager.rootWindow, xServer.windowManager.rootWindow.getX(), xServer.windowManager.rootWindow.getY());
+        }
+        finally {
+            lock.close();
         }
     }
 

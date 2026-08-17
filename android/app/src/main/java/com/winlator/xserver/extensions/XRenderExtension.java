@@ -813,6 +813,7 @@ public class XRenderExtension extends Extension {
 
         ArrayList<ClipRectangle> masked = new ArrayList<>();
         Drawable mask = picture.clipMask;
+        mask.ensureCpuPixels();
         for (ClipRectangle rectangle : base) {
             for (int row = 0; row < rectangle.height; row++) {
                 int destinationY = rectangle.y + row;

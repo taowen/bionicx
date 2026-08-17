@@ -145,6 +145,38 @@ public class XServer {
         return new MultiXLock(lockables);
     }
 
+    /**
+     * Non-blocking lock for the GL present path. GetImage/CopyArea may
+     * hold DRAWABLE_MANAGER while runSync downloads; blocking here
+     * deadlocks the GL thread behind that wait.
+     */
+    public XLock tryLock(Lockable... lockables) {
+        int acquired = 0;
+        for (int i = 0; i < lockables.length; i++) {
+            if (!locks.get(lockables[i]).tryLock()) {
+                for (int j = acquired - 1; j >= 0; j--)
+                    locks.get(lockables[j]).unlock();
+                return null;
+            }
+            acquired++;
+        }
+        return new HeldXLock(lockables);
+    }
+
+    private class HeldXLock implements XLock {
+        private final Lockable[] lockables;
+
+        private HeldXLock(Lockable[] lockables) {
+            this.lockables = lockables;
+        }
+
+        @Override
+        public void close() {
+            for (int i = lockables.length - 1; i >= 0; i--)
+                locks.get(lockables[i]).unlock();
+        }
+    }
+
     public XLock lockAll() {
         return new MultiXLock(Lockable.values());
     }

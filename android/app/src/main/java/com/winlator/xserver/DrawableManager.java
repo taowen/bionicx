@@ -23,9 +23,10 @@ public class DrawableManager extends XResourceManager implements XResourceManage
     }
 
     public Drawable createDrawable(int id, short width, short height, Visual visual) {
-        if (id == 0) return new Drawable(id, width, height, visual);
-        if (drawables.indexOfKey(id) >= 0) return null;
         Drawable drawable = new Drawable(id, width, height, visual);
+        drawable.setXServer(xServer);
+        if (id == 0) return drawable;
+        if (drawables.indexOfKey(id) >= 0) return null;
         drawables.put(id, drawable);
         return drawable;
     }

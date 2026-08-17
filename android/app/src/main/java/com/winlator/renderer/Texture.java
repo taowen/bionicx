@@ -175,7 +175,7 @@ public class Texture {
                     format, GLES20.GL_UNSIGNED_BYTE, data);
         }
         else {
-            GLES20.glPixelStorei(GLES30.GL_UNPACK_ROW_LENGTH, owner.width);
+            GLES20.glPixelStorei(GLES30.GL_UNPACK_ROW_LENGTH, owner.getImageStride());
             GLES20.glPixelStorei(GLES30.GL_UNPACK_SKIP_ROWS, y);
             GLES20.glPixelStorei(GLES30.GL_UNPACK_SKIP_PIXELS, x);
             GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, x, y, width, height,

@@ -137,18 +137,18 @@ root window.
 
 ### Host GPU presentation
 
-The Winlator-derived renderer deliberately has two presentation paths:
+Software X11 follows the glamor model: the GLES texture is the drawable
+source of truth. XRender Over, A8 glyphs and core CopyArea run on the GPU.
+The CPU `ByteBuffer` is a GetImage cache. `glReadPixels` (BGRA, no swizzle)
+runs only when a core request reads or writes pixels the GPU still owns.
+The GL present path samples those textures and uses `tryLock` on
+`DRAWABLE_MANAGER` so a GetImage download cannot deadlock against vsync.
 
-- core X11 and XRender draw into a CPU-backed `Drawable`; the GL thread uploads
-  its dirty texture while holding the drawable's render lock;
-- DRI3/Present and native GL renderers use `GPUImage`, backed by Android
-  `AHardwareBuffer` and imported into the host GLES context as `EGLImageKHR`.
-
-The second path lets Mesa/GL wrappers render through the device GPU without a
-CPU readback. BionicX will validate it with a controlled real glibc OpenGL/DRI3
-client before enabling it as the Chrome/WPS GPU acceptance path. CPU rendering
-remains a required fallback and is tested independently, so a direct-rendering
-failure cannot be masked by toolkit screenshots.
+A second path remains for native GL clients: DRI3/Present uses `GPUImage`,
+backed by Android `AHardwareBuffer` and imported as `EGLImageKHR`. Mali
+will not sample CPU stores into an AHB that stays bound as an EGLImage
+FBO, so software Render dests do not use that backing. CPU pixman-style
+fallback stays for formats and ops the GLES path does not implement.
 
 ## 5. Runtime contract
 

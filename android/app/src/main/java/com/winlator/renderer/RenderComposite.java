@@ -13,9 +13,9 @@ import java.util.IdentityHashMap;
 import java.util.List;
 
 /**
- * Glamor-style Render Composite: Porter-Duff Over and A8 glyphs on GLES.
- * Dest is sampled with framebuffer fetch when the GPU provides it.
- * GetImage cache is a BGRA glReadPixels into the CPU heap, not a CPU swizzle.
+ * Glamor-style Render Composite: the GLES texture is the drawable truth.
+ * Porter-Duff Over and A8 glyphs run on the GPU. GetImage downloads
+ * only when the CPU reads pixels (BGRA glReadPixels, no swizzle).
  */
 public class RenderComposite {
     private static final String TAG = "BionicXRenderGL";
@@ -205,14 +205,10 @@ public class RenderComposite {
             }
             quadVertices.disable();
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-            boolean downloaded = dirtyRight > dirtyLeft && dirtyBottom > dirtyTop
-                    && download(destination, dirtyLeft, dirtyTop,
-                    dirtyRight - dirtyLeft, dirtyBottom - dirtyTop);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
             GLES20.glEnable(GLES20.GL_BLEND);
             GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA,
                     GLES20.GL_ONE_MINUS_SRC_ALPHA);
-            if (!downloaded) return false;
             destination.markGpuPixelsCurrent(dirtyLeft, dirtyTop,
                     dirtyRight - dirtyLeft, dirtyBottom - dirtyTop);
             return true;
@@ -287,14 +283,10 @@ public class RenderComposite {
                         quad.height);
             }
             quadVertices.disable();
-            boolean downloaded = dirtyRight > dirtyLeft && dirtyBottom > dirtyTop
-                    && download(destination, dirtyLeft, dirtyTop,
-                    dirtyRight - dirtyLeft, dirtyBottom - dirtyTop);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
             GLES20.glEnable(GLES20.GL_BLEND);
             GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA,
                     GLES20.GL_ONE_MINUS_SRC_ALPHA);
-            if (!downloaded) return false;
             destination.markGpuPixelsCurrent(dirtyLeft, dirtyTop,
                     dirtyRight - dirtyLeft, dirtyBottom - dirtyTop);
             return true;
@@ -346,6 +338,63 @@ public class RenderComposite {
         quadVertices.disable();
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         return true;
+    }
+
+    public boolean downloadGpuDirty(Drawable destination) {
+        synchronized (destination.renderLock) {
+            int[] dirty = destination.peekGpuDirty();
+            if (dirty == null) return true;
+            Texture destTexture = destination.getTexture();
+            if (destTexture == null || !destTexture.isAllocated()) return false;
+            if (!destTexture.ensureFramebuffer()) return false;
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,
+                    destTexture.getFramebuffer());
+            boolean ok = download(destination, dirty[0], dirty[1],
+                    dirty[2], dirty[3]);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+            if (ok) destination.clearGpuDirty();
+            return ok;
+        }
+    }
+
+    public boolean copy(Drawable source, int srcX, int srcY,
+                        Drawable destination, int dstX, int dstY,
+                        int width, int height) {
+        if (source == null || destination == null || width <= 0 || height <= 0)
+            return false;
+        Texture destTexture = destination.getTexture();
+        Texture srcTexture = source.getTexture();
+        if (destTexture == null || srcTexture == null) return false;
+        synchronized (destination.renderLock) {
+            destTexture.updateFromDrawable();
+            if (source != destination) srcTexture.updateFromDrawable();
+            if (!destTexture.ensureFramebuffer()) return false;
+            if (!srcTexture.ensureFramebuffer()) return false;
+            boolean overlap = source == destination
+                    && srcX < dstX + width && dstX < srcX + width
+                    && srcY < dstY + height && dstY < srcY + height;
+            while (GLES20.glGetError() != GLES20.GL_NO_ERROR) {}
+            if (overlap) {
+                if (!blitDestinationToScratch(destTexture, destination.width,
+                        destination.height, srcX, srcY, width, height))
+                    return false;
+                GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER,
+                        scratch.getFramebuffer());
+            }
+            else {
+                GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER,
+                        srcTexture.getFramebuffer());
+            }
+            GLES30.glBindFramebuffer(GLES30.GL_DRAW_FRAMEBUFFER,
+                    destTexture.getFramebuffer());
+            GLES30.glBlitFramebuffer(srcX, srcY, srcX + width, srcY + height,
+                    dstX, dstY, dstX + width, dstY + height,
+                    GLES20.GL_COLOR_BUFFER_BIT, GLES20.GL_NEAREST);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+            if (GLES20.glGetError() != GLES20.GL_NO_ERROR) return false;
+            destination.markGpuPixelsCurrent(dstX, dstY, width, height);
+            return true;
+        }
     }
 
     private void copyDestRectToScratch(int x, int y, int width, int height) {

@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 
 import com.winlator.core.Callback;
 import com.winlator.math.Mathf;
+import com.winlator.renderer.GLRenderer;
 import com.winlator.renderer.GPUImage;
 import com.winlator.renderer.Texture;
 
@@ -26,11 +27,17 @@ public class Drawable extends XResource {
     private boolean offscreenStorage = false;
     private Callback<Drawable> onDestroyListener;
     public final Object renderLock = new Object();
+    private XServer xServer;
     private int dirtyLeft;
     private int dirtyTop;
     private int dirtyRight;
     private int dirtyBottom;
     private boolean hasDirty;
+    private int gpuLeft;
+    private int gpuTop;
+    private int gpuRight;
+    private int gpuBottom;
+    private volatile boolean hasGpuDirty;
 
     static {
         System.loadLibrary("winlator");
@@ -64,6 +71,10 @@ public class Drawable extends XResource {
         return texture;
     }
 
+    public void setXServer(XServer xServer) {
+        this.xServer = xServer;
+    }
+
     public void setTexture(Texture texture) {
         if (texture instanceof GPUImage) data = ((GPUImage)texture).getVirtualData();
         this.texture = texture;
@@ -78,10 +89,37 @@ public class Drawable extends XResource {
 
     public void markGpuPixelsCurrent(int x, int y, int w, int h) {
         synchronized (renderLock) {
-            unionDirty(x, y, w, h);
-            if (texture != null) texture.setNeedsUpdate(false);
+            unionGpuDirty(x, y, w, h);
+            if (texture != null) texture.setNeedsUpdate(hasDirty);
         }
         if (onDrawListener != null) onDrawListener.run();
+    }
+
+    public int[] peekGpuDirty() {
+        synchronized (renderLock) {
+            if (!hasGpuDirty) return null;
+            return new int[] {
+                gpuLeft, gpuTop, gpuRight - gpuLeft, gpuBottom - gpuTop
+            };
+        }
+    }
+
+    public void clearGpuDirty() {
+        synchronized (renderLock) {
+            hasGpuDirty = false;
+        }
+    }
+
+    /**
+     * Glamor prepare_access: download GPU-only pixels before the CPU
+     * reads or writes the heap. Safe to call while holding
+     * DRAWABLE_MANAGER; the GL present path uses tryLock.
+     */
+    public boolean ensureCpuPixels() {
+        if (!hasGpuDirty) return true;
+        GLRenderer renderer = xServer != null ? xServer.getRenderer() : null;
+        if (renderer == null || !renderer.hasEglContext()) return false;
+        return renderer.downloadToCpu(this);
     }
 
     @Nullable
@@ -124,6 +162,7 @@ public class Drawable extends XResource {
 
     public void drawImage(short srcX, short srcY, short dstX, short dstY, short width, short height, byte depth, ByteBuffer data, short totalWidth, short totalHeight) {
         if (this.data == null) return;
+        ensureCpuPixels();
 
         if (depth == 1) {
             drawBitmap(width, height, data, this.data);
@@ -164,6 +203,7 @@ public class Drawable extends XResource {
     public ByteBuffer getImage(short x, short y, short width, short height) {
         ByteBuffer dstData = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.LITTLE_ENDIAN);
         if (this.data == null) return dstData;
+        ensureCpuPixels();
 
         x = (short)Mathf.clamp(x, 0, this.width-1);
         y = (short)Mathf.clamp(y, 0, this.height-1);
@@ -183,14 +223,19 @@ public class Drawable extends XResource {
 
     public void copyArea(short srcX, short srcY, short dstX, short dstY, short width, short height, Drawable drawable, GraphicsContext.Function gcFunction) {
         if (this.data == null || drawable.data == null) return;
+        dstX = (short)Mathf.clamp(dstX, 0, this.width-1);
+        dstY = (short)Mathf.clamp(dstY, 0, this.height-1);
+        if ((dstX + width) > this.width)
+            width = (short)(this.width - dstX);
+        if ((dstY + height) > this.height)
+            height = (short)(this.height - dstY);
+        if (gcFunction == GraphicsContext.Function.COPY
+                && tryCopyAreaGpu(srcX, srcY, dstX, dstY, width, height,
+                drawable))
+            return;
+        ensureCpuPixels();
+        drawable.ensureCpuPixels();
         synchronized (renderLock) {
-            dstX = (short)Mathf.clamp(dstX, 0, this.width-1);
-            dstY = (short)Mathf.clamp(dstY, 0, this.height-1);
-            if ((dstX + width) > this.width)
-                width = (short)(this.width - dstX);
-            if ((dstY + height) > this.height)
-                height = (short)(this.height - dstY);
-
             if (gcFunction == GraphicsContext.Function.COPY) {
                 copyArea(srcX, srcY, dstX, dstY, width, height,
                         drawable.getStride(), this.getStride(), drawable.data,
@@ -212,6 +257,7 @@ public class Drawable extends XResource {
 
     public void fillRect(int x, int y, int width, int height, int color) {
         if (this.data == null) return;
+        ensureCpuPixels();
         synchronized (renderLock) {
             x = (short)Mathf.clamp(x, 0, this.width-1);
             y = (short)Mathf.clamp(y, 0, this.height-1);
@@ -229,6 +275,7 @@ public class Drawable extends XResource {
     public void blendAlphaMask(int x, int y, int width, int height,
                                byte[] alpha, int sourceColor) {
         if (data == null || visual == null || visual.depth != 32) return;
+        ensureCpuPixels();
         int stride = getStride();
         int sourceAlpha = (sourceColor >>> 24) & 0xff;
         if (sourceAlpha == 0) sourceAlpha = 0xff;
@@ -274,6 +321,8 @@ public class Drawable extends XResource {
                                int sourceColor) {
         if (data == null || mask == null || mask.data == null || visual == null
                 || visual.depth != 32) return;
+        ensureCpuPixels();
+        mask.ensureCpuPixels();
         int sourceAlpha = (sourceColor >>> 24) & 0xff;
         int stride = getStride();
         int maskStride = mask.getStride();
@@ -319,6 +368,7 @@ public class Drawable extends XResource {
     public int getPixelArgb(int x, int y) {
         if (data == null || x < 0 || y < 0 || x >= width || y >= height)
             return 0;
+        ensureCpuPixels();
         return data.getInt((y * getStride() + x) * 4);
     }
 
@@ -328,6 +378,8 @@ public class Drawable extends XResource {
                                 int maskX, int maskY, int operation) {
         if (data == null || visual == null
                 || (visual.depth != 8 && visual.depth != 32)) return;
+        ensureCpuPixels();
+        if (mask != null) mask.ensureCpuPixels();
         int stride = getStride();
         int maskStride = mask != null ? mask.getStride() : 0;
         synchronized (renderLock) {
@@ -495,6 +547,7 @@ public class Drawable extends XResource {
 
     public void drawLine(int x0, int y0, int x1, int y1, int color, int lineWidth) {
         if (this.data == null) return;
+        ensureCpuPixels();
         x0 = Mathf.clamp(x0, 0, width-lineWidth);
         y0 = Mathf.clamp(y0, 0, height-lineWidth);
         x1 = Mathf.clamp(x1, 0, width-lineWidth);
@@ -515,6 +568,7 @@ public class Drawable extends XResource {
 
     public int drawText8(int x, int baseline, String text, int color) {
         if (data == null || text.isEmpty()) return 0;
+        ensureCpuPixels();
         int stride = getStride();
         Bitmap bitmap = Bitmap.createBitmap(stride, height, Bitmap.Config.ARGB_8888);
         data.rewind();
@@ -555,6 +609,9 @@ public class Drawable extends XResource {
 
     public void drawAlphaMaskedBitmap(byte foreRed, byte foreGreen, byte foreBlue, byte backRed, byte backGreen, byte backBlue, Drawable srcDrawable, Drawable maskDrawable) {
         if (this.data == null || srcDrawable.data == null || maskDrawable.data == null) return;
+        ensureCpuPixels();
+        srcDrawable.ensureCpuPixels();
+        maskDrawable.ensureCpuPixels();
         drawAlphaMaskedBitmap(foreRed, foreGreen, foreBlue, backRed, backGreen, backBlue, srcDrawable.data, maskDrawable.data, this.data);
         this.data.rewind();
 
@@ -575,6 +632,7 @@ public class Drawable extends XResource {
 
     public void forceOpaqueRgb(int x, int y, int w, int h) {
         if (data == null || w <= 0 || h <= 0) return;
+        ensureCpuPixels();
         int stride = getStride();
         synchronized (renderLock) {
             for (int row = 0; row < h; row++) {
@@ -590,6 +648,39 @@ public class Drawable extends XResource {
                 }
             }
         }
+    }
+
+    private boolean tryCopyAreaGpu(short srcX, short srcY, short dstX,
+            short dstY, short width, short height, Drawable source) {
+        if (width <= 0 || height <= 0) return false;
+        if (visual == null || visual.depth != 32) return false;
+        if (source.visual == null || source.visual.depth != 32) return false;
+        if (texture == null || source.texture == null) return false;
+        GLRenderer renderer = xServer != null ? xServer.getRenderer() : null;
+        if (renderer == null || !renderer.hasEglContext()) return false;
+        return renderer.copyAreaGpu(source, srcX, srcY, this, dstX, dstY,
+                width, height);
+    }
+
+    private void unionGpuDirty(int x, int y, int w, int h) {
+        if (w <= 0 || h <= 0) return;
+        int left = Math.max(0, x);
+        int top = Math.max(0, y);
+        int right = Math.min(width, x + w);
+        int bottom = Math.min(height, y + h);
+        if (right <= left || bottom <= top) return;
+        if (!hasGpuDirty) {
+            gpuLeft = left;
+            gpuTop = top;
+            gpuRight = right;
+            gpuBottom = bottom;
+            hasGpuDirty = true;
+            return;
+        }
+        gpuLeft = Math.min(gpuLeft, left);
+        gpuTop = Math.min(gpuTop, top);
+        gpuRight = Math.max(gpuRight, right);
+        gpuBottom = Math.max(gpuBottom, bottom);
     }
 
     private void unionDirty(int x, int y, int w, int h) {
