@@ -357,9 +357,23 @@ public class WindowManager extends XResourceManager {
 
         Window parent = window.getParent();
         boolean overrideRedirect = window.attributes.isOverrideRedirect();
-        if (!parent.hasEventListenerForOtherClient(
+        boolean redirected = parent.hasEventListenerForOtherClient(
                 Event.SUBSTRUCTURE_REDIRECT, requestingClient)
-                || overrideRedirect) {
+                && !overrideRedirect;
+        boolean grabOwner = requestingClient != null
+                && requestingClient.xServer.getServerGrabClient()
+                == requestingClient;
+        // A grab owner that resizes while a WM holds SubstructureRedirect
+        // would otherwise wait forever for ConfigureNotify: the WM cannot
+        // answer ConfigureRequest until the grab is released. GTK menus
+        // GrabServer then ConfigureWindow the popup.
+        if (!redirected || grabOwner) {
+            if (redirected) {
+                parent.sendEvent(Event.SUBSTRUCTURE_REDIRECT,
+                        new ConfigureRequest(parent, window,
+                                window.previousSibling(), x, y, width, height,
+                                borderWidth, stackMode, valueMask));
+            }
             changeWindowGeometry(window, x, y, width, height);
 
             window.setBorderWidth(borderWidth);

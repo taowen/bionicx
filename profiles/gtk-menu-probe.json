@@ -1,0 +1,27 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "gtk-menu-probe",
+  "name": "GTK menu popup probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "launch": {
+    "executable": "${APP}/bin/gtk-menu-probe",
+    "workingDirectory": "${APP}",
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "XDG_RUNTIME_DIR": "${TMP}/runtime",
+      "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
+      "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
+      "GSETTINGS_BACKEND": "memory",
+      "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
+      "NO_AT_BRIDGE": "1",
+      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
+      "LANG": "C.UTF-8"
+    }
+  }
+}

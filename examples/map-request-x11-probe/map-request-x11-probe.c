@@ -141,6 +141,21 @@ int main(int argc, char **argv) {
                        : "blocked by SubstructureRedirect");
     RECORD(grab_mapped);
 
+    XGrabServer(client);
+    Window grab_cfg = XCreateSimpleWindow(client, root, 80, 300, 100, 50, 0,
+                                          0, 0x226644);
+    XResizeWindow(client, grab_cfg, 240, 90);
+    XSync(client, False);
+    XWindowAttributes grab_geo = {0};
+    XGetWindowAttributes(client, grab_cfg, &grab_geo);
+    bool grab_resized = grab_geo.width == 240 && grab_geo.height == 90;
+    XUngrabServer(client);
+    XSync(client, False);
+    result("grab-owner-configure", grab_resized,
+           grab_resized ? "240x90 under GrabServer"
+                        : "ConfigureRequest blocked by SubstructureRedirect");
+    RECORD(grab_resized);
+
     XGrabServer(manager);
     XSync(manager, False);
     Window during = XCreateSimpleWindow(client, root, 320, 80, 140, 70, 0,
@@ -169,6 +184,7 @@ int main(int argc, char **argv) {
     XDestroyWindow(client, normal);
     XDestroyWindow(client, dock);
     XDestroyWindow(client, grabbed);
+    XDestroyWindow(client, grab_cfg);
     XDestroyWindow(client, during);
     XCloseDisplay(client);
     XCloseDisplay(manager);
