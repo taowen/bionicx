@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static int checks;
@@ -409,6 +410,55 @@ static void probe_trapezoids(Display *display) {
     if (pixmap != None) XFreePixmap(display, pixmap);
 }
 
+static void probe_glyphs32(Display *display) {
+    int screen = DefaultScreen(display);
+    Window root = RootWindow(display, screen);
+    XRenderPictFormat *argb32 = XRenderFindStandardFormat(
+            display, PictStandardARGB32);
+    XRenderPictFormat *a8 = XRenderFindStandardFormat(display, PictStandardA8);
+    Pixmap pixmap = argb32 ? XCreatePixmap(display, root, 16, 16, 32) : None;
+    Picture dest = pixmap != None && argb32
+            ? XRenderCreatePicture(display, pixmap, argb32, 0, NULL) : 0;
+    XRenderColor black = {.alpha = 0xffff};
+    XRenderColor white = {
+        .red = 0xffff, .green = 0xffff, .blue = 0xffff, .alpha = 0xffff
+    };
+    Picture solid = dest ? XRenderCreateSolidFill(display, &white) : 0;
+    GlyphSet set = a8 ? XRenderCreateGlyphSet(display, a8) : None;
+    Glyph add_id = 0x10001;
+    unsigned int draw_id = 0x10001;
+    XGlyphInfo info = {
+        .width = 8, .height = 8, .x = 0, .y = 0, .xOff = 8, .yOff = 0
+    };
+    char bits[64];
+    memset(bits, 0xff, sizeof(bits));
+    int before = x_errors;
+    if (dest)
+        XRenderFillRectangle(display, PictOpSrc, dest, &black, 0, 0, 16, 16);
+    if (set)
+        XRenderAddGlyphs(display, set, &add_id, &info, 1, bits,
+                         (int)sizeof(bits));
+    if (dest && solid && set)
+        XRenderCompositeString32(display, PictOpOver, solid, dest, a8, set,
+                                 0, 0, 4, 4, &draw_id, 1);
+    XSync(display, False);
+    XImage *image = pixmap != None
+            ? XGetImage(display, pixmap, 6, 6, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    unsigned long pixel = image ? XGetPixel(image, 0, 0) : 0;
+    if (image) XDestroyImage(image);
+    char detail[80];
+    snprintf(detail, sizeof(detail), "pixel=0x%06lx errors=%d",
+             pixel & 0xffffff, x_errors - before);
+    result("glyphs32", dest && solid && set
+           && (pixel & 0xffffff) == 0xffffff
+           && x_errors == before, detail);
+    if (set) XRenderFreeGlyphSet(display, set);
+    if (solid) XRenderFreePicture(display, solid);
+    if (dest) XRenderFreePicture(display, dest);
+    if (pixmap != None) XFreePixmap(display, pixmap);
+}
+
 int main(int argc, char **argv) {
     int duration = argc > 1 ? atoi(argv[1]) : 2;
     XSetErrorHandler(handle_x_error);
@@ -428,6 +478,7 @@ int main(int argc, char **argv) {
     probe_render(display, window);
     probe_window_picture_resize(display);
     probe_trapezoids(display);
+    probe_glyphs32(display);
     printf("BXSUMMARY xrender-x11 passed=%d failed=%d xerrors=%d\n",
            passed, checks - passed, x_errors);
     fflush(stdout);

@@ -30,6 +30,22 @@ inside the Bounding box and applies Input only to the window itself.
 `overlay-click-dock` restacks the dock above a desktop under that
 hole and still hits the dock.
 
-The remaining live gap is why the panel frame is gone from the
+The remaining live gap was why the panel frame is gone from the
 mapped root stack after the session raises windows, while the
-compositor still paints it.
+compositor still paints it. `xfce4-panel` exits after a fatal GDK X
+error:
+
+```text
+The error was 'BadImplementation (server does not implement operation)'.
+  (Details: serial 6575 error_code 17 request_code 151 (RENDER) minor_code 25)
+```
+
+RENDER minor 25 is `CompositeGlyphs32`. Pango draws panel labels with
+32-bit glyph ids. The server already rasterized CompositeGlyphs8/16
+and threw `BadImplementation` for 32. GDK treats that as fatal, so
+window `0x1000005` is destroyed (`saved-bar … gone`) and the click
+hits xfdesktop. CompositeGlyphs32 now rasterizes those ids. After
+that the panel stays mapped (`find-Xfce4-panel 0x1000005`) and
+`pre-click-ptr` is the dock frame, not Xfdesktop. The XTEST click
+still reports `click-menu none grab=0->1` and a black 116x53
+Applications tooltip can remain. Do not add a 13th xfce accept click.

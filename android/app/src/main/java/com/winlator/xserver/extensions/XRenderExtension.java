@@ -78,6 +78,7 @@ public class XRenderExtension extends Extension {
         private static final byte FREE_GLYPHS = 22;
         private static final byte COMPOSITE_GLYPHS_8 = 23;
         private static final byte COMPOSITE_GLYPHS_16 = 24;
+        private static final byte COMPOSITE_GLYPHS_32 = 25;
         private static final byte FILL_RECTANGLES = 26;
         private static final byte SET_PICTURE_FILTER = 30;
         private static final byte CREATE_SOLID_FILL = 33;
@@ -913,7 +914,9 @@ public class XRenderExtension extends Extension {
             for (int i = 0; i < length && remaining >= glyphIdBytes; i++) {
                 int id = glyphIdBytes == 1
                         ? inputStream.readUnsignedByte()
-                        : inputStream.readUnsignedShort();
+                        : glyphIdBytes == 2
+                        ? inputStream.readUnsignedShort()
+                        : inputStream.readInt();
                 remaining -= glyphIdBytes;
                 Glyph glyph = set.glyphs.get(id);
                 if (glyph != null) {
@@ -1294,6 +1297,9 @@ public class XRenderExtension extends Extension {
                 break;
             case ClientOpcodes.COMPOSITE_GLYPHS_16:
                 compositeGlyphs(client, inputStream, 2);
+                break;
+            case ClientOpcodes.COMPOSITE_GLYPHS_32:
+                compositeGlyphs(client, inputStream, 4);
                 break;
             case ClientOpcodes.SET_PICTURE_FILTER:
                 setPictureFilter(client, inputStream);

@@ -46,7 +46,7 @@ done
 adb -s "$serial" exec-out screencap -p > \
     "${BIONICX_XFCE_SCREENSHOT:-$repo_dir/build/xfce-session-device.png}"
 log="$(adb -s "$serial" logcat -d -v brief)"
-result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO click-|BXINFO grab-state|BXINFO pre-click-|BXINFO post-click-|BXINFO bar-child|BXINFO root-stack|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log")"
+result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO click-|BXINFO grab-state|BXINFO pre-click-|BXINFO post-click-|BXINFO bar-child|BXINFO root-stack|BXINFO find-|BXINFO saved-bar|BXINFO thin-root|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log")"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY xfce-session-accept passed=12 failed=0" <<<"$result"
 grep -Fq "enabled D-Bus session service" <<<"$result"
@@ -76,6 +76,10 @@ if grep -F 'XRandR initialization error' <<<"$log"; then
 fi
 if grep -F "Unable to acquire bus name 'org.xfce.Thunar'" <<<"$log"; then
     echo "Thunar must own org.xfce.Thunar before xfdesktop activates it" >&2
+    exit 1
+fi
+if grep -F "xfce4-panel" <<<"$log" | grep -Fq "BadImplementation"; then
+    echo "xfce4-panel must not die on unimplemented Render" >&2
     exit 1
 fi
 if adb -s "$serial" shell run-as io.taowen.bx \
