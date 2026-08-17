@@ -115,6 +115,12 @@ type 22 is ConfigureNotify to the panel (`StructureNotifyMask`,
 propagate=true — xfwm4 `clientConfigure`, not `handleButtonPress`).
 type 33 is a panel ClientMessage to root. opcode 3/14 are
 GetWindowAttributes/GetGeometry. No core 35 or XI AllowEvents in the
-1.5s wait. xfwm4 is alive and handling tooltip/configure traffic, but
-GDK never dequeued a translatable ButtonPress (`handleButtonPress`
-always AllowEvents). Do not add a 13th xfce accept click.
+1.5s wait.
+
+Isolated `gtk-gdk-grab` 8/8 shows GDK does dequeue a sync
+`XIGrabButton` press through `gdk_window_add_filter(NULL)` on its own
+window, a peer window, a redirected peer, and after hover motion. Every
+case is `core=0 xi=1 allow=1`: GDK eats real core `ButtonPress` and the
+pointer path is the XI2 cookie. Live xfwm4 is still that GDK filter
+path, but after tooltip/configure traffic it never AllowEvents. Do not
+add a 13th xfce accept click.
