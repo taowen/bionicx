@@ -174,15 +174,20 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
 
     @Override
     public void onPointerButtonPress(Pointer.Button button) {
-        sendXiPointerEvent(XInputExtension.XI_BUTTON_PRESS, button.code());
         if (xServer.isRelativeMouseMovement()) {
             WinHandler winHandler = xServer.getWinHandler();
             int wheelDelta = button == Pointer.Button.BUTTON_SCROLL_UP ? MOUSE_WHEEL_DELTA : (button == Pointer.Button.BUTTON_SCROLL_DOWN ? -MOUSE_WHEEL_DELTA : 0);
             winHandler.mouseEvent(MouseEventFlags.getFlagFor(button, true), 0, 0, wheelDelta);
+            return;
         }
-        else {
-            deliverPointerButtonPress(button, true, true);
-        }
+        // Activate a sync passive grab before XI2 so xfwm4 sees the press
+        // on c->window. Implicit grabs wait until after XI2: GDK often
+        // selects only XI2, and the first core ButtonPress ancestor is
+        // the WM frame.
+        deliverPointerButtonPress(button, true, false);
+        sendXiPointerEvent(XInputExtension.XI_BUTTON_PRESS, button.code());
+        if (xServer.grabManager.getWindow() == null)
+            deliverPointerButtonPress(button, false, true);
     }
 
     public void replayPointerButtonPress(Pointer.Button button) {

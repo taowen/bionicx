@@ -197,6 +197,22 @@ public class XInputExtension extends Extension {
     public void sendDeviceEvent(int deviceId, int eventType, int detail,
                                 Window sourceWindow, short rootX, short rootY) {
         if (sourceWindow == null) return;
+        if (deviceId == MASTER_POINTER_ID
+                && xServer.grabManager.isPassiveSynchronousPointerGrab()) {
+            XClient grabClient = xServer.grabManager.getClient();
+            Window grabWindow = xServer.grabManager.getWindow();
+            if (grabClient == null || grabWindow == null
+                    || !grabWindow.attributes.isEnabled()) return;
+            Window target = grabWindow;
+            if (xServer.grabManager.isOwnerEvents()) {
+                Window selected = selectedAncestor(grabClient, sourceWindow,
+                        deviceId, eventType);
+                if (selected != null) target = selected;
+            }
+            sendDeviceEventToClient(grabClient, deviceId, eventType, detail,
+                    sourceWindow, target, rootX, rootY);
+            return;
+        }
         XClient grabbedClient = null;
         boolean deliveredToGrabbedClient = false;
         Window grabWindow = deviceId == MASTER_POINTER_ID

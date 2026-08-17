@@ -83,6 +83,11 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         return passiveActivationButton;
     }
 
+    public boolean isPassiveSynchronousPointerGrab() {
+        return window != null && pointerSynchronous
+                && passiveActivationButton != null;
+    }
+
     public XClient getClient() {
         return eventListener != null ? eventListener.client : null;
     }

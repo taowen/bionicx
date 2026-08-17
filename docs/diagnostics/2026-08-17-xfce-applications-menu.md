@@ -40,9 +40,10 @@ root child is the xfwm4 frame (`0x8003ff` 2640x27+0+0), frame child is
 the panel client, and the panel has no child at that point. Isolated
 `dock-client-replay` and overlay click-through pass. `AllowEvents`
 SyncPointer now thaws frozen pointer events without dropping the grab
-(GTK menus SyncPointer while still owning the pointer). Isolated
-`dock-xi-replay` Replays the client and delivers XI2 to it, but xfwm4
-still sees XI2 `ButtonPress` on the frame first (`event.window !=
-c->window`) and SyncPointers. Making that press exclusive to the grab
-window broke `gtk-menu-click`. The plugin has no child X window; a
-133x26 child at `x=2507` is the clock.
+(GTK menus SyncPointer while still owning the pointer). A synchronous
+passive `GrabButton` now activates before XI2 and reports that press
+only on the grab window, so xfwm4 sees `event.window == c->window` and
+Replays (`dock-xi-replay` `pre_frame=0`). Implicit and `XIGrabDevice`
+grabs still broadcast XI2 so `gtk-menu-click` stays 13/13. An XTEST
+click at `(12,13)` in the live session still does not map a menu. The
+plugin has no child X window; a 133x26 child at `x=2507` is the clock.

@@ -502,7 +502,7 @@ int main(int argc, char **argv) {
                 waited += 20;
             }
             XUngrabButton(manager, 1, AnyModifier, dock);
-            xi_replay_ok = client_xi && replayed;
+            xi_replay_ok = client_xi && replayed && !pre_replay_frame;
             char replay_detail[128];
             snprintf(replay_detail, sizeof(replay_detail),
                      "client_xi=%d replayed=%d pre_frame=%d grab=%d",
