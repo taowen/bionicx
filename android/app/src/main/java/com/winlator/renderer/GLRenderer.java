@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.view.Choreographer;
 
 import androidx.core.graphics.ColorUtils;
 
@@ -67,6 +68,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
     protected short surfaceHeight;
     public final EffectComposer effectComposer = new EffectComposer(this);
     private final CountDownLatch eglContextReady = new CountDownLatch(1);
+    private boolean renderScheduled;
 
     public GLRenderer(XServerView xServerView, XServer xServer) {
         this.xServerView = xServerView;
@@ -184,7 +186,18 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
     @Override
     public void onUpdateWindowContent(Window window) {
-        xServerView.requestRender();
+        scheduleRender();
+    }
+
+    private void scheduleRender() {
+        xServerView.post(() -> {
+            if (renderScheduled) return;
+            renderScheduled = true;
+            Choreographer.getInstance().postFrameCallback(frameTimeNanos -> {
+                renderScheduled = false;
+                xServerView.requestRender();
+            });
+        });
     }
 
     @Override

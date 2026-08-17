@@ -622,39 +622,50 @@ public class XClientRequestHandler implements RequestHandler {
         return true;
     }
 
+    @Override
+    public void afterRequests(ConnectedClient client) {
+        if (client instanceof XClient)
+            ((XClient)client).xServer.windowManager.flushDirtyWindowContent();
+    }
+
     public void processDeferredRequests(XServer xServer) {
-        for (;;) {
-            XClient grabber = xServer.getServerGrabClient();
-            if (grabber != null) {
-                try {
-                    if (!handleCompleteRequest(grabber)) return;
+        try {
+            for (;;) {
+                XClient grabber = xServer.getServerGrabClient();
+                if (grabber != null) {
+                    try {
+                        if (!handleCompleteRequest(grabber)) return;
+                    }
+                    catch (IOException e) {
+                        Log.e(TAG, "deferred request I/O failure fd=" + grabber.fd,
+                                e);
+                        return;
+                    }
+                    continue;
                 }
-                catch (IOException e) {
-                    Log.e(TAG, "deferred request I/O failure fd=" + grabber.fd,
-                            e);
-                    return;
-                }
-                continue;
-            }
-            boolean progressed = false;
-            for (XClient deferred : xServer.getClientsSnapshot()) {
-                if (xServer.getServerGrabClient() != null) break;
-                try {
-                    XInputStream input = deferred.getInputStream();
-                    XOutputStream output = deferred.getOutputStream();
-                    while (input != null && output != null
-                            && xServer.getServerGrabClient() == null
-                            && handleCompleteRequest(deferred)) {
-                        progressed = true;
+                boolean progressed = false;
+                for (XClient deferred : xServer.getClientsSnapshot()) {
+                    if (xServer.getServerGrabClient() != null) break;
+                    try {
+                        XInputStream input = deferred.getInputStream();
+                        XOutputStream output = deferred.getOutputStream();
+                        while (input != null && output != null
+                                && xServer.getServerGrabClient() == null
+                                && handleCompleteRequest(deferred)) {
+                            progressed = true;
+                        }
+                    }
+                    catch (IOException e) {
+                        Log.e(TAG, "deferred request I/O failure fd=" + deferred.fd,
+                                e);
                     }
                 }
-                catch (IOException e) {
-                    Log.e(TAG, "deferred request I/O failure fd=" + deferred.fd,
-                            e);
-                }
+                if (xServer.getServerGrabClient() != null) continue;
+                if (!progressed) return;
             }
-            if (xServer.getServerGrabClient() != null) continue;
-            if (!progressed) return;
+        }
+        finally {
+            xServer.windowManager.flushDirtyWindowContent();
         }
     }
 

@@ -82,6 +82,7 @@ public class XConnectorEpoll {
                     int activePosition = 0;
                     while (requestHandler.handleRequest(client)) activePosition = inputStream.getActivePosition();
                     inputStream.setActivePosition(activePosition);
+                    requestHandler.afterRequests(client);
                 }
                 else if (readResult == -4 || readResult == -11) {
                     // EINTR and EAGAIN/EWOULDBLOCK are transient for a live
@@ -94,7 +95,10 @@ public class XConnectorEpoll {
                     killConnection(client);
                 }
             }
-            else requestHandler.handleRequest(client);
+            else {
+                requestHandler.handleRequest(client);
+                requestHandler.afterRequests(client);
+            }
         }
         catch (IOException e) {
             Log.e(TAG, "request I/O failure fd=" + client.fd, e);

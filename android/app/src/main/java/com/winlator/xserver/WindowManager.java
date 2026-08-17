@@ -21,6 +21,7 @@ import com.winlator.xserver.events.UnmapNotify;
 import com.winlator.xserver.events.VisibilityNotify;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 
 public class WindowManager extends XResourceManager {
@@ -32,6 +33,8 @@ public class WindowManager extends XResourceManager {
     private FocusRevertTo focusRevertTo = FocusRevertTo.NONE;
     private boolean pointerRootFocus;
     private final ArrayList<OnWindowModificationListener> onWindowModificationListeners = new ArrayList<>();
+    private final IdentityHashMap<Window, Boolean> dirtyContent =
+            new IdentityHashMap<>();
 
     public interface OnWindowModificationListener {
         default void onMapWindow(Window window) {}
@@ -265,7 +268,7 @@ public class WindowManager extends XResourceManager {
         window.attributes.setWindowClass(isInputOutput
                 ? WindowAttributes.WindowClass.INPUT_OUTPUT
                 : WindowAttributes.WindowClass.INPUT_ONLY);
-        if (drawable != null) drawable.setOnDrawListener(() -> triggerOnUpdateWindowContent(window));
+        if (drawable != null) drawable.setOnDrawListener(() -> markWindowContentDirty(window));
         windows.put(id, window);
         parent.addChild(window);
         triggerOnCreateResourceListener(window);
@@ -289,7 +292,7 @@ public class WindowManager extends XResourceManager {
             drawableManager.removeDrawable(oldContent.id);
             Drawable newContent = drawableManager.createDrawable(oldContent.id, width, height, oldContent.visual);
             newContent.setOffscreenStorage(oldContent.isOffscreenStorage());
-            newContent.setOnDrawListener(() -> triggerOnUpdateWindowContent(window));
+            newContent.setOnDrawListener(() -> markWindowContentDirty(window));
             window.setContent(newContent);
         }
 
@@ -479,6 +482,22 @@ public class WindowManager extends XResourceManager {
         for (int i = onWindowModificationListeners.size()-1; i >= 0; i--) {
             onWindowModificationListeners.get(i).onChangeWindowZOrder(window);
         }
+    }
+
+    public void markWindowContentDirty(Window window) {
+        synchronized (dirtyContent) {
+            dirtyContent.put(window, Boolean.TRUE);
+        }
+    }
+
+    public void flushDirtyWindowContent() {
+        ArrayList<Window> batch;
+        synchronized (dirtyContent) {
+            if (dirtyContent.isEmpty()) return;
+            batch = new ArrayList<>(dirtyContent.keySet());
+            dirtyContent.clear();
+        }
+        for (Window window : batch) triggerOnUpdateWindowContent(window);
     }
 
     public void triggerOnUpdateWindowContent(Window window) {

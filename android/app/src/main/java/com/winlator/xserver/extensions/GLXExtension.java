@@ -427,8 +427,13 @@ public class GLXExtension extends Extension {
             Texture texture = drawable.getTexture();
             texture.setFlipY(flipY);
             texture.copyFromReadBuffer(width, height);
-            Runnable onDrawListener = drawable.getOnDrawListener();
-            if (onDrawListener != null) onDrawListener.run();
+            Window window = xServer.windowManager.getWindow(drawableId);
+            if (window != null)
+                xServer.windowManager.triggerOnUpdateWindowContent(window);
+            else {
+                Runnable onDrawListener = drawable.getOnDrawListener();
+                if (onDrawListener != null) onDrawListener.run();
+            }
         }
         return true;
     }
