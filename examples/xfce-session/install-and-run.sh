@@ -43,7 +43,8 @@ for i in $(seq 1 80); do
     if [[ "$i" -eq 6 ]]; then
         adb -s "$serial" exec-out screencap -p > "$mapped"
     fi
-    if adb -s "$serial" logcat -d -v brief | grep -Fq 'BXSUMMARY xfce-session-accept'; then
+    if grep -Fq 'BXSUMMARY xfce-session-accept' "$bionicx_log" \
+            || adb -s "$serial" logcat -d -v brief | grep -Fq 'BXSUMMARY xfce-session-accept'; then
         echo "xfce-session accept finished at ${i}s"
         break
     fi
@@ -56,7 +57,7 @@ kill "$logcat_pid" 2>/dev/null || true
 wait "$logcat_pid" 2>/dev/null || true
 trap - EXIT
 log="$(cat "$bionicx_log"; adb -s "$serial" logcat -d -v brief)"
-result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO click-|BXINFO grab-|BXINFO pre-click-|BXINFO post-click-|BXINFO bar-child|BXINFO root-stack|BXINFO find-|BXINFO saved-bar|BXINFO thin-root|BXINFO ptr-press|BXINFO grab-trace|BXINFO grab-add|BXINFO grab-add-reject|BXINFO grab-press|BXINFO grab-xi|BXINFO grab-mark|BXINFO grab-core-replay|BXINFO gdk-ev|BXINFO allow-events|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log" | awk '!seen[$0]++')"
+result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO click-|BXINFO grab-|BXINFO pre-click-|BXINFO post-click-|BXINFO bar-child|BXINFO root-stack|BXINFO find-|BXINFO saved-bar|BXINFO thin-root|BXINFO ptr-press|BXINFO grab-trace|BXINFO grab-add|BXINFO grab-add-reject|BXINFO grab-press|BXINFO grab-xi|BXINFO grab-mark|BXINFO grab-core-replay|BXINFO gdk-ev|BXINFO allow-events|BXINFO mp-paint|BXINFO mp-type|BXINFO pre-click-tip|BXINFO post-click-tip|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log" | awk '!seen[$0]++')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY xfce-session-accept passed=12 failed=0" <<<"$result"
 grep -Fq "enabled D-Bus session service" <<<"$result"

@@ -181,3 +181,21 @@ click-menu opened grab=0->1 menu 185x324
 
 `session-applications-menu` still maps 185x324 before the click. Do
 not add a 13th xfce accept click.
+
+After that replay the leftover Applications tooltip is not mapped:
+
+```text
+find-Xfce4-panel 0x1000416 parent=0x4 116x53+-4+26 map=0
+pre-click-tip none
+post-click-tip none
+```
+
+The earlier black 116x53 box was the hover tooltip left up while the
+sync grab stayed frozen. It is not a separate paint bug.
+
+Reopened Mousepad chrome paints (title `Untitled 1`, Adwaita menubar).
+The editor pixmap is 100% `0xfcfcfc` because the buffer is empty. An
+XTEST `bx` after `_NET_ACTIVE_WINDOW` still leaves the editor crop
+without letter ink (about 17 mid pixels, caret-sized). Next dump is
+whether GtkTextView paints known buffer text, not whether Untitled is
+white.

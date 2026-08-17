@@ -572,6 +572,179 @@ static int named_selection_owned(Display *display, const char *name) {
     return XGetSelectionOwner(display, atom) != None;
 }
 
+static void sample_paint(Display *display, Window window, const char *tag) {
+    XWindowAttributes attributes = {0};
+    if (!XGetWindowAttributes(display, window, &attributes)) {
+        printf("BXINFO %s 0x%lx gone\n", tag, (unsigned long)window);
+        fflush(stdout);
+        return;
+    }
+    int width = attributes.width;
+    int height = attributes.height;
+    if (attributes.map_state != IsViewable || width < 2 || height < 2) {
+        printf("BXINFO %s 0x%lx %dx%d+%d+%d map=%d skip\n", tag,
+               (unsigned long)window, width, height, attributes.x,
+               attributes.y, attributes.map_state);
+        fflush(stdout);
+        return;
+    }
+    int crop_w = width > 200 ? 200 : width;
+    int crop_h = height > 120 ? 120 : height;
+    int crop_x = (width - crop_w) / 2;
+    int crop_y = (height - crop_h) / 2;
+    XImage *image = XGetImage(display, window, crop_x, crop_y,
+                              (unsigned)crop_w, (unsigned)crop_h,
+                              AllPlanes, ZPixmap);
+    unsigned long pixel = 0;
+    int nonzero = 0;
+    int light = 0;
+    int dark = 0;
+    if (image != NULL) {
+        pixel = XGetPixel(image, crop_w / 2, crop_h / 2) & 0xffffff;
+        for (int y = 0; y < crop_h; ++y) {
+            for (int x = 0; x < crop_w; ++x) {
+                unsigned long p = XGetPixel(image, x, y) & 0xffffff;
+                if (p != 0) ++nonzero;
+                int red = (int)((p >> 16) & 0xff);
+                int green = (int)((p >> 8) & 0xff);
+                int blue = (int)(p & 0xff);
+                int lum = red + green + blue;
+                if (lum >= 0x180) ++light;
+                if (lum <= 0x40) ++dark;
+            }
+        }
+        XDestroyImage(image);
+    }
+    printf("BXINFO %s 0x%lx %dx%d+%d+%d map=%d depth=%d pixel=0x%06lx "
+           "nonzero=%d light=%d dark=%d crop=%dx%d\n",
+           tag, (unsigned long)window, width, height, attributes.x,
+           attributes.y, attributes.map_state, attributes.depth, pixel,
+           nonzero, light, dark, crop_w, crop_h);
+    fflush(stdout);
+}
+
+static void dump_or_paint(Display *display, Window root, const char *tag) {
+    Window windows[32];
+    int n = collect_override(display, root, windows, 32, 0);
+    int painted = 0;
+    for (int i = 0; i < n; ++i) {
+        XWindowAttributes attributes = {0};
+        if (!XGetWindowAttributes(display, windows[i], &attributes))
+            continue;
+        if (is_screen_sized(display, &attributes)) continue;
+        if (attributes.width >= 80 && attributes.height >= 80) continue;
+        if (attributes.width < 20 || attributes.height < 12) continue;
+        sample_paint(display, windows[i], tag);
+        ++painted;
+    }
+    if (painted == 0) printf("BXINFO %s none\n", tag);
+    fflush(stdout);
+}
+
+static void sample_paint_tl(Display *display, Window window, const char *tag) {
+    XWindowAttributes attributes = {0};
+    if (!XGetWindowAttributes(display, window, &attributes)
+            || attributes.map_state != IsViewable
+            || attributes.width < 8 || attributes.height < 8) {
+        return;
+    }
+    int crop_w = attributes.width > 120 ? 120 : attributes.width;
+    int crop_h = attributes.height > 48 ? 48 : attributes.height;
+    XImage *image = XGetImage(display, window, 0, 0, (unsigned)crop_w,
+                              (unsigned)crop_h, AllPlanes, ZPixmap);
+    unsigned long pixel = 0;
+    int nonzero = 0;
+    int light = 0;
+    int dark = 0;
+    int mid = 0;
+    if (image != NULL) {
+        pixel = XGetPixel(image, 2, 2) & 0xffffff;
+        for (int y = 0; y < crop_h; ++y) {
+            for (int x = 0; x < crop_w; ++x) {
+                unsigned long p = XGetPixel(image, x, y) & 0xffffff;
+                if (p != 0) ++nonzero;
+                int lum = (int)(((p >> 16) & 0xff) + ((p >> 8) & 0xff)
+                        + (p & 0xff));
+                if (lum >= 0x180) ++light;
+                else if (lum <= 0x40) ++dark;
+                else ++mid;
+            }
+        }
+        XDestroyImage(image);
+    }
+    printf("BXINFO %s 0x%lx %dx%d+%d+%d map=%d depth=%d pixel=0x%06lx "
+           "nonzero=%d light=%d mid=%d dark=%d crop=%dx%d\n",
+           tag, (unsigned long)window, attributes.width, attributes.height,
+           attributes.x, attributes.y, attributes.map_state, attributes.depth,
+           pixel, nonzero, light, mid, dark, crop_w, crop_h);
+    fflush(stdout);
+}
+
+static void dump_class_paint_walk(Display *display, Window window,
+                                  const char *tag, int depth, int *count) {
+    if (depth > 6 || *count > 24) return;
+    XWindowAttributes attributes = {0};
+    if (XGetWindowAttributes(display, window, &attributes)
+            && attributes.map_state == IsViewable
+            && attributes.width >= 8 && attributes.height >= 8) {
+        sample_paint_tl(display, window, tag);
+        ++*count;
+    }
+    Window query_root = None;
+    Window parent = None;
+    Window *kids = NULL;
+    unsigned n = 0;
+    if (!XQueryTree(display, window, &query_root, &parent, &kids, &n)
+            || kids == NULL)
+        return;
+    for (unsigned i = 0; i < n && *count <= 24; ++i)
+        dump_class_paint_walk(display, kids[i], tag, depth + 1, count);
+    XFree(kids);
+}
+
+static void dump_class_paint(Display *display, Window root, const char *wanted,
+                             const char *tag) {
+    Window window = find_class(display, root, wanted);
+    if (window == None) {
+        printf("BXINFO %s none class=%s\n", tag, wanted);
+        fflush(stdout);
+        return;
+    }
+    int count = 0;
+    dump_class_paint_walk(display, window, tag, 0, &count);
+    if (count == 0) {
+        printf("BXINFO %s empty 0x%lx\n", tag, (unsigned long)window);
+        fflush(stdout);
+    }
+}
+
+static void dump_typed_text(Display *display, Window root) {
+    Window mousepad = find_class(display, root, "Mousepad");
+    if (mousepad == None) {
+        printf("BXINFO mp-type none\n");
+        fflush(stdout);
+        return;
+    }
+    activate(display, mousepad);
+    sleep_ms(300);
+    KeyCode b = XKeysymToKeycode(display, XK_b);
+    KeyCode x = XKeysymToKeycode(display, XK_x);
+    if (b != 0) {
+        XTestFakeKeyEvent(display, b, True, 0);
+        XTestFakeKeyEvent(display, b, False, 20);
+    }
+    if (x != 0) {
+        XTestFakeKeyEvent(display, x, True, 0);
+        XTestFakeKeyEvent(display, x, False, 20);
+    }
+    XSync(display, False);
+    sleep_ms(400);
+    printf("BXINFO mp-type keys b=%u x=%u window=0x%lx\n",
+           (unsigned)b, (unsigned)x, (unsigned long)mousepad);
+    fflush(stdout);
+    dump_class_paint(display, root, "Mousepad", "mp-type");
+}
+
 static void dump_override(Display *display, Window root, const char *tag) {
     Window windows[32];
     int n = collect_override(display, root, windows, 32, 0);
@@ -904,6 +1077,8 @@ static void dump_session_click(Display *display, Window root, Window bar,
             dump_ancestors(display, parent, "frame-anc");
         dump_children(display, bar, "bar-child");
     }
+    dump_class_paint(display, root, "Mousepad", "mp-paint");
+    dump_or_paint(display, root, "pre-click-tip");
     int grab = grab_free(display, root);
     printf("BXINFO grab-state %d click=%d,%d bar=0x%lx\n", grab, click_x,
            click_y, (unsigned long)bar);
@@ -926,6 +1101,7 @@ static void dump_session_click(Display *display, Window root, Window bar,
                              sizeof(detail));
     dump_pointer(display, root, "post-click-ptr");
     dump_override(display, root, "post-click-or");
+    dump_or_paint(display, root, "post-click-tip");
     dump_find_class(display, root, root, "Xfce4-panel", 0);
     int grab_after = grab_free(display, root);
     dump_gdk_ev(gdk_ev_log, gdk_from);
@@ -1219,6 +1395,7 @@ static int accept_session(Display *display, const char *prefix,
            reopened ? detail : "window did not return");
     RECORD(reopened);
 
+    dump_typed_text(display, root);
     dump_session_click(display, root, saved_bar, saved_click_x, saved_click_y);
 
     printf("BXSUMMARY xfce-session-accept passed=%d failed=%d\n",
