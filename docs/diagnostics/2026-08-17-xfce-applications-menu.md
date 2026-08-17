@@ -7,23 +7,23 @@ new menu. `XQueryPointer` hits the xfwm4 dock frame (`2640x27`),
 hit target.
 
 A `116x53` xfce4-panel override-redirect window sits at `-4+26` before
-the click (tooltip-sized). It is not a grab owner.
+the click (tooltip-sized). It is not a grab owner and can stay black.
 
-The mapped 185x324 menu has only a 1x1 child. A center GetImage is
-`0x000000`, but a full readback is `nonzero=7173 light=1236
-bright=0xfcf4c0`: glyphs and icons land, the background does not.
-GTK menus map 1x1 then `ConfigureWindow`; a window Picture must track
-the replaced backing drawable (`xrender-x11-probe` `window-resize`).
-An isolated `GarconGtkMenu` under a stub compositor paints `94%` light
-(`gtk-garcon-paint` 131x312). The black background is the panel+xfwm4
-session path, not Garcon itself. Debian's panel `dark-mode=true` is
-pinned off and `Net/ThemeName=Adwaita`; the pixmap histogram did not
-change.
+The mapped 185x324 menu has only a 1x1 child. Isolated `GarconGtkMenu`
+under a stub compositor paints `94%` light (`gtk-garcon-paint` 131x312).
+The session menu used to read back `pixel=0x000000 nonzero=7173
+light=1236` because cairo will not send CompositeTrapezoids unless
+Render is at least 0.4; glyphs used CompositeGlyphs (available at 0.0)
+and the rounded Adwaita body fell back to an image path that never
+landed. After advertising 0.4 and rasterizing traps:
+
+```text
+BXINFO menu-paint 0x100013d 185x324+-6+22 depth=32 pixel=0xffffff nonzero=52588 light=49616 bright=0xffffff
+```
 
 `xfce4-popup-applicationsmenu` maps a real menu:
 
 ```text
-BXINFO applications-popup pid=11953 before_or=7
 BXTEST PASS session-applications-menu menu 185x324
 BXSUMMARY xfce-session-accept passed=12 failed=0
 ```

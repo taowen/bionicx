@@ -28,13 +28,14 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 
 /**
- * Minimal stateful implementation of the initial Render protocol used by
- * software-rendered desktop clients. Unsupported operations are not
- * advertised through a newer protocol version.
+ * Minimal stateful implementation of the Render protocol used by
+ * software-rendered desktop clients. Advertise only opcodes this
+ * server actually rasterizes: cairo skips CompositeTrapezoids unless
+ * the version is at least 0.4.
  */
 public class XRenderExtension extends Extension {
     public static final int MAJOR_VERSION = 0;
-    public static final int MINOR_VERSION = 1;
+    public static final int MINOR_VERSION = 4;
 
     private static final byte PICT_TYPE_DIRECT = 1;
     private static final byte PICT_OP_CLEAR = 0;
@@ -56,6 +57,7 @@ public class XRenderExtension extends Extension {
     private final Callback<XClient> onClientDestroy = this::freeClientPictures;
     private final IdentityHashMap<XClient, ArrayList<Integer>> clientGlyphSets =
             new IdentityHashMap<>();
+    private boolean loggedGeometry;
 
     private static abstract class ClientOpcodes {
         private static final byte QUERY_VERSION = 0;
@@ -66,6 +68,9 @@ public class XRenderExtension extends Extension {
         private static final byte FREE_PICTURE = 7;
         private static final byte COMPOSITE = 8;
         private static final byte COMPOSITE_TRAPEZOIDS = 10;
+        private static final byte COMPOSITE_TRIANGLES = 11;
+        private static final byte COMPOSITE_TRISTRIP = 12;
+        private static final byte COMPOSITE_TRIFAN = 13;
         private static final byte CREATE_GLYPH_SET = 17;
         private static final byte REFERENCE_GLYPH_SET = 18;
         private static final byte FREE_GLYPH_SET = 19;
@@ -1014,6 +1019,103 @@ public class XRenderExtension extends Extension {
         return fromFixed(x1) + amount * (fromFixed(x2) - fromFixed(x1));
     }
 
+    private void fillCoverageSpan(Picture source, Picture destination,
+                                  Drawable drawable, int operation,
+                                  int x, int y, int width) {
+        if (width <= 0) return;
+        for (ClipRectangle rectangle : clippedRectangles(destination,
+                x, y, width, 1)) {
+            int color = pictureColor(source, rectangle.x, rectangle.y);
+            if (destination.format == a8Format) {
+                int[] coverage = new int[rectangle.width];
+                java.util.Arrays.fill(coverage, color);
+                drawable.blendArgbPixels(rectangle.x, rectangle.y,
+                        rectangle.width, rectangle.height, coverage, null,
+                        0, 0, operation);
+            }
+            else if (operation == PICT_OP_OVER)
+                drawable.blendSolidRect(rectangle.x, rectangle.y,
+                        rectangle.width, rectangle.height, color);
+            else if (operation == PICT_OP_ADD) {
+                int[] colors = new int[rectangle.width];
+                java.util.Arrays.fill(colors, color);
+                drawable.blendArgbPixels(rectangle.x, rectangle.y,
+                        rectangle.width, rectangle.height, colors, null,
+                        0, 0, PICT_OP_ADD);
+            }
+            else
+                drawable.fillRect(rectangle.x, rectangle.y,
+                        rectangle.width, rectangle.height, color);
+        }
+    }
+
+    private void fillTrapezoid(Picture source, Picture destination,
+                               Drawable drawable, int operation,
+                               int top, int bottom,
+                               int leftX1, int leftY1, int leftX2, int leftY2,
+                               int rightX1, int rightY1, int rightX2, int rightY2) {
+        int y0 = Math.max(0, (int)Math.ceil(fromFixed(top)));
+        int y1 = Math.min(drawable.height, (int)Math.floor(fromFixed(bottom)));
+        for (int y = y0; y < y1; y++) {
+            double mid = y + 0.5;
+            double left = lineX(leftX1, leftY1, leftX2, leftY2, mid);
+            double right = lineX(rightX1, rightY1, rightX2, rightY2, mid);
+            if (right < left) {
+                double swap = left;
+                left = right;
+                right = swap;
+            }
+            int x0 = (int)Math.ceil(left);
+            int x1 = (int)Math.floor(right);
+            fillCoverageSpan(source, destination, drawable, operation,
+                    x0, y, x1 - x0);
+        }
+    }
+
+    private void fillTriangle(Picture source, Picture destination,
+                              Drawable drawable, int operation,
+                              int x1, int y1, int x2, int y2, int x3, int y3) {
+        int minY = Math.min(y1, Math.min(y2, y3));
+        int maxY = Math.max(y1, Math.max(y2, y3));
+        int y0 = Math.max(0, (int)Math.ceil(fromFixed(minY)));
+        int y1Scan = Math.min(drawable.height, (int)Math.floor(fromFixed(maxY)));
+        int[] xs = new int[3];
+        int[] ys = new int[3];
+        xs[0] = x1; ys[0] = y1;
+        xs[1] = x2; ys[1] = y2;
+        xs[2] = x3; ys[2] = y3;
+        for (int y = y0; y < y1Scan; y++) {
+            double mid = y + 0.5;
+            double first = Double.NaN;
+            double second = Double.NaN;
+            for (int edge = 0; edge < 3; edge++) {
+                int next = (edge + 1) % 3;
+                double edgeY0 = fromFixed(ys[edge]);
+                double edgeY1 = fromFixed(ys[next]);
+                if (mid < Math.min(edgeY0, edgeY1)
+                        || mid >= Math.max(edgeY0, edgeY1))
+                    continue;
+                double x = lineX(xs[edge], ys[edge], xs[next], ys[next], mid);
+                if (Double.isNaN(first)) first = x;
+                else second = x;
+            }
+            if (Double.isNaN(first) || Double.isNaN(second)) continue;
+            if (second < first) {
+                double swap = first;
+                first = second;
+                second = swap;
+            }
+            fillCoverageSpan(source, destination, drawable, operation,
+                    (int)Math.ceil(first), y, (int)Math.floor(second)
+                            - (int)Math.ceil(first));
+        }
+    }
+
+    private boolean supportedGeometryOp(int operation) {
+        return operation == PICT_OP_SRC || operation == PICT_OP_OVER
+                || operation == PICT_OP_ADD;
+    }
+
     private void compositeTrapezoids(XClient client, XInputStream inputStream)
             throws XRequestError {
         int operation = inputStream.readUnsignedByte();
@@ -1029,8 +1131,11 @@ public class XRenderExtension extends Extension {
         Drawable drawable = pictureDrawable(destination);
         if (source == null || destination == null || drawable == null)
             throw new BadValue(0);
-        if (operation != PICT_OP_SRC && operation != PICT_OP_OVER)
-            throw new BadValue(operation);
+        if (!supportedGeometryOp(operation)) throw new BadValue(operation);
+        if (!loggedGeometry) {
+            loggedGeometry = true;
+            Log.i("BionicXRender", "geometry trapezoids op=" + operation);
+        }
 
         int remaining = client.getRemainingRequestLength();
         while (remaining >= 40) {
@@ -1045,30 +1150,85 @@ public class XRenderExtension extends Extension {
             int rightX2 = inputStream.readInt();
             int rightY2 = inputStream.readInt();
             remaining -= 40;
-            int y0 = Math.max(0, (int)Math.ceil(fromFixed(top)));
-            int y1 = Math.min(drawable.height, (int)Math.floor(fromFixed(bottom)));
-            for (int y = y0; y < y1; y++) {
-                double mid = y + 0.5;
-                double left = lineX(leftX1, leftY1, leftX2, leftY2, mid);
-                double right = lineX(rightX1, rightY1, rightX2, rightY2, mid);
-                if (right < left) {
-                    double swap = left;
-                    left = right;
-                    right = swap;
-                }
-                int x0 = (int)Math.ceil(left);
-                int x1 = (int)Math.floor(right);
-                for (ClipRectangle rectangle : clippedRectangles(destination,
-                        x0, y, x1 - x0, 1)) {
-                    int color = pictureColor(source, rectangle.x, rectangle.y);
-                    if (operation == PICT_OP_OVER)
-                        drawable.blendSolidRect(rectangle.x, rectangle.y,
-                                rectangle.width, rectangle.height, color);
-                    else
-                        drawable.fillRect(rectangle.x, rectangle.y,
-                                rectangle.width, rectangle.height, color);
-                }
+            fillTrapezoid(source, destination, drawable, operation,
+                    top, bottom, leftX1, leftY1, leftX2, leftY2,
+                    rightX1, rightY1, rightX2, rightY2);
+        }
+        if (remaining > 0) inputStream.skip(remaining);
+    }
+
+    private void compositeTriangles(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int operation = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        Picture source;
+        Picture destination;
+        synchronized (pictures) {
+            source = pictures.get(inputStream.readInt());
+            destination = pictures.get(inputStream.readInt());
+        }
+        inputStream.readInt();
+        inputStream.skip(4);
+        Drawable drawable = pictureDrawable(destination);
+        if (source == null || destination == null || drawable == null)
+            throw new BadValue(0);
+        if (!supportedGeometryOp(operation)) throw new BadValue(operation);
+        int remaining = client.getRemainingRequestLength();
+        while (remaining >= 24) {
+            int x1 = inputStream.readInt();
+            int y1 = inputStream.readInt();
+            int x2 = inputStream.readInt();
+            int y2 = inputStream.readInt();
+            int x3 = inputStream.readInt();
+            int y3 = inputStream.readInt();
+            remaining -= 24;
+            fillTriangle(source, destination, drawable, operation,
+                    x1, y1, x2, y2, x3, y3);
+        }
+        if (remaining > 0) inputStream.skip(remaining);
+    }
+
+    private void compositeTriList(XClient client, XInputStream inputStream,
+                                  boolean fan) throws XRequestError {
+        int operation = inputStream.readUnsignedByte();
+        inputStream.skip(3);
+        Picture source;
+        Picture destination;
+        synchronized (pictures) {
+            source = pictures.get(inputStream.readInt());
+            destination = pictures.get(inputStream.readInt());
+        }
+        inputStream.readInt();
+        inputStream.skip(4);
+        Drawable drawable = pictureDrawable(destination);
+        if (source == null || destination == null || drawable == null)
+            throw new BadValue(0);
+        if (!supportedGeometryOp(operation)) throw new BadValue(operation);
+        int remaining = client.getRemainingRequestLength();
+        if (remaining < 24) {
+            if (remaining > 0) inputStream.skip(remaining);
+            return;
+        }
+        int firstX = inputStream.readInt();
+        int firstY = inputStream.readInt();
+        int prevX = inputStream.readInt();
+        int prevY = inputStream.readInt();
+        remaining -= 16;
+        boolean havePrev = true;
+        while (remaining >= 8) {
+            int x = inputStream.readInt();
+            int y = inputStream.readInt();
+            remaining -= 8;
+            if (havePrev)
+                fillTriangle(source, destination, drawable, operation,
+                        firstX, firstY, prevX, prevY, x, y);
+            if (!fan) {
+                firstX = prevX;
+                firstY = prevY;
             }
+            prevX = x;
+            prevY = y;
+            havePrev = true;
         }
         if (remaining > 0) inputStream.skip(remaining);
     }
@@ -1101,6 +1261,15 @@ public class XRenderExtension extends Extension {
                 break;
             case ClientOpcodes.COMPOSITE_TRAPEZOIDS:
                 compositeTrapezoids(client, inputStream);
+                break;
+            case ClientOpcodes.COMPOSITE_TRIANGLES:
+                compositeTriangles(client, inputStream);
+                break;
+            case ClientOpcodes.COMPOSITE_TRISTRIP:
+                compositeTriList(client, inputStream, false);
+                break;
+            case ClientOpcodes.COMPOSITE_TRIFAN:
+                compositeTriList(client, inputStream, true);
                 break;
             case ClientOpcodes.FILL_RECTANGLES:
                 fillRectangles(client, inputStream);

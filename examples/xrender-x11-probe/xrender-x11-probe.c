@@ -315,6 +315,7 @@ static void probe_render(Display *display, Window window) {
     int title_red = (title_pixel >> 16) & 0xff;
     int title_green = (title_pixel >> 8) & 0xff;
     int title_blue = title_pixel & 0xff;
+    ok = ok && major == 0 && minor >= 4;
     ok = ok && title_red >= 0xb0 && title_green >= 0xb0 && title_blue >= 0xb0;
     char detail[384];
     snprintf(detail, sizeof(detail),
