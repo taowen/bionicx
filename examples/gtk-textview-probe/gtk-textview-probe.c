@@ -97,6 +97,30 @@ static void sample_window(Display *display, Window window, struct Paint *paint) 
     }
 }
 
+static void dump_tree(Display *display, Window window, int depth) {
+    if (depth > 6) return;
+    XWindowAttributes attributes = {0};
+    if (XGetWindowAttributes(display, window, &attributes)) {
+        printf("BXINFO tv-tree 0x%lx d=%d %dx%d+%d+%d map=%d class=%d "
+               "mask=0x%lx\n",
+               (unsigned long)window, depth, attributes.width,
+               attributes.height, attributes.x, attributes.y,
+               attributes.map_state, attributes.class,
+               (unsigned long)attributes.your_event_mask);
+        fflush(stdout);
+    }
+    Window query_root = None;
+    Window parent = None;
+    Window *kids = NULL;
+    unsigned count = 0;
+    if (!XQueryTree(display, window, &query_root, &parent, &kids, &count)
+            || kids == NULL)
+        return;
+    for (unsigned i = 0; i < count; ++i)
+        dump_tree(display, kids[i], depth + 1);
+    XFree(kids);
+}
+
 static void walk_paint(Display *display, Window window, struct Paint *paint,
                        int depth) {
     if (depth > 6) return;
@@ -209,40 +233,24 @@ int main(int argc, char **argv) {
 
     gtk_text_buffer_set_text(buffer, "BxGlyphs", -1);
     pump(gtk_events_pending, gtk_main_iteration_do, 800);
+    dump_tree(display, top, 0);
     void *text_gdk = gtk_text_view_get_window(view, 2);
-    struct Paint glyphs = {0};
-    walk_paint(display, top, &glyphs, 0);
-    struct Paint textwin = {0};
     Window text = None;
     if (text_gdk != NULL)
         text = (Window)gdk_x11_window_get_xid(text_gdk);
+    /* get_xid ensure_native maps a child. One pump lets the post-XSync
+     * Expose paint that child before GetImage. */
+    pump(gtk_events_pending, gtk_main_iteration_do, 400);
+    dump_tree(display, top, 0);
+    struct Paint glyphs = {0};
+    walk_paint(display, top, &glyphs, 0);
+    struct Paint textwin = {0};
     if (text != None) sample_window(display, text, &textwin);
     printf("BXINFO tv-textwin xid=0x%lx ink=%d light=%d mid=%d dark=%d "
            "pixel=0x%06lx paper=0x%lx\n",
            (unsigned long)text, textwin.ink, textwin.light, textwin.mid,
            textwin.dark, textwin.pixel, textwin.xid);
     fflush(stdout);
-    if (text != None) {
-        XWindowAttributes attributes = {0};
-        if (XGetWindowAttributes(display, text, &attributes)) {
-            printf("BXINFO tv-textattr 0x%lx class=%d map=%d mask=0x%lx "
-                   "depth=%d\n",
-                   (unsigned long)text, attributes.class,
-                   attributes.map_state,
-                   (unsigned long)attributes.your_event_mask,
-                   attributes.depth);
-            fflush(stdout);
-        }
-        XClearArea(display, text, 0, 0, 0, 0, True);
-        pump(gtk_events_pending, gtk_main_iteration_do, 400);
-        struct Paint cleared = {0};
-        sample_window(display, text, &cleared);
-        printf("BXINFO tv-clear xid=0x%lx ink=%d light=%d mid=%d dark=%d "
-               "pixel=0x%06lx paper=0x%lx\n",
-               (unsigned long)text, cleared.ink, cleared.light, cleared.mid,
-               cleared.dark, cleared.pixel, cleared.xid);
-        fflush(stdout);
-    }
     char detail[160];
     int glyphs_ok = glyphs.light >= 1000 && glyphs.ink >= 40
             && glyphs.ink < glyphs.light;
@@ -252,6 +260,14 @@ int main(int argc, char **argv) {
              glyphs.windows);
     result("textview-glyphs", glyphs_ok, detail);
     RECORD(glyphs_ok);
+    int textwin_ok = textwin.light >= 1000 && textwin.ink >= 40
+            && textwin.ink < textwin.light;
+    snprintf(detail, sizeof(detail),
+             "xid=0x%lx ink=%d mid=%d dark=%d pixel=0x%06lx",
+             textwin.xid, textwin.ink, textwin.mid, textwin.dark,
+             textwin.pixel);
+    result("textview-textwin", textwin_ok, detail);
+    RECORD(textwin_ok);
 
     printf("BXSUMMARY gtk-textview passed=%d failed=%d\n", passed, failed);
     return failed == 0 ? 0 : 1;

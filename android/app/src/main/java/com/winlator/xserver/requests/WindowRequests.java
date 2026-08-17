@@ -433,6 +433,9 @@ public abstract class WindowRequests {
                     : client.xServer.windowManager.isPointerRootFocus()
                     ? 1 : focusedWindow.id);
             outputStream.writePad(20);
+            // After the XSync reply so GDK reads this Expose on the next
+            // event-loop turn, not during ensure_native's XSync.
+            client.xServer.windowManager.flushExposeAfterRoundTrip();
         }
     }
 

@@ -32,6 +32,7 @@ public class Window extends XResource {
     private short height;
     private short borderWidth;
     private ArrayMap<String, Object> tags;
+    private boolean exposeAfterRoundTrip;
     private Window parent;
     public final XClient originClient;
     public final WindowAttributes attributes = new WindowAttributes(this);
@@ -156,6 +157,16 @@ public class Window extends XResource {
 
     public void removeTag(String key) {
         if (tags != null) tags.remove(key);
+    }
+
+    public void markExposeAfterRoundTrip() {
+        exposeAfterRoundTrip = true;
+    }
+
+    public boolean takeExposeAfterRoundTrip() {
+        if (!exposeAfterRoundTrip) return false;
+        exposeAfterRoundTrip = false;
+        return true;
     }
 
     public Drawable getContent() {

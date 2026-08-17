@@ -70,6 +70,20 @@ public class WindowManager extends XResourceManager {
         return windows.get(id);
     }
 
+    public void flushExposeAfterRoundTrip() {
+        for (int i = 0; i < windows.size(); i++) {
+            Window window = windows.valueAt(i);
+            if (window == null || !window.takeExposeAfterRoundTrip()) continue;
+            if (!window.isInputOutput()
+                    || window.getMapState() != Window.MapState.VIEWABLE)
+                continue;
+            if (window.hasEventListenerFor(Event.EXPOSURE))
+                window.sendEvent(Event.EXPOSURE, new Expose(window));
+            else
+                window.sendEvent(new Expose(window));
+        }
+    }
+
     public ArrayList<Window> findDialogWindows(int id) {
         ArrayList<Window> result = new ArrayList<>();
         for (int i = 0; i < windows.size(); i++) {
@@ -144,6 +158,11 @@ public class WindowManager extends XResourceManager {
             // without ClearWindow on that path.
             window.attributes.clearBackground(0, 0, 0, 0);
             window.sendEvent(Event.EXPOSURE, new Expose(window));
+            // GDK ensure_native maps then XSync. The Map Expose is read
+            // during that sync while clip_region is still empty, so GTK
+            // drops it and a newly nativized GtkTextView TEXT child stays
+            // black. Send again after the GetInputFocus XSync reply.
+            window.markExposeAfterRoundTrip();
             window.sendEvent(Event.VISIBILITY_CHANGE, new VisibilityNotify(
                     window, VisibilityNotify.State.UNOBSCURED));
         }

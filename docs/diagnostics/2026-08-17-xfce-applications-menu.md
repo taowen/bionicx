@@ -199,10 +199,10 @@ the toplevel. A top-left 120x48 crop is menubar chrome. A body crop at
 `+8+36` sees the first line: `pixel=0x454545 light=12779 mid=21`.
 
 Isolated `gtk-textview` (no WM) sets `BxGlyphs` in-process. The widget
-window has paper+ink (`ink=182`). Its native TEXT child stays
-`pixel=0x000000` until `XClearArea` (`tv-clear` then `ink=182`).
-Mousepad under the session compositor does not create that native
-TEXT child. `CWBackPixel` no longer fills the pixmap
-(`change-background-keeps-pixels`). `XSelectInput(Exposure)` on a
-viewable window generates Expose (`select-exposure-mapped`).
-`PictStandardRGB24` is advertised for cairo's opaque surfaces.
+window has paper+ink (`ink=182`). `gdk_x11_window_get_xid` nativizes
+the TEXT child; Map Expose is read during that `XSync` and dropped.
+A second Expose after the GetInputFocus reply paints the child
+(`textview-textwin`). Mousepad under the session compositor does not
+create that native TEXT child. `CWBackPixel` no longer fills the
+pixmap. `XSelectInput(Exposure)` on a viewable window generates
+Expose. `PictStandardRGB24` is advertised for cairo's opaque surfaces.

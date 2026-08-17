@@ -37,5 +37,5 @@ trap - EXIT
 log="$(cat "$bionicx_log"; adb -s "$serial" logcat -d -v brief)"
 result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO tv-' <<<"$log" | awk '!seen[$0]++')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY gtk-textview passed=5 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY gtk-textview passed=6 failed=0" <<<"$result"
 echo "gtk-textview probe: PASS"
