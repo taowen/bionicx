@@ -294,9 +294,15 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                 else {
                     EventListener listener =
                             xServer.grabManager.getEventListener();
-                    if (listener != null
-                            && listener.isInterestedIn(Event.BUTTON_PRESS))
+                    // The activating press must reach the grabber even when
+                    // an XI2 mask failed to map onto ButtonPressMask.
+                    if (listener != null) {
                         listener.sendEvent(event);
+                        if (xServer.pointer.getY() < 40)
+                            Log.i("BionicX", "BXINFO grab-press sent=0x"
+                                    + Integer.toHexString(eventWindow.id)
+                                    + " mask=" + listener.eventMask.getBits());
+                    }
                 }
             }
     }

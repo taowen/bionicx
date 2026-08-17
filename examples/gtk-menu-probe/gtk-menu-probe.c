@@ -76,6 +76,7 @@ static Window wm_frame = None;
 static Window wm_client = None;
 static int xi_opcode;
 static int wm_replay_grabs;
+static int wm_xi_allow;
 static int wm_replayed;
 static int wm_pre_frame;
 
@@ -136,10 +137,16 @@ static void drain_wm(Display *manager) {
         if (wm_replay_grabs && is_press) {
             if (evw == wm_client) {
                 wm_replayed = 1;
-                XAllowEvents(manager, ReplayPointer, CurrentTime);
+                if (wm_xi_allow)
+                    XIAllowEvents(manager, 2, XIReplayDevice, CurrentTime);
+                else
+                    XAllowEvents(manager, ReplayPointer, CurrentTime);
             } else if (!wm_replayed) {
                 wm_pre_frame = 1;
-                XAllowEvents(manager, SyncPointer, CurrentTime);
+                if (wm_xi_allow)
+                    XIAllowEvents(manager, 2, XISyncDevice, CurrentTime);
+                else
+                    XAllowEvents(manager, SyncPointer, CurrentTime);
             }
             XFlush(manager);
         }
@@ -832,6 +839,108 @@ int main(int argc, char **argv) {
     }
     result("gtk-xi-replay-menu", xi_replay_ok, detail);
     RECORD(xi_replay_ok);
+
+    if (press_menu != NULL) gtk_menu_popdown(press_menu);
+    pump(gtk_events_pending, gtk_main_iteration_do, manager, 200);
+    press_fired = 0;
+    press_type = 0;
+    press_button = 0;
+    press_state = 0;
+    wm_replayed = 0;
+    wm_pre_frame = 0;
+
+    int xi_allow_ok = 0;
+    if (manager == NULL || wm_frame == None || wm_client == None) {
+        snprintf(detail, sizeof(detail), "no framed client");
+    } else if (press_button_w == NULL
+            || gtk_widget_get_window(press_button_w) == NULL) {
+        snprintf(detail, sizeof(detail), "press button unrealized");
+    } else {
+        int allow_major = 2;
+        int allow_minor = 0;
+        if (xi_opcode == 0
+                || XIQueryVersion(manager, &allow_major, &allow_minor)
+                        != Success) {
+            snprintf(detail, sizeof(detail), "XI2 unavailable");
+        } else {
+            unsigned char allow_mask[XIMaskLen(XI_LASTEVENT)] = {0};
+            XISetMask(allow_mask, XI_ButtonPress);
+            XIEventMask allow_xi = {
+                .deviceid = 2,
+                .mask_len = (int)sizeof(allow_mask),
+                .mask = allow_mask,
+            };
+            XIGrabModifiers allow_mods = {.modifiers = XIAnyModifier};
+            XISelectEvents(manager, wm_frame, &allow_xi, 1);
+            int failed_mods = XIGrabButton(manager, 2, 1, wm_client, None,
+                                           XIGrabModeSync, XIGrabModeAsync,
+                                           False, &allow_xi, 1, &allow_mods);
+            wm_replay_grabs = 1;
+            wm_xi_allow = 1;
+            XSync(manager, False);
+            int local_x = 0;
+            int local_y = 0;
+            void *toplevel = gtk_widget_get_toplevel(press_button_w);
+            gtk_widget_translate_coordinates(press_button_w, toplevel,
+                                             gtk_widget_get_allocated_width(
+                                                     press_button_w) / 2,
+                                             gtk_widget_get_allocated_height(
+                                                     press_button_w) / 2,
+                                             &local_x, &local_y);
+            int origin_x = 0;
+            int origin_y = 0;
+            gdk_window_get_origin(gtk_widget_get_window(toplevel), &origin_x,
+                                  &origin_y);
+            int root_x = origin_x + local_x;
+            int root_y = origin_y + local_y;
+            Display *xtest = XOpenDisplay(NULL);
+            int event_base = 0;
+            int error_base = 0;
+            int major = 0;
+            int minor = 0;
+            if (failed_mods == 0 && xtest != NULL
+                    && XTestQueryExtension(xtest, &event_base, &error_base,
+                                           &major, &minor)) {
+                XTestFakeMotionEvent(xtest, DefaultScreen(xtest), root_x,
+                                     root_y, 0);
+                XTestFakeButtonEvent(xtest, 1, True, 20);
+                XTestFakeButtonEvent(xtest, 1, False, 20);
+                XSync(xtest, False);
+                pump(gtk_events_pending, gtk_main_iteration_do, manager, 800);
+                int replay_count = 0;
+                int replay_height = 0;
+                int replay_width = largest_temp(gdk_display_get_default,
+                                                gdk_display_get_default_screen,
+                                                gdk_screen_get_root_window,
+                                                gdk_window_peek_children,
+                                                gdk_window_get_window_type,
+                                                gdk_window_is_visible,
+                                                gdk_window_get_width,
+                                                gdk_window_get_height,
+                                                &replay_count, &replay_height);
+                xi_allow_ok = press_fired && press_button == 1
+                        && press_type == 4 && (press_state & 4) == 0
+                        && wm_replayed && !wm_pre_frame && replay_count > 0
+                        && replay_width >= 40 && replay_height >= 16;
+                snprintf(detail, sizeof(detail),
+                         "fired=%d type=%d button=%u state=0x%x "
+                         "replayed=%d pre_frame=%d temp=%d %dx%d",
+                         press_fired, press_type, press_button, press_state,
+                         wm_replayed, wm_pre_frame, replay_count, replay_width,
+                         replay_height);
+            } else {
+                snprintf(detail, sizeof(detail),
+                         failed_mods != 0 ? "XIGrabButton failed"
+                                          : "XTEST unavailable");
+            }
+            if (xtest != NULL) XCloseDisplay(xtest);
+            XIUngrabButton(manager, 2, 1, wm_client, 1, &allow_mods);
+            wm_replay_grabs = 0;
+            wm_xi_allow = 0;
+        }
+    }
+    result("gtk-xi-allow-menu", xi_allow_ok, detail);
+    RECORD(xi_allow_ok);
 
     if (manager != NULL) XCloseDisplay(manager);
     printf("BXSUMMARY gtk-menu passed=%d failed=%d\n", passed, failed);

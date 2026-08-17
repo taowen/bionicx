@@ -48,4 +48,9 @@ hits xfdesktop. CompositeGlyphs32 now rasterizes those ids. After
 that the panel stays mapped (`find-Xfce4-panel 0x1000005`) and
 `pre-click-ptr` is the dock frame, not Xfdesktop. The XTEST click
 still reports `click-menu none grab=0->1` and a black 116x53
-Applications tooltip can remain. Do not add a 13th xfce accept click.
+Applications tooltip can remain. The press activates a synchronous
+grab on the panel client (`ptr-press … grab=0x1000005 sync=true`)
+and the grabber never core-`AllowEvents`. GDK thaws XI2 sync grabs
+with `XIAllowEvents`; that request was accepted as a no-op, so the
+pointer stayed frozen and the plugin never saw button 1. Do not add
+a 13th xfce accept click.

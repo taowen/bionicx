@@ -22,7 +22,9 @@ import com.winlator.xserver.errors.BadMatch;
 import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
+import com.winlator.xserver.Pointer;
 
+import android.util.Log;
 import android.util.SparseArray;
 
 import java.io.IOException;
@@ -1067,9 +1069,26 @@ public class XInputExtension extends Extension {
         if (deviceId != MASTER_POINTER_ID && deviceId != MASTER_KEYBOARD_ID
                 && deviceId != ALL_DEVICES && deviceId != ALL_MASTER_DEVICES)
             throw new BadValue(deviceId);
-        // GDK thaws with XIAsyncDevice / XIReplayDevice and a last-event
-        // timestamp. Freeze is not implemented; accept as a no-op.
         if (mode > 7) throw new BadValue(mode);
+        if (deviceId == MASTER_KEYBOARD_ID) return;
+        if (xServer.grabManager.getClient() != client) return;
+        Window grab = xServer.grabManager.getWindow();
+        Log.i("BionicX", "BXINFO allow-events XI mode=" + mode
+                + " grab=0x" + Integer.toHexString(grab != null ? grab.id : 0)
+                + " sync=" + xServer.grabManager.isPointerSynchronous());
+        // XIAsyncDevice=0, XISyncDevice=1, XIReplayDevice=2. Passive
+        // sync grabs freeze the pointer; GDK/xfwm thaw through XI.
+        if (mode == 2) {
+            Pointer.Button button =
+                    xServer.grabManager.getPassiveActivationButton();
+            if (!xServer.grabManager.isPointerSynchronous() || button == null)
+                return;
+            xServer.grabManager.deactivatePointerGrabForReplay();
+            xServer.inputDeviceManager.replayPointerButtonPress(button);
+            return;
+        }
+        if (mode == 0 || mode == 1)
+            xServer.grabManager.thawSynchronousPointer();
     }
 
     private static int coreModifiers(int xiModifiers) {
@@ -1117,6 +1136,7 @@ public class XInputExtension extends Extension {
         if (maskBit(xiMask, XI_BUTTON_PRESS)) coreMask |= Event.BUTTON_PRESS;
         if (maskBit(xiMask, XI_BUTTON_RELEASE)) coreMask |= Event.BUTTON_RELEASE;
         if (maskBit(xiMask, XI_MOTION)) coreMask |= Event.POINTER_MOTION;
+        if (grabType == 0) coreMask |= Event.BUTTON_PRESS | Event.BUTTON_RELEASE;
         for (int i = 0; i < numModifiers; i++) {
             int modifier = inputStream.readInt();
             int coreMods = coreModifiers(modifier);

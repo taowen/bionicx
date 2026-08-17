@@ -167,8 +167,18 @@ public abstract class GrabRequests {
             client.xServer.grabManager.thawSynchronousPointer();
             return;
         }
-        // Async*, ReplayKeyboard: freeze is not implemented.
-        // Accept so GrabServer holders can finish the request.
+        // AsyncPointer=0 and AsyncBoth=6: unfreeze and keep the grab.
+        if ((mode == 0 || mode == 6)
+                && client.xServer.grabManager.getClient() == client) {
+            Window grab = client.xServer.grabManager.getWindow();
+            Log.i(TAG, "BXINFO allow-events Async mode=" + mode + " grab=0x"
+                    + Integer.toHexString(grab != null ? grab.id : 0)
+                    + " sync=" + client.xServer.grabManager.isPointerSynchronous());
+            client.xServer.grabManager.thawSynchronousPointer();
+            return;
+        }
+        Log.i(TAG, "BXINFO allow-events ignored mode=" + mode
+                + " owner=" + (client.xServer.grabManager.getClient() == client));
     }
 
     public static void ungrabButton(XClient client, XInputStream inputStream,

@@ -26,5 +26,5 @@ done
 result="$(adb -s "$serial" logcat -d -v brief \
     | grep -E 'BXTEST|BXSUMMARY')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY gtk-menu passed=14 failed=0" <<<"$result"
+grep -Fq "BXSUMMARY gtk-menu passed=15 failed=0" <<<"$result"
 echo "gtk-menu probe: PASS"
