@@ -2,10 +2,15 @@
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
+#include <X11/Xlibint.h>
+#include <X11/Xproto.h>
 #include <X11/extensions/XInput2.h>
 #include <X11/extensions/XTest.h>
+#include <X11/extensions/Xfixes.h>
+#include <X11/extensions/shape.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -86,6 +91,58 @@ static bool wait_state(Display *display, Window window, int wanted,
         waited += 20;
     }
     return false;
+}
+
+typedef struct {
+    uint8_t reqType;
+    uint8_t compositeReqType;
+    uint16_t length;
+    uint32_t window;
+} cmp_overlay_req;
+
+typedef struct {
+    uint8_t type;
+    uint8_t pad;
+    uint16_t sequenceNumber;
+    uint32_t length;
+    uint32_t overlay;
+    uint32_t pad2[5];
+} cmp_overlay_rep;
+
+static void *reserve(Display *display, unsigned bytes) {
+    if (display->bufptr + (int)bytes > display->bufmax) _XFlush(display);
+    void *ptr = display->bufptr;
+    display->last_req = (char *)ptr;
+    display->bufptr += bytes;
+    display->request++;
+    return ptr;
+}
+
+static Window get_overlay_window(Display *display, int opcode, Window window) {
+    cmp_overlay_rep reply;
+    LockDisplay(display);
+    cmp_overlay_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->compositeReqType = 7;
+    req->length = 2;
+    req->window = (uint32_t)window;
+    if (!_XReply(display, (xReply *)&reply, 0, xTrue)) {
+        UnlockDisplay(display);
+        return None;
+    }
+    UnlockDisplay(display);
+    return (Window)reply.overlay;
+}
+
+static void release_overlay_window(Display *display, int opcode, Window window) {
+    LockDisplay(display);
+    cmp_overlay_req *req = reserve(display, sizeof(*req));
+    req->reqType = (uint8_t)opcode;
+    req->compositeReqType = 8;
+    req->length = 2;
+    req->window = (uint32_t)window;
+    UnlockDisplay(display);
+    _XFlush(display);
 }
 
 static void set_dock_type(Display *display, Window window) {
@@ -587,6 +644,82 @@ int main(int argc, char **argv) {
         result("dock-above-desktop", 0, "dock not framed");
     }
     RECORD(desktop_stack_ok);
+
+    int overlay_stack_ok = 0;
+    if (dock_ok && desktop_frame != None) {
+        int cmp_opcode = 0, cmp_event = 0, cmp_error = 0;
+        int fixes_event = 0, fixes_error = 0;
+        Window overlay = None;
+        if (!XQueryExtension(manager, "Composite", &cmp_opcode, &cmp_event,
+                             &cmp_error)
+                || cmp_opcode == 0
+                || !XFixesQueryExtension(manager, &fixes_event, &fixes_error)) {
+            result("overlay-click-dock", 0, "no Composite/XFixes");
+        } else {
+            overlay = get_overlay_window(manager, cmp_opcode, root);
+            if (overlay != None) {
+                XMapWindow(manager, overlay);
+                XserverRegion empty = XFixesCreateRegion(manager, NULL, 0);
+                XFixesSetWindowShapeRegion(manager, overlay, ShapeBounding,
+                                           0, 0, empty);
+                XFixesSetWindowShapeRegion(manager, overlay, ShapeInput, 0, 0,
+                                           empty);
+                XFixesDestroyRegion(manager, empty);
+                Window restack[2] = {dock_frame, desktop_frame};
+                XRestackWindows(manager, restack, 2);
+                XSync(manager, False);
+            }
+            int root_x = 0;
+            int root_y = 0;
+            Window ignore = None;
+            XTranslateCoordinates(client, dock, root, 36, 13, &root_x, &root_y,
+                                  &ignore);
+            Window qroot = None;
+            Window qchild = None;
+            int qx = 0, qy = 0, wx = 0, wy = 0;
+            unsigned qmask = 0;
+            XTestFakeMotionEvent(client, screen, root_x, root_y, 0);
+            XQueryPointer(client, root, &qroot, &qchild, &qx, &qy, &wx, &wy,
+                          &qmask);
+            while (XPending(client)) {
+                XEvent ignored = {0};
+                XNextEvent(client, &ignored);
+            }
+            XTestFakeButtonEvent(client, 1, True, 20);
+            XTestFakeButtonEvent(client, 1, False, 20);
+            XSync(client, False);
+            int clicked = 0;
+            int waited = 0;
+            while (waited <= 500) {
+                XEvent press = {0};
+                if (XCheckTypedWindowEvent(client, dock, ButtonPress, &press)) {
+                    clicked = 1;
+                    break;
+                }
+                while (XPending(manager)) {
+                    XEvent ignored = {0};
+                    XNextEvent(manager, &ignored);
+                }
+                sleep_ms(20);
+                waited += 20;
+            }
+            overlay_stack_ok = overlay != None && qchild == dock_frame
+                    && clicked;
+            char overlay_detail[192];
+            snprintf(overlay_detail, sizeof(overlay_detail),
+                     "hit=0x%lx dock_frame=0x%lx desktop_frame=0x%lx "
+                     "overlay=0x%lx click=%d",
+                     (unsigned long)qchild, (unsigned long)dock_frame,
+                     (unsigned long)desktop_frame, (unsigned long)overlay,
+                     clicked);
+            result("overlay-click-dock", overlay_stack_ok, overlay_detail);
+            if (overlay != None)
+                release_overlay_window(manager, cmp_opcode, root);
+        }
+    } else {
+        result("overlay-click-dock", 0, "dock not framed");
+    }
+    RECORD(overlay_stack_ok);
 
     printf("BXSUMMARY reparent-x11 passed=%d failed=%d xerrors=%d\n",
            passed, failed, x_errors);

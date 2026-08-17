@@ -499,31 +499,29 @@ public class XFixesExtension extends Extension {
 
         Window window = xServer.windowManager.getWindow(windowId);
         if (window == null) throw new BadWindow(windowId);
-        // Bounding and clip shapes are accepted so compositors can unshape
-        // the overlay. They do not change the GL renderer yet.
         if (shapeKind > 2) throw new BadValue(shapeKind);
 
+        // XFixes: region None is an empty region, not "remove the shape".
+        // xfwm4 sets overlay Bounding and Input to empty so the overlay
+        // tree is a hole and sibling clients keep the pointer.
+        ArrayList<Window.ShapeRectangle> copied;
         if (regionId == 0) {
-            if (shapeKind == 2) {
-                window.setInputShape(null, 0, 0);
-                xServer.inputDeviceManager.updatePointWindow();
+            copied = new ArrayList<>();
+        } else {
+            Region region;
+            synchronized (regions) {
+                region = regions.get(regionId);
             }
-            return;
+            if (region == null) throw badRegion(regionId);
+            copied = new ArrayList<>(region.rectangles.size());
+            for (Rectangle rectangle : region.rectangles) {
+                copied.add(new Window.ShapeRectangle(rectangle.x, rectangle.y,
+                        rectangle.width, rectangle.height));
+            }
         }
-
-        Region region;
-        synchronized (regions) {
-            region = regions.get(regionId);
-        }
-        if (region == null) throw badRegion(regionId);
-        if (shapeKind != 2) return;
-        ArrayList<Window.ShapeRectangle> copied = new ArrayList<>(region.rectangles.size());
-        for (Rectangle rectangle : region.rectangles) {
-            copied.add(new Window.ShapeRectangle(rectangle.x, rectangle.y,
-                    rectangle.width, rectangle.height));
-        }
-        window.setInputShape(copied, xOffset, yOffset);
-        xServer.inputDeviceManager.updatePointWindow();
+        window.setWindowShape(shapeKind, copied, xOffset, yOffset);
+        if (shapeKind == Window.SHAPE_INPUT)
+            xServer.inputDeviceManager.updatePointWindow();
     }
 
     private void setGCClipRegion(XInputStream inputStream) throws XRequestError {

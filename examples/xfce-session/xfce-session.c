@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,6 +20,16 @@
 
 static pid_t children[12];
 static size_t child_count;
+static FILE *accept_log;
+
+static void accept_log_line(const char *fmt, ...) {
+    if (accept_log == NULL) return;
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(accept_log, fmt, ap);
+    va_end(ap);
+    fflush(accept_log);
+}
 
 static int on_x_error(Display *display, XErrorEvent *event) {
     (void)display;
@@ -574,10 +585,149 @@ static void dump_pointer(Display *display, Window root, const char *tag) {
            attributes.x, attributes.y, cls, (unsigned long)frame_child,
            child_attr.width, child_attr.height, child_attr.x, child_attr.y,
            child_cls, qx, qy, qmask);
+    accept_log_line("%s child=0x%lx %dx%d+%d+%d class=%s child_class=%s\n",
+                    tag, (unsigned long)qchild, attributes.width,
+                    attributes.height, attributes.x, attributes.y, cls,
+                    child_cls);
     if (child_hint.res_name != NULL) XFree(child_hint.res_name);
     if (child_hint.res_class != NULL) XFree(child_hint.res_class);
     if (hint.res_name != NULL) XFree(hint.res_name);
     if (hint.res_class != NULL) XFree(hint.res_class);
+    fflush(stdout);
+}
+
+static void dump_window_type(Display *display, Window window, char *out,
+                             size_t size) {
+    Atom net_type = XInternAtom(display, "_NET_WM_WINDOW_TYPE", True);
+    if (net_type == None) {
+        snprintf(out, size, "-");
+        return;
+    }
+    Atom actual = None;
+    int format = 0;
+    unsigned long nitems = 0, after = 0;
+    unsigned char *data = NULL;
+    if (XGetWindowProperty(display, window, net_type, 0, 8, False, XA_ATOM,
+                           &actual, &format, &nitems, &after, &data) != Success
+            || data == NULL || nitems == 0) {
+        snprintf(out, size, "-");
+        if (data != NULL) XFree(data);
+        return;
+    }
+    char *name = XGetAtomName(display, ((Atom *)data)[0]);
+    snprintf(out, size, "%s", name != NULL ? name : "?");
+    if (name != NULL) XFree(name);
+    XFree(data);
+}
+
+static void dump_find_class(Display *display, Window window, Window root,
+                            const char *wanted, int depth) {
+    if (depth > 10) return;
+    XClassHint hint = {0};
+    if (XGetClassHint(display, window, &hint)) {
+        if (class_matches(&hint, wanted)) {
+            XWindowAttributes attributes = {0};
+            XGetWindowAttributes(display, window, &attributes);
+            Window query_root = None;
+            Window parent = None;
+            Window *kids = NULL;
+            unsigned count = 0;
+            XQueryTree(display, window, &query_root, &parent, &kids, &count);
+            if (kids != NULL) XFree(kids);
+            printf("BXINFO find-%s 0x%lx parent=0x%lx %dx%d+%d+%d map=%d\n",
+                   wanted, (unsigned long)window, (unsigned long)parent,
+                   attributes.width, attributes.height, attributes.x,
+                   attributes.y, attributes.map_state);
+            accept_log_line("find-%s 0x%lx parent=0x%lx %dx%d+%d+%d map=%d\n",
+                            wanted, (unsigned long)window,
+                            (unsigned long)parent, attributes.width,
+                            attributes.height, attributes.x, attributes.y,
+                            attributes.map_state);
+        }
+        if (hint.res_name != NULL) XFree(hint.res_name);
+        if (hint.res_class != NULL) XFree(hint.res_class);
+    }
+    Window query_root = None;
+    Window parent = None;
+    Window *kids = NULL;
+    unsigned count = 0;
+    if (!XQueryTree(display, window, &query_root, &parent, &kids, &count)
+            || kids == NULL)
+        return;
+    for (unsigned i = 0; i < count; ++i)
+        dump_find_class(display, kids[i], root, wanted, depth + 1);
+    XFree(kids);
+}
+
+static void dump_root_stack(Display *display, Window root) {
+    Window query_root = None;
+    Window parent = None;
+    Window *kids = NULL;
+    unsigned count = 0;
+    if (!XQueryTree(display, root, &query_root, &parent, &kids, &count)
+            || kids == NULL) {
+        printf("BXINFO root-stack none\n");
+        fflush(stdout);
+        return;
+    }
+    unsigned printed = 0;
+    for (unsigned n = 0; n < count && printed < 16; ++n) {
+        Window window = kids[count - 1 - n];
+        XWindowAttributes attributes = {0};
+        if (!XGetWindowAttributes(display, window, &attributes)) continue;
+        if (attributes.map_state == IsUnmapped) continue;
+        printed++;
+        XClassHint hint = {0};
+        const char *cls = "none";
+        if (XGetClassHint(display, window, &hint)) {
+            cls = hint.res_class != NULL ? hint.res_class
+                    : (hint.res_name != NULL ? hint.res_name : "none");
+        }
+        char type[64];
+        dump_window_type(display, window, type, sizeof(type));
+        Window child = None;
+        Window child_root = None;
+        Window child_parent = None;
+        Window *frame_kids = NULL;
+        unsigned frame_count = 0;
+        if (XQueryTree(display, window, &child_root, &child_parent,
+                       &frame_kids, &frame_count) && frame_kids != NULL) {
+            for (unsigned k = 0; k < frame_count && child == None; ++k) {
+                XClassHint probe = {0};
+                if (XGetClassHint(display, frame_kids[k], &probe)) {
+                    child = frame_kids[k];
+                    if (probe.res_name != NULL) XFree(probe.res_name);
+                    if (probe.res_class != NULL) XFree(probe.res_class);
+                }
+            }
+            XFree(frame_kids);
+        }
+        char child_type[64];
+        dump_window_type(display, child != None ? child : window, child_type,
+                         sizeof(child_type));
+        XClassHint child_hint = {0};
+        const char *child_cls = "none";
+        if (child != None && XGetClassHint(display, child, &child_hint)) {
+            child_cls = child_hint.res_class != NULL ? child_hint.res_class
+                    : (child_hint.res_name != NULL ? child_hint.res_name
+                            : "none");
+        }
+        printf("BXINFO root-stack #%u 0x%lx %dx%d+%d+%d map=%d class=%s "
+               "type=%s child=0x%lx child_class=%s child_type=%s\n",
+               printed - 1, (unsigned long)window, attributes.width, attributes.height,
+               attributes.x, attributes.y, attributes.map_state, cls, type,
+               (unsigned long)child, child_cls, child_type);
+        accept_log_line("root-stack #%u 0x%lx %dx%d+%d+%d class=%s type=%s "
+                        "child_class=%s child_type=%s\n",
+                        printed - 1, (unsigned long)window,
+                        attributes.width, attributes.height, attributes.x,
+                        attributes.y, cls, type, child_cls, child_type);
+        if (hint.res_name != NULL) XFree(hint.res_name);
+        if (hint.res_class != NULL) XFree(hint.res_class);
+        if (child_hint.res_name != NULL) XFree(child_hint.res_name);
+        if (child_hint.res_class != NULL) XFree(child_hint.res_class);
+    }
+    XFree(kids);
     fflush(stdout);
 }
 
@@ -590,8 +740,34 @@ static void dump_session_click(Display *display, Window root, Window bar,
         XSync(display, False);
         sleep_ms(300);
     }
+    const char *home = getenv("HOME");
+    if (home != NULL) {
+        char path[512];
+        snprintf(path, sizeof(path), "%s/bx-accept.log", home);
+        accept_log = fopen(path, "w");
+    }
     dump_override(display, root, "pre-click-or");
-    if (bar != None) dump_children(display, bar, "bar-child");
+    dump_root_stack(display, root);
+    dump_find_class(display, root, root, "Xfce4-panel", 0);
+    dump_find_class(display, root, root, "xfce4-panel", 0);
+    if (bar != None) {
+        XWindowAttributes bar_attr = {0};
+        Window query_root = None;
+        Window parent = None;
+        Window *kids = NULL;
+        unsigned count = 0;
+        XGetWindowAttributes(display, bar, &bar_attr);
+        XQueryTree(display, bar, &query_root, &parent, &kids, &count);
+        if (kids != NULL) XFree(kids);
+        printf("BXINFO saved-bar 0x%lx parent=0x%lx %dx%d+%d+%d map=%d\n",
+               (unsigned long)bar, (unsigned long)parent, bar_attr.width,
+               bar_attr.height, bar_attr.x, bar_attr.y, bar_attr.map_state);
+        accept_log_line("saved-bar 0x%lx parent=0x%lx %dx%d+%d+%d map=%d\n",
+                        (unsigned long)bar, (unsigned long)parent,
+                        bar_attr.width, bar_attr.height, bar_attr.x,
+                        bar_attr.y, bar_attr.map_state);
+        dump_children(display, bar, "bar-child");
+    }
     int grab = grab_free(display, root);
     printf("BXINFO grab-state %d click=%d,%d bar=0x%lx\n", grab, click_x,
            click_y, (unsigned long)bar);
@@ -614,6 +790,13 @@ static void dump_session_click(Display *display, Window root, Window bar,
            menu ? "opened" : "none", grab, grab_after,
            menu ? detail : "no popup");
     fflush(stdout);
+    accept_log_line("click=%d,%d bar=0x%lx menu=%d grab=%d->%d %s\n",
+                    click_x, click_y, (unsigned long)bar, menu, grab,
+                    grab_after, menu ? detail : "no popup");
+    if (accept_log != NULL) {
+        fclose(accept_log);
+        accept_log = NULL;
+    }
 }
 
 static int accept_session(Display *display, const char *prefix,

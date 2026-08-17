@@ -418,13 +418,57 @@ public class Window extends XResource {
     }
 
     public boolean containsPoint(short rootX, short rootY, boolean useFullscreenTransformation) {
-        short[] localPoint = rootPointToLocal(rootX, rootY, useFullscreenTransformation);
-        short width = fullscreenTransformation != null && useFullscreenTransformation ? fullscreenTransformation.width : this.width;
-        short height = fullscreenTransformation != null && useFullscreenTransformation ? fullscreenTransformation.height : this.height;
-        boolean inBounds = localPoint[0] >= 0 && localPoint[1] >= 0
-                && localPoint[0] < width && localPoint[1] < height;
-        return inBounds && (inputShape == null
+        return containsInput(rootX, rootY, useFullscreenTransformation);
+    }
+
+    // Bounding shape (or the window rectangle) decides whether the pointer
+    // enters this window's tree. Input shape only decides whether *this*
+    // window is the event target after children are searched.
+    public boolean containsGeometry(short rootX, short rootY,
+                                    boolean useFullscreenTransformation) {
+        short[] localPoint = localPoint(rootX, rootY, useFullscreenTransformation);
+        if (localPoint == null) return false;
+        return boundingShape == null
+                || boundingShape.contains(localPoint[0], localPoint[1]);
+    }
+
+    public boolean containsInput(short rootX, short rootY,
+                                 boolean useFullscreenTransformation) {
+        if (!containsGeometry(rootX, rootY, useFullscreenTransformation))
+            return false;
+        short[] localPoint = localPoint(rootX, rootY, useFullscreenTransformation);
+        return localPoint != null && (inputShape == null
                 || inputShape.contains(localPoint[0], localPoint[1]));
+    }
+
+    public Window findPointInWindow(short rootX, short rootY,
+                                    boolean useFullscreenTransformation) {
+        if (!attributes.isMapped()
+                || !containsGeometry(rootX, rootY, useFullscreenTransformation))
+            return null;
+        for (int i = children.size() - 1; i >= 0; i--) {
+            Window hit = children.get(i).findPointInWindow(rootX, rootY,
+                    useFullscreenTransformation);
+            if (hit != null) return hit;
+        }
+        return containsInput(rootX, rootY, useFullscreenTransformation)
+                ? this : null;
+    }
+
+    private short[] localPoint(short rootX, short rootY,
+                               boolean useFullscreenTransformation) {
+        short[] localPoint = rootPointToLocal(rootX, rootY,
+                useFullscreenTransformation);
+        short width = fullscreenTransformation != null
+                && useFullscreenTransformation
+                ? fullscreenTransformation.width : this.width;
+        short height = fullscreenTransformation != null
+                && useFullscreenTransformation
+                ? fullscreenTransformation.height : this.height;
+        if (localPoint[0] < 0 || localPoint[1] < 0
+                || localPoint[0] >= width || localPoint[1] >= height)
+            return null;
+        return localPoint;
     }
 
     public void setInputShape(List<ShapeRectangle> rectangles, int xOffset, int yOffset) {
@@ -599,9 +643,10 @@ public class Window extends XResource {
     }
 
     public Window getChildByCoords(short x, short y, boolean useFullscreenTransformation) {
-        for (int i = children.size()-1; i >= 0; i--) {
+        for (int i = children.size() - 1; i >= 0; i--) {
             Window child = children.get(i);
-            if (child.attributes.isMapped() && child.containsPoint(x, y, useFullscreenTransformation)) return child;
+            if (child.findPointInWindow(x, y, useFullscreenTransformation) != null)
+                return child;
         }
         return null;
     }

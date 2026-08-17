@@ -453,9 +453,7 @@ public class WindowManager extends XResourceManager {
     }
 
     private Window findPointWindow(Window window, short rootX, short rootY, boolean useFullscreenTransformation) {
-        if (!(window.attributes.isMapped() && window.containsPoint(rootX, rootY, useFullscreenTransformation))) return null;
-        Window child = window.getChildByCoords(rootX, rootY, useFullscreenTransformation);
-        return child != null ? findPointWindow(child, rootX, rootY, useFullscreenTransformation) : window;
+        return window.findPointInWindow(rootX, rootY, useFullscreenTransformation);
     }
 
     public void addOnWindowModificationListener(OnWindowModificationListener onWindowModificationListener) {

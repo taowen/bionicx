@@ -1,66 +1,35 @@
 # XFCE Applications menu
 
 XTEST clicking the panel bar at `(36,13)` or `(12,13)` does not map a
-new menu. `XQueryPointer` hits the xfwm4 dock frame (`2640x27`),
-`XGrabPointer` is free, and a framed-dock ButtonPress probe passes
-(`reparent-x11-probe` `dock-click`). The compositor overlay is not the
-hit target.
+new menu. `xfce4-popup-applicationsmenu` still maps a 185x324 Adwaita
+menu (`session-applications-menu`). Isolated GTK press and framed
+sync-grab replay stay 14/14. Do not add a 13th xfce accept click.
 
-A `116x53` xfce4-panel override-redirect window sits at `-4+26` before
-the click (tooltip-sized). It is not a grab owner and can stay black.
-
-The mapped 185x324 menu has only a 1x1 child. Isolated `GarconGtkMenu`
-under a stub compositor paints `94%` light (`gtk-garcon-paint` 131x312).
-The session menu used to read back `pixel=0x000000 nonzero=7173
-light=1236` because cairo will not send CompositeTrapezoids unless
-Render is at least 0.4; glyphs used CompositeGlyphs (available at 0.0)
-and the rounded Adwaita body fell back to an image path that never
-landed. After advertising 0.4 and rasterizing traps:
+After the 12 accept tests the saved click hits xfdesktop and leaves a
+grab:
 
 ```text
-BXINFO menu-paint 0x100013d 185x324+-6+22 depth=32 pixel=0xffffff nonzero=52588 light=49616 bright=0xffffff
-```
-
-`xfce4-popup-applicationsmenu` maps a real menu:
-
-```text
-BXTEST PASS session-applications-menu menu 185x324
-BXSUMMARY xfce-session-accept passed=12 failed=0
-```
-
-The session profile sets `XDG_MENU_PREFIX=xfce-` so garcon loads
-`/etc/xdg/menus/xfce-applications.menu`.
-
-The Applications plugin opens on `button-press-event` with button 1 and
-no Control. `gtk-menu-probe` `gtk-press-menu` passes that path under a
-framed stub WM (`fired=1 type=4 button=1 state=0x0`). `gtk-xi-replay-menu`
-is the same press under a synchronous `GrabButton` on the client and XI2
-on the frame (`fired=1 replayed=1 pre_frame=0`). An XTEST click at
-`(12,13)` on the panel bar (`0x1000005` 2640x27+0+0) still does not map
-a menu when `xfwm4` is the WM. QueryPointer says the hit is correct:
-root child is the xfwm4 frame (`0x8003ff` 2640x27+0+0), frame child is
-the panel client, and the panel has no child at that point. Isolated
-`dock-client-replay` and overlay click-through pass. `AllowEvents`
-SyncPointer now thaws frozen pointer events without dropping the grab
-(GTK menus SyncPointer while still owning the pointer). A synchronous
-passive `GrabButton` now activates before XI2 and reports that press
-only on the grab window, so xfwm4 sees `event.window == c->window` and
-Replays (`dock-xi-replay` `pre_frame=0`). Implicit and `XIGrabDevice`
-grabs still broadcast XI2 so `gtk-menu-click` stays 14/14. An XTEST
-click at `(12,13)` in the live session still does not map a menu. The
-plugin has no child X window; a 133x26 child at `x=2507` is the clock.
-
-After the 12 accept tests, the same saved click hits xfdesktop's
-fullscreen frame instead of the panel and leaves the pointer grabbed:
-
-```text
-BXINFO pre-click-ptr child=0x8005dc 2640x1216+0+0 class=none
-       frame_child=0x200000d 2640x1216+0+0 child_class=Xfdesktop
+BXINFO pre-click-ptr child=0x8005dc 2640x1216+0+0 child_class=Xfdesktop
 BXINFO click-menu none grab=0->1 no popup
 ```
 
-The compositor paints the panel on top, so the button is visible, but
-the X stack has the `Xfdesktop` frame above the dock. Isolated
-`dock-above-desktop` (`XRestackWindows` dock above a fullscreen
-desktop) passes, so the remaining gap is the live xfwm4/compositor
-sequence that leaves xfdesktop above the panel.
+The panel is painted, so the button looks clickable. A mapped-only
+root stack dump at that point has no 2640x27 dock frame — only the
+overlay, xfwm4 sidewalks, Thunar/Mousepad frames, and xfdesktop.
+Raising docks below the overlay is not Xorg behavior and does not
+fix this.
+
+xfwm4's compositor sets the overlay Bounding and Input shapes to
+empty so the overlay tree is a hole and sibling clients keep the
+pointer. This server used to treat `SetWindowShapeRegion(region=None)`
+as "remove the shape" for Input only, and ignored Bounding. Pointer
+pick also folded Input into "enter this window", so an overlay with
+a full-screen output child could steal hits. Pick now walks children
+inside the Bounding box and applies Input only to the window itself.
+`SetWindowShapeRegion(None)` is an empty region for every shape kind.
+`overlay-click-dock` restacks the dock above a desktop under that
+hole and still hits the dock.
+
+The remaining live gap is why the panel frame is gone from the
+mapped root stack after the session raises windows, while the
+compositor still paints it.
