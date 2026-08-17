@@ -78,6 +78,15 @@ as enough. Live xfwm4 is GDK 3.24 (`sources/gtk-3.24`):
   GDK never dequeued that press, or the XI2 cookie was null so the
   XI2 branch became `XFWM_EVENT_XEVENT`.
 
-Session `install-and-run.sh` now keeps a live `BionicX`/`WinlatorXGrab`
-logcat from t=0 because OriginOS `logcat -d` after a long session drops
-those lines. Do not add a 13th xfce accept click.
+`gtk-xi-allow-menu` used to treat a core `ButtonPress` on the stub WM
+as success, so an 84-byte XI2 `DeviceEvent` (group short, button mask
+over those fields) still passed. GDK reads `buttons.mask` after
+`XGetEventData`; that cookie was empty. The probe now requires
+`buttons.mask_len >= 4` and ignores core presses for that case. After
+the 96-byte layout, vivo `gtk-xi-allow-menu` reports
+`cookie=1 detail=1 mask_len=4`.
+
+The live Applications click still writes the press to xfwm4 and still
+never AllowEvents. The compositor connection also logged
+`grab-press-io Failed to send data` during the 12 accept tests. Do not
+add a 13th xfce accept click.

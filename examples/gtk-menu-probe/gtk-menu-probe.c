@@ -79,6 +79,9 @@ static int wm_replay_grabs;
 static int wm_xi_allow;
 static int wm_replayed;
 static int wm_pre_frame;
+static int wm_xi_cookie;
+static int wm_xi_mask_len;
+static int wm_xi_detail;
 
 static void drain_wm(Display *manager) {
     if (manager == NULL) return;
@@ -121,18 +124,27 @@ static void drain_wm(Display *manager) {
         }
         Window evw = None;
         int is_press = 0;
-        if (event.type == ButtonPress) {
-            evw = event.xbutton.window;
-            is_press = 1;
-        } else if (xi_opcode != 0 && event.type == GenericEvent
+        if (xi_opcode != 0 && event.type == GenericEvent
                 && event.xcookie.extension == xi_opcode
                 && XGetEventData(manager, &event.xcookie)) {
             XIDeviceEvent *xi = event.xcookie.data;
-            if (xi != NULL && xi->evtype == XI_ButtonPress) {
+            /* GDK reads buttons.mask after XGetEventData. A short
+             * DeviceEvent can still set evtype and still leave mask
+             * NULL; that must not count as a press. */
+            if (xi != NULL && xi->evtype == XI_ButtonPress
+                    && xi->detail > 0 && xi->event != None
+                    && xi->buttons.mask != NULL
+                    && xi->buttons.mask_len >= 4) {
                 evw = xi->event;
                 is_press = 1;
+                wm_xi_cookie = 1;
+                wm_xi_mask_len = xi->buttons.mask_len;
+                wm_xi_detail = (int)xi->detail;
             }
             XFreeEventData(manager, &event.xcookie);
+        } else if (!wm_xi_allow && event.type == ButtonPress) {
+            evw = event.xbutton.window;
+            is_press = 1;
         }
         if (wm_replay_grabs && is_press) {
             if (evw == wm_client) {
@@ -848,6 +860,9 @@ int main(int argc, char **argv) {
     press_state = 0;
     wm_replayed = 0;
     wm_pre_frame = 0;
+    wm_xi_cookie = 0;
+    wm_xi_mask_len = 0;
+    wm_xi_detail = 0;
 
     int xi_allow_ok = 0;
     if (manager == NULL || wm_frame == None || wm_client == None) {
@@ -920,14 +935,18 @@ int main(int argc, char **argv) {
                                                 &replay_count, &replay_height);
                 xi_allow_ok = press_fired && press_button == 1
                         && press_type == 4 && (press_state & 4) == 0
-                        && wm_replayed && !wm_pre_frame && replay_count > 0
+                        && wm_replayed && wm_xi_cookie && wm_xi_detail == 1
+                        && wm_xi_mask_len >= 4 && !wm_pre_frame
+                        && replay_count > 0
                         && replay_width >= 40 && replay_height >= 16;
                 snprintf(detail, sizeof(detail),
                          "fired=%d type=%d button=%u state=0x%x "
-                         "replayed=%d pre_frame=%d temp=%d %dx%d",
+                         "replayed=%d cookie=%d detail=%d mask_len=%d "
+                         "pre_frame=%d temp=%d %dx%d",
                          press_fired, press_type, press_button, press_state,
-                         wm_replayed, wm_pre_frame, replay_count, replay_width,
-                         replay_height);
+                         wm_replayed, wm_xi_cookie, wm_xi_detail,
+                         wm_xi_mask_len, wm_pre_frame, replay_count,
+                         replay_width, replay_height);
             } else {
                 snprintf(detail, sizeof(detail),
                          failed_mods != 0 ? "XIGrabButton failed"

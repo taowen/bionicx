@@ -54,14 +54,15 @@ public class XInputDeviceEvent extends Event {
     @Override
     public void send(short sequenceNumber, XOutputStream outputStream)
             throws IOException {
-        // DeviceEvent has an 80-byte fixed part followed by button and
-        // valuator masks. Keep one 32-bit button word so clients receive the
-        // state immediately before a button transition, as required by XI2.
+        // xXIDeviceEvent is 92 bytes plus button/valuator words. An
+        // 84-byte encoding omitted group.{latched,locked,effective} and
+        // put the button mask on top of those fields, so XGetEventData
+        // left buttons.mask unset and GDK ignored XI_ButtonPress.
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(code);
             outputStream.writeByte(extensionOpcode);
             outputStream.writeShort(sequenceNumber);
-            outputStream.writeInt(13); // (84 - 32) / 4
+            outputStream.writeInt(16); // (96 - 32) / 4
             outputStream.writeShort((short)eventType);
             outputStream.writeShort(deviceId);
             outputStream.writeInt(timestamp);
@@ -82,7 +83,10 @@ public class XInputDeviceEvent extends Event {
             outputStream.writeInt(0); // latched modifiers
             outputStream.writeInt(lockedModifiers);
             outputStream.writeInt(effectiveModifiers);
-            outputStream.writeInt(0); // group info
+            outputStream.writeInt(0); // group.base
+            outputStream.writeInt(0); // group.latched
+            outputStream.writeInt(0); // group.locked
+            outputStream.writeInt(0); // group.effective
             outputStream.writeInt(buttonState);
         }
     }
