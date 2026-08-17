@@ -2,6 +2,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/XInput2.h>
 #include <X11/extensions/XTest.h>
 #include <dlfcn.h>
 #include <stdio.h>
@@ -72,6 +73,11 @@ static void *required_symbol(void *library, const char *name) {
 }
 
 static Window wm_frame = None;
+static Window wm_client = None;
+static int xi_opcode;
+static int wm_replay_grabs;
+static int wm_replayed;
+static int wm_pre_frame;
 
 static void drain_wm(Display *manager) {
     if (manager == NULL) return;
@@ -95,6 +101,7 @@ static void drain_wm(Display *manager) {
                                      | ButtonPressMask);
                 XReparentWindow(manager, client, wm_frame, 4, 2);
                 XMapWindow(manager, wm_frame);
+                wm_client = client;
             }
             XMapWindow(manager, client);
         } else if (event.type == ConfigureRequest) {
@@ -110,6 +117,31 @@ static void drain_wm(Display *manager) {
             XConfigureWindow(manager, event.xconfigurerequest.window,
                              (unsigned)event.xconfigurerequest.value_mask,
                              &changes);
+        }
+        Window evw = None;
+        int is_press = 0;
+        if (event.type == ButtonPress) {
+            evw = event.xbutton.window;
+            is_press = 1;
+        } else if (xi_opcode != 0 && event.type == GenericEvent
+                && event.xcookie.extension == xi_opcode
+                && XGetEventData(manager, &event.xcookie)) {
+            XIDeviceEvent *xi = event.xcookie.data;
+            if (xi != NULL && xi->evtype == XI_ButtonPress) {
+                evw = xi->event;
+                is_press = 1;
+            }
+            XFreeEventData(manager, &event.xcookie);
+        }
+        if (wm_replay_grabs && is_press) {
+            if (evw == wm_client) {
+                wm_replayed = 1;
+                XAllowEvents(manager, ReplayPointer, CurrentTime);
+            } else if (!wm_replayed) {
+                wm_pre_frame = 1;
+                XAllowEvents(manager, SyncPointer, CurrentTime);
+            }
+            XFlush(manager);
         }
     }
     XFlush(manager);
@@ -273,6 +305,10 @@ int main(int argc, char **argv) {
         XSelectInput(manager, root,
                      SubstructureRedirectMask | SubstructureNotifyMask);
         composited = claim_compositor(manager);
+        int xi_event = 0;
+        int xi_error = 0;
+        XQueryExtension(manager, "XInputExtension", &xi_opcode, &xi_event,
+                        &xi_error);
         XSync(manager, False);
     }
 
@@ -699,6 +735,103 @@ int main(int argc, char **argv) {
     }
     result("gtk-press-menu", press_ok, detail);
     RECORD(press_ok);
+
+    if (press_menu != NULL) gtk_menu_popdown(press_menu);
+    pump(gtk_events_pending, gtk_main_iteration_do, manager, 200);
+    press_fired = 0;
+    press_type = 0;
+    press_button = 0;
+    press_state = 0;
+    wm_replayed = 0;
+    wm_pre_frame = 0;
+
+    int xi_replay_ok = 0;
+    if (manager == NULL || wm_frame == None || wm_client == None) {
+        snprintf(detail, sizeof(detail), "no framed client");
+    } else if (press_button_w == NULL
+            || gtk_widget_get_window(press_button_w) == NULL) {
+        snprintf(detail, sizeof(detail), "press button unrealized");
+    } else {
+        int mgr_major = 2;
+        int mgr_minor = 0;
+        if (xi_opcode == 0
+                || XIQueryVersion(manager, &mgr_major, &mgr_minor)
+                        != Success) {
+            snprintf(detail, sizeof(detail), "XI2 unavailable");
+        } else {
+            unsigned char mgr_mask[XIMaskLen(XI_LASTEVENT)] = {0};
+            XISetMask(mgr_mask, XI_ButtonPress);
+            XIEventMask mgr_xi = {
+                .deviceid = 2,
+                .mask_len = (int)sizeof(mgr_mask),
+                .mask = mgr_mask,
+            };
+            XISelectEvents(manager, wm_frame, &mgr_xi, 1);
+            XGrabButton(manager, 1, AnyModifier, wm_client, False,
+                        ButtonPressMask, GrabModeSync, GrabModeAsync, None,
+                        None);
+            wm_replay_grabs = 1;
+            XSync(manager, False);
+            int local_x = 0;
+            int local_y = 0;
+            void *toplevel = gtk_widget_get_toplevel(press_button_w);
+            gtk_widget_translate_coordinates(press_button_w, toplevel,
+                                             gtk_widget_get_allocated_width(
+                                                     press_button_w) / 2,
+                                             gtk_widget_get_allocated_height(
+                                                     press_button_w) / 2,
+                                             &local_x, &local_y);
+            int origin_x = 0;
+            int origin_y = 0;
+            gdk_window_get_origin(gtk_widget_get_window(toplevel), &origin_x,
+                                  &origin_y);
+            int root_x = origin_x + local_x;
+            int root_y = origin_y + local_y;
+            Display *xtest = XOpenDisplay(NULL);
+            int event_base = 0;
+            int error_base = 0;
+            int major = 0;
+            int minor = 0;
+            if (xtest != NULL && XTestQueryExtension(xtest, &event_base,
+                                                     &error_base, &major,
+                                                     &minor)) {
+                XTestFakeMotionEvent(xtest, DefaultScreen(xtest), root_x,
+                                     root_y, 0);
+                XTestFakeButtonEvent(xtest, 1, True, 20);
+                XTestFakeButtonEvent(xtest, 1, False, 20);
+                XSync(xtest, False);
+                pump(gtk_events_pending, gtk_main_iteration_do, manager, 800);
+                int replay_count = 0;
+                int replay_height = 0;
+                int replay_width = largest_temp(gdk_display_get_default,
+                                                gdk_display_get_default_screen,
+                                                gdk_screen_get_root_window,
+                                                gdk_window_peek_children,
+                                                gdk_window_get_window_type,
+                                                gdk_window_is_visible,
+                                                gdk_window_get_width,
+                                                gdk_window_get_height,
+                                                &replay_count, &replay_height);
+                xi_replay_ok = press_fired && press_button == 1
+                        && press_type == 4 && (press_state & 4) == 0
+                        && wm_replayed && !wm_pre_frame && replay_count > 0
+                        && replay_width >= 40 && replay_height >= 16;
+                snprintf(detail, sizeof(detail),
+                         "fired=%d type=%d button=%u state=0x%x "
+                         "replayed=%d pre_frame=%d temp=%d %dx%d",
+                         press_fired, press_type, press_button, press_state,
+                         wm_replayed, wm_pre_frame, replay_count, replay_width,
+                         replay_height);
+            } else {
+                snprintf(detail, sizeof(detail), "XTEST unavailable");
+            }
+            if (xtest != NULL) XCloseDisplay(xtest);
+            XUngrabButton(manager, 1, AnyModifier, wm_client);
+            wm_replay_grabs = 0;
+        }
+    }
+    result("gtk-xi-replay-menu", xi_replay_ok, detail);
+    RECORD(xi_replay_ok);
 
     if (manager != NULL) XCloseDisplay(manager);
     printf("BXSUMMARY gtk-menu passed=%d failed=%d\n", passed, failed);

@@ -15,7 +15,7 @@ podman run --rm --network host --userns=keep-id \
     --volume "$repo_dir:/work:Z" --workdir /work "$builder_image" \
     aarch64-linux-gnu-gcc -O2 -Wall -Wextra -Werror \
         examples/gtk-menu-probe/gtk-menu-probe.c \
-        -o "${output_dir#"$repo_dir/"}/app/bin/gtk-menu-probe" -ldl -lX11 -lXtst
+        -o "${output_dir#"$repo_dir/"}/app/bin/gtk-menu-probe" -ldl -lX11 -lXi -lXtst
 interpreter=/data/user/0/io.taowen.bx/files/rootfs/usr/lib/ld-linux-aarch64.so.1
 rpath=/data/user/0/io.taowen.bx/files/rootfs/usr/lib:/data/user/0/io.taowen.bx/files/rootfs/usr/lib/aarch64-linux-gnu
 patchelf --set-interpreter "$interpreter" --set-rpath "$rpath" \

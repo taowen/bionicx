@@ -33,7 +33,9 @@ The session profile sets `XDG_MENU_PREFIX=xfce-` so garcon loads
 
 The Applications plugin opens on `button-press-event` with button 1 and
 no Control. `gtk-menu-probe` `gtk-press-menu` passes that path under a
-framed stub WM (`fired=1 type=4 button=1 state=0x0`). An XTEST click at
+framed stub WM (`fired=1 type=4 button=1 state=0x0`). `gtk-xi-replay-menu`
+is the same press under a synchronous `GrabButton` on the client and XI2
+on the frame (`fired=1 replayed=1 pre_frame=0`). An XTEST click at
 `(12,13)` on the panel bar (`0x1000005` 2640x27+0+0) still does not map
 a menu when `xfwm4` is the WM. QueryPointer says the hit is correct:
 root child is the xfwm4 frame (`0x8003ff` 2640x27+0+0), frame child is
