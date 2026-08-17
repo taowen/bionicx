@@ -87,6 +87,9 @@ the 96-byte layout, vivo `gtk-xi-allow-menu` reports
 `cookie=1 detail=1 mask_len=4`.
 
 The live Applications click still writes the press to xfwm4 and still
-never AllowEvents. The compositor connection also logged
-`grab-press-io Failed to send data` during the 12 accept tests. Do not
-add a 13th xfce accept click.
+never AllowEvents. XI2 Enter/Leave used the same short group encoding,
+so `XGetEventData` could over-read into the following ButtonPress.
+`xi2-enter-cookie` now requires `buttons.mask_len >= 4`. A failed
+client write now keeps the unsent tail instead of dropping it. The
+compositor connection also logged `grab-press-io Failed to send data`
+during the 12 accept tests. Do not add a 13th xfce accept click.

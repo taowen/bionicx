@@ -57,11 +57,14 @@ public class XInputCrossingEvent extends Event {
     @Override
     public void send(short sequenceNumber, XOutputStream outputStream)
             throws IOException {
+        // xXIEnterEvent is 84 bytes plus button words. The previous
+        // 76-byte encoding omitted three group CARD32s, so
+        // XGetEventData over-read into the next event.
         try (XStreamLock lock = outputStream.lock()) {
             outputStream.writeByte(code);
             outputStream.writeByte(extensionOpcode);
             outputStream.writeShort(sequenceNumber);
-            outputStream.writeInt(11); // (76 - 32) / 4
+            outputStream.writeInt(14); // (88 - 32) / 4
             outputStream.writeShort((short)eventType);
             outputStream.writeShort(deviceId);
             outputStream.writeInt(timestamp);
@@ -82,7 +85,10 @@ public class XInputCrossingEvent extends Event {
             outputStream.writeInt(0); // latched modifiers
             outputStream.writeInt(lockedModifiers);
             outputStream.writeInt(effectiveModifiers);
-            outputStream.writeInt(0); // group info
+            outputStream.writeInt(0); // group.base
+            outputStream.writeInt(0); // group.latched
+            outputStream.writeInt(0); // group.locked
+            outputStream.writeInt(0); // group.effective
             outputStream.writeInt(buttonState);
         }
     }

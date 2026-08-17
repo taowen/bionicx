@@ -4,6 +4,7 @@
 #include <string.h>
 #include <jni.h>
 #include <unistd.h>
+#include <android/log.h>
 
 #include "winlator.h"
 #include "socket_utils.h"
@@ -78,10 +79,26 @@ static jboolean XOutputStream_send(XOutputStream* outputStream) {
             int pollResult;
             do pollResult = poll(&pollFd, 1, -1);
             while (pollResult < 0 && errno == EINTR);
-            if (pollResult > 0) continue;
+            if (pollResult > 0 && (pollFd.revents & POLLOUT)) continue;
         }
 
+        int err = errno;
+        int remaining = outputStream->buffer.limit - totalSent;
+        if (remaining > 0) {
+            if (totalSent > 0) {
+                memmove(outputStream->buffer.data,
+                        outputStream->buffer.data + totalSent,
+                        (size_t)remaining);
+            }
+            outputStream->buffer.position = remaining;
+        }
+        else {
+            outputStream->buffer.position = 0;
+        }
         outputStream->buffer.limit = outputStream->buffer.capacity;
+        __android_log_print(ANDROID_LOG_INFO, "BionicX",
+                "BXINFO xsend-fail fd=%d sent=%d left=%d errno=%d",
+                outputStream->fd, totalSent, remaining, err);
         return JNI_FALSE;
     }
 

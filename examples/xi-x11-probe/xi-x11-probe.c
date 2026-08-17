@@ -192,6 +192,48 @@ int main(int argc, char **argv) {
     RECORD(warp_ok);
     if (buttons.mask != NULL) free(buttons.mask);
 
+    unsigned char enter_mask_bytes[XIMaskLen(XI_LASTEVENT)] = {0};
+    XISetMask(enter_mask_bytes, XI_Enter);
+    XISetMask(enter_mask_bytes, XI_Leave);
+    XIEventMask enter_mask = {
+        .deviceid = 2,
+        .mask_len = (int)sizeof(enter_mask_bytes),
+        .mask = enter_mask_bytes,
+    };
+    XISelectEvents(display, window, &enter_mask, 1);
+    XIWarpPointer(display, 2, None, root, 0, 0, 0, 0, 10, 10);
+    XSync(display, True);
+    XIWarpPointer(display, 2, None, root, 0, 0, 0, 0, 120, 80);
+    XSync(display, False);
+    bool enter_ok = false;
+    int enter_mask_len = 0;
+    for (int i = 0; i < 40 && !enter_ok; ++i) {
+        if (!XPending(display)) {
+            usleep(25000);
+            continue;
+        }
+        XEvent event;
+        XNextEvent(display, &event);
+        if (event.type != GenericEvent || event.xcookie.extension != opcode)
+            continue;
+        if (!XGetEventData(display, &event.xcookie)) continue;
+        XIEnterEvent *enter = event.xcookie.data;
+        if (enter != NULL && enter->evtype == XI_Enter
+                && enter->event == window && enter->buttons.mask != NULL
+                && enter->buttons.mask_len >= 4) {
+            enter_ok = true;
+            enter_mask_len = enter->buttons.mask_len;
+        }
+        XFreeEventData(display, &event.xcookie);
+    }
+    char enter_detail[64];
+    if (enter_ok) snprintf(enter_detail, sizeof(enter_detail),
+                           "mask_len=%d", enter_mask_len);
+    else snprintf(enter_detail, sizeof(enter_detail),
+                  "cookie incomplete mask_len=%d", enter_mask_len);
+    result("xi2-enter-cookie", enter_ok, enter_detail);
+    RECORD(enter_ok);
+
     before = x_errors;
     XISetFocus(display, 3, window, CurrentTime);
     Window focus = None;

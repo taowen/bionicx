@@ -245,7 +245,12 @@ static void* epollThread(void* param) {
         for (int i = 0; i < numFds; i++) {
             if (events[i].data.ptr == &connector->serverFd) {
                 int clientFd = accept(connector->serverFd, NULL, NULL);
-                if (clientFd >= 0) XConnectorEpoll_handleNewConnection(connector, clientFd);
+                if (clientFd >= 0) {
+                    int snd = 256 * 1024;
+                    setsockopt(clientFd, SOL_SOCKET, SO_SNDBUF, &snd,
+                               sizeof(snd));
+                    XConnectorEpoll_handleNewConnection(connector, clientFd);
+                }
             }
             else if (events[i].data.ptr != &connector->shutdownFd &&
                     (events[i].events & EPOLLIN)) {
