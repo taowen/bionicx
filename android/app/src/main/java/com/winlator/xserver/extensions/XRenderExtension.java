@@ -943,9 +943,6 @@ public class XRenderExtension extends Extension {
             clips.add(new int[] {rectangle.x, rectangle.y, rectangle.width,
                     rectangle.height});
         if (clips.isEmpty()) return true;
-        int area = 0;
-        for (int[] clip : clips) area += clip[2] * clip[3];
-        if (area < RenderComposite.GPU_MIN_PIXELS) return false;
         maybeAttachAhb(destinationDrawable);
         boolean maskIsA8 = mask != null && (mask.format == a8Format
                 || (maskDrawable.visual != null
@@ -961,9 +958,6 @@ public class XRenderExtension extends Extension {
             int color, ArrayList<int[]> clips) {
         if (drawable == null || drawable.getData() == null) return false;
         if (clips.isEmpty()) return true;
-        int area = 0;
-        for (int[] clip : clips) area += clip[2] * clip[3];
-        if (area < RenderComposite.GPU_MIN_PIXELS) return false;
         GLRenderer renderer = xServer.getRenderer();
         if (renderer == null || !renderer.hasEglContext()) return false;
         maybeAttachAhb(drawable);
@@ -983,10 +977,6 @@ public class XRenderExtension extends Extension {
                 || source.radialGradient != null)
             return false;
         if (quads.isEmpty()) return true;
-        int area = 0;
-        for (RenderComposite.GlyphQuad quad : quads)
-            area += quad.width * quad.height;
-        if (area < RenderComposite.GPU_MIN_PIXELS) return false;
         GLRenderer renderer = xServer.getRenderer();
         if (renderer == null || !renderer.hasEglContext()) return false;
         maybeAttachAhb(destinationDrawable);

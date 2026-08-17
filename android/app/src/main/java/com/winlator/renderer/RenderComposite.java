@@ -20,7 +20,6 @@ import java.util.List;
 public class RenderComposite {
     private static final String TAG = "BionicXRenderGL";
     static final int AHB_MIN_PIXELS = 256 * 256;
-    public static final int GPU_MIN_PIXELS = 64 * 64;
     private static boolean loggedEglImage;
     private static boolean loggedFramebuffer;
 
