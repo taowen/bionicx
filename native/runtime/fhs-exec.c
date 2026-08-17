@@ -13,6 +13,8 @@
 
 #define SHELL_CHILD_SLOTS 64
 
+static const char *captured_runtime_value(const char *name);
+
 struct shell_child {
     FILE *stream;
     pid_t pid;
@@ -105,19 +107,87 @@ static void *dlopen_from_executable_lib(const char *soname, int flags,
     return NULL;
 }
 
+static void *dlopen_from_rootfs_multiarch(const char *soname, int flags,
+                                          void *(*next)(const char *, int)) {
+    int (*real_access)(const char *, int) = real_access_fn();
+    const char *root = bionicx_captured_rootfs();
+    if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
+    if (real_access == NULL || soname == NULL || soname[0] == '\0' ||
+            root == NULL || root[0] != '/')
+        return NULL;
+    static const char *const directories[] = {
+        "/usr/lib/aarch64-linux-gnu",
+        "/lib/aarch64-linux-gnu",
+        "/usr/lib",
+        "/lib",
+        NULL
+    };
+    for (int i = 0; directories[i] != NULL; ++i) {
+        char candidate[PATH_MAX];
+        int count = snprintf(candidate, sizeof(candidate), "%s%s/%s",
+                root, directories[i], soname);
+        if (count < 0 || count >= (int)sizeof(candidate)) continue;
+        if (real_access(candidate, F_OK) == 0) {
+            void *handle = next(candidate, flags);
+            if (handle != NULL) return handle;
+        }
+    }
+    /* Debian runtime packages ship libfoo.so.1 without the unversioned
+     * libfoo.so symlink (that lives in -dev). Feishu dlopens libvulkan.so. */
+    size_t length = strlen(soname);
+    if (length > 3 && strcmp(soname + length - 3, ".so") == 0) {
+        char versioned[PATH_MAX];
+        if (snprintf(versioned, sizeof(versioned), "%s.1", soname) <
+                (int)sizeof(versioned))
+            return dlopen_from_rootfs_multiarch(versioned, flags, next);
+    }
+    return NULL;
+}
+
+static void log_dlopen(const char *path, int flags, const char *actual,
+                       void *handle) {
+    const char *enabled = captured_runtime_value("BIONICX_LOG_EXEC");
+    if (enabled == NULL) enabled = getenv("BIONICX_LOG_EXEC");
+    if (enabled == NULL || enabled[0] == '\0') return;
+    if (handle != NULL) return;
+    const char *err = dlerror();
+    fprintf(stderr, "bionicx-dlopen: flags=0x%x %s", flags,
+            path != NULL ? path : "NULL");
+    if (actual != NULL && (path == NULL || strcmp(actual, path) != 0))
+        fprintf(stderr, " -> %s", actual);
+    fprintf(stderr, " => %p%s%s\n", handle,
+            err != NULL && err[0] != '\0' ? " " : "",
+            err != NULL ? err : "");
+    fflush(stderr);
+}
+
 void *dlopen(const char *path, int flags) {
     static void *(*next)(const char *, int);
     if (next == NULL) next = dlsym(RTLD_NEXT, "dlopen");
-    if (path == NULL) return next(NULL, flags);
+    /* libframe.so is opened with RTLD_DEEPBIND, which prefers libc's
+     * fopen@GLIBC_2.17 over this preload. /proc/stat then returns NULL
+     * and fscanf SIGSEGVs. */
+    flags &= ~RTLD_DEEPBIND;
+    if (path == NULL) {
+        void *handle = next(NULL, flags);
+        log_dlopen(path, flags, NULL, handle);
+        return handle;
+    }
     /* A bare SONAME is resolved from this preload object's return
      * address, so glibc ignores the executable RUNPATH. Search the
      * Debian multiarch directories ourselves. */
     if (strchr(path, '/') == NULL) {
         void *from_nss = dlopen_from_loaded_nss(path, flags, next);
-        if (from_nss != NULL) return from_nss;
+        if (from_nss != NULL) {
+            log_dlopen(path, flags, NULL, from_nss);
+            return from_nss;
+        }
         const char *gred = bionicx_getenv("MOZILLA_FIVE_HOME");
         void *from_gred = dlopen_from_directory(gred, path, flags, next);
-        if (from_gred != NULL) return from_gred;
+        if (from_gred != NULL) {
+            log_dlopen(path, flags, NULL, from_gred);
+            return from_gred;
+        }
         const char *app = bionicx_getenv("BIONICX_APP");
         if (app != NULL && app[0] == '/') {
             char app_lib[PATH_MAX];
@@ -125,33 +195,47 @@ void *dlopen(const char *path, int flags) {
                     (int)sizeof(app_lib)) {
                 void *from_app_payload = dlopen_from_directory(
                         app_lib, path, flags, next);
-                if (from_app_payload != NULL) return from_app_payload;
+                if (from_app_payload != NULL) {
+                    log_dlopen(path, flags, app_lib, from_app_payload);
+                    return from_app_payload;
+                }
             }
         }
         const char *root = bionicx_captured_rootfs();
         if (root == NULL) root = bionicx_getenv("BIONICX_ROOTFS");
         if (root != NULL && root[0] == '/') {
-            static const char *const directories[] = {
-                "/usr/lib/aarch64-linux-gnu",
-                "/lib/aarch64-linux-gnu",
-                "/usr/lib",
-                "/lib",
-                NULL
-            };
-            for (int i = 0; directories[i] != NULL; ++i) {
-                char candidate[PATH_MAX];
-                int count = snprintf(candidate, sizeof(candidate), "%s%s/%s",
-                        root, directories[i], path);
-                if (count < 0 || count >= (int)sizeof(candidate)) continue;
-                if (access(candidate, F_OK) == 0) return next(candidate, flags);
+            void *from_rootfs = dlopen_from_rootfs_multiarch(path, flags, next);
+            if (from_rootfs != NULL) {
+                log_dlopen(path, flags, NULL, from_rootfs);
+                return from_rootfs;
             }
         }
         void *from_app = dlopen_from_executable_lib(path, flags, next);
-        if (from_app != NULL) return from_app;
+        if (from_app != NULL) {
+            log_dlopen(path, flags, NULL, from_app);
+            return from_app;
+        }
     }
     char buffer[PATH_MAX];
     const char *actual = bionicx_redirect_path(path, buffer);
-    return actual != NULL ? next(actual, flags) : NULL;
+    void *handle = actual != NULL ? next(actual, flags) : NULL;
+    if (handle == NULL && path[0] == '/') {
+        int (*real_access)(const char *, int) = real_access_fn();
+        const char *check = actual != NULL ? actual : path;
+        if (real_access != NULL && real_access(check, F_OK) != 0) {
+            const char *slash = strrchr(path, '/');
+            const char *soname = slash != NULL ? slash + 1 : path;
+            void *fallback = dlopen_from_rootfs_multiarch(soname, flags, next);
+            if (fallback == NULL)
+                fallback = dlopen_from_executable_lib(soname, flags, next);
+            if (fallback != NULL) {
+                log_dlopen(path, flags, NULL, fallback);
+                return fallback;
+            }
+        }
+    }
+    log_dlopen(path, flags, actual, handle);
+    return handle;
 }
 
 static char **script_arguments(const char *path, char *const arguments[],
@@ -300,6 +384,7 @@ static const char *const runtime_environment_names[] = {
     "BIONICX_VIRTUAL_ROOT",
     "BIONICX_REWRITE_ABSOLUTE_SYMLINKS",
     "BIONICX_CHILD_FLAGS",
+    "BIONICX_CHILD_DROP_FLAGS",
     "BIONICX_LOG_EXEC",
     "SSL_CERT_FILE",
     "SSL_CERT_DIR",
@@ -519,8 +604,11 @@ static void free_runtime_environment(char **merged, size_t owned_from) {
 
 /* Chromium-family helpers re-exec themselves with --type=. Browser argv
  * switches are not forwarded, and Lark/Feishu does not read
- * CHROME_EXTRA_FLAGS. Append captured BIONICX_CHILD_FLAGS only for those
- * helpers so dpkg/sh keep their original argv. */
+ * CHROME_EXTRA_FLAGS. Rewrite captured BIONICX_CHILD_FLAGS only for those
+ * helpers so dpkg/sh keep their original argv. Drop matching switch keys
+ * then append so later --use-angle=swiftshader-webgl cannot last-win, and
+ * honor BIONICX_CHILD_DROP_FLAGS for boolean switches such as
+ * --disable-gpu-compositing. */
 #define CHILD_FLAG_SLOTS 16
 
 static int arguments_have_prefix(char *const arguments[], const char *prefix) {
@@ -532,11 +620,39 @@ static int arguments_have_prefix(char *const arguments[], const char *prefix) {
     return 0;
 }
 
-static int arguments_have_flag(char *const arguments[], const char *flag) {
-    if (arguments == NULL) return 0;
-    for (size_t i = 0; arguments[i] != NULL; ++i)
-        if (strcmp(arguments[i], flag) == 0)
-            return 1;
+static size_t split_child_flags(const char *extra, char *copy, size_t copy_size,
+                                const char *flags[], size_t max) {
+    if (extra == NULL || extra[0] == '\0' || copy == NULL || flags == NULL)
+        return 0;
+    snprintf(copy, copy_size, "%s", extra);
+    size_t flag_count = 0;
+    char *cursor = copy;
+    while (*cursor != '\0' && flag_count < max) {
+        while (*cursor == ' ') ++cursor;
+        if (*cursor == '\0') break;
+        flags[flag_count++] = cursor;
+        char *end = cursor;
+        while (*end != '\0' && *end != ' ') ++end;
+        if (*end != '\0') *end++ = '\0';
+        cursor = end;
+    }
+    return flag_count;
+}
+
+static size_t flag_key_length(const char *flag) {
+    const char *equals = strchr(flag, '=');
+    return equals != NULL ? (size_t)(equals - flag) : strlen(flag);
+}
+
+static int same_flag_key(const char *left, const char *right) {
+    size_t length = flag_key_length(left);
+    return length == flag_key_length(right) &&
+            strncmp(left, right, length) == 0;
+}
+
+static int flag_key_in_list(const char *flag, const char *list[], size_t count) {
+    for (size_t i = 0; i < count; ++i)
+        if (same_flag_key(flag, list[i])) return 1;
     return 0;
 }
 
@@ -547,39 +663,38 @@ static char **with_child_flags(char *const arguments[]) {
     if (!arguments_have_prefix(arguments, "--type="))
         return NULL;
 
-    char copy[PATH_MAX];
-    snprintf(copy, sizeof(copy), "%s", extra);
+    char extra_copy[PATH_MAX];
     const char *flags[CHILD_FLAG_SLOTS];
-    size_t flag_count = 0;
-    char *cursor = copy;
-    while (*cursor != '\0' && flag_count < CHILD_FLAG_SLOTS) {
-        while (*cursor == ' ') ++cursor;
-        if (*cursor == '\0') break;
-        flags[flag_count++] = cursor;
-        char *end = cursor;
-        while (*end != '\0' && *end != ' ') ++end;
-        if (*end != '\0') *end++ = '\0';
-        cursor = end;
-    }
+    size_t flag_count = split_child_flags(extra, extra_copy, sizeof(extra_copy),
+                                         flags, CHILD_FLAG_SLOTS);
+    if (flag_count == 0) return NULL;
+
+    char drop_copy[PATH_MAX];
+    const char *drops[CHILD_FLAG_SLOTS];
+    size_t drop_count = split_child_flags(
+            captured_runtime_value("BIONICX_CHILD_DROP_FLAGS"),
+            drop_copy, sizeof(drop_copy), drops, CHILD_FLAG_SLOTS);
 
     size_t original = 0;
     while (arguments[original] != NULL) ++original;
-    size_t add = 0;
-    for (size_t i = 0; i < flag_count; ++i)
-        if (!arguments_have_flag(arguments, flags[i]))
-            ++add;
-    if (add == 0) return NULL;
-
-    char **merged = calloc(original + add + 1, sizeof(*merged));
+    char **merged = calloc(original + flag_count + 1, sizeof(*merged));
     if (merged == NULL) return NULL;
-    for (size_t i = 0; i < original; ++i)
-        merged[i] = arguments[i];
-    size_t out = original;
+    size_t out = 0;
+    for (size_t i = 0; i < original; ++i) {
+        if (flag_key_in_list(arguments[i], drops, drop_count)) continue;
+        if (flag_key_in_list(arguments[i], flags, flag_count)) continue;
+        merged[out] = strdup(arguments[i]);
+        if (merged[out] == NULL) {
+            while (out > 0) free(merged[--out]);
+            free(merged);
+            return NULL;
+        }
+        ++out;
+    }
     for (size_t i = 0; i < flag_count; ++i) {
-        if (arguments_have_flag(arguments, flags[i])) continue;
         merged[out] = strdup(flags[i]);
         if (merged[out] == NULL) {
-            while (out > original) free(merged[--out]);
+            while (out > 0) free(merged[--out]);
             free(merged);
             return NULL;
         }
@@ -590,10 +705,9 @@ static char **with_child_flags(char *const arguments[]) {
 }
 
 static void free_child_flags(char **merged, char *const original[]) {
+    (void)original;
     if (merged == NULL) return;
-    size_t i = 0;
-    while (original[i] != NULL) ++i;
-    for (; merged[i] != NULL; ++i) free(merged[i]);
+    for (size_t i = 0; merged[i] != NULL; ++i) free(merged[i]);
     free(merged);
 }
 

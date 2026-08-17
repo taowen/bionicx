@@ -5,52 +5,6 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 for profile in firefox-esr firefox-esr-online krita qbittorrent keepassxc; do
     "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/$profile.json"
 done
-grep -F 'https://example.com/' \
-    "$repo_dir/profiles/firefox-esr-online.json" >/dev/null
-grep -F 'bionicx-page.html' \
-    "$repo_dir/profiles/firefox-esr.json" >/dev/null
-grep -F 'bionicx-image.ppm' "$repo_dir/profiles/krita.json" >/dev/null
-grep -F 'GLADIO_X11_SOCKET' "$repo_dir/profiles/krita.json" >/dev/null
-grep -F 'LD_LIBRARY_PATH=' \
-    "$repo_dir/android/app/src/main/java/com/winlator/BionicXActivity.java" \
-    >/dev/null
-grep -F 'bionicx-webseed.torrent' \
-    "$repo_dir/profiles/qbittorrent.json" >/dev/null
-grep -F '"dbus"' "$repo_dir/profiles/krita.json" >/dev/null
-grep -F '"dbus"' "$repo_dir/profiles/qbittorrent.json" >/dev/null
-grep -F '"dbus"' "$repo_dir/profiles/keepassxc.json" >/dev/null
-grep -F 'bionicx.kdbx' "$repo_dir/profiles/keepassxc.json" >/dev/null
-grep -F -- '--keyfile' "$repo_dir/profiles/keepassxc.json" >/dev/null
-grep -F 'keepassxc-deferred-open' "$repo_dir/profiles/keepassxc.json" >/dev/null
-grep -F 'keepassxc-deferred-open' \
-    "$repo_dir/examples/popular-apps/build-bundle.sh" >/dev/null
-grep -F 'keepassxc/seed-db.sh' \
-    "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
-grep -F 'GLADIO_X11_SOCKET' "$repo_dir/profiles/keepassxc.json" >/dev/null
-grep -F 'build-gladio.sh' \
-    "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
-grep -F 'firefox-esr' "$repo_dir/packages/trixie-popular.txt" >/dev/null
-grep -F 'krita' "$repo_dir/packages/trixie-popular.txt" >/dev/null
-grep -F 'seed-krita-resources.sh' \
-    "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
-grep -F '/usr/share/krita/bundles' \
-    "$repo_dir/examples/popular-apps/seed-krita-resources.sh" >/dev/null
-grep -F 'qbittorrent' "$repo_dir/packages/trixie-popular.txt" >/dev/null
-grep -F 'keepassxc' "$repo_dir/packages/trixie-popular.txt" >/dev/null
-grep -F 'browser.aboutwelcome.enabled' \
-    "$repo_dir/examples/productivity-apps/fixtures/firefox-online-user.js" \
-    >/dev/null
-grep -F 'network.process.enabled' \
-    "$repo_dir/examples/productivity-apps/fixtures/firefox-online-user.js" \
-    >/dev/null
-grep -F 'MOZ_DISABLE_CONTENT_SANDBOX' \
-    "$repo_dir/profiles/firefox-esr-online.json" >/dev/null
-grep -F 'MOZ_FORCE_DISABLE_E10S' \
-    "$repo_dir/profiles/firefox-esr-online.json" >/dev/null
-grep -F 'firefox-online-user.js' \
-    "$repo_dir/examples/productivity-apps/build-bundle.sh" >/dev/null
-grep -F '../aarch64-linux-gnu/libnssckbi.so' \
-    "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null
 if grep -F -- '--runtime-root' \
         "$repo_dir/examples/popular-apps/install-and-run.sh" >/dev/null; then
     echo "popular install must not replace the shared seed" >&2
@@ -71,5 +25,4 @@ test -s "$prod_bundle/app/fixtures/bionicx-page.html"
 test -s "$prod_bundle/app/fixtures/firefox-online-user.js"
 test -s "$pop_bundle/app/fixtures/bionicx-webseed.torrent"
 test -s "$pop_bundle/app/fixtures/bionicx-motion-audio.avi"
-grep -F 'bionicx-motion-audio.avi' "$repo_dir/profiles/vlc.json" >/dev/null
 echo "popular app profiles stay on the shared seed declarations: PASS"

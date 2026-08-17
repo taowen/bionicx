@@ -59,8 +59,9 @@ podman run --rm --pull=newer --network host \
             native/runtime/fhs-metadata.c \
             native/runtime/identity.c \
             native/runtime/sysv-semaphore.c \
+            native/runtime/sysv-shm.c \
             -o android/app/src/main/assets/bionicx/lib/libbionicx-runtime.so \
-            -Wl,-z,now -ldl \
+            -Wl,-z,now -ldl -pthread \
             -Wl,--version-script=native/runtime/glibc-interpose.map
     '
 

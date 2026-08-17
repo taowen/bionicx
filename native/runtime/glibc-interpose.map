@@ -1,7 +1,33 @@
-/* pty.node imports forkpty@GLIBC_2.17; an unversioned interpose is ignored. */
+/* Versioned glibc imports ignore an unversioned interpose.
+ * pty.node: forkpty@GLIBC_2.17
+ * Feishu: fopen@GLIBC_2.17 open64@GLIBC_2.17 dlopen@GLIBC_2.17 — otherwise
+ * /proc/stat and stub log files miss the FHS redirect, and libframe's
+ * RTLD_DEEPBIND binds libc fopen so fscanf SIGSEGVs on a NULL FILE.
+ * Feishu libmonitor: shm_open@GLIBC_2.17 mkstemp64@GLIBC_2.17 — glibc
+ * opens /dev/shm via internal __open / mkstemp64 that bypass LD_PRELOAD
+ * open.
+ * Chrome Ozone software present: shmget@GLIBC_2.17 shmat@GLIBC_2.17
+ * shmctl@GLIBC_2.17 — Android seccomp returns ENOSYS for SysV SHM, so
+ * MIT-SHM Attach never sees a real segment. */
 GLIBC_2.17 {
   global:
     forkpty;
     ptsname;
     ptsname_r;
+    fopen;
+    fopen64;
+    open;
+    open64;
+    openat;
+    openat64;
+    opendir;
+    dlopen;
+    shm_open;
+    shm_unlink;
+    shmget;
+    shmat;
+    shmdt;
+    shmctl;
+    mkstemp;
+    mkstemp64;
 };

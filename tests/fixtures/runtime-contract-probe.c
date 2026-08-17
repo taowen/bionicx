@@ -12,11 +12,16 @@
 #include <ifaddrs.h>
 #include <sys/ioctl.h>
 #include <sys/inotify.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/syscall.h>
 #include <poll.h>
 #include <sys/sem.h>
+#include <sys/shm.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <stddef.h>
 #include <sys/types.h>
 #include <spawn.h>
 #include <sys/wait.h>
@@ -43,9 +48,24 @@ static void write_file(const char *path, const char *contents, mode_t mode) {
 
 int main(int argc, char **argv) {
     if (argc >= 2 && strncmp(argv[1], "--type=", 7) == 0) {
-        for (int i = 0; i < argc; ++i)
+        int has_crashpad = 0;
+        const char *last_angle = NULL;
+        for (int i = 0; i < argc; ++i) {
             if (strcmp(argv[i], "--disable-crashpad-for-testing") == 0)
+                has_crashpad = 1;
+            if (strncmp(argv[i], "--use-angle=", 12) == 0)
+                last_angle = argv[i];
+        }
+        if (strcmp(argv[1], "--type=gpu-process") == 0) {
+            for (int i = 0; i < argc; ++i)
+                if (strcmp(argv[i], "--disable-gpu-compositing") == 0)
+                    return 25;
+            if (last_angle != NULL &&
+                    strcmp(last_angle, "--use-angle=vulkan") == 0)
                 return 0;
+            return 23;
+        }
+        if (has_crashpad) return 0;
         return 21;
     }
     if (argc >= 2 && strcmp(argv[1], "--print-home") == 0) {
@@ -73,6 +93,24 @@ int main(int argc, char **argv) {
     if (soname_probe == NULL || soname_probe() != 42)
         fail("soname dlopen symbol");
     dlclose(soname_handle);
+
+    void *missing_path = dlopen(
+            "/opt/no-such-app/libbionicx-runtime-dlopen.so", RTLD_NOW);
+    if (missing_path == NULL) fail("missing-path multiarch dlopen");
+    int (*missing_probe)(void) = dlsym(missing_path,
+                                       "bionicx_runtime_dlopen_probe");
+    if (missing_probe == NULL || missing_probe() != 42)
+        fail("missing-path multiarch dlopen symbol");
+    dlclose(missing_path);
+
+    void *unversioned = dlopen("/opt/bytedance/feishu/libbionicx-so-one.so",
+                               RTLD_NOW);
+    if (unversioned == NULL) fail("libfoo.so to libfoo.so.1 dlopen");
+    int (*unversioned_probe)(void) = dlsym(unversioned,
+                                           "bionicx_runtime_dlopen_probe");
+    if (unversioned_probe == NULL || unversioned_probe() != 42)
+        fail("libfoo.so.1 fallback symbol");
+    dlclose(unversioned);
 
     void *app_handle = dlopen("libbionicx-app-dlopen.so", RTLD_NOW);
     if (app_handle == NULL) fail("app-lib soname dlopen");
@@ -391,6 +429,24 @@ int main(int argc, char **argv) {
     if (waitpid(helper_child, &helper_status, 0) != helper_child ||
             !WIFEXITED(helper_status) || WEXITSTATUS(helper_status) != 0)
         fail("BIONICX_CHILD_FLAGS on --type= helper");
+    pid_t gpu_child = fork();
+    if (gpu_child < 0) fail("fork child-flags gpu last-wins");
+    if (gpu_child == 0) {
+        char *const helper[] = {
+            (char *)"/proc/self/exe",
+            (char *)"--type=gpu-process",
+            (char *)"--use-angle=vulkan",
+            (char *)"--use-angle=swiftshader-webgl",
+            (char *)"--disable-gpu-compositing",
+            NULL
+        };
+        execv("/proc/self/exe", helper);
+        _exit(24);
+    }
+    int gpu_status = 0;
+    if (waitpid(gpu_child, &gpu_status, 0) != gpu_child ||
+            !WIFEXITED(gpu_status) || WEXITSTATUS(gpu_status) != 0)
+        fail("BIONICX_CHILD_FLAGS last-wins --use-angle=");
     int execve_status = 0;
     if (waitpid(execve_child, &execve_status, 0) != execve_child ||
             !WIFEXITED(execve_status) || WEXITSTATUS(execve_status) != 0)
@@ -435,6 +491,29 @@ int main(int argc, char **argv) {
         fail("redirected /run mkdir");
     snprintf(path, sizeof(path), "%s/run/bionicx-contract", temporary);
     if (access(path, F_OK) != 0) fail("redirected /run backing directory");
+
+    struct stat shm_dir;
+    if (stat("/dev/shm", &shm_dir) != 0) fail("stat /dev/shm");
+    if (!S_ISDIR(shm_dir.st_mode) || (shm_dir.st_mode & S_ISVTX) == 0)
+        fail("sticky /dev/shm");
+    int shm_file = open("/dev/shm/bionicx-contract",
+                        O_CREAT | O_RDWR | O_EXCL, 0600);
+    if (shm_file < 0) fail("redirected /dev/shm open");
+    close(shm_file);
+    snprintf(path, sizeof(path), "%s/dev-shm/bionicx-contract", temporary);
+    if (access(path, F_OK) != 0) fail("redirected /dev/shm backing file");
+    if (unlink("/dev/shm/bionicx-contract") != 0)
+        fail("redirected /dev/shm unlink");
+    int posix_shm = shm_open("/bionicx-contract",
+                             O_CREAT | O_EXCL | O_RDWR, 0600);
+    if (posix_shm < 0) fail("shm_open");
+    close(posix_shm);
+    if (shm_unlink("/bionicx-contract") != 0) fail("shm_unlink");
+    char shm_template[] = "/dev/shm/tmpfileXXXXXX";
+    int shm_temp = mkstemp64(shm_template);
+    if (shm_temp < 0) fail("mkstemp64 /dev/shm");
+    close(shm_temp);
+    if (unlink(shm_template) != 0) fail("unlink mkstemp64 /dev/shm");
 
     if (chown("/etc/bionicx-probe", 0, 0) != 0)
         fail("rootless chown policy");
@@ -519,6 +598,72 @@ int main(int argc, char **argv) {
             semctl(semaphore, 0, GETVAL) != 1 ||
             semctl(semaphore, 0, IPC_RMID) != 0)
         fail("cross-process System V semaphore");
+
+    struct shminfo shm_limits;
+    memset(&shm_limits, 0, sizeof(shm_limits));
+    if (shmctl(0, IPC_INFO, (struct shmid_ds *)&shm_limits) != 0 ||
+            shm_limits.shmmax < 4096)
+        fail("shmctl IPC_INFO");
+    int shm = shmget(IPC_PRIVATE, 4096, IPC_CREAT | 0600);
+    if (shm < 0) fail("shmget");
+    char *shm_bytes = shmat(shm, NULL, 0);
+    if (shm_bytes == (void *)-1) fail("shmat");
+    memcpy(shm_bytes, "BXSH", 4);
+    if (shmctl(shm, IPC_RMID, NULL) != 0) fail("shmctl IPC_RMID");
+    int shm_client = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    if (shm_client < 0) fail("SHM export socket");
+    struct sockaddr_un shm_address;
+    memset(&shm_address, 0, sizeof(shm_address));
+    shm_address.sun_family = AF_UNIX;
+    int shm_name = snprintf(&shm_address.sun_path[1],
+                            sizeof(shm_address.sun_path) - 1,
+                            "/dev/shm/%08x",
+                            (unsigned int)shm / 0x10000u);
+    if (shm_name <= 0) fail("SHM export name");
+    socklen_t shm_length = (socklen_t)(offsetof(struct sockaddr_un, sun_path) +
+                                       1 + shm_name);
+    int connected = -1;
+    for (int attempt = 0; attempt < 50 && connected != 0; ++attempt) {
+        connected = connect(shm_client, (struct sockaddr *)&shm_address,
+                            shm_length);
+        if (connected != 0) usleep(20000);
+    }
+    if (connected != 0) fail("SHM export connect");
+    if (send(shm_client, &shm, sizeof(shm), 0) != (ssize_t)sizeof(shm))
+        fail("SHM export send id");
+    key_t shm_key = 0;
+    if (read(shm_client, &shm_key, sizeof(shm_key)) != (ssize_t)sizeof(shm_key))
+        fail("SHM export key");
+    char shm_payload = 0;
+    struct iovec shm_iov = {.iov_base = &shm_payload, .iov_len = 1};
+    union {
+        struct cmsghdr header;
+        char bytes[CMSG_SPACE(sizeof(int))];
+    } shm_control;
+    memset(&shm_control, 0, sizeof(shm_control));
+    struct msghdr shm_message = {
+        .msg_iov = &shm_iov,
+        .msg_iovlen = 1,
+        .msg_control = shm_control.bytes,
+        .msg_controllen = sizeof(shm_control.bytes),
+    };
+    if (recvmsg(shm_client, &shm_message, 0) != 1)
+        fail("SHM export fd");
+    struct cmsghdr *shm_header = CMSG_FIRSTHDR(&shm_message);
+    int shm_fd = -1;
+    if (shm_header == NULL || shm_header->cmsg_level != SOL_SOCKET ||
+            shm_header->cmsg_type != SCM_RIGHTS)
+        fail("SHM export SCM_RIGHTS");
+    memcpy(&shm_fd, CMSG_DATA(shm_header), sizeof(shm_fd));
+    close(shm_client);
+    if (shm_fd < 0) fail("SHM export descriptor");
+    char *imported = mmap(NULL, 4096, PROT_READ, MAP_SHARED, shm_fd, 0);
+    if (imported == MAP_FAILED) fail("SHM export mmap");
+    if (memcmp(imported, "BXSH", 4) != 0)
+        fail("MIT-SHM fd import");
+    munmap(imported, 4096);
+    close(shm_fd);
+    if (shmdt(shm_bytes) != 0) fail("shmdt");
 
     char etc_link[PATH_MAX];
     if (readlink("/etc", etc_link, sizeof(etc_link) - 1) >= 0)

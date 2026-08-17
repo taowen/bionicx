@@ -15,6 +15,7 @@ import com.winlator.xserver.errors.BadGraphicsContext;
 import com.winlator.xserver.errors.BadImplementation;
 import com.winlator.xserver.errors.BadSHMSegment;
 import com.winlator.xserver.errors.XRequestError;
+import com.winlator.xserver.events.ShmCompletion;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -22,12 +23,13 @@ import java.nio.ByteBuffer;
 public class MITSHMExtension extends Extension {
     public static final byte MAJOR_VERSION = 1;
     public static final byte MINOR_VERSION = 1;
+    public static final byte PUT_IMAGE_MINOR = 3;
 
     private static abstract class ClientOpcodes {
         private static final byte QUERY_VERSION = 0;
         private static final byte ATTACH = 1;
         private static final byte DETACH = 2;
-        private static final byte PUT_IMAGE = 3;
+        private static final byte PUT_IMAGE = PUT_IMAGE_MINOR;
         private static final byte GET_IMAGE = 4;
         private static final byte CREATE_PIXMAP = 5;
     }
@@ -74,6 +76,8 @@ public class MITSHMExtension extends Extension {
         int shmid = inputStream.readInt();
         inputStream.skip(4);
         xServer.getSHMSegmentManager().attach(xid, shmid);
+        if (xServer.getSHMSegmentManager().getData(xid) == null)
+            throw new BadSHMSegment(xid);
     }
 
     private void detach(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
@@ -92,7 +96,9 @@ public class MITSHMExtension extends Extension {
         short dstX = inputStream.readShort();
         short dstY = inputStream.readShort();
         byte depth = inputStream.readByte();
-        inputStream.skip(3);
+        inputStream.skip(1); // format
+        byte sendEvent = inputStream.readByte();
+        inputStream.skip(1);
         int shmseg = inputStream.readInt();
         int offset = inputStream.readInt();
 
@@ -120,6 +126,10 @@ public class MITSHMExtension extends Extension {
             }
         }
         else drawable.drawImage(srcX, srcY, dstX, dstY, srcWidth, srcHeight, depth, data, totalWidth, totalHeight);
+
+        if (sendEvent != 0) {
+            client.sendEvent(new ShmCompletion(this, drawableId, shmseg, offset));
+        }
     }
 
     private void createPixmap(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {

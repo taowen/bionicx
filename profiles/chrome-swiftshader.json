@@ -1,37 +1,42 @@
 {
   "$schema": "../schemas/profile.schema.json",
   "schemaVersion": 3,
-  "id": "feishu",
-  "name": "Feishu ARM64",
+  "id": "chrome",
+  "name": "Google Chrome ARM64 SwiftShader paint repro",
   "display": {
     "dpi": 144,
     "socket": "filesystem"
   },
   "hostServices": [
-    "dbus",
-    "pulseaudio",
     "vulkan"
   ],
   "launch": {
-    "executable": "${RUNTIME}/opt/bytedance/feishu/feishu",
-    "workingDirectory": "${RUNTIME}/opt/bytedance/feishu",
-    "argv0": "${RUNTIME}/opt/bytedance/feishu/feishu",
-    "diagnoseSignals": false,
+    "executable": "${RUNTIME}/opt/google/chrome/chrome",
+    "workingDirectory": "${RUNTIME}/opt/google/chrome",
+    "argv0": "${RUNTIME}/opt/google/chrome/google-chrome",
     "arguments": [
       "--no-sandbox",
       "--no-zygote",
-      "--disable-seccomp-filter-sandbox",
       "--disable-breakpad",
+      "--hide-crash-restore-bubble",
       "--disable-crashpad-for-testing",
       "--disable-gpu-watchdog",
       "--disable-dev-shm-usage",
       "--disable-gpu-sandbox",
+      "--disable-gpu-compositing",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--window-position=0,0",
+      "--window-size=1920,1080",
+      "--start-maximized",
+      "--user-data-dir=${HOME}/profile-swiftshader",
       "--ozone-platform=x11",
+      "--ui-toolkit=gtk",
       "--use-gl=angle",
-      "--use-angle=vulkan",
+      "--use-angle=swiftshader-webgl",
       "--disable-features=SkiaGraphite",
       "--enable-logging=stderr",
-      "--user-data-dir=${HOME}/profile-feishu"
+      "about:blank"
     ],
     "environment": {
       "DISPLAY": "${DISPLAY}",
@@ -39,23 +44,18 @@
       "TMPDIR": "${TMP}",
       "XDG_RUNTIME_DIR": "${TMP}/runtime",
       "XDG_DATA_DIRS": "${RUNTIME}/usr/local/share:${RUNTIME}/usr/share",
+      "CHROME_WRAPPER": "${RUNTIME}/opt/google/chrome/google-chrome",
+      "CHROME_VERSION_EXTRA": "stable",
+      "CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing --disable-gpu-watchdog --use-angle=swiftshader-webgl --disable-gpu-compositing",
       "VK_ICD_FILENAMES": "${APP}/share/vulkan/icd.d/vortek_icd.json",
       "VORTEK_SERVER_PATH": "${RUNTIME}/tmp/.vortek/V0",
-      "PULSE_SERVER": "unix:${RUNTIME}/tmp/.sound/PS0",
+      "GNOME_DISABLE_CRASH_DIALOG": "SET_BY_GOOGLE_CHROME",
       "GSETTINGS_SCHEMA_DIR": "${RUNTIME}/usr/share/glib-2.0/schemas",
       "GSETTINGS_BACKEND": "memory",
       "GDK_PIXBUF_MODULE_FILE": "${RUNTIME}/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache",
-      "NO_AT_BRIDGE": "1",
-      "CHROME_EXTRA_FLAGS": "--disable-crashpad-for-testing --disable-gpu-watchdog",
-      "BIONICX_CHILD_FLAGS": "--disable-crashpad-for-testing --disable-gpu-watchdog --use-angle=vulkan",
-      "BIONICX_CHILD_DROP_FLAGS": "--disable-gpu-compositing",
-      "BIONICX_LOG_EXEC": "1",
-      "GNOME_DISABLE_CRASH_DIALOG": "SET_BY_GOOGLE_CHROME",
-      "SHELL": "/bin/sh",
-      "PATH": "${RUNTIME}/usr/bin:${RUNTIME}/bin:/product/bin:/system/bin",
-      "LANG": "C.UTF-8",
       "SSL_CERT_FILE": "${RUNTIME}/etc/ssl/certs/ca-certificates.crt",
-      "SSL_CERT_DIR": "${RUNTIME}/etc/ssl/certs"
+      "SSL_CERT_DIR": "${RUNTIME}/etc/ssl/certs",
+      "LANG": "C"
     }
   }
 }

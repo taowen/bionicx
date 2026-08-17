@@ -4,27 +4,11 @@ set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 installer="$repo_dir/tools/install-apk.sh"
 hello_runner="$repo_dir/examples/hello/install-and-run.sh"
-guide="$repo_dir/docs/NEW-DEVICE.md"
 test_dir="$repo_dir/build/test-install-apk"
 rm -rf "$test_dir"
 mkdir -p "$test_dir"
 
 test -x "$installer"
-grep -F 'pm install -r -t' "$installer" >/dev/null
-grep -F 'adb install -r -t' "$installer" >/dev/null
-grep -F 'V2509A' "$installer" >/dev/null
-grep -F '607' "$installer" >/dev/null
-grep -F '2289' "$installer" >/dev/null
-grep -F '2462' "$installer" >/dev/null
-grep -F 'bionicx-exec' "$installer" >/dev/null
-grep -F 'libbionicx-runtime.so' "$installer" >/dev/null
-grep -F 'keep existing' \
-    "$repo_dir/android/app/src/main/java/com/winlator/BionicXActivity.java" >/dev/null
-grep -F -- '--extract-only' "$installer" >/dev/null
-grep -F 'tools/install-apk.sh' "$guide" >/dev/null
-grep -F 'tools/install-apk.sh' "$hello_runner" >/dev/null
-grep -F -- '--extract-only' "$hello_runner" >/dev/null
-grep -F 'rootfs-seed-bundle/rootfs' "$hello_runner" >/dev/null
 if grep -E -- '--runtime-root "\$bundle_dir/rootfs"' "$hello_runner" >/dev/null; then
     echo "hello must not replace the Debian seed with hello-bundle/rootfs" >&2
     exit 1

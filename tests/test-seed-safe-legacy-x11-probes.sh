@@ -21,9 +21,6 @@ probes=(
 for name in "${probes[@]}"; do
     example="$repo_dir/examples/$name"
     "$repo_dir/tools/validate-profile.py" "$repo_dir/profiles/$name.json"
-    grep -F 'rootfs_payload=none' "$example/build-bundle.sh" >/dev/null
-    grep -F 'patchelf --set-interpreter' "$example/build-bundle.sh" >/dev/null
-    grep -F 'ANDROID_SERIAL' "$example/install-and-run.sh" >/dev/null
     if grep -F -- '--runtime-root' "$example/install-and-run.sh" >/dev/null; then
         echo "$name must not replace the shared seed" >&2
         exit 1

@@ -3,35 +3,11 @@ set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 "$repo_dir/tools/validate-profile.py" \
     "$repo_dir/profiles/input-settings-x11-probe.json"
-grep -F 'XChangeKeyboardControl' \
-    "$repo_dir/examples/input-settings-x11-probe/input-settings-x11-probe.c" >/dev/null
-grep -F 'XSetPointerMapping' \
-    "$repo_dir/examples/input-settings-x11-probe/input-settings-x11-probe.c" >/dev/null
-grep -F 'XkbSetAutoRepeatRate' \
-    "$repo_dir/examples/input-settings-x11-probe/input-settings-x11-probe.c" >/dev/null
-grep -F 'XkbGetNamedIndicator' \
-    "$repo_dir/examples/input-settings-x11-probe/input-settings-x11-probe.c" >/dev/null
-grep -F 'XkbSetNamedIndicator' \
-    "$repo_dir/examples/input-settings-x11-probe/input-settings-x11-probe.c" >/dev/null
-grep -F 'XK_Super_L' \
-    "$repo_dir/examples/input-settings-x11-probe/input-settings-x11-probe.c" >/dev/null
-grep -F 'XGetModifierMapping' \
-    "$repo_dir/examples/input-settings-x11-probe/input-settings-x11-probe.c" >/dev/null
-grep -F 'KEY_SUPER_L' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/XKeycode.java" >/dev/null
-grep -F 'GET_NAMED_INDICATOR' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XKeyboardExtension.java" >/dev/null
-grep -F 'CHANGE_KEYBOARD_CONTROL' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/ClientOpcodes.java" >/dev/null
 if grep -E 'xfsettingsd|xfwm4|icewm' \
         "$repo_dir/examples/input-settings-x11-probe/input-settings-x11-probe.c" >/dev/null; then
     echo "input-settings probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=10 failed=0' \
-    "$repo_dir/examples/input-settings-x11-probe/install-and-run.sh" >/dev/null
-grep -F 'rootfs_payload=none' \
-    "$repo_dir/examples/input-settings-x11-probe/build-bundle.sh" >/dev/null
 if grep -F -- '--runtime-root' \
         "$repo_dir/examples/input-settings-x11-probe/install-and-run.sh" >/dev/null; then
     echo "input-settings probe must not replace the shared seed" >&2

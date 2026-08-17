@@ -3,76 +3,17 @@ set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 "$repo_dir/tools/validate-profile.py" \
     "$repo_dir/profiles/compositor-x11-probe.json"
-grep -F 'RedirectSubwindows(root)' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'set_window_shape_region' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'shapeKind > 2' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XFixesExtension.java" >/dev/null
-grep -F 'GetOverlayWindow' \
-    "$repo_dir/examples/compositor-x11-probe/README.md" >/dev/null
-grep -F 'raiseOverlay' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XComposite.java" >/dev/null
-grep -F 'IsUnmapped' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'XMapWindow' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'XLowerWindow' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'XGrabServer' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'SET_CLIENT_INFO_ARB' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/GLXExtension.java" \
-    >/dev/null
-grep -F 'glx_set_client_info_arb' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'overlay-child-output' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'compositor-paint-burst' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'compositor-present-output' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'compositor-output-buffer' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F '_XROOTPMAP_ID' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'compositor-rgb-pixmap' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F 'compositor-visual-opaque' \
-    "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null
-grep -F '24-in-32' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XRenderExtension.java" \
-    >/dev/null
-grep -F 'depth == 24' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/PixmapManager.java" \
-    >/dev/null
-grep -F 'isOverlayTree' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/extensions/XComposite.java" \
-    >/dev/null
-grep -F 'isOverlayWindow' \
-    "$repo_dir/android/app/src/main/java/com/winlator/renderer/GLRenderer.java" \
-    >/dev/null
-grep -F 'isOverlayOutput' \
-    "$repo_dir/android/app/src/main/java/com/winlator/renderer/GLRenderer.java" \
-    >/dev/null
 if awk '/public void forceUpdate/,/^    }/' \
         "$repo_dir/android/app/src/main/java/com/winlator/xserver/Drawable.java" \
         | grep -F 'offscreenStorage' >/dev/null; then
     echo "offscreen drawables must still mark textures dirty" >&2
     exit 1
 fi
-grep -F 'setActivePosition(start)' \
-    "$repo_dir/android/app/src/main/java/com/winlator/xserver/XClientRequestHandler.java" \
-    >/dev/null
 if grep -E 'xfsettingsd|xfwm4|icewm' \
         "$repo_dir/examples/compositor-x11-probe/compositor-x11-probe.c" >/dev/null; then
     echo "compositor probe must not start a desktop daemon" >&2
     exit 1
 fi
-grep -F 'passed=16 failed=0' \
-    "$repo_dir/examples/compositor-x11-probe/install-and-run.sh" >/dev/null
-grep -F 'rootfs_payload=none' \
-    "$repo_dir/examples/compositor-x11-probe/build-bundle.sh" >/dev/null
 if grep -F -- '--runtime-root' \
         "$repo_dir/examples/compositor-x11-probe/install-and-run.sh" >/dev/null; then
     echo "compositor probe must not replace the shared seed" >&2

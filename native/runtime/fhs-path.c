@@ -122,6 +122,85 @@ static const char *redirect_proc_stat(const char *path, char buffer[PATH_MAX]) {
     return buffer;
 }
 
+/* Android has no /dev/shm. Feishu libmonitor uses Boost.Interprocess there
+ * (sticky-bit check + shm files). glibc shm_open also targets /dev/shm via
+ * an internal open that bypasses LD_PRELOAD. */
+static int is_dev_shm_dir(const char *path) {
+    return path != NULL && (strcmp(path, "/dev/shm") == 0 ||
+            strcmp(path, "/dev/shm/") == 0);
+}
+
+static void apply_dev_shm_mode(const char *path, mode_t *mode) {
+    if (!is_dev_shm_dir(path) || mode == NULL) return;
+    *mode |= S_ISVTX | 0777;
+}
+
+static const char *redirect_dev_shm(const char *path, char buffer[PATH_MAX]) {
+    if (path == NULL || (strcmp(path, "/dev/shm") != 0 &&
+            strncmp(path, "/dev/shm/", 9) != 0))
+        return NULL;
+    const char *tmp = bionicx_captured_tmpdir();
+    if (tmp == NULL) tmp = bionicx_getenv("BIONICX_TMPDIR");
+    if (tmp == NULL || tmp[0] != '/') return path;
+    char directory[PATH_MAX];
+    if (snprintf(directory, PATH_MAX, "%s/dev-shm", tmp) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return NULL;
+    }
+    static int (*real_mkdir)(const char *, mode_t);
+    static int (*real_chmod)(const char *, mode_t);
+    if (real_mkdir == NULL) real_mkdir = dlsym(RTLD_NEXT, "mkdir");
+    if (real_chmod == NULL) real_chmod = dlsym(RTLD_NEXT, "chmod");
+    if (real_mkdir(directory, 01777) != 0 && errno != EEXIST) return path;
+    (void)real_chmod(directory, 01777);
+    if (snprintf(buffer, PATH_MAX, "%s%s", directory, path + 8) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return NULL;
+    }
+    return buffer;
+}
+
+static int shm_guest_path(const char *name, char path[PATH_MAX]) {
+    if (name == NULL || name[0] == '\0') {
+        errno = EINVAL;
+        return -1;
+    }
+    const char *n = name;
+    while (*n == '/') ++n;
+    if (*n == '\0' || strchr(n, '/') != NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (snprintf(path, PATH_MAX, "/dev/shm/%s", n) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+    return 0;
+}
+
+int shm_open(const char *name, int oflag, mode_t mode) {
+    static int (*next)(const char *, int, ...);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "open");
+    char linux_path[PATH_MAX];
+    if (shm_guest_path(name, linux_path) != 0) return -1;
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(linux_path, buffer);
+    if (actual == NULL) return -1;
+    oflag |= O_NOFOLLOW | O_CLOEXEC;
+    return (oflag & O_CREAT) ? next(actual, oflag, mode) : next(actual, oflag);
+}
+
+int shm_unlink(const char *name) {
+    static int (*next)(const char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "unlink");
+    char linux_path[PATH_MAX];
+    if (shm_guest_path(name, linux_path) != 0) return -1;
+    char buffer[PATH_MAX];
+    const char *actual = bionicx_redirect_path(linux_path, buffer);
+    if (actual == NULL) return -1;
+    return next(actual);
+}
+
 /* Redirect Linux FHS paths into app-private Android directories. */
 const char *bionicx_redirect_path(const char *path, char buffer[PATH_MAX]) {
     if (path == NULL) return NULL;
@@ -131,6 +210,8 @@ const char *bionicx_redirect_path(const char *path, char buffer[PATH_MAX]) {
     if (proc_stat != NULL) return proc_stat;
     const char *shells = redirect_etc_shells(path, buffer);
     if (shells != NULL) return shells;
+    const char *dev_shm = redirect_dev_shm(path, buffer);
+    if (dev_shm != NULL) return dev_shm;
     const char *target = NULL;
     const char *suffix = NULL;
     if (strcmp(path, "/tmp") == 0 || strncmp(path, "/tmp/", 5) == 0) {
@@ -565,6 +646,7 @@ int stat(const char *path, struct stat *value) {
     const char *actual = bionicx_redirect_path(path, buffer);
     if (actual == NULL || next(actual, value) != 0) return -1;
     apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    apply_dev_shm_mode(path, &value->st_mode);
     return 0;
 }
 
@@ -575,6 +657,7 @@ int stat64(const char *path, struct stat64 *value) {
     const char *actual = bionicx_redirect_path(path, buffer);
     if (actual == NULL || next(actual, value) != 0) return -1;
     apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    apply_dev_shm_mode(path, &value->st_mode);
     return 0;
 }
 
@@ -585,6 +668,7 @@ int lstat(const char *path, struct stat *value) {
     const char *actual = bionicx_redirect_path(path, buffer);
     if (actual == NULL || next(actual, value) != 0) return -1;
     apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    apply_dev_shm_mode(path, &value->st_mode);
     return 0;
 }
 
@@ -595,6 +679,7 @@ int lstat64(const char *path, struct stat64 *value) {
     const char *actual = bionicx_redirect_path(path, buffer);
     if (actual == NULL || next(actual, value) != 0) return -1;
     apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    apply_dev_shm_mode(path, &value->st_mode);
     return 0;
 }
 
@@ -606,6 +691,7 @@ int fstatat(int directory, const char *path, struct stat *value, int flags) {
     if (actual == NULL || next(directory, actual, value, flags) != 0)
         return -1;
     apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    apply_dev_shm_mode(path, &value->st_mode);
     return 0;
 }
 
@@ -618,6 +704,7 @@ int fstatat64(int directory, const char *path, struct stat64 *value,
     if (actual == NULL || next(directory, actual, value, flags) != 0)
         return -1;
     apply_fake_nlink(actual, &value->st_nlink, &value->st_ino);
+    apply_dev_shm_mode(path, &value->st_mode);
     return 0;
 }
 
@@ -636,6 +723,8 @@ int statx(int directory, const char *path, int flags, unsigned int mask,
     nlink_t nlink = (nlink_t)value->stx_nlink;
     apply_fake_nlink(actual, &nlink, NULL);
     value->stx_nlink = nlink;
+    if (is_dev_shm_dir(path))
+        value->stx_mode |= S_ISVTX | 0777;
     return 0;
 }
 
@@ -966,6 +1055,18 @@ static void copy_random_suffix(char *path, const char *actual,
 
 int mkstemp(char *path) {
     static int (*next)(char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "mkstemp");
+    char buffer[PATH_MAX];
+    char *actual = (char *)bionicx_redirect_path(path, buffer);
+    if (actual == NULL) return -1;
+    int result = next(actual);
+    if (result >= 0 && actual != path) copy_random_suffix(path, actual, 0);
+    return result;
+}
+
+int mkstemp64(char *path) {
+    static int (*next)(char *);
+    if (next == NULL) next = dlsym(RTLD_NEXT, "mkstemp64");
     if (next == NULL) next = dlsym(RTLD_NEXT, "mkstemp");
     char buffer[PATH_MAX];
     char *actual = (char *)bionicx_redirect_path(path, buffer);

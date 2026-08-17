@@ -192,9 +192,28 @@ EOF
         'rm -rf files/homes/vscode/profile-vscode/Backups'
 }
 
+ensure_feishu_runtime_packages() {
+    if "${adb[@]}" shell run-as "$package_id" \
+            test -s files/rootfs/usr/lib/aarch64-linux-gnu/libgtk-3.so.0 &&
+       "${adb[@]}" shell run-as "$package_id" \
+            test -s files/rootfs/usr/lib/aarch64-linux-gnu/libgcrypt.so.20; then
+        return
+    fi
+    local bxapt=("$repo_dir/tools/bxapt" install
+        libgtk-3-0t64 libasound2t64 libgbm1 libxkbcommon0
+        libvulkan1 fonts-liberation shared-mime-info libgcrypt20)
+    [[ -z "$serial" ]] || bxapt=("$repo_dir/tools/bxapt" --serial "$serial"
+        install libgtk-3-0t64 libasound2t64 libgbm1 libxkbcommon0
+        libvulkan1 fonts-liberation shared-mime-info libgcrypt20)
+    "${bxapt[@]}"
+}
+
 if [[ "$profile_id" == vscode ]]; then
     ensure_vscode_git
     ensure_vscode_settings
+fi
+if [[ "$profile_id" == feishu ]]; then
+    ensure_feishu_runtime_packages
 fi
 
 TMPDIR="$repo_dir/build/tmp" \

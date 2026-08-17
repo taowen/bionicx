@@ -100,7 +100,7 @@ static int receive_fd(int socket_fd) {
 JNIEXPORT jint JNICALL
 Java_com_winlator_sysvshm_SysVSharedMemory_openRemoteSHMSegment(JNIEnv *env, jclass obj,
                                                                 jint shmid) {
-    int socket_id = shmid / 0x10000;
+    unsigned int socket_id = (unsigned int)shmid / 0x10000u;
     char abstract_name[64];
     int name_length = snprintf(abstract_name, sizeof(abstract_name),
                                "/dev/shm/%08x", socket_id);
