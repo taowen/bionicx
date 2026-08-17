@@ -844,6 +844,9 @@ static void dump_session_click(Display *display, Window root, Window bar,
     XTestFakeMotionEvent(display, DefaultScreen(display), click_x, click_y, 0);
     XSync(display, False);
     dump_pointer(display, root, "pre-click-ptr");
+    int grab_motion = grab_free(display, root);
+    printf("BXINFO grab-motion %d\n", grab_motion);
+    fflush(stdout);
     XTestFakeButtonEvent(display, 1, True, 30);
     XTestFakeButtonEvent(display, 1, False, 30);
     XSync(display, False);
@@ -851,6 +854,8 @@ static void dump_session_click(Display *display, Window root, Window bar,
     int menu = wait_new_menu(display, root, existing, existing_n, 1500, detail,
                              sizeof(detail));
     dump_pointer(display, root, "post-click-ptr");
+    dump_override(display, root, "post-click-or");
+    dump_find_class(display, root, root, "Xfce4-panel", 0);
     int grab_after = grab_free(display, root);
     printf("BXINFO click-menu %s grab=%d->%d %s\n",
            menu ? "opened" : "none", grab, grab_after,

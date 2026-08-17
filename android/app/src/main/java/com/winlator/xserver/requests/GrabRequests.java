@@ -144,6 +144,11 @@ public abstract class GrabRequests {
         if (mode == 2 && client.xServer.grabManager.getClient() == client) {
             Pointer.Button button =
                     client.xServer.grabManager.getPassiveActivationButton();
+            Window grab = client.xServer.grabManager.getWindow();
+            Log.i(TAG, "BXINFO allow-events ReplayPointer grab=0x"
+                    + Integer.toHexString(grab != null ? grab.id : 0)
+                    + " sync=" + client.xServer.grabManager.isPointerSynchronous()
+                    + " button=" + (button != null ? button.code() : -1));
             if (!client.xServer.grabManager.isPointerSynchronous()
                     || button == null) return;
             client.xServer.grabManager.deactivatePointerGrabForReplay();
@@ -155,6 +160,10 @@ public abstract class GrabRequests {
         // still owning the pointer. xfwm4's rejected press then ends on
         // the matching release via releaseWithButtons.
         if (mode == 1 && client.xServer.grabManager.getClient() == client) {
+            Window grab = client.xServer.grabManager.getWindow();
+            Log.i(TAG, "BXINFO allow-events SyncPointer grab=0x"
+                    + Integer.toHexString(grab != null ? grab.id : 0)
+                    + " sync=" + client.xServer.grabManager.isPointerSynchronous());
             client.xServer.grabManager.thawSynchronousPointer();
             return;
         }

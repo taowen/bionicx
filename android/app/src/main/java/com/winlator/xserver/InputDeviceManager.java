@@ -17,6 +17,8 @@ import com.winlator.xserver.events.PointerWindowEvent;
 import com.winlator.xserver.events.XkbStateNotify;
 import com.winlator.xserver.extensions.XInputExtension;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 
 public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyboard.OnKeyboardListener, WindowManager.OnWindowModificationListener, XResourceManager.OnResourceLifecycleListener {
@@ -188,6 +190,17 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
         sendXiPointerEvent(XInputExtension.XI_BUTTON_PRESS, button.code());
         if (xServer.grabManager.getWindow() == null)
             deliverPointerButtonPress(button, false, true);
+        if (xServer.pointer.getY() < 40) {
+            Window grab = xServer.grabManager.getWindow();
+            Log.i("BionicX", "BXINFO ptr-press btn=" + button.code()
+                    + " point=0x" + Integer.toHexString(
+                            pointWindow != null ? pointWindow.id : 0)
+                    + " grab=0x" + Integer.toHexString(
+                            grab != null ? grab.id : 0)
+                    + " sync=" + xServer.grabManager.isPointerSynchronous()
+                    + " xy=" + xServer.pointer.getX() + ","
+                    + xServer.pointer.getY());
+        }
     }
 
     public void replayPointerButtonPress(Pointer.Button button) {
