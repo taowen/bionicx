@@ -2,6 +2,7 @@
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
+#include <X11/extensions/XTest.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -225,6 +226,55 @@ int main(int argc, char **argv) {
            dock_ok ? "dock MapRequest then framed"
                    : "dock mapped early or not framed");
     RECORD(dock_ok);
+
+    int click_ok = 0;
+    if (dock_ok) {
+        XSelectInput(client, dock,
+                     StructureNotifyMask | ExposureMask | ButtonPressMask);
+        XSelectInput(manager, dock_frame,
+                     SubstructureRedirectMask | SubstructureNotifyMask
+                             | ButtonPressMask);
+        XSync(client, False);
+        XSync(manager, False);
+        int event_base = 0;
+        int error_base = 0;
+        int major = 0;
+        int minor = 0;
+        int root_x = 0;
+        int root_y = 0;
+        Window child = None;
+        XTranslateCoordinates(client, dock, root, 36, 13, &root_x, &root_y,
+                              &child);
+        if (XTestQueryExtension(client, &event_base, &error_base, &major,
+                                &minor)) {
+            XTestFakeMotionEvent(client, screen, root_x, root_y, 0);
+            XTestFakeButtonEvent(client, 1, True, 20);
+            XTestFakeButtonEvent(client, 1, False, 20);
+            XSync(client, False);
+        }
+        XEvent press = {0};
+        int waited = 0;
+        while (waited <= 500) {
+            if (XCheckTypedWindowEvent(client, dock, ButtonPress, &press)) {
+                click_ok = 1;
+                break;
+            }
+            while (XPending(manager)) {
+                XEvent ignored = {0};
+                XNextEvent(manager, &ignored);
+            }
+            sleep_ms(20);
+            waited += 20;
+        }
+        char click_detail[128];
+        snprintf(click_detail, sizeof(click_detail),
+                 click_ok ? "ButtonPress at %d,%d" : "no ButtonPress at %d,%d",
+                 root_x, root_y);
+        result("dock-click", click_ok, click_detail);
+    } else {
+        result("dock-click", 0, "dock not framed");
+    }
+    RECORD(click_ok);
 
     printf("BXSUMMARY reparent-x11 passed=%d failed=%d xerrors=%d\n",
            passed, failed, x_errors);
