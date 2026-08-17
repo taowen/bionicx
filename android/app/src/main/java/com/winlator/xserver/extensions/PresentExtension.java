@@ -4,12 +4,10 @@ import static com.winlator.xserver.XClientRequestHandler.RESPONSE_CODE_SUCCESS;
 
 import android.util.SparseArray;
 
-import com.winlator.renderer.GPUImage;
-import com.winlator.renderer.Texture;
+import com.winlator.core.Bitmask;
 import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
-import com.winlator.core.Bitmask;
 import com.winlator.xserver.Drawable;
 import com.winlator.xserver.Pixmap;
 import com.winlator.xserver.Window;
@@ -139,14 +137,6 @@ public class PresentExtension extends Extension {
 
         Window window = xServer.windowManager.getWindow(windowId);
         if (window == null) throw new BadWindow(windowId);
-
-        Drawable content = window.getContent();
-        final Texture texture = content.getTexture();
-
-        if (!(texture instanceof GPUImage)) {
-            xServer.getRenderer().xServerView.queueEvent(texture::destroy);
-            content.setTexture(new GPUImage(content));
-        }
 
         if (eventId > 0) {
             synchronized (events) {

@@ -1,0 +1,20 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "schemaVersion": 3,
+  "id": "mit-shm-present-x11-probe",
+  "name": "MIT-SHM CreatePixmap plus PresentPixmap probe",
+  "display": {
+    "dpi": 144,
+    "socket": "filesystem"
+  },
+  "launch": {
+    "executable": "${APP}/bin/mit-shm-present-x11-probe",
+    "workingDirectory": "${APP}",
+    "environment": {
+      "DISPLAY": "${DISPLAY}",
+      "HOME": "${HOME}",
+      "TMPDIR": "${TMP}",
+      "LANG": "C.UTF-8"
+    }
+  }
+}

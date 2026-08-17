@@ -7,13 +7,17 @@ import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.xserver.Drawable;
 import com.winlator.xserver.GraphicsContext;
+import com.winlator.xserver.Pixmap;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XLock;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.errors.BadDrawable;
 import com.winlator.xserver.errors.BadGraphicsContext;
+import com.winlator.xserver.errors.BadIdChoice;
 import com.winlator.xserver.errors.BadImplementation;
+import com.winlator.xserver.errors.BadMatch;
 import com.winlator.xserver.errors.BadSHMSegment;
+import com.winlator.xserver.errors.BadValue;
 import com.winlator.xserver.errors.XRequestError;
 import com.winlator.xserver.events.ShmCompletion;
 
@@ -133,15 +137,37 @@ public class MITSHMExtension extends Extension {
     }
 
     private void createPixmap(XClient client, XInputStream inputStream, XOutputStream outputStream) throws IOException, XRequestError {
-        inputStream.skip(4);
+        int pixmapId = inputStream.readInt();
         int drawableId = inputStream.readInt();
         short width = inputStream.readShort();
-        inputStream.skip(14);
+        short height = inputStream.readShort();
+        byte depth = inputStream.readByte();
+        inputStream.skip(3);
+        int shmseg = inputStream.readInt();
+        int offset = inputStream.readInt();
 
-        Drawable drawable = xServer.drawableManager.getDrawable(drawableId);
-        if (drawable == null) throw new BadDrawable(drawableId);
+        if (width <= 0 || height <= 0) throw new BadValue(width <= 0 ? width : height);
+        if (!client.isValidResourceId(pixmapId)) throw new BadIdChoice(pixmapId);
+        if (xServer.drawableManager.getDrawable(drawableId) == null)
+            throw new BadDrawable(drawableId);
+        if (xServer.pixmapManager.getVisualForDepth(depth) == null)
+            throw new BadMatch();
 
-        drawable.setUseSharedData(width == drawable.width);
+        ByteBuffer segment = xServer.getSHMSegmentManager().getData(shmseg);
+        long bytes = (long)width * (long)height * 4L;
+        if (segment == null || offset < 0 ||
+                bytes > segment.capacity() - (long)offset)
+            throw new BadSHMSegment(shmseg);
+
+        Drawable backing = xServer.drawableManager.createDrawable(pixmapId, width, height, depth);
+        if (backing == null) throw new BadIdChoice(pixmapId);
+        ByteBuffer data = segment.duplicate().order(segment.order());
+        data.position(offset);
+        backing.setData(data.slice().order(segment.order()));
+        backing.setTexture(null);
+        Pixmap pixmap = xServer.pixmapManager.createPixmap(backing);
+        if (pixmap == null) throw new BadIdChoice(pixmapId);
+        client.registerAsOwnerOfResource(pixmap);
     }
 
     private void getImage(XClient client, XInputStream inputStream,
@@ -214,7 +240,9 @@ public class MITSHMExtension extends Extension {
                 }
                 break;
             case ClientOpcodes.CREATE_PIXMAP :
-                try (XLock lock = xServer.lock(XServer.Lockable.DRAWABLE_MANAGER)) {
+                try (XLock lock = xServer.lock(XServer.Lockable.SHMSEGMENT_MANAGER,
+                        XServer.Lockable.DRAWABLE_MANAGER,
+                        XServer.Lockable.PIXMAP_MANAGER)) {
                     createPixmap(client, inputStream, outputStream);
                 }
                 break;

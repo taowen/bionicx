@@ -104,8 +104,8 @@ These are not hidden and will not be fixed by another profile:
 - SysV message queues and some IPC remain blocked; BionicX supplies a
   file-backed semaphore namespace only.
 - There is no mount namespace, systemd, system D-Bus, or desktop portal.
-- MIT-SHM transport is not implemented. Clients must use the XPutImage
-  fallback.
+- MIT-SHM Attach, GetImage, CreatePixmap, and software PresentPixmap are
+  implemented. Incomplete DRI3 stays hidden.
 - The experimental APK uses targetSdk 28 so extracted app-data can be
   executed. A modern target SDK needs a different packaging design.
 - 4 KiB page results do not imply 16 KiB compatibility.
