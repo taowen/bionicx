@@ -301,6 +301,8 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                 ButtonPress event = new ButtonPress(button.code(),
                         xServer.windowManager.rootWindow, eventWindow, child,
                         x, y, localPoint[0], localPoint[1], state);
+                if (xServer.grabManager.isPassiveSynchronousPointerGrab())
+                    event.setSendEvent(true);
                 if (normalRoute) {
                     eventWindow.sendEvent(Event.BUTTON_PRESS, event, grabClient);
                 }
@@ -316,7 +318,9 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                                     + Integer.toHexString(eventWindow.id)
                                     + " client=" + GrabManager.describeClient(
                                             grabClient)
-                                    + " mask=" + listener.eventMask.getBits());
+                                    + " mask=" + listener.eventMask.getBits()
+                                    + " send=" + (event.isSendEvent()
+                                            ? 1 : 0));
                     }
                     else if (xServer.pointer.getY() < 40) {
                         Log.i("BionicX", "BXINFO grab-press skip=no-listener"

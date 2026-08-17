@@ -11,6 +11,7 @@
 
 static int filter_core;
 static int filter_xi;
+static int filter_send;
 static int filter_allow;
 static Display *gdk_dpy;
 static int xi_opcode;
@@ -40,6 +41,7 @@ static int on_x_event(void *xevent, void *gevent, void *data) {
     (void)data;
     if (event->type == ButtonPress && event->xbutton.button == 1) {
         filter_core = 1;
+        filter_send = event->xbutton.send_event ? 1 : 0;
         is_press = 1;
     } else if (gdk_dpy != NULL && event->type == GenericEvent
             && event->xcookie.extension == xi_opcode
@@ -240,7 +242,7 @@ int main(int argc, char **argv) {
     int self_x = origin_x + gdk_window_get_width(gdk_window) / 2;
     int self_y = origin_y + gdk_window_get_height(gdk_window) / 2;
 
-    filter_core = filter_xi = filter_allow = 0;
+    filter_core = filter_xi = filter_send = filter_allow = 0;
     int self_ok = 0;
     if (!xi_ok) {
         snprintf(detail, sizeof(detail), "XI2 unavailable");
@@ -253,15 +255,15 @@ int main(int argc, char **argv) {
         pump(gtk_events_pending, gtk_main_iteration_do, 800);
         ungrab_target(gdk_dpy, self);
         self_ok = filter_allow && (filter_core || filter_xi);
-        snprintf(detail, sizeof(detail), "core=%d xi=%d allow=%d",
-                 filter_core, filter_xi, filter_allow);
+        snprintf(detail, sizeof(detail), "core=%d send=%d xi=%d allow=%d",
+                 filter_core, filter_send, filter_xi, filter_allow);
     }
     result("gdk-grab-self", self_ok, detail);
     RECORD(self_ok);
 
     Display *peer = XOpenDisplay(NULL);
     Window peer_win = None;
-    filter_core = filter_xi = filter_allow = 0;
+    filter_core = filter_xi = filter_send = filter_allow = 0;
     int peer_ok = 0;
     if (peer == NULL) {
         snprintf(detail, sizeof(detail), "peer display failed");
@@ -281,8 +283,8 @@ int main(int argc, char **argv) {
             pump(gtk_events_pending, gtk_main_iteration_do, 800);
             ungrab_target(gdk_dpy, peer_win);
             peer_ok = filter_allow && (filter_core || filter_xi);
-            snprintf(detail, sizeof(detail), "core=%d xi=%d allow=%d",
-                     filter_core, filter_xi, filter_allow);
+            snprintf(detail, sizeof(detail), "core=%d send=%d xi=%d allow=%d",
+                     filter_core, filter_send, filter_xi, filter_allow);
         }
         XDestroyWindow(peer, peer_win);
         XCloseDisplay(peer);
@@ -297,7 +299,7 @@ int main(int argc, char **argv) {
 
     Display *redirected = XOpenDisplay(NULL);
     Window redirected_win = None;
-    filter_core = filter_xi = filter_allow = 0;
+    filter_core = filter_xi = filter_send = filter_allow = 0;
     int redirect_ok = 0;
     if (redirected == NULL) {
         snprintf(detail, sizeof(detail), "peer display failed");
@@ -319,8 +321,8 @@ int main(int argc, char **argv) {
             pump(gtk_events_pending, gtk_main_iteration_do, 800);
             ungrab_target(gdk_dpy, redirected_win);
             redirect_ok = filter_allow && (filter_core || filter_xi);
-            snprintf(detail, sizeof(detail), "core=%d xi=%d allow=%d",
-                     filter_core, filter_xi, filter_allow);
+            snprintf(detail, sizeof(detail), "core=%d send=%d xi=%d allow=%d",
+                     filter_core, filter_send, filter_xi, filter_allow);
         }
         XDestroyWindow(redirected, redirected_win);
         XCloseDisplay(redirected);
@@ -330,7 +332,7 @@ int main(int argc, char **argv) {
 
     Display *hover = XOpenDisplay(NULL);
     Window hover_win = None;
-    filter_core = filter_xi = filter_allow = 0;
+    filter_core = filter_xi = filter_send = filter_allow = 0;
     int hover_ok = 0;
     if (hover == NULL) {
         snprintf(detail, sizeof(detail), "peer display failed");
@@ -353,14 +355,14 @@ int main(int argc, char **argv) {
                 XCloseDisplay(motion);
             }
             pump(gtk_events_pending, gtk_main_iteration_do, 400);
-            filter_core = filter_xi = filter_allow = 0;
+            filter_core = filter_xi = filter_send = filter_allow = 0;
             if (!xtest_click(100, 420)) {
                 snprintf(detail, sizeof(detail), "XTEST unavailable");
             } else {
                 pump(gtk_events_pending, gtk_main_iteration_do, 800);
                 hover_ok = filter_allow && (filter_core || filter_xi);
-                snprintf(detail, sizeof(detail), "core=%d xi=%d allow=%d",
-                         filter_core, filter_xi, filter_allow);
+                snprintf(detail, sizeof(detail), "core=%d send=%d xi=%d allow=%d",
+                         filter_core, filter_send, filter_xi, filter_allow);
             }
             ungrab_target(gdk_dpy, hover_win);
         }

@@ -14,6 +14,7 @@ import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
 import com.winlator.xserver.Window;
 import com.winlator.xserver.events.Event;
+import com.winlator.xserver.events.PropertyNotify;
 import com.winlator.xserver.events.XInputCrossingEvent;
 import com.winlator.xserver.events.XInputDeviceEvent;
 import com.winlator.xserver.errors.BadAtom;
@@ -214,12 +215,15 @@ public class XInputExtension extends Extension {
             }
             boolean sent = sendDeviceEventToClient(grabClient, deviceId,
                     eventType, detail, sourceWindow, target, rootX, rootY);
-            if (xServer.pointer.getY() < 40)
+            if (xServer.pointer.getY() < 40) {
                 Log.i("BionicX", "BXINFO grab-xi "
                         + (sent ? "sent" : "fail") + " type=" + eventType
                         + " client=" + GrabManager.describeClient(grabClient)
                         + " target=0x" + Integer.toHexString(target.id)
                         + " cookie=" + getMajorOpcode());
+                if (sent && eventType == XI_BUTTON_PRESS)
+                    sendGrabMark(grabClient, target);
+            }
             return;
         }
         XClient grabbedClient = null;
@@ -288,6 +292,18 @@ public class XInputExtension extends Extension {
                 xServer.keyboard.getBaseModifiers(),
                 xServer.keyboard.getLockedModifiers(),
                 xServer.keyboard.getModifiersMask().getBits(), buttonState));
+    }
+
+    private void sendGrabMark(XClient client, Window window) {
+        if (client == null || window == null) return;
+        // WM_NAME so a filter that dequeued past the press will
+        // GetProperty (opcode 20). An unknown atom is ignored.
+        int atom = Atom.WM_NAME;
+        boolean sent = client.sendEvent(new PropertyNotify(window, atom, false));
+        Log.i("BionicX", "BXINFO grab-mark " + (sent ? "sent" : "fail")
+                + " client=" + GrabManager.describeClient(client)
+                + " window=0x" + Integer.toHexString(window.id)
+                + " atom=" + atom + " WM_NAME");
     }
 
     public void sendCrossingEvent(int eventType, int detail, int mode,

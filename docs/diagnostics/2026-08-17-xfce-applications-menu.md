@@ -120,7 +120,28 @@ GetWindowAttributes/GetGeometry. No core 35 or XI AllowEvents in the
 Isolated `gtk-gdk-grab` 8/8 shows GDK does dequeue a sync
 `XIGrabButton` press through `gdk_window_add_filter(NULL)` on its own
 window, a peer window, a redirected peer, and after hover motion. Every
-case is `core=0 xi=1 allow=1`: GDK eats real core `ButtonPress` and the
-pointer path is the XI2 cookie. Live xfwm4 is still that GDK filter
-path, but after tooltip/configure traffic it never AllowEvents. Do not
-add a 13th xfce accept click.
+case is `core=0 send=0 xi=1 allow=1`: GDK's `XFilterEvent` eats both
+real and SendEvent-bit core `ButtonPress` before the filter. The
+pointer path is the XI2 cookie.
+
+A passive sync-grab press now sets that SendEvent bit and, after the
+XI2 press, writes a `PropertyNotify(WM_NAME)` marker. Live Applications
+click:
+
+```text
+grab-press sent=0x1000005 client=0x800000 mask=204 send=1
+grab-xi sent type=4 client=0x800000 target=0x1000005 cookie=-109
+grab-mark sent client=0x800000 window=0x1000005 atom=39 WM_NAME
+grab-client-req client=0x800000 opcode=20 data=0 seq=…
+click-menu none grab=0->1 no popup
+```
+
+opcode 20 is `GetProperty`. xfwm4's `handlePropertyNotify` calls
+`clientUpdateName` for `WM_NAME`, so the grabber dequeued past both
+the send_event core press and the XI2 press. It never AllowEvents, so
+`handleButtonPress` did not run. The press is not stuck behind
+ConfigureNotify or a frame-clock pause. Either `XFilterEvent` ate the
+XI2 GenericEvent (isolated GTK has no session IM) or
+`xfwm_device_translate_event` saw `cookie.data == NULL` / a mismatched
+opcode and classified it as `XFWM_EVENT_XEVENT`. Do not add a 13th
+xfce accept click.

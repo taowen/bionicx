@@ -18,6 +18,7 @@ public class InputDeviceEvent extends Event {
     private final short rootX;
     private final short rootY;
     private final Bitmask state;
+    private boolean sendEvent;
 
     public InputDeviceEvent(int code, byte detail, Window root, Window event, Window child, short rootX, short rootY, short eventX, short eventY, Bitmask state) {
         super(code);
@@ -33,10 +34,22 @@ public class InputDeviceEvent extends Event {
         this.state = state;
     }
 
+    public void setSendEvent(boolean sendEvent) {
+        this.sendEvent = sendEvent;
+    }
+
+    public boolean isSendEvent() {
+        return sendEvent;
+    }
+
     @Override
     public void send(short sequenceNumber, XOutputStream outputStream) throws IOException {
         try (XStreamLock lock = outputStream.lock()) {
-            outputStream.writeByte(code);
+            // X protocol: bit 7 of the event code marks SendEvent.
+            // GDK's XI2 translator ignores real core buttons and only
+            // accepts send_event ones; a sync-grab filter that missed
+            // the XI2 cookie can still thaw on that core press.
+            outputStream.writeByte((byte)(code | (sendEvent ? 0x80 : 0)));
             outputStream.writeByte(detail);
             outputStream.writeShort(sequenceNumber);
             outputStream.writeInt(timestamp);
