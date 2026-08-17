@@ -332,6 +332,36 @@ static void probe_render(Display *display, Window window) {
     result("xrender", ok, detail);
 }
 
+static void probe_window_picture_resize(Display *display) {
+    int screen = DefaultScreen(display);
+    Visual *visual = DefaultVisual(display, screen);
+    XRenderPictFormat *format = XRenderFindVisualFormat(display, visual);
+    Window window = XCreateSimpleWindow(display, RootWindow(display, screen),
+                                        8, 8, 1, 1, 0,
+                                        BlackPixel(display, screen),
+                                        BlackPixel(display, screen));
+    XMapWindow(display, window);
+    XSync(display, False);
+    Picture picture = format
+            ? XRenderCreatePicture(display, window, format, 0, NULL) : 0;
+    XResizeWindow(display, window, 64, 32);
+    XSync(display, False);
+    XRenderColor white = {
+        .red = 0xffff, .green = 0xffff, .blue = 0xffff, .alpha = 0xffff
+    };
+    if (picture)
+        XRenderFillRectangle(display, PictOpSrc, picture, &white, 0, 0, 64, 32);
+    XSync(display, False);
+    XImage *image = XGetImage(display, window, 32, 16, 1, 1, AllPlanes, ZPixmap);
+    unsigned long pixel = image ? XGetPixel(image, 0, 0) : 0;
+    if (image) XDestroyImage(image);
+    char detail[64];
+    snprintf(detail, sizeof(detail), "pixel=0x%06lx", pixel & 0xffffff);
+    result("window-resize", picture && (pixel & 0xffffff) == 0xffffff, detail);
+    if (picture) XRenderFreePicture(display, picture);
+    XDestroyWindow(display, window);
+}
+
 int main(int argc, char **argv) {
     int duration = argc > 1 ? atoi(argv[1]) : 2;
     XSetErrorHandler(handle_x_error);
@@ -349,6 +379,7 @@ int main(int argc, char **argv) {
     XMapWindow(display, window);
     XSync(display, False);
     probe_render(display, window);
+    probe_window_picture_resize(display);
     printf("BXSUMMARY xrender-x11 passed=%d failed=%d xerrors=%d\n",
            passed, checks - passed, x_errors);
     fflush(stdout);

@@ -9,6 +9,12 @@ hit target.
 A `116x53` xfce4-panel override-redirect window sits at `-4+26` before
 the click (tooltip-sized). It is not a grab owner.
 
+The mapped 185x324 menu has only a 1x1 child. A center GetImage is
+`0x000000`, but a full readback is `nonzero=7173 light=1236
+bright=0xfcf4c0`: glyphs and icons land, the background does not.
+GTK menus map 1x1 then `ConfigureWindow`; a window Picture must track
+the replaced backing drawable (`xrender-x11-probe` `window-resize`).
+
 `xfce4-popup-applicationsmenu` maps a real menu:
 
 ```text

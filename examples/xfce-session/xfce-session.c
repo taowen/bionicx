@@ -280,10 +280,33 @@ static int wait_new_menu(Display *display, Window root, const Window *before,
                                       1, 1, AllPlanes, ZPixmap);
             unsigned long pixel = image != NULL ? XGetPixel(image, 0, 0) : 0;
             if (image != NULL) XDestroyImage(image);
-            printf("BXINFO menu-paint 0x%lx %dx%d+%d+%d depth=%d pixel=0x%06lx\n",
+            int nonzero = 0;
+            int light = 0;
+            unsigned long brightest = pixel & 0xffffff;
+            XImage *full = attributes.width > 0 && attributes.height > 0
+                    ? XGetImage(display, after[k], 0, 0,
+                                (unsigned)attributes.width,
+                                (unsigned)attributes.height,
+                                AllPlanes, ZPixmap)
+                    : NULL;
+            if (full != NULL) {
+                for (int y = 0; y < attributes.height; y++) {
+                    for (int x = 0; x < attributes.width; x++) {
+                        unsigned long p = XGetPixel(full, x, y) & 0xffffff;
+                        if (p != 0) ++nonzero;
+                        int red = (int)((p >> 16) & 0xff);
+                        int green = (int)((p >> 8) & 0xff);
+                        int blue = (int)(p & 0xff);
+                        if (red + green + blue >= 0x180) ++light;
+                        if (p > brightest) brightest = p;
+                    }
+                }
+                XDestroyImage(full);
+            }
+            printf("BXINFO menu-paint 0x%lx %dx%d+%d+%d depth=%d pixel=0x%06lx nonzero=%d light=%d bright=0x%06lx\n",
                    (unsigned long)after[k], attributes.width, attributes.height,
                    attributes.x, attributes.y, attributes.depth,
-                   pixel & 0xffffff);
+                   pixel & 0xffffff, nonzero, light, brightest);
             Window menu_root = None;
             Window menu_parent = None;
             Window *menu_kids = NULL;

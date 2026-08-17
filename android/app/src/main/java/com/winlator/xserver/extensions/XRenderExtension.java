@@ -81,6 +81,7 @@ public class XRenderExtension extends Extension {
 
     private static final class Picture {
         private final int id;
+        private final int drawableId;
         private final Drawable drawable;
         private final int format;
         private final Integer solidColor;
@@ -112,6 +113,7 @@ public class XRenderExtension extends Extension {
                         RadialGradient radialGradient) {
             this.id = id;
             this.drawable = drawable;
+            this.drawableId = drawable != null ? drawable.id : 0;
             this.format = format;
             this.solidColor = solidColor;
             this.gradient = gradient;
@@ -298,9 +300,19 @@ public class XRenderExtension extends Extension {
             throw new BadValue(format);
         if (!formatMatchesDrawable(format, drawable)) throw new BadMatch();
 
+        // A Picture created from a Window tracks that window: resize
+        // replaces the backing drawable under the same id. cairo-xlib
+        // keeps the Picture across ConfigureNotify.
         Picture picture = new Picture(pictureId, drawable, format);
         applyPictureAttributes(picture, valueMask, inputStream);
         registerPicture(client, picture);
+    }
+
+    private Drawable pictureDrawable(Picture picture) {
+        if (picture == null) return null;
+        if (picture.drawableId != 0)
+            return xServer.drawableManager.getDrawable(picture.drawableId);
+        return picture.drawable;
     }
 
     private void freePicture(XClient client, XInputStream inputStream)
@@ -624,9 +636,11 @@ public class XRenderExtension extends Extension {
         }
     }
 
-    private static int sourceColor(Picture source) {
+    private int sourceColor(Picture source) {
         if (source.solidColor != null) return source.solidColor;
-        ByteBuffer data = source.drawable.getData();
+        Drawable drawable = pictureDrawable(source);
+        if (drawable == null) return 0xff000000;
+        ByteBuffer data = drawable.getData();
         return data != null && data.capacity() >= 4 ? data.getInt(0) : 0xff000000;
     }
 
@@ -722,9 +736,10 @@ public class XRenderExtension extends Extension {
             return gradientColor(gradient.stops, gradient.colors, value,
                     picture.repeat);
         }
-        if (picture.drawable == null) return 0;
-        int width = picture.drawable.width;
-        int height = picture.drawable.height;
+        Drawable drawable = pictureDrawable(picture);
+        if (drawable == null) return 0;
+        int width = drawable.width;
+        int height = drawable.height;
         if (picture.repeat == 1) {
             x = Math.floorMod(x, width);
             y = Math.floorMod(y, height);
@@ -735,8 +750,8 @@ public class XRenderExtension extends Extension {
         }
         else if (x < 0 || y < 0 || x >= width || y >= height) return 0;
         if (picture.format == a8Format)
-            return (picture.drawable.getPixelArgb(x, y) & 0xff) << 24;
-        int pixel = picture.drawable.getPixelArgb(x, y);
+            return (drawable.getPixelArgb(x, y) & 0xff) << 24;
+        int pixel = drawable.getPixelArgb(x, y);
         // Core drawing stores 24-in-32 with an unused alpha byte of 0.
         // PictOpSrc would otherwise copy those samples as fully transparent
         // and leave the compositor output empty.
@@ -821,12 +836,15 @@ public class XRenderExtension extends Extension {
                 && operation != PICT_OP_ADD
                 && operation != PICT_OP_SATURATE)
             throw new BadValue(operation);
+        Drawable sourceDrawable = pictureDrawable(source);
+        Drawable destinationDrawable = pictureDrawable(destination);
+        Drawable maskDrawable = mask != null ? pictureDrawable(mask) : null;
         if (source == null
-                || (source.solidColor == null && source.drawable == null
+                || (source.solidColor == null && sourceDrawable == null
                     && source.gradient == null && source.radialGradient == null)
-                || destination == null || destination.drawable == null)
+                || destination == null || destinationDrawable == null)
             throw new BadValue(0);
-        if (mask != null && mask.drawable == null) throw new BadMatch();
+        if (mask != null && maskDrawable == null) throw new BadMatch();
         for (ClipRectangle rectangle : clippedRectangles(destination,
                 destinationX, destinationY, width, height)) {
             int offsetX = rectangle.x - destinationX;
@@ -839,9 +857,9 @@ public class XRenderExtension extends Extension {
                             sourceY + offsetY + row);
                 }
             }
-            destination.drawable.blendArgbPixels(rectangle.x, rectangle.y,
+            destinationDrawable.blendArgbPixels(rectangle.x, rectangle.y,
                     rectangle.width, rectangle.height, colors,
-                    mask != null ? mask.drawable : null,
+                    maskDrawable,
                     maskX + offsetX, maskY + offsetY,
                     operation);
         }
@@ -863,7 +881,9 @@ public class XRenderExtension extends Extension {
         inputStream.skip(4); // xSrc, ySrc
         if (operation != PICT_OP_OVER)
             throw new BadValue(operation);
-        if (source == null || destination == null) throw new BadValue(0);
+        Drawable destinationDrawable = pictureDrawable(destination);
+        if (source == null || destination == null || destinationDrawable == null)
+            throw new BadValue(0);
         if (maskFormat != 0 && maskFormat != a8Format && maskFormat != a1Format)
             throw new BadValue(maskFormat);
 
@@ -905,7 +925,7 @@ public class XRenderExtension extends Extension {
                                     (sourceY + row) * glyph.width + sourceX,
                                     alpha, row * rectangle.width,
                                     rectangle.width);
-                        destination.drawable.blendAlphaMask(rectangle.x,
+                        destinationDrawable.blendAlphaMask(rectangle.x,
                                 rectangle.y, rectangle.width,
                                 rectangle.height, alpha, color);
                     }
@@ -943,6 +963,8 @@ public class XRenderExtension extends Extension {
             picture = pictures.get(pictureId);
         }
         if (picture == null) throw new BadValue(pictureId);
+        Drawable drawable = pictureDrawable(picture);
+        if (drawable == null) throw new BadValue(pictureId);
 
         int color = colorToArgb(red, green, blue, alpha);
         int remaining = client.getRemainingRequestLength();
@@ -956,20 +978,20 @@ public class XRenderExtension extends Extension {
                 if (operation == PICT_OP_IN) {
                     int[] colors = new int[rectangle.width * rectangle.height];
                     java.util.Arrays.fill(colors, color);
-                    picture.drawable.blendArgbPixels(rectangle.x, rectangle.y,
+                    drawable.blendArgbPixels(rectangle.x, rectangle.y,
                             rectangle.width, rectangle.height, colors, null,
                             0, 0, PICT_OP_IN);
                 }
                 else if (picture.format == a8Format) {
-                    picture.drawable.fillRect(rectangle.x, rectangle.y,
+                    drawable.fillRect(rectangle.x, rectangle.y,
                             rectangle.width, rectangle.height,
                             operation == PICT_OP_CLEAR ? 0 : (color >>> 24));
                 }
                 else if (operation == PICT_OP_OVER)
-                    picture.drawable.blendSolidRect(rectangle.x, rectangle.y,
+                    drawable.blendSolidRect(rectangle.x, rectangle.y,
                             rectangle.width, rectangle.height, color);
                 else
-                    picture.drawable.fillRect(rectangle.x, rectangle.y,
+                    drawable.fillRect(rectangle.x, rectangle.y,
                             rectangle.width, rectangle.height,
                             operation == PICT_OP_CLEAR ? 0 : color);
             }
