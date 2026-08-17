@@ -192,14 +192,24 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             deliverPointerButtonPress(button, false, true);
         if (xServer.pointer.getY() < 40) {
             Window grab = xServer.grabManager.getWindow();
-            Log.i("BionicX", "BXINFO ptr-press btn=" + button.code()
+            XClient grabClient = xServer.grabManager.getClient();
+            Log.i("BionicX", "BXINFO grab-trace btn=" + button.code()
                     + " point=0x" + Integer.toHexString(
                             pointWindow != null ? pointWindow.id : 0)
                     + " grab=0x" + Integer.toHexString(
                             grab != null ? grab.id : 0)
+                    + " client=" + GrabManager.describeClient(grabClient)
+                    + " origin=" + (pointWindow != null
+                            ? GrabManager.describeClient(pointWindow.originClient)
+                            : "none")
                     + " sync=" + xServer.grabManager.isPointerSynchronous()
+                    + " ownerEvents=" + xServer.grabManager.isOwnerEvents()
+                    + " enabled=" + (grab != null
+                            && grab.attributes.isEnabled())
                     + " xy=" + xServer.pointer.getX() + ","
-                    + xServer.pointer.getY());
+                    + xServer.pointer.getY()
+                    + " grabs=" + xServer.grabManager.describeGrabsOn(
+                            pointWindow));
         }
     }
 
@@ -301,9 +311,25 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                         if (xServer.pointer.getY() < 40)
                             Log.i("BionicX", "BXINFO grab-press sent=0x"
                                     + Integer.toHexString(eventWindow.id)
+                                    + " client=" + GrabManager.describeClient(
+                                            grabClient)
                                     + " mask=" + listener.eventMask.getBits());
                     }
+                    else if (xServer.pointer.getY() < 40) {
+                        Log.i("BionicX", "BXINFO grab-press skip=no-listener"
+                                + " grab=0x"
+                                + Integer.toHexString(grabWindow.id)
+                                + " client=" + GrabManager.describeClient(
+                                        grabClient));
+                    }
                 }
+            }
+            else if (xServer.pointer.getY() < 40) {
+                Log.i("BionicX", "BXINFO grab-press skip=no-send"
+                        + " grab=0x" + Integer.toHexString(
+                                grabWindow != null ? grabWindow.id : 0)
+                        + " enabled=" + (grabWindow != null
+                                && grabWindow.attributes.isEnabled()));
             }
     }
 

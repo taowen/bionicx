@@ -8,6 +8,7 @@ import com.winlator.xconnector.XStreamLock;
 import com.winlator.core.Bitmask;
 import com.winlator.xserver.Atom;
 import com.winlator.xserver.Cursor;
+import com.winlator.xserver.GrabManager;
 import com.winlator.xserver.Keyboard;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
@@ -213,6 +214,11 @@ public class XInputExtension extends Extension {
             }
             sendDeviceEventToClient(grabClient, deviceId, eventType, detail,
                     sourceWindow, target, rootX, rootY);
+            if (xServer.pointer.getY() < 40)
+                Log.i("BionicX", "BXINFO grab-xi sent type=" + eventType
+                        + " client=" + GrabManager.describeClient(grabClient)
+                        + " target=0x" + Integer.toHexString(target.id)
+                        + " cookie=" + getMajorOpcode());
             return;
         }
         XClient grabbedClient = null;
@@ -1071,10 +1077,17 @@ public class XInputExtension extends Extension {
             throw new BadValue(deviceId);
         if (mode > 7) throw new BadValue(mode);
         if (deviceId == MASTER_KEYBOARD_ID) return;
-        if (xServer.grabManager.getClient() != client) return;
+        if (xServer.grabManager.getClient() != client) {
+            Log.i("BionicX", "BXINFO allow-events XI ignored mode=" + mode
+                    + " client=" + GrabManager.describeClient(client)
+                    + " grabClient=" + GrabManager.describeClient(
+                            xServer.grabManager.getClient()));
+            return;
+        }
         Window grab = xServer.grabManager.getWindow();
         Log.i("BionicX", "BXINFO allow-events XI mode=" + mode
                 + " grab=0x" + Integer.toHexString(grab != null ? grab.id : 0)
+                + " client=" + GrabManager.describeClient(client)
                 + " sync=" + xServer.grabManager.isPointerSynchronous());
         // XIAsyncDevice=0, XISyncDevice=1, XIReplayDevice=2. Passive
         // sync grabs freeze the pointer; GDK/xfwm thaw through XI.

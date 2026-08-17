@@ -52,5 +52,32 @@ Applications tooltip can remain. The press activates a synchronous
 grab on the panel client (`ptr-press … grab=0x1000005 sync=true`)
 and the grabber never core-`AllowEvents`. GDK thaws XI2 sync grabs
 with `XIAllowEvents`; that request was accepted as a no-op, so the
-pointer stayed frozen and the plugin never saw button 1. Do not add
-a 13th xfce accept click.
+pointer stayed frozen and the plugin never saw button 1.
+
+After honoring `XIAllowEvents`, one `grab-trace` line names the rest:
+
+```text
+grab-add w=0x1000005 client=0x800000 owner=0x1000000 button=0 mods=0x8000 sync=true mask=204
+grab-press sent=0x1000005 client=0x800000 mask=204
+grab-trace btn=1 point=0x1000005 grab=0x1000005 client=0x800000 origin=0x1000000
+          sync=true ownerEvents=false enabled=true grabs=…/c=0x800000/b=0/m=0x8000
+click-menu none grab=0->1 no popup
+```
+
+The press is written to xfwm4 (`0x800000`) on the panel client window.
+No core or XI `AllowEvents` follows. Isolated `gtk-xi-allow-menu` still
+passes because that stub WM is raw Xlib and treats core `ButtonPress`
+as enough. Live xfwm4 is GDK 3.24 (`sources/gtk-3.24`):
+
+- `gdk_window_add_filter(NULL)` does run on every `XNextEvent`.
+- After the filter, `gdk_x11_device_manager_xi2_translate_core_event`
+  ignores real core button events and only accepts `send_event` ones.
+  GDK expects the pointer path to be an XI2 cookie (`cookie.data != NULL`).
+- xfwm4's own filter translates core `ButtonPress` unconditionally, and
+  `handleButtonPress` always `XAllowEvents`. Missing opcode 35 means
+  GDK never dequeued that press, or the XI2 cookie was null so the
+  XI2 branch became `XFWM_EVENT_XEVENT`.
+
+Session `install-and-run.sh` now keeps a live `BionicX`/`WinlatorXGrab`
+logcat from t=0 because OriginOS `logcat -d` after a long session drops
+those lines. Do not add a 13th xfce accept click.

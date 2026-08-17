@@ -4,6 +4,8 @@ import com.winlator.core.Bitmask;
 import com.winlator.xserver.events.Event;
 import com.winlator.xserver.events.PointerWindowEvent;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 
 public class GrabManager implements WindowManager.OnWindowModificationListener,
@@ -233,13 +235,57 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         for (PassiveButtonGrab grab : passiveButtonGrabs) {
             if (grab.window == window && grab.client != client
                     && overlaps(grab.button, button, 0)
-                    && overlaps(grab.modifiers, modifiers, 0x8000)) return false;
+                    && overlaps(grab.modifiers, modifiers, 0x8000)) {
+                Log.i("BionicX", "BXINFO grab-add-reject w=0x"
+                        + Integer.toHexString(window.id)
+                        + " client=" + describeClient(client)
+                        + " held=" + describeClient(grab.client)
+                        + " button=" + button
+                        + " mods=0x" + Integer.toHexString(modifiers)
+                        + " heldButton=" + grab.button
+                        + " heldMods=0x"
+                        + Integer.toHexString(grab.modifiers));
+                return false;
+            }
         }
         removePassiveButtonGrabs(window, button, modifiers, client);
         passiveButtonGrabs.add(new PassiveButtonGrab(window, button, modifiers,
                 ownerEvents, eventMask, client, cursor, pointerSynchronous,
                 confine));
+        Log.i("BionicX", "BXINFO grab-add w=0x" + Integer.toHexString(window.id)
+                + " client=" + describeClient(client)
+                + " owner=" + describeClient(window.originClient)
+                + " button=" + button
+                + " mods=0x" + Integer.toHexString(modifiers)
+                + " sync=" + pointerSynchronous
+                + " mask=" + eventMask.getBits()
+                + " ownerEvents=" + ownerEvents);
         return true;
+    }
+
+    public static String describeClient(XClient client) {
+        if (client == null || client.resourceIDBase == null) return "none";
+        return "0x" + Integer.toHexString(client.resourceIDBase);
+    }
+
+    public String describeGrabsOn(Window window) {
+        StringBuilder text = new StringBuilder();
+        Window candidate = window;
+        while (candidate != null) {
+            for (PassiveButtonGrab grab : passiveButtonGrabs) {
+                if (grab.window != candidate) continue;
+                if (text.length() > 0) text.append(';');
+                text.append("w=0x").append(Integer.toHexString(grab.window.id))
+                        .append("/c=").append(describeClient(grab.client))
+                        .append("/b=").append(grab.button)
+                        .append("/m=0x")
+                        .append(Integer.toHexString(grab.modifiers))
+                        .append("/sync=").append(grab.pointerSynchronous)
+                        .append("/mask=").append(grab.eventMask.getBits());
+            }
+            candidate = candidate.getParent();
+        }
+        return text.length() == 0 ? "none" : text.toString();
     }
 
     public void removePassiveButtonGrabs(Window window, int button,

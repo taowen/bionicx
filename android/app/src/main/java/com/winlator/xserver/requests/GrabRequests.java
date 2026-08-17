@@ -8,6 +8,7 @@ import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
 import com.winlator.core.Bitmask;
+import com.winlator.xserver.GrabManager;
 import com.winlator.xserver.Window;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.Cursor;
@@ -147,6 +148,7 @@ public abstract class GrabRequests {
             Window grab = client.xServer.grabManager.getWindow();
             Log.i(TAG, "BXINFO allow-events ReplayPointer grab=0x"
                     + Integer.toHexString(grab != null ? grab.id : 0)
+                    + " client=" + GrabManager.describeClient(client)
                     + " sync=" + client.xServer.grabManager.isPointerSynchronous()
                     + " button=" + (button != null ? button.code() : -1));
             if (!client.xServer.grabManager.isPointerSynchronous()
@@ -163,6 +165,7 @@ public abstract class GrabRequests {
             Window grab = client.xServer.grabManager.getWindow();
             Log.i(TAG, "BXINFO allow-events SyncPointer grab=0x"
                     + Integer.toHexString(grab != null ? grab.id : 0)
+                    + " client=" + GrabManager.describeClient(client)
                     + " sync=" + client.xServer.grabManager.isPointerSynchronous());
             client.xServer.grabManager.thawSynchronousPointer();
             return;
@@ -173,11 +176,15 @@ public abstract class GrabRequests {
             Window grab = client.xServer.grabManager.getWindow();
             Log.i(TAG, "BXINFO allow-events Async mode=" + mode + " grab=0x"
                     + Integer.toHexString(grab != null ? grab.id : 0)
+                    + " client=" + GrabManager.describeClient(client)
                     + " sync=" + client.xServer.grabManager.isPointerSynchronous());
             client.xServer.grabManager.thawSynchronousPointer();
             return;
         }
         Log.i(TAG, "BXINFO allow-events ignored mode=" + mode
+                + " client=" + GrabManager.describeClient(client)
+                + " grabClient=" + GrabManager.describeClient(
+                        client.xServer.grabManager.getClient())
                 + " owner=" + (client.xServer.grabManager.getClient() == client));
     }
 
