@@ -72,8 +72,22 @@ public class RenderComposite {
                 if (maskTexture == null) return false;
                 maskTexture.updateFromDrawable();
             }
+            int dirtyLeft = destination.width;
+            int dirtyTop = destination.height;
+            int dirtyRight = 0;
+            int dirtyBottom = 0;
+            for (int[] clip : clips) {
+                if (clip[2] <= 0 || clip[3] <= 0) continue;
+                dirtyLeft = Math.min(dirtyLeft, clip[0]);
+                dirtyTop = Math.min(dirtyTop, clip[1]);
+                dirtyRight = Math.max(dirtyRight, clip[0] + clip[2]);
+                dirtyBottom = Math.max(dirtyBottom, clip[1] + clip[3]);
+            }
+            if (dirtyRight <= dirtyLeft || dirtyBottom <= dirtyTop)
+                return true;
             if (!blitDestinationToScratch(destTexture, destination.width,
-                    destination.height))
+                    destination.height, dirtyLeft, dirtyTop,
+                    dirtyRight - dirtyLeft, dirtyBottom - dirtyTop))
                 return false;
             material.use();
             quadVertices.bind(material.programId);
@@ -138,10 +152,7 @@ public class RenderComposite {
             }
             material.setUniformVec2(material.uniforms.destSize,
                     destination.width, destination.height);
-            int dirtyLeft = destination.width;
-            int dirtyTop = destination.height;
-            int dirtyRight = 0;
-            int dirtyBottom = 0;
+            boolean several = clips.size() > 1;
             for (int[] clip : clips) {
                 int x = clip[0];
                 int y = clip[1];
@@ -159,11 +170,7 @@ public class RenderComposite {
                 material.setUniformVec4(material.uniforms.maskRect,
                         maskOffX, maskOffY, w, h);
                 GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-                copyDestRectToScratch(x, y, w, h);
-                dirtyLeft = Math.min(dirtyLeft, x);
-                dirtyTop = Math.min(dirtyTop, y);
-                dirtyRight = Math.max(dirtyRight, x + w);
-                dirtyBottom = Math.max(dirtyBottom, y + h);
+                if (several) copyDestRectToScratch(x, y, w, h);
             }
             quadVertices.disable();
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
@@ -190,8 +197,22 @@ public class RenderComposite {
         synchronized (destination.renderLock) {
             destTexture.updateFromDrawable();
             if (!destTexture.ensureFramebuffer()) return false;
+            int dirtyLeft = destination.width;
+            int dirtyTop = destination.height;
+            int dirtyRight = 0;
+            int dirtyBottom = 0;
+            for (GlyphQuad quad : quads) {
+                if (quad.width <= 0 || quad.height <= 0) continue;
+                dirtyLeft = Math.min(dirtyLeft, quad.x);
+                dirtyTop = Math.min(dirtyTop, quad.y);
+                dirtyRight = Math.max(dirtyRight, quad.x + quad.width);
+                dirtyBottom = Math.max(dirtyBottom, quad.y + quad.height);
+            }
+            if (dirtyRight <= dirtyLeft || dirtyBottom <= dirtyTop)
+                return true;
             if (!blitDestinationToScratch(destTexture, destination.width,
-                    destination.height))
+                    destination.height, dirtyLeft, dirtyTop,
+                    dirtyRight - dirtyLeft, dirtyBottom - dirtyTop))
                 return false;
             material.use();
             quadVertices.bind(material.programId);
@@ -212,10 +233,7 @@ public class RenderComposite {
             material.setUniformVec2(material.uniforms.destSize,
                     destination.width, destination.height);
             material.setUniformVec4(material.uniforms.srcRect, 0, 0, 1, 1);
-            int dirtyLeft = destination.width;
-            int dirtyTop = destination.height;
-            int dirtyRight = 0;
-            int dirtyBottom = 0;
+            boolean several = quads.size() > 1;
             for (GlyphQuad quad : quads) {
                 Texture glyph = glyphTexture(quad);
                 if (glyph == null) continue;
@@ -229,11 +247,8 @@ public class RenderComposite {
                 material.setUniformVec4(material.uniforms.maskRect,
                         quad.maskX, quad.maskY, quad.width, quad.height);
                 GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-                copyDestRectToScratch(quad.x, quad.y, quad.width, quad.height);
-                dirtyLeft = Math.min(dirtyLeft, quad.x);
-                dirtyTop = Math.min(dirtyTop, quad.y);
-                dirtyRight = Math.max(dirtyRight, quad.x + quad.width);
-                dirtyBottom = Math.max(dirtyBottom, quad.y + quad.height);
+                if (several) copyDestRectToScratch(quad.x, quad.y, quad.width,
+                        quad.height);
             }
             quadVertices.disable();
             boolean downloaded = dirtyRight > dirtyLeft && dirtyBottom > dirtyTop
@@ -259,19 +274,20 @@ public class RenderComposite {
                 ((argb >>> 24) & 0xff) * inv);
     }
 
-    private boolean blitDestinationToScratch(Texture destTexture, int width,
-                                             int height) {
-        if (scratchWidth != width || scratchHeight != height
+    private boolean blitDestinationToScratch(Texture destTexture, int destWidth,
+                                             int destHeight, int x, int y,
+                                             int width, int height) {
+        if (scratchWidth != destWidth || scratchHeight != destHeight
                 || !scratch.isAllocated()) {
             if (scratch.isAllocated()) scratch.destroy();
-            scratch.allocateTexture((short)width, (short)height, null);
-            scratchWidth = width;
-            scratchHeight = height;
+            scratch.allocateTexture((short)destWidth, (short)destHeight, null);
+            scratchWidth = destWidth;
+            scratchHeight = destHeight;
         }
         if (!scratch.ensureFramebuffer()) return false;
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,
                 scratch.getFramebuffer());
-        GLES20.glViewport(0, 0, width, height);
+        GLES20.glViewport(0, 0, destWidth, destHeight);
         GLES20.glDisable(GLES20.GL_BLEND);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, destTexture.getTextureId());
@@ -282,8 +298,8 @@ public class RenderComposite {
         material.setUniformInt(material.uniforms.hasMask, 0);
         material.setUniformInt(material.uniforms.solidSrc, 1);
         material.setUniformVec4(material.uniforms.solidColor, 0, 0, 0, 0);
-        material.setUniformVec2(material.uniforms.destSize, width, height);
-        material.setUniformVec4(material.uniforms.destRect, 0, 0, width, height);
+        material.setUniformVec2(material.uniforms.destSize, destWidth, destHeight);
+        material.setUniformVec4(material.uniforms.destRect, x, y, width, height);
         material.setUniformVec2(material.uniforms.srcSize, 1, 1);
         material.setUniformVec2(material.uniforms.maskSize, 1, 1);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
@@ -320,7 +336,6 @@ public class RenderComposite {
         }
         readback.position(0);
         readback.limit(bytes);
-        GLES20.glFinish();
         GLES20.glPixelStorei(GLES20.GL_PACK_ALIGNMENT, 4);
         GLES20.glReadPixels(x, y, width, height, GLES20.GL_RGBA,
                 GLES20.GL_UNSIGNED_BYTE, readback);
