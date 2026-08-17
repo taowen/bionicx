@@ -52,6 +52,7 @@ podman run --rm --pull=newer --network host \
             native/diagnostics/sigsys-report.c \
             -o android/app/src/main/assets/bionicx/lib/libbionicx-sigsys-report.so
         aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Werror \
+            -DBIONICX_GLIBC_INTERPOSE \
             native/runtime/android-kernel.c \
             native/runtime/dns.c \
             native/runtime/fhs-path.c \

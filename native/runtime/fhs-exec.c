@@ -161,7 +161,7 @@ static void log_dlopen(const char *path, int flags, const char *actual,
     fflush(stderr);
 }
 
-void *dlopen(const char *path, int flags) {
+static void *bionicx_dlopen(const char *path, int flags) {
     static void *(*next)(const char *, int);
     if (next == NULL) next = dlsym(RTLD_NEXT, "dlopen");
     /* libframe.so is opened with RTLD_DEEPBIND, which prefers libc's
@@ -237,6 +237,21 @@ void *dlopen(const char *path, int flags) {
     log_dlopen(path, flags, actual, handle);
     return handle;
 }
+
+#ifdef BIONICX_GLIBC_INTERPOSE
+/* GNU ld emits only one version when the same name is listed in two
+ * version-script nodes. libgmodule imports dlopen@GLIBC_2.34. */
+void *dlopen(const char *path, int flags)
+        __attribute__((nothrow, alias("bionicx_dlopen")));
+void *bionicx_dlopen_2_34(const char *path, int flags)
+        __attribute__((nothrow, alias("bionicx_dlopen")));
+__asm__(".symver dlopen,dlopen@GLIBC_2.17");
+__asm__(".symver bionicx_dlopen_2_34,dlopen@GLIBC_2.34");
+#else
+void *dlopen(const char *path, int flags) {
+    return bionicx_dlopen(path, flags);
+}
+#endif
 
 static char **script_arguments(const char *path, char *const arguments[],
                                char program[PATH_MAX],

@@ -8,7 +8,10 @@
  * open.
  * Chrome Ozone software present: shmget@GLIBC_2.17 shmat@GLIBC_2.17
  * shmctl@GLIBC_2.17 — Android seccomp returns ENOSYS for SysV SHM, so
- * MIT-SHM Attach never sees a real segment. */
+ * MIT-SHM Attach never sees a real segment.
+ * Debian trixie libgmodule / gdk-pixbuf: dlopen@GLIBC_2.34 — otherwise
+ * FHS loader paths such as libpixbufloader_svg.so skip the redirect and
+ * GTK aborts in gtkiconhelper on Adwaita SVGs. */
 GLIBC_2.17 {
   global:
     forkpty;
@@ -31,3 +34,7 @@ GLIBC_2.17 {
     mkstemp;
     mkstemp64;
 };
+GLIBC_2.34 {
+  global:
+    dlopen;
+} GLIBC_2.17;
