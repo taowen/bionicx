@@ -39,6 +39,7 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -69,6 +70,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
     public final EffectComposer effectComposer = new EffectComposer(this);
     private final CountDownLatch eglContextReady = new CountDownLatch(1);
     private boolean renderScheduled;
+    private final AtomicBoolean sceneUpdateScheduled = new AtomicBoolean();
 
     public GLRenderer(XServerView xServerView, XServer xServer) {
         this.xServerView = xServerView;
@@ -168,25 +170,33 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
     @Override
     public void onMapWindow(Window window) {
-        xServerView.queueEvent(this::updateScene);
-        xServerView.requestRender();
+        scheduleSceneUpdate();
+        scheduleRender();
     }
 
     @Override
     public void onUnmapWindow(Window window) {
-        xServerView.queueEvent(this::updateScene);
-        xServerView.requestRender();
+        scheduleSceneUpdate();
+        scheduleRender();
     }
 
     @Override
     public void onChangeWindowZOrder(Window window) {
-        xServerView.queueEvent(this::updateScene);
-        xServerView.requestRender();
+        scheduleSceneUpdate();
+        scheduleRender();
     }
 
     @Override
     public void onUpdateWindowContent(Window window) {
         scheduleRender();
+    }
+
+    private void scheduleSceneUpdate() {
+        if (!sceneUpdateScheduled.compareAndSet(false, true)) return;
+        xServerView.queueEvent(() -> {
+            sceneUpdateScheduled.set(false);
+            updateScene();
+        });
     }
 
     private void scheduleRender() {
@@ -202,11 +212,9 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
     @Override
     public void onUpdateWindowGeometry(final Window window, boolean resized) {
-        if (resized) {
-            xServerView.queueEvent(this::updateScene);
-        }
+        if (resized) scheduleSceneUpdate();
         else xServerView.queueEvent(() -> updateWindowPosition(window));
-        xServerView.requestRender();
+        scheduleRender();
     }
 
     @Override
@@ -216,7 +224,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
     @Override
     public void onPointerMove(short x, short y) {
-        xServerView.requestRender();
+        scheduleRender();
     }
 
     private void renderCursorDrawable(Drawable drawable, int x, int y) {

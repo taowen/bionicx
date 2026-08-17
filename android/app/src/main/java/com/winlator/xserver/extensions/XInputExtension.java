@@ -26,7 +26,6 @@ import com.winlator.xserver.errors.BadWindow;
 import com.winlator.xserver.errors.XRequestError;
 import com.winlator.xserver.Pointer;
 
-import android.util.Log;
 import android.util.SparseArray;
 
 import java.io.IOException;
@@ -216,7 +215,7 @@ public class XInputExtension extends Extension {
             boolean sent = sendDeviceEventToClient(grabClient, deviceId,
                     eventType, detail, sourceWindow, target, rootX, rootY);
             if (xServer.pointer.getY() < 40) {
-                Log.i("BionicX", "BXINFO grab-xi "
+                GrabManager.grabTrace("BXINFO grab-xi "
                         + (sent ? "sent" : "fail") + " type=" + eventType
                         + " client=" + GrabManager.describeClient(grabClient)
                         + " target=0x" + Integer.toHexString(target.id)
@@ -300,7 +299,7 @@ public class XInputExtension extends Extension {
         // GetProperty (opcode 20). An unknown atom is ignored.
         int atom = Atom.WM_NAME;
         boolean sent = client.sendEvent(new PropertyNotify(window, atom, false));
-        Log.i("BionicX", "BXINFO grab-mark " + (sent ? "sent" : "fail")
+        GrabManager.grabTrace("BXINFO grab-mark " + (sent ? "sent" : "fail")
                 + " client=" + GrabManager.describeClient(client)
                 + " window=0x" + Integer.toHexString(window.id)
                 + " atom=" + atom + " WM_NAME");
@@ -1095,14 +1094,14 @@ public class XInputExtension extends Extension {
         if (mode > 7) throw new BadValue(mode);
         if (deviceId == MASTER_KEYBOARD_ID) return;
         if (xServer.grabManager.getClient() != client) {
-            Log.i("BionicX", "BXINFO allow-events XI ignored mode=" + mode
+            GrabManager.grabTrace("BXINFO allow-events XI ignored mode=" + mode
                     + " client=" + GrabManager.describeClient(client)
                     + " grabClient=" + GrabManager.describeClient(
                             xServer.grabManager.getClient()));
             return;
         }
         Window grab = xServer.grabManager.getWindow();
-        Log.i("BionicX", "BXINFO allow-events XI mode=" + mode
+        GrabManager.grabTrace("BXINFO allow-events XI mode=" + mode
                 + " grab=0x" + Integer.toHexString(grab != null ? grab.id : 0)
                 + " client=" + GrabManager.describeClient(client)
                 + " sync=" + xServer.grabManager.isPointerSynchronous());

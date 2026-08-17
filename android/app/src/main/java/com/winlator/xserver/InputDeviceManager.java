@@ -193,7 +193,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
         if (xServer.pointer.getY() < 40) {
             Window grab = xServer.grabManager.getWindow();
             XClient grabClient = xServer.grabManager.getClient();
-            Log.i("BionicX", "BXINFO grab-trace btn=" + button.code()
+            GrabManager.grabTrace("BXINFO grab-trace btn=" + button.code()
                     + " point=0x" + Integer.toHexString(
                             pointWindow != null ? pointWindow.id : 0)
                     + " grab=0x" + Integer.toHexString(
@@ -327,7 +327,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                     if (listener != null) {
                         listener.sendEvent(event);
                         if (xServer.pointer.getY() < 40)
-                            Log.i("BionicX", "BXINFO grab-press sent=0x"
+                            GrabManager.grabTrace("BXINFO grab-press sent=0x"
                                     + Integer.toHexString(eventWindow.id)
                                     + " client=" + GrabManager.describeClient(
                                             grabClient)
@@ -336,7 +336,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                                             ? 1 : 0));
                     }
                     else if (xServer.pointer.getY() < 40) {
-                        Log.i("BionicX", "BXINFO grab-press skip=no-listener"
+                        GrabManager.grabTrace("BXINFO grab-press skip=no-listener"
                                 + " grab=0x"
                                 + Integer.toHexString(grabWindow.id)
                                 + " client=" + GrabManager.describeClient(
@@ -345,7 +345,7 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                 }
             }
             else if (xServer.pointer.getY() < 40) {
-                Log.i("BionicX", "BXINFO grab-press skip=no-send"
+                GrabManager.grabTrace("BXINFO grab-press skip=no-send"
                         + " grab=0x" + Integer.toHexString(
                                 grabWindow != null ? grabWindow.id : 0)
                         + " enabled=" + (grabWindow != null

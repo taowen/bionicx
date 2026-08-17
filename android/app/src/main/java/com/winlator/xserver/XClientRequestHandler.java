@@ -172,11 +172,14 @@ public class XClientRequestHandler implements RequestHandler {
         client.setRequestData(requestData);
         client.setRequestLength(requestLength);
         client.noteRequest(opcode & 0xff, requestData & 0xff);
-        Log.i(TAG, "seq=" + (client.getSequenceNumber() & 0xffff)
-                + " opcode=" + (opcode & 0xff)
-                + " data=" + (requestData & 0xff)
-                + " bytes=" + requestLength);
-        if (client.xServer.grabManager.consumeWatchedRequest(client)) {
+        if (Log.isLoggable(TAG, Log.VERBOSE)) {
+            Log.v(TAG, "seq=" + (client.getSequenceNumber() & 0xffff)
+                    + " opcode=" + (opcode & 0xff)
+                    + " data=" + (requestData & 0xff)
+                    + " bytes=" + requestLength);
+        }
+        if (client.xServer.grabManager.consumeWatchedRequest(client)
+                && GrabManager.isGrabTraceEnabled()) {
             Log.i("BionicX", "BXINFO grab-client-req client="
                     + GrabManager.describeClient(client)
                     + " opcode=" + (opcode & 0xff)

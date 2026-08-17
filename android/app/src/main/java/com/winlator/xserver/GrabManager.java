@@ -27,7 +27,7 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
             new ArrayList<>();
     private final XServer xServer;
     private Integer watchClientBase;
-    private int watchRequestsLeft;
+    private volatile int watchRequestsLeft;
 
     public GrabManager(XServer xServer) {
         this.xServer = xServer;
@@ -238,7 +238,7 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
             if (grab.window == window && grab.client != client
                     && overlaps(grab.button, button, 0)
                     && overlaps(grab.modifiers, modifiers, 0x8000)) {
-                Log.i("BionicX", "BXINFO grab-add-reject w=0x"
+                grabTrace("BXINFO grab-add-reject w=0x"
                         + Integer.toHexString(window.id)
                         + " client=" + describeClient(client)
                         + " held=" + describeClient(grab.client)
@@ -254,7 +254,7 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         passiveButtonGrabs.add(new PassiveButtonGrab(window, button, modifiers,
                 ownerEvents, eventMask, client, cursor, pointerSynchronous,
                 confine));
-        Log.i("BionicX", "BXINFO grab-add w=0x" + Integer.toHexString(window.id)
+        grabTrace("BXINFO grab-add w=0x" + Integer.toHexString(window.id)
                 + " client=" + describeClient(client)
                 + " owner=" + describeClient(window.originClient)
                 + " button=" + button
@@ -265,17 +265,28 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         return true;
     }
 
+    public static boolean isGrabTraceEnabled() {
+        return Log.isLoggable("BionicX", Log.DEBUG);
+    }
+
+    public static void grabTrace(String message) {
+        if (isGrabTraceEnabled()) Log.i("BionicX", message);
+    }
+
     public synchronized void watchClientRequests(XClient client, int count) {
         watchClientBase = client != null ? client.resourceIDBase : null;
         watchRequestsLeft = watchClientBase != null ? count : 0;
     }
 
-    public synchronized boolean consumeWatchedRequest(XClient client) {
-        if (watchRequestsLeft <= 0 || client == null
-                || watchClientBase == null) return false;
-        if (!watchClientBase.equals(client.resourceIDBase)) return false;
-        watchRequestsLeft--;
-        return true;
+    public boolean consumeWatchedRequest(XClient client) {
+        if (watchRequestsLeft <= 0) return false;
+        synchronized (this) {
+            if (watchRequestsLeft <= 0 || client == null
+                    || watchClientBase == null) return false;
+            if (!watchClientBase.equals(client.resourceIDBase)) return false;
+            watchRequestsLeft--;
+            return true;
+        }
     }
 
     public static String describeClient(XClient client) {

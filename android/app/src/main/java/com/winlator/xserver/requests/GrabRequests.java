@@ -146,7 +146,7 @@ public abstract class GrabRequests {
             Pointer.Button button =
                     client.xServer.grabManager.getPassiveActivationButton();
             Window grab = client.xServer.grabManager.getWindow();
-            Log.i(TAG, "BXINFO allow-events ReplayPointer grab=0x"
+            GrabManager.grabTrace("BXINFO allow-events ReplayPointer grab=0x"
                     + Integer.toHexString(grab != null ? grab.id : 0)
                     + " client=" + GrabManager.describeClient(client)
                     + " sync=" + client.xServer.grabManager.isPointerSynchronous()
@@ -163,7 +163,7 @@ public abstract class GrabRequests {
         // the matching release via releaseWithButtons.
         if (mode == 1 && client.xServer.grabManager.getClient() == client) {
             Window grab = client.xServer.grabManager.getWindow();
-            Log.i(TAG, "BXINFO allow-events SyncPointer grab=0x"
+            GrabManager.grabTrace("BXINFO allow-events SyncPointer grab=0x"
                     + Integer.toHexString(grab != null ? grab.id : 0)
                     + " client=" + GrabManager.describeClient(client)
                     + " sync=" + client.xServer.grabManager.isPointerSynchronous());
@@ -174,14 +174,14 @@ public abstract class GrabRequests {
         if ((mode == 0 || mode == 6)
                 && client.xServer.grabManager.getClient() == client) {
             Window grab = client.xServer.grabManager.getWindow();
-            Log.i(TAG, "BXINFO allow-events Async mode=" + mode + " grab=0x"
+            GrabManager.grabTrace("BXINFO allow-events Async mode=" + mode + " grab=0x"
                     + Integer.toHexString(grab != null ? grab.id : 0)
                     + " client=" + GrabManager.describeClient(client)
                     + " sync=" + client.xServer.grabManager.isPointerSynchronous());
             client.xServer.grabManager.thawSynchronousPointer();
             return;
         }
-        Log.i(TAG, "BXINFO allow-events ignored mode=" + mode
+        GrabManager.grabTrace("BXINFO allow-events ignored mode=" + mode
                 + " client=" + GrabManager.describeClient(client)
                 + " grabClient=" + GrabManager.describeClient(
                         client.xServer.grabManager.getClient())

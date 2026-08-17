@@ -26,6 +26,11 @@ public class Drawable extends XResource {
     private boolean offscreenStorage = false;
     private Callback<Drawable> onDestroyListener;
     public final Object renderLock = new Object();
+    private int dirtyLeft;
+    private int dirtyTop;
+    private int dirtyRight;
+    private int dirtyBottom;
+    private boolean hasDirty;
 
     static {
         System.loadLibrary("winlator");
@@ -128,7 +133,7 @@ public class Drawable extends XResource {
         this.data.rewind();
         data.rewind();
 
-        forceUpdate();
+        forceUpdate(dstX, dstY, width, height);
     }
 
     public ByteBuffer getImage(short x, short y, short width, short height) {
@@ -172,7 +177,7 @@ public class Drawable extends XResource {
 
             this.data.rewind();
             drawable.data.rewind();
-            forceUpdate();
+            forceUpdate(dstX, dstY, width, height);
         }
     }
 
@@ -191,7 +196,7 @@ public class Drawable extends XResource {
             fillRect((short)x, (short)y, (short)width, (short)height, color,
                     this.getStride(), this.data);
             this.data.rewind();
-            forceUpdate();
+            forceUpdate(x, y, width, height);
         }
     }
 
@@ -225,7 +230,7 @@ public class Drawable extends XResource {
                 }
             }
             data.rewind();
-            forceUpdate();
+            forceUpdate(x, y, width, height);
         }
     }
 
@@ -282,7 +287,7 @@ public class Drawable extends XResource {
                 }
             }
             data.rewind();
-            forceUpdate();
+            forceUpdate(dstX, dstY, width, height);
         }
     }
 
@@ -423,7 +428,7 @@ public class Drawable extends XResource {
                 }
             }
             data.rewind();
-            forceUpdate();
+            forceUpdate(dstX, dstY, width, height);
         }
     }
 
@@ -473,7 +478,10 @@ public class Drawable extends XResource {
         drawLine((short)x0, (short)y0, (short)x1, (short)y1, color, (short)lineWidth, this.getStride(), this.data);
 
         this.data.rewind();
-        forceUpdate();
+        int left = Math.min(x0, x1);
+        int top = Math.min(y0, y1);
+        forceUpdate(left, top, Math.abs(x1 - x0) + lineWidth,
+                Math.abs(y1 - y0) + lineWidth);
     }
 
     public static final int TEXT8_WIDTH = 8;
@@ -496,7 +504,8 @@ public class Drawable extends XResource {
         bitmap.copyPixelsToBuffer(data);
         data.rewind();
         bitmap.recycle();
-        forceUpdate();
+        forceUpdate(x, baseline - TEXT8_ASCENT, advance,
+                TEXT8_ASCENT + TEXT8_DESCENT);
         return advance;
     }
 
@@ -528,10 +537,50 @@ public class Drawable extends XResource {
     }
 
     public void forceUpdate() {
-        if (texture != null) {
-            texture.setNeedsUpdate(true);
+        forceUpdate(0, 0, width, height);
+    }
+
+    public void forceUpdate(int x, int y, int w, int h) {
+        synchronized (renderLock) {
+            unionDirty(x, y, w, h);
+            if (texture != null) texture.setNeedsUpdate(true);
         }
         if (onDrawListener != null) onDrawListener.run();
+    }
+
+    private void unionDirty(int x, int y, int w, int h) {
+        if (w <= 0 || h <= 0) return;
+        int left = Math.max(0, x);
+        int top = Math.max(0, y);
+        int right = Math.min(width, x + w);
+        int bottom = Math.min(height, y + h);
+        if (right <= left || bottom <= top) return;
+        if (!hasDirty) {
+            dirtyLeft = left;
+            dirtyTop = top;
+            dirtyRight = right;
+            dirtyBottom = bottom;
+            hasDirty = true;
+            return;
+        }
+        dirtyLeft = Math.min(dirtyLeft, left);
+        dirtyTop = Math.min(dirtyTop, top);
+        dirtyRight = Math.max(dirtyRight, right);
+        dirtyBottom = Math.max(dirtyBottom, bottom);
+    }
+
+    public int[] takeDirtyRect() {
+        if (!hasDirty) return null;
+        int[] rect = new int[] {
+            dirtyLeft, dirtyTop,
+            dirtyRight - dirtyLeft, dirtyBottom - dirtyTop
+        };
+        hasDirty = false;
+        return rect;
+    }
+
+    public void clearDirty() {
+        hasDirty = false;
     }
 
     public boolean isUseSharedData() {

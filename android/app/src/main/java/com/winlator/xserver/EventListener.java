@@ -27,7 +27,7 @@ public class EventListener {
             event.send(client.getSequenceNumber(), client.getOutputStream());
         }
         catch (IOException e) {
-            android.util.Log.i("BionicX", "BXINFO grab-press-io client="
+            GrabManager.grabTrace("BXINFO grab-press-io client="
                     + GrabManager.describeClient(client) + " "
                     + e.getMessage());
         }

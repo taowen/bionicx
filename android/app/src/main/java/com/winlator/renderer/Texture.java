@@ -2,6 +2,7 @@ package com.winlator.renderer;
 
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
+import android.opengl.GLES30;
 
 import com.winlator.xserver.Drawable;
 
@@ -120,13 +121,48 @@ public class Texture {
         ByteBuffer data = owner.getData();
         if (!isAllocated()) {
             allocateTexture(owner.width, owner.height, data);
-        }
-        else if (needsUpdate) {
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
-            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, owner.width, owner.height, format, GLES20.GL_UNSIGNED_BYTE, data);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            owner.clearDirty();
             needsUpdate = false;
+            return;
         }
+        if (!needsUpdate) return;
+
+        int[] dirty = owner.takeDirtyRect();
+        int x = 0;
+        int y = 0;
+        int width = owner.width;
+        int height = owner.height;
+        if (dirty != null) {
+            x = dirty[0];
+            y = dirty[1];
+            width = dirty[2];
+            height = dirty[3];
+        }
+        if (width <= 0 || height <= 0) {
+            needsUpdate = false;
+            return;
+        }
+
+        data.position(0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
+        GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 4);
+        if (x == 0 && y == 0 && width == owner.width && height == owner.height) {
+            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, width, height,
+                    format, GLES20.GL_UNSIGNED_BYTE, data);
+        }
+        else {
+            GLES20.glPixelStorei(GLES30.GL_UNPACK_ROW_LENGTH, owner.width);
+            GLES20.glPixelStorei(GLES30.GL_UNPACK_SKIP_ROWS, y);
+            GLES20.glPixelStorei(GLES30.GL_UNPACK_SKIP_PIXELS, x);
+            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, x, y, width, height,
+                    format, GLES20.GL_UNSIGNED_BYTE, data);
+            GLES20.glPixelStorei(GLES30.GL_UNPACK_ROW_LENGTH, 0);
+            GLES20.glPixelStorei(GLES30.GL_UNPACK_SKIP_ROWS, 0);
+            GLES20.glPixelStorei(GLES30.GL_UNPACK_SKIP_PIXELS, 0);
+        }
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+        data.rewind();
+        needsUpdate = false;
     }
 
     public boolean isAllocated() {

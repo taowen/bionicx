@@ -509,7 +509,7 @@ public abstract class WindowRequests {
         inputStream.read(data);
         Event event = new RawEvent(data);
         if (client.xServer.grabManager.isPointerSynchronous()) {
-            android.util.Log.i("BionicX", "BXINFO grab-send-event client="
+            GrabManager.grabTrace("BXINFO grab-send-event client="
                     + GrabManager.describeClient(client)
                     + " dest=0x" + Integer.toHexString(windowId)
                     + " type=" + (data[0] & 0x7f)

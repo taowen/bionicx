@@ -68,7 +68,7 @@ public class XClient extends ConnectedClient implements XResourceManager.OnResou
             return true;
         }
         catch (IOException e) {
-            android.util.Log.i("BionicX", "BXINFO grab-press-io client="
+            GrabManager.grabTrace("BXINFO grab-press-io client="
                     + GrabManager.describeClient(this) + " " + e.getMessage());
             return false;
         }

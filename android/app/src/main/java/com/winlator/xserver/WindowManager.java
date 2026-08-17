@@ -35,6 +35,7 @@ public class WindowManager extends XResourceManager {
     private final ArrayList<OnWindowModificationListener> onWindowModificationListeners = new ArrayList<>();
     private final IdentityHashMap<Window, Boolean> dirtyContent =
             new IdentityHashMap<>();
+    private final ArrayList<Window> exposeAfterRoundTrip = new ArrayList<>();
 
     public interface OnWindowModificationListener {
         default void onMapWindow(Window window) {}
@@ -70,10 +71,19 @@ public class WindowManager extends XResourceManager {
         return windows.get(id);
     }
 
+    public void markExposeAfterRoundTrip(Window window) {
+        if (window == null) return;
+        window.markExposeAfterRoundTrip();
+        exposeAfterRoundTrip.add(window);
+    }
+
     public void flushExposeAfterRoundTrip() {
-        for (int i = 0; i < windows.size(); i++) {
-            Window window = windows.valueAt(i);
+        int pending = exposeAfterRoundTrip.size();
+        if (pending == 0) return;
+        for (int i = 0; i < pending; i++) {
+            Window window = exposeAfterRoundTrip.get(i);
             if (window == null || !window.takeExposeAfterRoundTrip()) continue;
+            if (windows.get(window.id) != window) continue;
             if (!window.isInputOutput()
                     || window.getMapState() != Window.MapState.VIEWABLE)
                 continue;
@@ -82,6 +92,7 @@ public class WindowManager extends XResourceManager {
             else
                 window.sendEvent(new Expose(window));
         }
+        exposeAfterRoundTrip.clear();
     }
 
     public ArrayList<Window> findDialogWindows(int id) {
@@ -117,6 +128,7 @@ public class WindowManager extends XResourceManager {
         window.sendEvent(Event.STRUCTURE_NOTIFY, new DestroyNotify(window, window));
         parent.sendEvent(Event.SUBSTRUCTURE_NOTIFY, new DestroyNotify(parent, window));
         windows.remove(window.id);
+        window.takeExposeAfterRoundTrip();
         if (window.isInputOutput()) drawableManager.removeDrawable(window.getContent().id);
         triggerOnFreeResourceListener(window);
         if (window == focusedWindow) revertFocus();
@@ -162,7 +174,7 @@ public class WindowManager extends XResourceManager {
             // during that sync while clip_region is still empty, so GTK
             // drops it and a newly nativized GtkTextView TEXT child stays
             // black. Send again after the GetInputFocus XSync reply.
-            window.markExposeAfterRoundTrip();
+            markExposeAfterRoundTrip(window);
             window.sendEvent(Event.VISIBILITY_CHANGE, new VisibilityNotify(
                     window, VisibilityNotify.State.UNOBSCURED));
         }
