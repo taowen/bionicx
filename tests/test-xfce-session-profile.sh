@@ -22,5 +22,10 @@ if grep -F 'xfce4-session' "$repo_dir/profiles/xfce-session.json" >/dev/null; th
     echo "xfce-session must not require systemd xfce4-session" >&2
     exit 1
 fi
+if ! grep -F 'IconThemeName' \
+        "$repo_dir/examples/xfce-session/xsettings.xml" >/dev/null; then
+    echo "xfce-session must pin Adwaita instead of the Tango stub" >&2
+    exit 1
+fi
 chmod +x "$repo_dir/examples/xfce-session/install-and-run.sh"
 echo "xfce session profile launches xfwm4 plus two package apps: PASS"

@@ -23,6 +23,10 @@ adb -s "$serial" shell am force-stop io.taowen.bx
 # an X bug.
 cat "$repo_dir/examples/xfce-session/thunar-geometry.xml" | \
     adb -s "$serial" shell "run-as io.taowen.bx sh -c 'mkdir -p files/homes/xfce-session/.config/xfce4/xfconf/xfce-perchannel-xml && cat > files/homes/xfce-session/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml'"
+# Debian XFCE defaults IconThemeName=Tango, but the seed only has a
+# Geany Tango stub. Pin Adwaita so xfdesktop/panel see user-home.
+cat "$repo_dir/examples/xfce-session/xsettings.xml" | \
+    adb -s "$serial" shell "run-as io.taowen.bx sh -c 'mkdir -p files/homes/xfce-session/.config/xfce4/xfconf/xfce-perchannel-xml && cat > files/homes/xfce-session/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml'"
 adb -s "$serial" shell am start -W -n io.taowen.bx/com.winlator.BionicXActivity
 mapped="${BIONICX_XFCE_MAPPED:-$repo_dir/build/xfce-session-mapped.png}"
 for i in $(seq 1 80); do
