@@ -13,7 +13,9 @@ the frame also selects `ButtonPress`, and a synchronous `GrabButton` on
 the frame `ReplayPointer`s through to the dock. A second grab on the
 dock client itself matches xfwm4 `GrabButton(c->window)`. A third grab
 selects XI2 on the frame and Replays when the core press is on the
-client, then checks that the client sees XI2.
+client, then checks that the client sees XI2. After a fullscreen
+desktop is framed on top, `XRestackWindows` keeps the dock above it so
+a click at the dock still reaches the dock client.
 
 ```sh
 ANDROID_SERIAL=<serial> examples/reparent-x11-probe/install-and-run.sh

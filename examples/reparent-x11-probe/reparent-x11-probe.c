@@ -514,6 +514,80 @@ int main(int argc, char **argv) {
     }
     RECORD(xi_replay_ok);
 
+    int desktop_stack_ok = 0;
+    Window desktop = None;
+    Window desktop_frame = None;
+    if (dock_ok) {
+        int width = DisplayWidth(client, screen);
+        int height = DisplayHeight(client, screen);
+        desktop = make_client(client, root, 0, 0, (unsigned)width,
+                              (unsigned)height, 0x113355,
+                              "bionicx-reparent-desktop");
+        Atom net_type = XInternAtom(client, "_NET_WM_WINDOW_TYPE", False);
+        Atom desktop_type = XInternAtom(client,
+                                        "_NET_WM_WINDOW_TYPE_DESKTOP", False);
+        XChangeProperty(client, desktop, net_type, XA_ATOM, 32,
+                        PropModeReplace, (unsigned char *)&desktop_type, 1);
+        XSelectInput(client, dock,
+                     StructureNotifyMask | ExposureMask | ButtonPressMask);
+        XMapWindow(client, desktop);
+        XSync(client, False);
+        wait_typed(manager, MapRequest, desktop, 1000, NULL);
+        desktop_frame = make_frame(manager, root, 0, 0, (unsigned)width,
+                                   (unsigned)height);
+        frame_map(manager, desktop_frame, desktop);
+        XSync(manager, False);
+        Window restack[2] = {dock_frame, desktop_frame};
+        XRestackWindows(manager, restack, 2);
+        XSync(manager, False);
+        int root_x = 0;
+        int root_y = 0;
+        Window ignore = None;
+        XTranslateCoordinates(client, dock, root, 36, 13, &root_x, &root_y,
+                              &ignore);
+        Window qroot = None;
+        Window qchild = None;
+        int qx = 0, qy = 0, wx = 0, wy = 0;
+        unsigned qmask = 0;
+        XQueryPointer(client, root, &qroot, &qchild, &qx, &qy, &wx, &wy,
+                      &qmask);
+        XTestFakeMotionEvent(client, screen, root_x, root_y, 0);
+        XQueryPointer(client, root, &qroot, &qchild, &qx, &qy, &wx, &wy,
+                      &qmask);
+        while (XPending(client)) {
+            XEvent ignored = {0};
+            XNextEvent(client, &ignored);
+        }
+        XTestFakeButtonEvent(client, 1, True, 20);
+        XTestFakeButtonEvent(client, 1, False, 20);
+        XSync(client, False);
+        int clicked = 0;
+        int waited = 0;
+        while (waited <= 500) {
+            XEvent press = {0};
+            if (XCheckTypedWindowEvent(client, dock, ButtonPress, &press)) {
+                clicked = 1;
+                break;
+            }
+            while (XPending(manager)) {
+                XEvent ignored = {0};
+                XNextEvent(manager, &ignored);
+            }
+            sleep_ms(20);
+            waited += 20;
+        }
+        desktop_stack_ok = qchild == dock_frame && clicked;
+        char stack_detail[160];
+        snprintf(stack_detail, sizeof(stack_detail),
+                 "hit=0x%lx dock_frame=0x%lx desktop_frame=0x%lx click=%d",
+                 (unsigned long)qchild, (unsigned long)dock_frame,
+                 (unsigned long)desktop_frame, clicked);
+        result("dock-above-desktop", desktop_stack_ok, stack_detail);
+    } else {
+        result("dock-above-desktop", 0, "dock not framed");
+    }
+    RECORD(desktop_stack_ok);
+
     printf("BXSUMMARY reparent-x11 passed=%d failed=%d xerrors=%d\n",
            passed, failed, x_errors);
     fflush(stdout);
@@ -522,10 +596,12 @@ int main(int argc, char **argv) {
     XDestroyWindow(client, mapped);
     XDestroyWindow(client, grabbed);
     XDestroyWindow(client, dock);
+    if (desktop != None) XDestroyWindow(client, desktop);
     XDestroyWindow(manager, frame);
     XDestroyWindow(manager, mapped_frame);
     XDestroyWindow(manager, grab_frame);
     XDestroyWindow(manager, dock_frame);
+    if (desktop_frame != None) XDestroyWindow(manager, desktop_frame);
     XCloseDisplay(client);
     XCloseDisplay(manager);
     return failed == 0 && x_errors == 0 ? 0 : 1;

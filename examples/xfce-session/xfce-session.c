@@ -491,6 +491,131 @@ static int named_selection_owned(Display *display, const char *name) {
     return XGetSelectionOwner(display, atom) != None;
 }
 
+static void dump_override(Display *display, Window root, const char *tag) {
+    Window windows[32];
+    int n = collect_override(display, root, windows, 32, 0);
+    for (int i = 0; i < n; ++i) {
+        XWindowAttributes attributes = {0};
+        if (!XGetWindowAttributes(display, windows[i], &attributes))
+            continue;
+        printf("BXINFO %s 0x%lx %dx%d+%d+%d\n", tag,
+               (unsigned long)windows[i], attributes.width, attributes.height,
+               attributes.x, attributes.y);
+    }
+    if (n == 0) printf("BXINFO %s none\n", tag);
+    fflush(stdout);
+}
+
+static void dump_children(Display *display, Window window, const char *tag) {
+    Window query_root = None;
+    Window parent = None;
+    Window *kids = NULL;
+    unsigned count = 0;
+    if (!XQueryTree(display, window, &query_root, &parent, &kids, &count)
+            || kids == NULL) {
+        printf("BXINFO %s none\n", tag);
+        fflush(stdout);
+        return;
+    }
+    for (unsigned i = 0; i < count && i < 12; ++i) {
+        XWindowAttributes attributes = {0};
+        if (!XGetWindowAttributes(display, kids[i], &attributes)) continue;
+        printf("BXINFO %s 0x%lx %dx%d+%d+%d map=%d\n", tag,
+               (unsigned long)kids[i], attributes.width, attributes.height,
+               attributes.x, attributes.y, attributes.map_state);
+    }
+    if (count == 0) printf("BXINFO %s none\n", tag);
+    XFree(kids);
+    fflush(stdout);
+}
+
+static int grab_free(Display *display, Window root) {
+    int status = XGrabPointer(display, root, False, ButtonPressMask,
+                              GrabModeAsync, GrabModeAsync, None, None,
+                              CurrentTime);
+    if (status == GrabSuccess) XUngrabPointer(display, CurrentTime);
+    XSync(display, False);
+    return status;
+}
+
+static void dump_pointer(Display *display, Window root, const char *tag) {
+    Window qroot = None;
+    Window qchild = None;
+    int qx = 0, qy = 0, wx = 0, wy = 0;
+    unsigned qmask = 0;
+    XQueryPointer(display, root, &qroot, &qchild, &qx, &qy, &wx, &wy, &qmask);
+    XWindowAttributes attributes = {0};
+    const char *cls = "none";
+    XClassHint hint = {0};
+    Window frame_child = None;
+    if (qchild != None) {
+        XGetWindowAttributes(display, qchild, &attributes);
+        if (XGetClassHint(display, qchild, &hint)) {
+            cls = hint.res_class != NULL ? hint.res_class
+                    : (hint.res_name != NULL ? hint.res_name : "none");
+        }
+        XQueryPointer(display, qchild, &qroot, &frame_child, &qx, &qy, &wx,
+                      &wy, &qmask);
+    }
+    const char *child_cls = "none";
+    XClassHint child_hint = {0};
+    XWindowAttributes child_attr = {0};
+    if (frame_child != None) {
+        XGetWindowAttributes(display, frame_child, &child_attr);
+        if (XGetClassHint(display, frame_child, &child_hint)) {
+            child_cls = child_hint.res_class != NULL ? child_hint.res_class
+                    : (child_hint.res_name != NULL ? child_hint.res_name
+                            : "none");
+        }
+    }
+    printf("BXINFO %s child=0x%lx %dx%d+%d+%d class=%s frame_child=0x%lx "
+           "%dx%d+%d+%d child_class=%s xy=%d,%d mask=0x%x\n",
+           tag, (unsigned long)qchild, attributes.width, attributes.height,
+           attributes.x, attributes.y, cls, (unsigned long)frame_child,
+           child_attr.width, child_attr.height, child_attr.x, child_attr.y,
+           child_cls, qx, qy, qmask);
+    if (child_hint.res_name != NULL) XFree(child_hint.res_name);
+    if (child_hint.res_class != NULL) XFree(child_hint.res_class);
+    if (hint.res_name != NULL) XFree(hint.res_name);
+    if (hint.res_class != NULL) XFree(hint.res_class);
+    fflush(stdout);
+}
+
+static void dump_session_click(Display *display, Window root, Window bar,
+                               int click_x, int click_y) {
+    KeyCode escape = XKeysymToKeycode(display, XK_Escape);
+    if (escape != 0) {
+        XTestFakeKeyEvent(display, escape, True, 0);
+        XTestFakeKeyEvent(display, escape, False, 20);
+        XSync(display, False);
+        sleep_ms(300);
+    }
+    dump_override(display, root, "pre-click-or");
+    if (bar != None) dump_children(display, bar, "bar-child");
+    int grab = grab_free(display, root);
+    printf("BXINFO grab-state %d click=%d,%d bar=0x%lx\n", grab, click_x,
+           click_y, (unsigned long)bar);
+    fflush(stdout);
+    if (bar == None || click_x < 0 || click_y < 0) return;
+    Window existing[32];
+    int existing_n = collect_override(display, root, existing, 32, 1);
+    XTestFakeMotionEvent(display, DefaultScreen(display), click_x, click_y, 0);
+    XSync(display, False);
+    dump_pointer(display, root, "pre-click-ptr");
+    XTestFakeButtonEvent(display, 1, True, 30);
+    XTestFakeButtonEvent(display, 1, False, 30);
+    XSync(display, False);
+    char detail[128];
+    int menu = wait_new_menu(display, root, existing, existing_n, 1500, detail,
+                             sizeof(detail));
+    dump_pointer(display, root, "post-click-ptr");
+    int grab_after = grab_free(display, root);
+    printf("BXINFO click-menu %s grab=%d->%d %s\n",
+           menu ? "opened" : "none", grab, grab_after,
+           menu ? detail : "no popup");
+    fflush(stdout);
+}
+
 static int accept_session(Display *display, const char *prefix,
                           char *app2_path) {
     int passed = 0;
@@ -540,6 +665,9 @@ static int accept_session(Display *display, const char *prefix,
     Window bar = find_widest_class(display, root, "Xfce4-panel");
     if (bar == None) bar = find_widest_class(display, root, "xfce4-panel");
     if (bar == None) bar = panel;
+    int saved_click_x = -1;
+    int saved_click_y = -1;
+    Window saved_bar = bar;
     if (bar != None) {
         XWindowAttributes bar_attr = {0};
         if (XGetWindowAttributes(display, bar, &bar_attr)) {
@@ -550,6 +678,8 @@ static int accept_session(Display *display, const char *prefix,
             Window ignore = None;
             XTranslateCoordinates(display, bar, root, local_x, local_y,
                                   &root_x, &root_y, &ignore);
+            saved_click_x = root_x;
+            saved_click_y = root_y;
             XTestFakeMotionEvent(display, DefaultScreen(display), root_x,
                                  root_y, 0);
             XSync(display, False);
@@ -762,6 +892,8 @@ static int accept_session(Display *display, const char *prefix,
     result("session-reopen-mousepad", reopened,
            reopened ? detail : "window did not return");
     RECORD(reopened);
+
+    dump_session_click(display, root, saved_bar, saved_click_x, saved_click_y);
 
     printf("BXSUMMARY xfce-session-accept passed=%d failed=%d\n",
            passed, failed);

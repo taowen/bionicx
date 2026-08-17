@@ -46,6 +46,21 @@ SyncPointer now thaws frozen pointer events without dropping the grab
 passive `GrabButton` now activates before XI2 and reports that press
 only on the grab window, so xfwm4 sees `event.window == c->window` and
 Replays (`dock-xi-replay` `pre_frame=0`). Implicit and `XIGrabDevice`
-grabs still broadcast XI2 so `gtk-menu-click` stays 13/13. An XTEST
+grabs still broadcast XI2 so `gtk-menu-click` stays 14/14. An XTEST
 click at `(12,13)` in the live session still does not map a menu. The
 plugin has no child X window; a 133x26 child at `x=2507` is the clock.
+
+After the 12 accept tests, the same saved click hits xfdesktop's
+fullscreen frame instead of the panel and leaves the pointer grabbed:
+
+```text
+BXINFO pre-click-ptr child=0x8005dc 2640x1216+0+0 class=none
+       frame_child=0x200000d 2640x1216+0+0 child_class=Xfdesktop
+BXINFO click-menu none grab=0->1 no popup
+```
+
+The compositor paints the panel on top, so the button is visible, but
+the X stack has the `Xfdesktop` frame above the dock. Isolated
+`dock-above-desktop` (`XRestackWindows` dock above a fullscreen
+desktop) passes, so the remaining gap is the live xfwm4/compositor
+sequence that leaves xfdesktop above the panel.
