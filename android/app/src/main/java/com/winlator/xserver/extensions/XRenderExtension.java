@@ -6,6 +6,10 @@ import android.util.SparseArray;
 import android.util.Log;
 
 import com.winlator.core.Callback;
+import com.winlator.renderer.GLRenderer;
+import com.winlator.renderer.GPUImage;
+import com.winlator.renderer.RenderComposite;
+import com.winlator.renderer.Texture;
 import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
@@ -898,6 +902,98 @@ public class XRenderExtension extends Extension {
         return true;
     }
 
+    private void maybeAttachAhb(Drawable drawable) {
+        if (drawable == null) return;
+        synchronized (drawable.renderLock) {
+            if (!RenderComposite.shouldUseAhb(drawable)) return;
+            GPUImage image = new GPUImage(drawable, true, true);
+            if (image.getHardwareBufferPtr() == 0) return;
+            image.setPreferEglImage(true);
+            Texture previous = drawable.replaceTextureKeepCpuBuffer(image);
+            GLRenderer renderer = xServer.getRenderer();
+            if (previous != null && renderer != null)
+                renderer.xServerView.queueEvent(previous::destroy);
+        }
+    }
+
+    private boolean tryCompositeGpu(Picture source, Picture destination,
+            Drawable sourceDrawable, Drawable destinationDrawable,
+            Picture mask, Drawable maskDrawable, int operation,
+            int sourceX, int sourceY, int maskX, int maskY,
+            int destinationX, int destinationY, int width, int height) {
+        if (operation != PICT_OP_OVER) return false;
+        if (destinationDrawable == null || destinationDrawable.getData() == null)
+            return false;
+        if (destinationDrawable.visual == null
+                || destinationDrawable.visual.depth != 32)
+            return false;
+        if (source == null) return false;
+        if (source.gradient != null || source.radialGradient != null)
+            return false;
+        if (source.componentAlpha || destination.componentAlpha) return false;
+        if (source.solidColor == null && (source.format == a8Format
+                || source.format == a1Format))
+            return false;
+        if (mask != null && maskDrawable == null) return false;
+        GLRenderer renderer = xServer.getRenderer();
+        if (renderer == null || !renderer.hasEglContext()) return false;
+        ArrayList<int[]> clips = new ArrayList<>();
+        for (ClipRectangle rectangle : clippedRectangles(destination,
+                destinationX, destinationY, width, height))
+            clips.add(new int[] {rectangle.x, rectangle.y, rectangle.width,
+                    rectangle.height});
+        if (clips.isEmpty()) return true;
+        int area = 0;
+        for (int[] clip : clips) area += clip[2] * clip[3];
+        if (area < RenderComposite.GPU_MIN_PIXELS) return false;
+        maybeAttachAhb(destinationDrawable);
+        boolean maskIsA8 = mask != null && (mask.format == a8Format
+                || (maskDrawable.visual != null
+                    && maskDrawable.visual.depth != 32));
+        return renderer.compositeOver(source.solidColor != null
+                        ? null : sourceDrawable,
+                source.repeat == 1, sourceX, sourceY, maskDrawable, maskX,
+                maskY, maskIsA8, destinationDrawable, destinationX,
+                destinationY, width, height, source.solidColor, clips);
+    }
+
+    private boolean tryFillOverGpu(Picture destination, Drawable drawable,
+            int color, ArrayList<int[]> clips) {
+        if (drawable == null || drawable.getData() == null) return false;
+        if (clips.isEmpty()) return true;
+        int area = 0;
+        for (int[] clip : clips) area += clip[2] * clip[3];
+        if (area < RenderComposite.GPU_MIN_PIXELS) return false;
+        GLRenderer renderer = xServer.getRenderer();
+        if (renderer == null || !renderer.hasEglContext()) return false;
+        maybeAttachAhb(drawable);
+        return renderer.compositeOver(null, false, 0, 0, null, 0, 0, false,
+                drawable, 0, 0, drawable.width, drawable.height, color, clips);
+    }
+
+    private boolean tryGlyphsGpu(Picture source, Picture destination,
+            Drawable destinationDrawable,
+            ArrayList<RenderComposite.GlyphQuad> quads) {
+        if (destinationDrawable == null || destinationDrawable.getData() == null)
+            return false;
+        if (destinationDrawable.visual == null
+                || destinationDrawable.visual.depth != 32)
+            return false;
+        if (source == null || source.gradient != null
+                || source.radialGradient != null)
+            return false;
+        if (quads.isEmpty()) return true;
+        int area = 0;
+        for (RenderComposite.GlyphQuad quad : quads)
+            area += quad.width * quad.height;
+        if (area < RenderComposite.GPU_MIN_PIXELS) return false;
+        GLRenderer renderer = xServer.getRenderer();
+        if (renderer == null || !renderer.hasEglContext()) return false;
+        maybeAttachAhb(destinationDrawable);
+        return renderer.compositeGlyphs(destinationDrawable,
+                sourceColor(source), quads);
+    }
+
     private void composite(XClient client, XInputStream inputStream)
             throws XRequestError {
         int operation = inputStream.readUnsignedByte();
@@ -937,6 +1033,11 @@ public class XRenderExtension extends Extension {
         if (tryCompositeFast(source, destination, sourceDrawable,
                 destinationDrawable, mask, maskDrawable, operation,
                 sourceX, sourceY, destinationX, destinationY, width, height))
+            return;
+        if (tryCompositeGpu(source, destination, sourceDrawable,
+                destinationDrawable, mask, maskDrawable, operation,
+                sourceX, sourceY, maskX, maskY, destinationX, destinationY,
+                width, height))
             return;
         for (ClipRectangle rectangle : clippedRectangles(destination,
                 destinationX, destinationY, width, height)) {
@@ -983,6 +1084,7 @@ public class XRenderExtension extends Extension {
         int penX = 0, penY = 0;
         int remaining = client.getRemainingRequestLength();
         int color = sourceColor(source);
+        ArrayList<RenderComposite.GlyphQuad> quads = new ArrayList<>();
         while (remaining >= 8) {
             int length = inputStream.readUnsignedByte();
             inputStream.skip(3);
@@ -1011,18 +1113,10 @@ public class XRenderExtension extends Extension {
                     for (ClipRectangle rectangle : clippedRectangles(
                             destination, glyphX, glyphY,
                             glyph.width, glyph.height)) {
-                        byte[] alpha = new byte[rectangle.width
-                                * rectangle.height];
-                        int sourceX = rectangle.x - glyphX;
-                        int sourceY = rectangle.y - glyphY;
-                        for (int row = 0; row < rectangle.height; row++)
-                            System.arraycopy(glyph.alpha,
-                                    (sourceY + row) * glyph.width + sourceX,
-                                    alpha, row * rectangle.width,
-                                    rectangle.width);
-                        destinationDrawable.blendAlphaMask(rectangle.x,
-                                rectangle.y, rectangle.width,
-                                rectangle.height, alpha, color);
+                        quads.add(new RenderComposite.GlyphQuad(glyph.alpha,
+                                glyph.width, glyph.height, rectangle.x,
+                                rectangle.y, rectangle.width, rectangle.height,
+                                rectangle.x - glyphX, rectangle.y - glyphY));
                     }
                     penX += glyph.xOff;
                     penY += glyph.yOff;
@@ -1032,6 +1126,17 @@ public class XRenderExtension extends Extension {
             if (padding > remaining) break;
             inputStream.skip(padding);
             remaining -= padding;
+        }
+        if (tryGlyphsGpu(source, destination, destinationDrawable, quads))
+            return;
+        for (RenderComposite.GlyphQuad quad : quads) {
+            byte[] alpha = new byte[quad.width * quad.height];
+            for (int row = 0; row < quad.height; row++)
+                System.arraycopy(quad.alpha,
+                        (quad.maskY + row) * quad.glyphWidth + quad.maskX,
+                        alpha, row * quad.width, quad.width);
+            destinationDrawable.blendAlphaMask(quad.x, quad.y, quad.width,
+                    quad.height, alpha, color);
         }
     }
 
@@ -1063,6 +1168,27 @@ public class XRenderExtension extends Extension {
 
         int color = colorToArgb(red, green, blue, alpha);
         int remaining = client.getRemainingRequestLength();
+        if (operation == PICT_OP_OVER && picture.format != a8Format
+                && drawable.visual != null && drawable.visual.depth == 32) {
+            ArrayList<int[]> clips = new ArrayList<>();
+            while (remaining >= 8) {
+                int x = inputStream.readShort();
+                int y = inputStream.readShort();
+                int width = inputStream.readUnsignedShort();
+                int height = inputStream.readUnsignedShort();
+                for (ClipRectangle rectangle : clippedRectangles(picture,
+                        x, y, width, height))
+                    clips.add(new int[] {rectangle.x, rectangle.y,
+                            rectangle.width, rectangle.height});
+                remaining -= 8;
+            }
+            if (remaining > 0) inputStream.skip(remaining);
+            if (tryFillOverGpu(picture, drawable, color, clips)) return;
+            for (int[] clip : clips)
+                drawable.blendSolidRect(clip[0], clip[1], clip[2], clip[3],
+                        color);
+            return;
+        }
         while (remaining >= 8) {
             int x = inputStream.readShort();
             int y = inputStream.readShort();

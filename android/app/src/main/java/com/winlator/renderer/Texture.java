@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 
 public class Texture {
     protected int textureId = 0;
+    protected int framebuffer = 0;
     protected int wrapS = GLES20.GL_CLAMP_TO_EDGE;
     protected int wrapT = GLES20.GL_CLAMP_TO_EDGE;
     protected int magFilter = GLES20.GL_LINEAR;
@@ -42,13 +43,36 @@ public class Texture {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
-
-        if (data != null) {
-            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, format, width, height, 0, format, GLES20.GL_UNSIGNED_BYTE, data);
-        }
-
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, format, width, height, 0,
+                format, GLES20.GL_UNSIGNED_BYTE, data);
         setTextureParameters();
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+    }
+
+    public void adoptTextureId(int textureId) {
+        this.textureId = textureId;
+    }
+
+    public int getFramebuffer() {
+        return framebuffer;
+    }
+
+    public boolean ensureFramebuffer() {
+        if (!isAllocated()) return false;
+        if (framebuffer != 0) return true;
+        int[] framebuffers = new int[1];
+        GLES20.glGenFramebuffers(1, framebuffers, 0);
+        framebuffer = framebuffers[0];
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, framebuffer);
+        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER,
+                GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, textureId, 0);
+        int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        if (status == GLES20.GL_FRAMEBUFFER_COMPLETE) return true;
+        int[] delete = new int[] {framebuffer};
+        GLES20.glDeleteFramebuffers(1, delete, 0);
+        framebuffer = 0;
+        return false;
     }
 
     public Drawable getOwner() {
@@ -182,6 +206,11 @@ public class Texture {
     }
 
     public void destroy() {
+        if (framebuffer != 0) {
+            int[] framebuffers = new int[]{framebuffer};
+            GLES20.glDeleteFramebuffers(1, framebuffers, 0);
+            framebuffer = 0;
+        }
         if (textureId > 0) {
             int[] textureIds = new int[]{textureId};
             GLES20.glDeleteTextures(textureIds.length, textureIds, 0);

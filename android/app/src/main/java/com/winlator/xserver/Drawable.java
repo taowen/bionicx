@@ -69,6 +69,21 @@ public class Drawable extends XResource {
         this.texture = texture;
     }
 
+    public Texture replaceTextureKeepCpuBuffer(Texture texture) {
+        Texture previous = this.texture;
+        this.texture = texture;
+        if (texture != null) texture.setOwner(this);
+        return previous;
+    }
+
+    public void markGpuPixelsCurrent(int x, int y, int w, int h) {
+        synchronized (renderLock) {
+            unionDirty(x, y, w, h);
+            if (texture != null) texture.setNeedsUpdate(false);
+        }
+        if (onDrawListener != null) onDrawListener.run();
+    }
+
     @Nullable
     public ByteBuffer getData() {
         return data;
@@ -79,7 +94,16 @@ public class Drawable extends XResource {
     }
 
     private short getStride() {
-        return texture instanceof GPUImage ? ((GPUImage)texture).getStride() : width;
+        if (texture instanceof GPUImage) {
+            GPUImage image = (GPUImage)texture;
+            if (data != null && data == image.getVirtualData() && image.getStride() > 0)
+                return image.getStride();
+        }
+        return width;
+    }
+
+    public short getImageStride() {
+        return getStride();
     }
 
     public Runnable getOnDrawListener() {

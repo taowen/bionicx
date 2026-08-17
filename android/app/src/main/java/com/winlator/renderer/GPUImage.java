@@ -17,6 +17,8 @@ public class GPUImage extends Texture {
     private short stride;
     private boolean locked = false;
     private int nativeHandle;
+    private final boolean cpuAccess;
+    private boolean preferEglImage;
 
     static {
         System.loadLibrary("winlator");
@@ -32,11 +34,24 @@ public class GPUImage extends Texture {
 
     public GPUImage(Drawable owner, boolean cpuAccess, boolean useHALPixelFormatBGRA8888) {
         super(owner);
+        this.cpuAccess = cpuAccess;
         hardwareBufferPtr = createHardwareBuffer(owner.width, owner.height, cpuAccess, useHALPixelFormatBGRA8888);
-        if (cpuAccess && hardwareBufferPtr != 0) {
-            virtualData = lockHardwareBuffer(hardwareBufferPtr);
-            locked = true;
-        }
+        /* Do not keep the buffer locked. Mali GPU writes are invisible to a
+         * mapping that stays locked, and GetImage then returns zeros. */
+    }
+
+    public void setPreferEglImage(boolean preferEglImage) {
+        this.preferEglImage = preferEglImage;
+    }
+
+    public boolean bindEglImage() {
+        if (imageKHRPtr != 0) return true;
+        if (!preferEglImage || hardwareBufferPtr == 0 || textureId == 0)
+            return false;
+        unlockCpu();
+        imageKHRPtr = createImageKHR(hardwareBufferPtr, textureId);
+        RenderComposite.logEglImage(imageKHRPtr != 0);
+        return imageKHRPtr != 0;
     }
 
     @Override
@@ -45,8 +60,13 @@ public class GPUImage extends Texture {
         generateTextureId();
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
-        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0,
-                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+        if (preferEglImage && bindEglImage()) {
+            setTextureParameters();
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            return;
+        }
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, format, width, height, 0,
+                format, GLES20.GL_UNSIGNED_BYTE, null);
         setTextureParameters();
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
     }
@@ -58,20 +78,76 @@ public class GPUImage extends Texture {
         /* Vulkan present publishes a host-visible copy into staging.
          * Never lock the window AHB from the GL thread. */
         if (!needsUpdate) return;
-        ByteBuffer pixels = staging != null ? staging : virtualData;
+        if (staging != null) {
+            upload(staging, owner.width, owner.height,
+                    stride > 0 ? stride : owner.width, GLES20.GL_RGBA);
+            needsUpdate = false;
+            return;
+        }
+        if (imageKHRPtr != 0) {
+            copyOwnerHeapToAhb();
+            needsUpdate = false;
+            owner.clearDirty();
+            return;
+        }
+        ByteBuffer pixels = virtualData != null ? virtualData : owner.getData();
         if (pixels != null) {
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
-            GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 4);
-            if (stride > owner.width)
-                GLES20.glPixelStorei(GLES30.GL_UNPACK_ROW_LENGTH, stride);
-            pixels.position(0);
-            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, owner.width, owner.height,
-                    GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixels);
-            if (stride > owner.width)
-                GLES20.glPixelStorei(GLES30.GL_UNPACK_ROW_LENGTH, 0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            short row = virtualData != null && stride > 0 ? stride : owner.width;
+            upload(pixels, owner.width, owner.height, row, format);
         }
         needsUpdate = false;
+    }
+
+    private void upload(ByteBuffer pixels, int width, int height, int rowLength,
+                        int glFormat) {
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
+        GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 4);
+        if (rowLength > width)
+            GLES20.glPixelStorei(GLES30.GL_UNPACK_ROW_LENGTH, rowLength);
+        pixels.position(0);
+        GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, width, height,
+                glFormat, GLES20.GL_UNSIGNED_BYTE, pixels);
+        if (rowLength > width)
+            GLES20.glPixelStorei(GLES30.GL_UNPACK_ROW_LENGTH, 0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+    }
+
+    public void copyOwnerHeapToAhb() {
+        ByteBuffer heap = owner != null ? owner.getData() : null;
+        if (heap == null || hardwareBufferPtr == 0) return;
+        ByteBuffer mapped = lockCpu();
+        if (mapped == null) return;
+        try {
+            int width = owner.width;
+            int height = owner.height;
+            int srcStride = owner.getImageStride();
+            int dstStride = stride > 0 ? stride : width;
+            for (int row = 0; row < height; row++) {
+                int src = row * srcStride * 4;
+                int dst = row * dstStride * 4;
+                for (int column = 0; column < width * 4; column++)
+                    mapped.put(dst + column, heap.get(src + column));
+            }
+        }
+        finally {
+            unlockCpu();
+        }
+    }
+
+    public ByteBuffer lockCpu() {
+        if (hardwareBufferPtr == 0 || !cpuAccess) return null;
+        if (!locked) {
+            virtualData = lockHardwareBuffer(hardwareBufferPtr);
+            locked = virtualData != null;
+        }
+        return virtualData;
+    }
+
+    public void unlockCpu() {
+        if (!locked || hardwareBufferPtr == 0) return;
+        unlockHardwareBuffer(hardwareBufferPtr);
+        locked = false;
+        virtualData = null;
     }
 
     public void publishPixels(ByteBuffer pixels, int width, int height) {
@@ -114,8 +190,9 @@ public class GPUImage extends Texture {
 
     @Override
     public void destroy() {
+        unlockCpu();
         destroyImageKHR(imageKHRPtr);
-        destroyHardwareBuffer(hardwareBufferPtr, locked);
+        destroyHardwareBuffer(hardwareBufferPtr, false);
         virtualData = null;
         imageKHRPtr = 0;
         hardwareBufferPtr = 0;

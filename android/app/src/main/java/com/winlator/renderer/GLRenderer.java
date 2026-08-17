@@ -69,12 +69,15 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
     protected short surfaceHeight;
     public final EffectComposer effectComposer = new EffectComposer(this);
     private final CountDownLatch eglContextReady = new CountDownLatch(1);
+    private Thread glThread;
+    private final RenderComposite renderComposite;
     private boolean renderScheduled;
     private final AtomicBoolean sceneUpdateScheduled = new AtomicBoolean();
 
     public GLRenderer(XServerView xServerView, XServer xServer) {
         this.xServerView = xServerView;
         this.xServer = xServer;
+        renderComposite = new RenderComposite(quadVertices);
         rootCursorDrawable = createRootCursorDrawable();
 
         quadVertices.put(new float[]{
@@ -98,8 +101,68 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
         }
     }
 
+    public boolean hasEglContext() {
+        return eglContextReady.getCount() == 0;
+    }
+
+    public boolean runSync(Runnable task, long timeoutMs) {
+        if (!hasEglContext()) return false;
+        if (Thread.currentThread() == glThread) {
+            task.run();
+            return true;
+        }
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicBoolean failed = new AtomicBoolean();
+        xServerView.queueEvent(() -> {
+            try {
+                task.run();
+            }
+            catch (Throwable error) {
+                failed.set(true);
+            }
+            finally {
+                latch.countDown();
+            }
+        });
+        xServerView.requestRender();
+        try {
+            if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) return false;
+        }
+        catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+        return !failed.get();
+    }
+
+    public boolean compositeOver(Drawable source, boolean sourceRepeat,
+            int sourceX, int sourceY, Drawable mask, int maskX, int maskY,
+            boolean maskIsA8, Drawable destination, int destX, int destY,
+            int width, int height, Integer solidArgb,
+            java.util.List<int[]> clips) {
+        AtomicBoolean ok = new AtomicBoolean();
+        boolean ran = runSync(() -> {
+            ok.set(renderComposite.over(source, sourceRepeat, sourceX, sourceY,
+                    mask, maskX, maskY, maskIsA8, destination, destX, destY,
+                    width, height, solidArgb, clips));
+            viewportNeedsUpdate = true;
+        }, 5000);
+        return ran && ok.get();
+    }
+
+    public boolean compositeGlyphs(Drawable destination, int color,
+            java.util.List<RenderComposite.GlyphQuad> quads) {
+        AtomicBoolean ok = new AtomicBoolean();
+        boolean ran = runSync(() -> {
+            ok.set(renderComposite.glyphs(destination, color, quads));
+            viewportNeedsUpdate = true;
+        }, 5000);
+        return ran && ok.get();
+    }
+
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        glThread = Thread.currentThread();
         GPUHelper.setGlobalEGLContext();
         GLXExtension.setRendererEGLContext();
         eglContextReady.countDown();
