@@ -668,6 +668,49 @@ static int accept_session(Display *display, const char *prefix,
     result("session-applications-menu", menu_ok, detail);
     RECORD(menu_ok);
 
+    if (escape != 0) {
+        XTestFakeKeyEvent(display, escape, True, 0);
+        XTestFakeKeyEvent(display, escape, False, 20);
+        XSync(display, False);
+        sleep_ms(250);
+    }
+    Window click_bar = find_widest_class(display, root, "Xfce4-panel");
+    if (click_bar == None)
+        click_bar = find_widest_class(display, root, "xfce4-panel");
+    if (click_bar == None) click_bar = panel;
+    XWindowAttributes click_attr = {0};
+    int click_event = 0, click_error = 0, click_major = 0, click_minor = 0;
+    if (click_bar != None
+            && XTestQueryExtension(display, &click_event, &click_error,
+                                   &click_major, &click_minor)
+            && XGetWindowAttributes(display, click_bar, &click_attr)) {
+        int click_x = 0;
+        int click_y = 0;
+        Window click_child = None;
+        int local_x = click_attr.width > 24 ? 12 : click_attr.width / 2;
+        int local_y = click_attr.height > 2 ? click_attr.height / 2 : 12;
+        XTranslateCoordinates(display, click_bar, root, local_x, local_y,
+                              &click_x, &click_y, &click_child);
+        Window after_helper[32];
+        int after_n = collect_override(display, root, after_helper, 32, 0);
+        XTestFakeMotionEvent(display, DefaultScreen(display), click_x,
+                             click_y, 0);
+        XTestFakeButtonEvent(display, 1, True, 30);
+        XTestFakeButtonEvent(display, 1, False, 30);
+        XSync(display, False);
+        char click_menu[256];
+        int click_mapped = wait_new_menu(display, root, after_helper, after_n,
+                                         2000, click_menu, sizeof(click_menu));
+        printf("BXINFO click-menu %s click=%d,%d\n",
+               click_mapped ? click_menu : "none", click_x, click_y);
+        fflush(stdout);
+        if (escape != 0) {
+            XTestFakeKeyEvent(display, escape, True, 0);
+            XTestFakeKeyEvent(display, escape, False, 20);
+            XSync(display, False);
+        }
+    }
+
     if (!mapped) {
         printf("BXSUMMARY xfce-session-accept passed=%d failed=%d\n",
                passed, failed);

@@ -38,8 +38,11 @@ framed stub WM (`fired=1 type=4 button=1 state=0x0`). An XTEST click at
 a menu when `xfwm4` is the WM. QueryPointer says the hit is correct:
 root child is the xfwm4 frame (`0x8003ff` 2640x27+0+0), frame child is
 the panel client, and the panel has no child at that point. Isolated
-`dock-client-replay` and `overlay-click-through` pass. A SyncPointer
-that left the pointer frozen also ate the later helper popup; that
-thaw is fixed. The remaining gap is the xfwm4 grab plus XI2-then-core
-press not delivering a GTK button-press the plugin accepts. The plugin
-has no child X window; a 133x26 child at `x=2507` is the clock.
+`dock-client-replay` and overlay click-through pass. `AllowEvents`
+SyncPointer now thaws frozen pointer events without dropping the grab
+(GTK menus SyncPointer while still owning the pointer). Isolated
+`dock-xi-replay` Replays the client and delivers XI2 to it, but xfwm4
+still sees XI2 `ButtonPress` on the frame first (`event.window !=
+c->window`) and SyncPointers. Making that press exclusive to the grab
+window broke `gtk-menu-click`. The plugin has no child X window; a
+133x26 child at `x=2507` is the clock.

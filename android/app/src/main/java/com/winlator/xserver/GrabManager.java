@@ -107,6 +107,11 @@ public class GrabManager implements WindowManager.OnWindowModificationListener,
         deactivatePointerGrab(false);
     }
 
+    public void thawSynchronousPointer() {
+        pointerSynchronous = false;
+        xServer.inputDeviceManager.flushFrozenPointerEvents();
+    }
+
     private void deactivatePointerGrab(boolean discardFrozenEvents) {
         if (window != null) {
             xServer.inputDeviceManager.sendEnterLeaveNotify(window, xServer.inputDeviceManager.getPointWindow(), PointerWindowEvent.Mode.UNGRAB);

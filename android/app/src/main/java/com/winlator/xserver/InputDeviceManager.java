@@ -181,12 +181,34 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             winHandler.mouseEvent(MouseEventFlags.getFlagFor(button, true), 0, 0, wheelDelta);
         }
         else {
-            deliverPointerButtonPress(button, true);
+            deliverPointerButtonPress(button, true, true);
         }
     }
 
     public void replayPointerButtonPress(Pointer.Button button) {
-        deliverPointerButtonPress(button, false);
+        sendXiPointerEvent(XInputExtension.XI_BUTTON_PRESS, button.code());
+        deliverPointerButtonPress(button, false, true);
+        ArrayList<PendingPointerEvent> pending =
+                new ArrayList<>(frozenPointerEvents);
+        frozenPointerEvents.clear();
+        for (PendingPointerEvent event : pending) {
+            if (event.button != null) {
+                sendXiPointerEvent(XInputExtension.XI_BUTTON_RELEASE,
+                        event.button.code());
+                deliverPointerButtonRelease(event.button);
+            }
+            else {
+                sendXiPointerEvent(XInputExtension.XI_MOTION, 0);
+                deliverPointerMove(event.x, event.y);
+            }
+        }
+    }
+
+    public void discardFrozenPointerEvents() {
+        frozenPointerEvents.clear();
+    }
+
+    public void flushFrozenPointerEvents() {
         ArrayList<PendingPointerEvent> pending =
                 new ArrayList<>(frozenPointerEvents);
         frozenPointerEvents.clear();
@@ -194,10 +216,6 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
             if (event.button != null) deliverPointerButtonRelease(event.button);
             else deliverPointerMove(event.x, event.y);
         }
-    }
-
-    public void discardFrozenPointerEvents() {
-        frozenPointerEvents.clear();
     }
 
     private void freezePointerMotion(short x, short y) {
@@ -209,7 +227,8 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
     }
 
     private void deliverPointerButtonPress(Pointer.Button button,
-                                           boolean allowPassiveGrab) {
+                                           boolean allowPassiveGrab,
+                                           boolean allowImplicitGrab) {
             Window normalWindow =
                     pointWindow.getAncestorWithEventId(Event.BUTTON_PRESS);
             Window grabWindow = xServer.grabManager.getWindow();
@@ -219,7 +238,8 @@ public class InputDeviceManager implements Pointer.OnPointerMotionListener, Keyb
                         xServer.keyboard.getModifiersMask().getBits());
                 grabWindow = xServer.grabManager.getWindow();
             }
-            if (grabWindow == null && normalWindow != null) {
+            if (grabWindow == null && allowImplicitGrab
+                    && normalWindow != null) {
                 xServer.grabManager.activatePointerGrab(normalWindow);
                 grabWindow = normalWindow;
             }

@@ -2,6 +2,7 @@
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
+#include <X11/extensions/XInput2.h>
 #include <X11/extensions/XTest.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -387,6 +388,131 @@ int main(int argc, char **argv) {
         result("dock-client-replay", 0, "dock not framed");
     }
     RECORD(client_replay_ok);
+
+    int xi_replay_ok = 0;
+    if (dock_ok) {
+        int opcode = 0;
+        int event_base = 0;
+        int error_base = 0;
+        int mgr_major = 2;
+        int mgr_minor = 0;
+        int app_major = 2;
+        int app_minor = 0;
+        if (!XQueryExtension(manager, "XInputExtension", &opcode, &event_base,
+                             &error_base)
+                || XIQueryVersion(manager, &mgr_major, &mgr_minor) != Success
+                || XIQueryVersion(client, &app_major, &app_minor) != Success) {
+            result("dock-xi-replay", 0, "XI2 unavailable");
+        } else {
+            unsigned char mgr_mask[XIMaskLen(XI_LASTEVENT)] = {0};
+            XISetMask(mgr_mask, XI_ButtonPress);
+            XIEventMask mgr_xi = {
+                .deviceid = 2,
+                .mask_len = (int)sizeof(mgr_mask),
+                .mask = mgr_mask,
+            };
+            XISelectEvents(manager, dock_frame, &mgr_xi, 1);
+            XGrabButton(manager, 1, AnyModifier, dock, False, ButtonPressMask,
+                        GrabModeSync, GrabModeAsync, None, None);
+            unsigned char app_mask[XIMaskLen(XI_LASTEVENT)] = {0};
+            XISetMask(app_mask, XI_ButtonPress);
+            XIEventMask app_xi = {
+                .deviceid = 2,
+                .mask_len = (int)sizeof(app_mask),
+                .mask = app_mask,
+            };
+            XISelectEvents(client, dock, &app_xi, 1);
+            XSync(manager, False);
+            XSync(client, False);
+            int xt_event = 0;
+            int xt_error = 0;
+            int xt_major = 0;
+            int xt_minor = 0;
+            int root_x = 0;
+            int root_y = 0;
+            Window child = None;
+            XTranslateCoordinates(client, dock, root, 36, 13, &root_x, &root_y,
+                                  &child);
+            while (XPending(client)) {
+                XEvent ignored = {0};
+                XNextEvent(client, &ignored);
+            }
+            while (XPending(manager)) {
+                XEvent ignored = {0};
+                XNextEvent(manager, &ignored);
+            }
+            if (XTestQueryExtension(client, &xt_event, &xt_error, &xt_major,
+                                    &xt_minor)) {
+                XTestFakeMotionEvent(client, screen, root_x, root_y, 0);
+                XTestFakeButtonEvent(client, 1, True, 20);
+                XTestFakeButtonEvent(client, 1, False, 20);
+                XSync(client, False);
+            }
+            int waited = 0;
+            int saw_grab = 0;
+            int replayed = 0;
+            int pre_replay_frame = 0;
+            int client_xi = 0;
+            while (waited <= 800) {
+                while (XPending(manager)) {
+                    XEvent event = {0};
+                    XNextEvent(manager, &event);
+                    Window evw = None;
+                    int is_press = 0;
+                    if (event.type == ButtonPress) {
+                        evw = event.xbutton.window;
+                        is_press = 1;
+                    } else if (event.type == GenericEvent
+                            && event.xcookie.extension == opcode
+                            && XGetEventData(manager, &event.xcookie)) {
+                        XIDeviceEvent *xi = event.xcookie.data;
+                        if (xi != NULL && xi->evtype == XI_ButtonPress) {
+                            evw = xi->event;
+                            is_press = 1;
+                        }
+                        XFreeEventData(manager, &event.xcookie);
+                    }
+                    if (is_press) {
+                        saw_grab = 1;
+                        if (evw == dock) {
+                            replayed = 1;
+                            XAllowEvents(manager, ReplayPointer, CurrentTime);
+                        } else if (!replayed) {
+                            pre_replay_frame = 1;
+                            XAllowEvents(manager, SyncPointer, CurrentTime);
+                        }
+                        XFlush(manager);
+                    }
+                }
+                while (XPending(client)) {
+                    XEvent event = {0};
+                    XNextEvent(client, &event);
+                    if (event.type == GenericEvent
+                            && event.xcookie.extension == opcode
+                            && XGetEventData(client, &event.xcookie)) {
+                        XIDeviceEvent *xi = event.xcookie.data;
+                        if (xi != NULL && xi->evtype == XI_ButtonPress
+                                && xi->event == dock)
+                            client_xi = 1;
+                        XFreeEventData(client, &event.xcookie);
+                    }
+                }
+                if (client_xi && replayed) break;
+                sleep_ms(20);
+                waited += 20;
+            }
+            XUngrabButton(manager, 1, AnyModifier, dock);
+            xi_replay_ok = client_xi && replayed;
+            char replay_detail[128];
+            snprintf(replay_detail, sizeof(replay_detail),
+                     "client_xi=%d replayed=%d pre_frame=%d grab=%d",
+                     client_xi, replayed, pre_replay_frame, saw_grab);
+            result("dock-xi-replay", xi_replay_ok, replay_detail);
+        }
+    } else {
+        result("dock-xi-replay", 0, "dock not framed");
+    }
+    RECORD(xi_replay_ok);
 
     printf("BXSUMMARY reparent-x11 passed=%d failed=%d xerrors=%d\n",
            passed, failed, x_errors);

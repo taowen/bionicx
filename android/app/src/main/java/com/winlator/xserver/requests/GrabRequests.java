@@ -150,11 +150,12 @@ public abstract class GrabRequests {
             client.xServer.inputDeviceManager.replayPointerButtonPress(button);
             return;
         }
-        // SyncPointer: the grab client ate this press. Thaw and drop the
-        // active grab so the matching release can end the freeze. Leaving
-        // the pointer frozen made later XTEST/helper clicks disappear.
+        // SyncPointer: thaw frozen pointer events but keep the grab.
+        // Dropping the grab here broke GTK menus that SyncPointer while
+        // still owning the pointer. xfwm4's rejected press then ends on
+        // the matching release via releaseWithButtons.
         if (mode == 1 && client.xServer.grabManager.getClient() == client) {
-            client.xServer.grabManager.deactivatePointerGrab();
+            client.xServer.grabManager.thawSynchronousPointer();
             return;
         }
         // Async*, ReplayKeyboard: freeze is not implemented.
