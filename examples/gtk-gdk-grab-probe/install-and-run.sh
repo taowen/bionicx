@@ -24,7 +24,7 @@ for i in $(seq 1 30); do
     sleep 1
 done
 result="$(adb -s "$serial" logcat -d -v brief \
-    | grep -E 'BXTEST|BXSUMMARY')"
+    | grep -E 'BXTEST|BXSUMMARY|BXINFO gdk-grab-im|BXINFO gdk-filter')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY gtk-gdk-grab passed=8 failed=0" <<<"$result"
 echo "gtk-gdk-grab probe: PASS"

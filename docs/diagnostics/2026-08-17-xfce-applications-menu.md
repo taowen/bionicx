@@ -140,8 +140,24 @@ opcode 20 is `GetProperty`. xfwm4's `handlePropertyNotify` calls
 `clientUpdateName` for `WM_NAME`, so the grabber dequeued past both
 the send_event core press and the XI2 press. It never AllowEvents, so
 `handleButtonPress` did not run. The press is not stuck behind
-ConfigureNotify or a frame-clock pause. Either `XFilterEvent` ate the
-XI2 GenericEvent (isolated GTK has no session IM) or
-`xfwm_device_translate_event` saw `cookie.data == NULL` / a mismatched
-opcode and classified it as `XFWM_EVENT_XEVENT`. Do not add a 13th
-xfce accept click.
+ConfigureNotify or a frame-clock pause.
+
+`XFilterEvent` returning True is a silent `continue` in
+`gdkeventsource.c`. There is no GDK log for that drop. Seed
+`libgdk-3.so.0` is built without `G_ENABLE_DEBUG`, so
+`GDK_DEBUG=events` is also a no-op (`gdk-ev-summary new_lines=0`;
+the only stderr is an AT-SPI warning). xfwm4 `TRACE` is compiled out.
+The seed `xfwm4` is not linked to `libXi`, so its filter has no XI2
+button branch even when a cookie reaches GDK.
+
+Isolated `gtk-gdk-grab` now prints every event that survives
+`XFilterEvent` and hits `gdk_window_add_filter`:
+
+```text
+BXINFO gdk-filter type=35 send=0 ext=147 data=1 evtype=4
+```
+
+`type=4` core `ButtonPress` never appears (`core=0 send=0`). Only
+XI2 GenericEvent (`type=35`, cookie present, `evtype=4`) reaches the
+filter. A simple `XOpenIM` does not change that
+(`gdk-grab-im … xi=1 allow=1`). Do not add a 13th xfce accept click.

@@ -55,7 +55,7 @@ kill "$logcat_pid" 2>/dev/null || true
 wait "$logcat_pid" 2>/dev/null || true
 trap - EXIT
 log="$(cat "$bionicx_log"; adb -s "$serial" logcat -d -v brief)"
-result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO click-|BXINFO grab-|BXINFO pre-click-|BXINFO post-click-|BXINFO bar-child|BXINFO root-stack|BXINFO find-|BXINFO saved-bar|BXINFO thin-root|BXINFO ptr-press|BXINFO grab-trace|BXINFO grab-add|BXINFO grab-add-reject|BXINFO grab-press|BXINFO grab-xi|BXINFO grab-mark|BXINFO allow-events|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log" | awk '!seen[$0]++')"
+result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO click-|BXINFO grab-|BXINFO pre-click-|BXINFO post-click-|BXINFO bar-child|BXINFO root-stack|BXINFO find-|BXINFO saved-bar|BXINFO thin-root|BXINFO ptr-press|BXINFO grab-trace|BXINFO grab-add|BXINFO grab-add-reject|BXINFO grab-press|BXINFO grab-xi|BXINFO grab-mark|BXINFO gdk-ev|BXINFO allow-events|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log" | awk '!seen[$0]++')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY xfce-session-accept passed=12 failed=0" <<<"$result"
 grep -Fq "enabled D-Bus session service" <<<"$result"

@@ -21,6 +21,7 @@
 static pid_t children[12];
 static size_t child_count;
 static FILE *accept_log;
+static char gdk_ev_log[512];
 
 static void accept_log_line(const char *fmt, ...) {
     if (accept_log == NULL) return;
@@ -77,6 +78,75 @@ static pid_t start(char *const argv[]) {
     }
     if (child > 0 && child_count < 12) children[child_count++] = child;
     return child;
+}
+
+static pid_t start_logged(char *const argv[], const char *log_path,
+                          const char *gdk_debug) {
+    if (argv[0] == NULL || !exists_exec(argv[0])) {
+        printf("BXINFO skip missing %s\n", argv[0] ? argv[0] : "(null)");
+        fflush(stdout);
+        return -1;
+    }
+    pid_t child = fork();
+    if (child == 0) {
+        if (gdk_debug != NULL) setenv("GDK_DEBUG", gdk_debug, 1);
+        if (log_path != NULL) {
+            int fd = open(log_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (fd >= 0) {
+                dup2(fd, STDERR_FILENO);
+                close(fd);
+            }
+        }
+        execvp(argv[0], argv);
+        perror(argv[0]);
+        _exit(127);
+    }
+    if (child > 0 && child_count < 12) children[child_count++] = child;
+    return child;
+}
+
+static long file_size_of(const char *path) {
+    struct stat info;
+    if (path == NULL || stat(path, &info) != 0) return 0;
+    return (long)info.st_size;
+}
+
+static int gdk_ev_interesting(const char *line) {
+    return strstr(line, "button") != NULL
+            || strstr(line, "Button") != NULL
+            || strstr(line, "generic") != NULL
+            || strstr(line, "Generic") != NULL
+            || strstr(line, "filter") != NULL
+            || strstr(line, "XI") != NULL;
+}
+
+static void dump_gdk_ev(const char *path, long from) {
+    FILE *log = fopen(path, "r");
+    if (log == NULL) {
+        printf("BXINFO gdk-ev missing path=%s\n", path ? path : "(null)");
+        fflush(stdout);
+        return;
+    }
+    if (from > 0) fseek(log, from, SEEK_SET);
+    char line[512];
+    int matched = 0;
+    int printed = 0;
+    int new_lines = 0;
+    while (fgets(line, sizeof(line), log) != NULL) {
+        ++new_lines;
+        if (!gdk_ev_interesting(line)) continue;
+        ++matched;
+        if (printed >= 32) continue;
+        size_t len = strlen(line);
+        while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+            line[--len] = '\0';
+        printf("BXINFO gdk-ev %s\n", line);
+        ++printed;
+    }
+    fclose(log);
+    printf("BXINFO gdk-ev-summary matched=%d printed=%d new_lines=%d from=%ld\n",
+           matched, printed, new_lines, from);
+    fflush(stdout);
 }
 
 static int class_matches(const XClassHint *hint, const char *wanted) {
@@ -847,6 +917,7 @@ static void dump_session_click(Display *display, Window root, Window bar,
     int grab_motion = grab_free(display, root);
     printf("BXINFO grab-motion %d\n", grab_motion);
     fflush(stdout);
+    long gdk_from = file_size_of(gdk_ev_log);
     XTestFakeButtonEvent(display, 1, True, 30);
     XTestFakeButtonEvent(display, 1, False, 30);
     XSync(display, False);
@@ -857,6 +928,7 @@ static void dump_session_click(Display *display, Window root, Window bar,
     dump_override(display, root, "post-click-or");
     dump_find_class(display, root, root, "Xfce4-panel", 0);
     int grab_after = grab_free(display, root);
+    dump_gdk_ev(gdk_ev_log, gdk_from);
     printf("BXINFO click-menu %s grab=%d->%d %s\n",
            menu ? "opened" : "none", grab, grab_after,
            menu ? detail : "no popup");
@@ -1201,7 +1273,10 @@ int main(int argc, char **argv) {
         if (fd >= 0) fcntl(fd, F_SETFD, FD_CLOEXEC);
     }
 
-    start(wm_argv);
+    const char *home = getenv("HOME");
+    snprintf(gdk_ev_log, sizeof(gdk_ev_log), "%s/bx-gdk-events.log",
+             home != NULL ? home : "/tmp");
+    start_logged(wm_argv, gdk_ev_log, "events");
     if (display != NULL) {
         Window root = DefaultRootWindow(display);
         for (int i = 0; i < 80 && !wm_is_xfwm(display, root); ++i)

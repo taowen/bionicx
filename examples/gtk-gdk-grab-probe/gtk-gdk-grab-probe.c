@@ -13,6 +13,7 @@ static int filter_core;
 static int filter_xi;
 static int filter_send;
 static int filter_allow;
+static int filter_logs;
 static Display *gdk_dpy;
 static int xi_opcode;
 
@@ -39,6 +40,19 @@ static int on_x_event(void *xevent, void *gevent, void *data) {
     int is_press = 0;
     (void)gevent;
     (void)data;
+    if (filter_logs < 24 && (event->type == ButtonPress
+            || event->type == ButtonRelease || event->type == GenericEvent)) {
+        int send = event->xany.send_event ? 1 : 0;
+        int ext = event->type == GenericEvent ? event->xcookie.extension : -1;
+        int has_data = event->type == GenericEvent
+                && event->xcookie.data != NULL;
+        int evtype = -1;
+        if (has_data) evtype = ((XIEvent *)event->xcookie.data)->evtype;
+        printf("BXINFO gdk-filter type=%d send=%d ext=%d data=%d evtype=%d\n",
+               event->type, send, ext, has_data, evtype);
+        fflush(stdout);
+        ++filter_logs;
+    }
     if (event->type == ButtonPress && event->xbutton.button == 1) {
         filter_core = 1;
         filter_send = event->xbutton.send_event ? 1 : 0;
@@ -242,7 +256,7 @@ int main(int argc, char **argv) {
     int self_x = origin_x + gdk_window_get_width(gdk_window) / 2;
     int self_y = origin_y + gdk_window_get_height(gdk_window) / 2;
 
-    filter_core = filter_xi = filter_send = filter_allow = 0;
+    filter_core = filter_xi = filter_send = filter_allow = filter_logs = 0;
     int self_ok = 0;
     if (!xi_ok) {
         snprintf(detail, sizeof(detail), "XI2 unavailable");
@@ -263,7 +277,7 @@ int main(int argc, char **argv) {
 
     Display *peer = XOpenDisplay(NULL);
     Window peer_win = None;
-    filter_core = filter_xi = filter_send = filter_allow = 0;
+    filter_core = filter_xi = filter_send = filter_allow = filter_logs = 0;
     int peer_ok = 0;
     if (peer == NULL) {
         snprintf(detail, sizeof(detail), "peer display failed");
@@ -299,7 +313,7 @@ int main(int argc, char **argv) {
 
     Display *redirected = XOpenDisplay(NULL);
     Window redirected_win = None;
-    filter_core = filter_xi = filter_send = filter_allow = 0;
+    filter_core = filter_xi = filter_send = filter_allow = filter_logs = 0;
     int redirect_ok = 0;
     if (redirected == NULL) {
         snprintf(detail, sizeof(detail), "peer display failed");
@@ -332,7 +346,7 @@ int main(int argc, char **argv) {
 
     Display *hover = XOpenDisplay(NULL);
     Window hover_win = None;
-    filter_core = filter_xi = filter_send = filter_allow = 0;
+    filter_core = filter_xi = filter_send = filter_allow = filter_logs = 0;
     int hover_ok = 0;
     if (hover == NULL) {
         snprintf(detail, sizeof(detail), "peer display failed");
@@ -355,7 +369,7 @@ int main(int argc, char **argv) {
                 XCloseDisplay(motion);
             }
             pump(gtk_events_pending, gtk_main_iteration_do, 400);
-            filter_core = filter_xi = filter_send = filter_allow = 0;
+            filter_core = filter_xi = filter_send = filter_allow = filter_logs = 0;
             if (!xtest_click(100, 420)) {
                 snprintf(detail, sizeof(detail), "XTEST unavailable");
             } else {
@@ -371,6 +385,33 @@ int main(int argc, char **argv) {
     }
     result("gdk-grab-hover", hover_ok, detail);
     RECORD(hover_ok);
+
+    /* Locating only: a session IM can make XFilterEvent eat GenericEvent
+     * before default filters. Do not fail the 8/8 expect on this dump. */
+    filter_core = filter_xi = filter_send = filter_allow = filter_logs = 0;
+    XIM im = XOpenIM(gdk_dpy, NULL, NULL, NULL);
+    XIC ic = NULL;
+    if (im != NULL) {
+        ic = XCreateIC(im, XNInputStyle,
+                       XIMPreeditNothing | XIMStatusNothing,
+                       XNClientWindow, self, XNFocusWindow, self, NULL);
+        if (ic != NULL) XSetICFocus(ic);
+    }
+    if (xi_ok && grab_target(gdk_dpy, self) && xtest_click(self_x, self_y)) {
+        pump(gtk_events_pending, gtk_main_iteration_do, 800);
+        ungrab_target(gdk_dpy, self);
+        printf("BXINFO gdk-grab-im core=%d send=%d xi=%d allow=%d im=%d ic=%d\n",
+               filter_core, filter_send, filter_xi, filter_allow,
+               im != NULL, ic != NULL);
+        fflush(stdout);
+    } else {
+        printf("BXINFO gdk-grab-im skipped im=%d ic=%d\n",
+               im != NULL, ic != NULL);
+        fflush(stdout);
+        if (xi_ok) ungrab_target(gdk_dpy, self);
+    }
+    if (ic != NULL) XDestroyIC(ic);
+    if (im != NULL) XCloseIM(im);
 
     printf("BXSUMMARY gtk-gdk-grab passed=%d failed=%d\n", passed, failed);
     return failed == 0 ? 0 : 1;
