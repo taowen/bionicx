@@ -22,5 +22,13 @@ BXTEST PASS grab-owner-configure 240x90 under GrabServer
 BXSUMMARY map-request-x11 passed=7 failed=0
 ```
 
-`examples/gtk-menu-probe` is the same popup without a WM:
-`gtk_menu_popup_at_widget` maps a `GDK_WINDOW_TEMP` of at least 40x16.
+`examples/gtk-menu-probe` is the same popup without XFCE: a second
+connection holds `SubstructureRedirect` and answers Map/Configure
+requests, `gtk_menu_popup_at_widget` maps a `GDK_WINDOW_TEMP` of at
+least 40x16, and XTEST clicks a `GtkMenuButton` after the first menu
+is popped down so its pointer grab cannot eat the click.
+
+```text
+BXTEST PASS gtk-menu-click click=160,183 temp=2 156x33
+BXSUMMARY gtk-menu passed=7 failed=0
+```
