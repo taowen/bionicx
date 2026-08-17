@@ -66,6 +66,10 @@ if grep -F 'XRandR initialization error' <<<"$log"; then
     echo "xfwm4 must see RandR 1.5" >&2
     exit 1
 fi
+if grep -F "Unable to acquire bus name 'org.xfce.Thunar'" <<<"$log"; then
+    echo "Thunar must own org.xfce.Thunar before xfdesktop activates it" >&2
+    exit 1
+fi
 if adb -s "$serial" shell run-as io.taowen.bx \
         find files/apps -name 'libc.so.6' | grep -q .; then
     echo "xfce-session must not grow a per-app libc.so.6" >&2

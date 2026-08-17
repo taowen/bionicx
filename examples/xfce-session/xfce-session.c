@@ -538,10 +538,12 @@ int main(int argc, char **argv) {
     sleep_ms(400);
     start(panel_argv);
     sleep_ms(400);
+    /* xfdesktop D-Bus-activates org.xfce.FileManager. Start Thunar first
+     * so it owns org.xfce.Thunar instead of racing a second instance. */
+    start(app1);
+    sleep_ms(400);
     start(desktop_argv);
     sleep_ms(400);
-    start(app1);
-    sleep_ms(200);
     start(app2);
     printf("BXTEST PASS xfce-session-launch children=%d\n",
            (int)child_count);
