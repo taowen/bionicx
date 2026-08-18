@@ -6,8 +6,19 @@ cache_dir="$repo_dir/build/cache"
 glibc_version=2.41
 glibc_sha256=a5a26b22f545d6b7d7b3dd828e11e428f24f4fac43c934fb071b6a7d0828e901
 package_commit=0bd35594050d283eda7b23a3d9cfa28fd11c0b15
-source_prefix=/data/data/com.winlator/files/rootfs
-target_prefix=/data/data/io.taowen.bx/files/rootfs
+# Winlator patches bake SYSCONFDIR as an absolute C string. relocate-prefix.py
+# can retarget that only when the app prefix stays the same byte length
+# (com.winlator == io.taowen.bx). A longer package such as io.taowen.ardesk
+# must compile --prefix for the final path; patchelf on this libc breaks NSS.
+winlator_prefix=/data/data/com.winlator/files/rootfs
+target_prefix="${BIONICX_GLIBC_PREFIX:-/data/data/io.taowen.bx/files/rootfs}"
+winlator_app="${winlator_prefix%/files/rootfs}"
+target_app="${target_prefix%/files/rootfs}"
+if [[ ${#winlator_app} -eq ${#target_app} ]]; then
+    source_prefix="$winlator_prefix"
+else
+    source_prefix="$target_prefix"
+fi
 jobs="${BIONICX_GLIBC_JOBS:-8}"
 
 verify_output() {
@@ -38,7 +49,8 @@ PY
 
 mkdir -p "$cache_dir"
 definition_hash="$({
-    printf '%s\n' "$glibc_version" "$glibc_sha256" "$package_commit"
+    printf '%s\n' "$glibc_version" "$glibc_sha256" "$package_commit" \
+        "$source_prefix" "$target_prefix"
     sha256sum "$repo_dir/tools/container/Containerfile.glibc-arm64" \
         "$repo_dir/runtime/glibc/2.41/zz-bionicx-robust-fallback.patch" \
         "$repo_dir/runtime/glibc/2.41/zz-android-group-members.patch" \
@@ -178,9 +190,11 @@ podman run --rm --userns=keep-id --volume "$repo_dir:/work:Z" \
     "$container_dir/output/libc.so.6" \
     "$container_dir/output/ld-linux-aarch64.so.1" \
     "$container_dir/output/libm.so.6"
-"$repo_dir/tools/relocate-prefix.py" "$temporary/output" \
-    --from-prefix "${source_prefix%/files/rootfs}" \
-    --to-prefix "${target_prefix%/files/rootfs}"
+if [[ "$source_prefix" != "$target_prefix" ]]; then
+    "$repo_dir/tools/relocate-prefix.py" "$temporary/output" \
+        --from-prefix "${source_prefix%/files/rootfs}" \
+        --to-prefix "${target_prefix%/files/rootfs}"
+fi
 verify_output "$temporary/output"
 
 printf '%s\n' \

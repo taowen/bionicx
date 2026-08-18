@@ -59,9 +59,11 @@ podman run --rm --userns=keep-id \
     "$builder_image" sh -c \
     "cp -L /usr/lib/aarch64-linux-gnu/libXtst.so.6 '$container_output/rootfs/usr/lib/libXtst.so.6'"
 # A cold toolchain build emits upstream patch/build progress on stdout before
-# its final artifact path. Preserve that useful output while treating only the
-# last line as the machine-readable result.
-android_glibc="$("$repo_dir/tools/build-android-glibc.sh" | tee /dev/stderr | tail -n 1)"
+# its final artifact path. Keep the log on disk so the last line is still
+# machine-readable when /dev/stderr is not a device (piped agent runs).
+android_glibc_log="$repo_dir/build/cache/android-glibc-last-build.log"
+"$repo_dir/tools/build-android-glibc.sh" | tee "$android_glibc_log"
+android_glibc="$(tail -n 1 "$android_glibc_log")"
 for library in ld-linux-aarch64.so.1 libc.so.6 libm.so.6; do
     cp "$android_glibc/$library" "$output_dir/rootfs/usr/lib/"
 done

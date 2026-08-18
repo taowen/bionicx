@@ -82,6 +82,25 @@ while IFS= read -r -d '' link; do
     ln -sfn "$relative" "$link"
 done < <(find "$output_dir/rootfs" -type l -print0)
 
+# Overlay libc bakes SYSCONFDIR as /data/data/<pkg>/files/rootfs/etc/...
+# even when deploy RUNPATH uses /data/user/0/<pkg>/files/rootfs. Those two
+# prefixes are the same app directory on device. A seed for another package
+# must rebuild that overlay; NSS open() of /etc/hosts does not go through
+# the FHS preload.
+device_root="${BIONICX_DEVICE_ROOT:-/data/user/0/io.taowen.bx/files/rootfs}"
+case "$device_root" in
+    /data/user/0/*/files/rootfs)
+        export BIONICX_GLIBC_PREFIX="/data/data/${device_root#/data/user/0/}"
+        ;;
+    /data/data/*/files/rootfs)
+        export BIONICX_GLIBC_PREFIX="$device_root"
+        ;;
+    *)
+        echo "unsupported BIONICX_DEVICE_ROOT: $device_root" >&2
+        exit 2
+        ;;
+esac
+
 # Overlay the Android-seccomp/path-compatible loader and libc at the first
 # library-search location.  Debian's original multiarch files remain intact as
 # package-owned data; BionicX processes always enter through this loader.
@@ -97,14 +116,24 @@ cp -a "$runtime_overlay/rootfs/usr/lib/." "$output_dir/rootfs/usr/lib/"
         ! -L "$output_dir/rootfs/usr/lib/ld-linux-aarch64.so.1" ]]
 "$repo_dir/tools/build-gladio.sh" "$output_dir/rootfs/usr/lib"
 
+libc="$output_dir/rootfs/usr/lib/libc.so.6"
+if ! grep -a -F -q "$BIONICX_GLIBC_PREFIX/etc/resolv.conf" "$libc"; then
+    echo "overlay libc missing $BIONICX_GLIBC_PREFIX/etc/resolv.conf" >&2
+    exit 1
+fi
+
 # Seed construction and every bxapt transaction use the same ELF
 # normalization implementation.  The host root is merely the source tree;
 # every deployed absolute interpreter/RUNPATH names the canonical device root.
-device_root="${BIONICX_DEVICE_ROOT:-/data/user/0/io.taowen.bx/files/rootfs}"
 BIONICX_PATCHELF=patchelf BIONICX_READELF=readelf \
 BIONICX_INTERPRETER="$device_root/usr/lib/ld-linux-aarch64.so.1" \
 BIONICX_DEPLOY_ROOT="$device_root" BIONICX_ROOT_ALIAS="$device_root" \
     "$repo_dir/tools/rootfs-elf-fixup.sh" "$output_dir/rootfs"
+
+if ! grep -a -F -q "$BIONICX_GLIBC_PREFIX/etc/resolv.conf" "$libc"; then
+    echo "elf-fixup dropped $BIONICX_GLIBC_PREFIX/etc/resolv.conf from overlay libc" >&2
+    exit 1
+fi
 
 # The Android kernel resolves script interpreters before the glibc loader or
 # LD_PRELOAD can run.  Relocate packaged FHS shebangs for the same reason as
