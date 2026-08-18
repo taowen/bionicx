@@ -7,7 +7,7 @@ serial="${ANDROID_SERIAL:-}"
 dns_servers="${BIONICX_DNS_SERVERS:-}"
 
 usage() {
-    echo "usage: tools/bxapt [--serial SERIAL] [--dns ADDRESSES] COMMAND [ARG ...]" >&2
+    echo "usage: tools/bxapt [--serial SERIAL] [--package ID] [--dns ADDRESSES] COMMAND [ARG ...]" >&2
     echo "commands: update, install, remove, autoremove, set, deb, recover, fixup, normalize, apt, dpkg, query, run" >&2
     exit "${1:-2}"
 }
@@ -15,6 +15,7 @@ usage() {
 while [[ "${1:-}" == --* ]]; do
     case "$1" in
         --serial) [[ $# -ge 2 ]] || usage; serial="$2"; shift 2 ;;
+        --package) [[ $# -ge 2 ]] || usage; package_id="$2"; shift 2 ;;
         --dns) [[ $# -ge 2 ]] || usage; dns_servers="$2"; shift 2 ;;
         --help) usage 0 ;;
         *) usage ;;

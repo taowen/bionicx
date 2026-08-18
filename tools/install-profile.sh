@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 --profile FILE [--app-root DIR] [--runtime-root DIR] [--replace-rootfs] [--serial SERIAL]" >&2
+    echo "usage: $0 --profile FILE [--package ID] [--app-root DIR] [--runtime-root DIR] [--replace-rootfs] [--serial SERIAL]" >&2
 }
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,6 +17,7 @@ serial="${ANDROID_SERIAL:-}"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --profile) profile="$2"; shift 2 ;;
+        --package) package="$2"; shift 2 ;;
         --app-root) app_root="$2"; shift 2 ;;
         --runtime-root) runtime_root="$2"; shift 2 ;;
         --replace-rootfs) replace_rootfs=1; shift ;;
@@ -90,7 +91,7 @@ if [[ -n "$app_root" ]]; then
     tar -C "$app_root" -cf - . | \
         "${adb[@]}" shell run-as "$package" tar -C "files/apps/$profile_id" -xf -
     ADB="$adb_bin" "$repo_dir/tools/bxapt" --serial "$serial" \
-        normalize "$profile_id"
+        --package "$package" normalize "$profile_id"
 fi
 
 temporary="/data/local/tmp/bionicx-profile-$$.json"
