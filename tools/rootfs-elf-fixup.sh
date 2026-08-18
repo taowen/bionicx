@@ -9,6 +9,7 @@ if [ "${1:-}" = --files ]; then
     shift 3
     loader="${BIONICX_INTERPRETER:-$runtime/usr/lib/ld-linux-aarch64.so.1}"
     deploy_root="${BIONICX_DEPLOY_ROOT:-$runtime}"
+    previous_root="${BIONICX_PREVIOUS_DEPLOY_ROOT:-}"
     system_runpath="$deploy_root/usr/lib:$deploy_root/usr/lib/aarch64-linux-gnu:$deploy_root/lib:$deploy_root/lib/aarch64-linux-gnu:\$ORIGIN:\$ORIGIN/../lib"
     if [ -n "${BIONICX_ROOT_ALIAS:-}" ]; then
         root_alias=$BIONICX_ROOT_ALIAS
@@ -147,10 +148,15 @@ if [ "${1:-}" = --files ]; then
         old_ifs=$IFS
         IFS=:
         set -f
+        previous_prefix="${previous_root:-/var/empty/bionicx-no-previous-root}"
         for entry in $current_rpath; do
             case "$entry" in
                 "$runtime$root_alias"/*) entry=${entry#"$runtime"}; changed=1 ;;
                 "$root_alias$runtime"/*) entry=${entry#"$root_alias"}; changed=1 ;;
+                "$previous_prefix"/*)
+                    entry="$deploy_root${entry#"$previous_prefix"}"
+                    changed=1
+                    ;;
                 "$runtime"/*|"$root_alias"/*) ;;
                 /*) entry="$deploy_root$entry"; changed=1 ;;
             esac

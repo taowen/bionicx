@@ -46,7 +46,8 @@ if ! podman image exists "$image"; then
 fi
 
 mkdir -p "$temporary/exported"
-podman create --name "$container" "$image" /bin/true >/dev/null
+podman create --name "$container" --arch arm64 --os linux \
+    "$image" /bin/true >/dev/null
 podman export "$container" | tar --no-same-owner -xf - -C "$temporary/exported"
 podman rm "$container" >/dev/null
 
@@ -99,7 +100,7 @@ cp -a "$runtime_overlay/rootfs/usr/lib/." "$output_dir/rootfs/usr/lib/"
 # Seed construction and every bxapt transaction use the same ELF
 # normalization implementation.  The host root is merely the source tree;
 # every deployed absolute interpreter/RUNPATH names the canonical device root.
-device_root=/data/user/0/io.taowen.bx/files/rootfs
+device_root="${BIONICX_DEVICE_ROOT:-/data/user/0/io.taowen.bx/files/rootfs}"
 BIONICX_PATCHELF=patchelf BIONICX_READELF=readelf \
 BIONICX_INTERPRETER="$device_root/usr/lib/ld-linux-aarch64.so.1" \
 BIONICX_DEPLOY_ROOT="$device_root" BIONICX_ROOT_ALIAS="$device_root" \
