@@ -117,10 +117,14 @@ public class Drawable extends XResource {
      * DRAWABLE_MANAGER; the GL present path uses tryLock.
      */
     public boolean ensureCpuPixels() {
+        return ensureCpuPixels(0, 0, width, height);
+    }
+
+    public boolean ensureCpuPixels(int x, int y, int w, int h) {
         if (!hasGpuDirty) return true;
         GLRenderer renderer = xServer != null ? xServer.getRenderer() : null;
         if (renderer == null || !renderer.hasEglContext()) return false;
-        return renderer.downloadToCpu(this);
+        return renderer.downloadToCpu(this, x, y, w, h);
     }
 
     @Nullable
@@ -163,7 +167,8 @@ public class Drawable extends XResource {
 
     public void drawImage(short srcX, short srcY, short dstX, short dstY, short width, short height, byte depth, ByteBuffer data, short totalWidth, short totalHeight) {
         if (this.data == null) return;
-        ensureCpuPixels();
+        boolean overwrite = depth == 24 || depth == 32;
+        if (!overwrite) ensureCpuPixels();
 
         if (depth == 1) {
             drawBitmap(width, height, data, this.data);
@@ -186,7 +191,7 @@ public class Drawable extends XResource {
                 this.data.rewind();
             }
         }
-        else if (depth == 24 || depth == 32) {
+        else if (overwrite) {
             dstX = (short)Mathf.clamp(dstX, 0, this.width-1);
             dstY = (short)Mathf.clamp(dstY, 0, this.height-1);
             if ((dstX + width) > this.width) width = (short)((this.width - dstX));
@@ -199,12 +204,13 @@ public class Drawable extends XResource {
         data.rewind();
 
         forceUpdate(dstX, dstY, width, height);
+        if (overwrite) uploadCpuPixels();
     }
 
     public ByteBuffer getImage(short x, short y, short width, short height) {
         ByteBuffer dstData = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.LITTLE_ENDIAN);
         if (this.data == null) return dstData;
-        ensureCpuPixels();
+        ensureCpuPixels(x, y, width, height);
 
         x = (short)Mathf.clamp(x, 0, this.width-1);
         y = (short)Mathf.clamp(y, 0, this.height-1);
@@ -617,6 +623,12 @@ public class Drawable extends XResource {
         this.data.rewind();
 
         forceUpdate();
+    }
+
+    private void uploadCpuPixels() {
+        GLRenderer renderer = xServer != null ? xServer.getRenderer() : null;
+        if (renderer == null || !renderer.hasEglContext()) return;
+        renderer.uploadFromCpu(this);
     }
 
     public void forceUpdate() {

@@ -431,19 +431,45 @@ public class RenderComposite {
     }
 
     public boolean downloadGpuDirty(Drawable destination) {
+        if (destination == null) return false;
+        return downloadGpuDirty(destination, 0, 0, destination.width,
+                destination.height);
+    }
+
+    public boolean downloadGpuDirty(Drawable destination, int x, int y,
+            int width, int height) {
         synchronized (destination.renderLock) {
             int[] dirty = destination.peekGpuDirty();
             if (dirty == null) return true;
+            int left = Math.max(dirty[0], Math.max(0, x));
+            int top = Math.max(dirty[1], Math.max(0, y));
+            int right = Math.min(dirty[0] + dirty[2],
+                    Math.min(destination.width, x + width));
+            int bottom = Math.min(dirty[1] + dirty[3],
+                    Math.min(destination.height, y + height));
+            if (right <= left || bottom <= top) return true;
             Texture destTexture = destination.getTexture();
             if (destTexture == null || !destTexture.isAllocated()) return false;
             if (!destTexture.ensureFramebuffer()) return false;
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,
                     destTexture.getFramebuffer());
-            boolean ok = download(destination, dirty[0], dirty[1],
-                    dirty[2], dirty[3]);
+            boolean ok = download(destination, left, top, right - left,
+                    bottom - top);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-            if (ok) destination.clearGpuDirty();
+            if (ok && left == dirty[0] && top == dirty[1]
+                    && right == dirty[0] + dirty[2]
+                    && bottom == dirty[1] + dirty[3])
+                destination.clearGpuDirty();
             return ok;
+        }
+    }
+
+    public void uploadFromCpu(Drawable destination) {
+        if (destination == null) return;
+        Texture destTexture = destination.getTexture();
+        if (destTexture == null) return;
+        synchronized (destination.renderLock) {
+            destTexture.updateFromDrawable();
         }
     }
 

@@ -174,10 +174,25 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
     }
 
     public boolean downloadToCpu(Drawable destination) {
+        if (destination == null) return false;
+        return downloadToCpu(destination, 0, 0, destination.width,
+                destination.height);
+    }
+
+    public boolean downloadToCpu(Drawable destination, int x, int y,
+            int width, int height) {
         AtomicBoolean ok = new AtomicBoolean();
         boolean ran = runSync(() -> ok.set(renderComposite.downloadGpuDirty(
-                destination)), 5000);
+                destination, x, y, width, height)), 5000);
         return ran && ok.get();
+    }
+
+    public boolean uploadFromCpu(Drawable destination) {
+        if (destination == null || !hasEglContext()) return false;
+        return runSync(() -> {
+            renderComposite.uploadFromCpu(destination);
+            viewportNeedsUpdate = true;
+        }, 5000);
     }
 
     public boolean copyAreaGpu(Drawable source, int srcX, int srcY,
