@@ -229,32 +229,56 @@ public class Drawable extends XResource {
     }
 
     public void copyArea(short srcX, short srcY, short dstX, short dstY, short width, short height, Drawable drawable, GraphicsContext.Function gcFunction) {
-        if (this.data == null || drawable.data == null) return;
-        dstX = (short)Mathf.clamp(dstX, 0, this.width-1);
-        dstY = (short)Mathf.clamp(dstY, 0, this.height-1);
-        if ((dstX + width) > this.width)
-            width = (short)(this.width - dstX);
-        if ((dstY + height) > this.height)
-            height = (short)(this.height - dstY);
+        java.util.ArrayList<int[]> copies = new java.util.ArrayList<>(1);
+        copies.add(new int[] {srcX, srcY, dstX, dstY, width, height});
+        copyAreas(drawable, gcFunction, copies);
+    }
+
+    public void copyAreas(Drawable source, GraphicsContext.Function gcFunction,
+            java.util.List<int[]> copies) {
+        if (this.data == null || source.data == null || copies == null
+                || copies.isEmpty())
+            return;
+        java.util.ArrayList<int[]> clipped =
+                new java.util.ArrayList<>(copies.size());
+        for (int[] copy : copies) {
+            int srcX = copy[0];
+            int srcY = copy[1];
+            int dstX = Mathf.clamp(copy[2], 0, this.width - 1);
+            int dstY = Mathf.clamp(copy[3], 0, this.height - 1);
+            int width = copy[4];
+            int height = copy[5];
+            if (dstX + width > this.width) width = this.width - dstX;
+            if (dstY + height > this.height) height = this.height - dstY;
+            if (width <= 0 || height <= 0) continue;
+            clipped.add(new int[] {srcX, srcY, dstX, dstY, width, height});
+        }
+        if (clipped.isEmpty()) return;
         if (gcFunction == GraphicsContext.Function.COPY
-                && tryCopyAreaGpu(srcX, srcY, dstX, dstY, width, height,
-                drawable))
+                && tryCopyAreasGpu(source, clipped))
             return;
         ensureCpuPixels();
-        drawable.ensureCpuPixels();
+        source.ensureCpuPixels();
         synchronized (renderLock) {
-            if (gcFunction == GraphicsContext.Function.COPY) {
-                copyArea(srcX, srcY, dstX, dstY, width, height,
-                        drawable.getStride(), this.getStride(), drawable.data,
-                        this.data);
+            for (int[] copy : clipped) {
+                short srcX = (short)copy[0];
+                short srcY = (short)copy[1];
+                short dstX = (short)copy[2];
+                short dstY = (short)copy[3];
+                short width = (short)copy[4];
+                short height = (short)copy[5];
+                if (gcFunction == GraphicsContext.Function.COPY) {
+                    copyArea(srcX, srcY, dstX, dstY, width, height,
+                            source.getStride(), this.getStride(), source.data,
+                            this.data);
+                }
+                else copyAreaOp(srcX, srcY, dstX, dstY, width, height,
+                        source.getStride(), this.getStride(), source.data,
+                        this.data, gcFunction.ordinal());
+                forceUpdate(dstX, dstY, width, height);
             }
-            else copyAreaOp(srcX, srcY, dstX, dstY, width, height,
-                    drawable.getStride(), this.getStride(), drawable.data,
-                    this.data, gcFunction.ordinal());
-
             this.data.rewind();
-            drawable.data.rewind();
-            forceUpdate(dstX, dstY, width, height);
+            source.data.rewind();
         }
     }
 
@@ -263,19 +287,40 @@ public class Drawable extends XResource {
     }
 
     public void fillRect(int x, int y, int width, int height, int color) {
-        if (this.data == null) return;
-        x = (short)Mathf.clamp(x, 0, this.width-1);
-        y = (short)Mathf.clamp(y, 0, this.height-1);
-        if ((x + width) > this.width) width = (short)((this.width - x));
-        if ((y + height) > this.height) height = (short)((this.height - y));
-        if (tryFillGpu(x, y, width, height, color)) return;
+        java.util.ArrayList<int[]> clips = new java.util.ArrayList<>(1);
+        if (addClampedRect(x, y, width, height, clips))
+            fillRects(color, clips);
+    }
+
+    public void fillRects(int color, java.util.List<int[]> clips) {
+        if (this.data == null || clips == null || clips.isEmpty()) return;
+        java.util.ArrayList<int[]> clamped =
+                new java.util.ArrayList<>(clips.size());
+        for (int[] clip : clips)
+            addClampedRect(clip[0], clip[1], clip[2], clip[3], clamped);
+        if (clamped.isEmpty()) return;
+        if (tryFillGpu(color, clamped)) return;
         ensureCpuPixels();
         synchronized (renderLock) {
-            fillRect((short)x, (short)y, (short)width, (short)height, color,
-                    this.getStride(), this.data);
+            for (int[] clip : clamped) {
+                fillRect((short)clip[0], (short)clip[1], (short)clip[2],
+                        (short)clip[3], color, this.getStride(), this.data);
+                forceUpdate(clip[0], clip[1], clip[2], clip[3]);
+            }
             this.data.rewind();
-            forceUpdate(x, y, width, height);
         }
+    }
+
+    private boolean addClampedRect(int x, int y, int width, int height,
+            java.util.List<int[]> clips) {
+        if (this.data == null) return false;
+        x = Mathf.clamp(x, 0, this.width - 1);
+        y = Mathf.clamp(y, 0, this.height - 1);
+        if (x + width > this.width) width = this.width - x;
+        if (y + height > this.height) height = this.height - y;
+        if (width <= 0 || height <= 0) return false;
+        clips.add(new int[] {x, y, width, height});
+        return true;
     }
 
     /** Blends an unpacked 8-bit alpha glyph mask over this 32-bit drawable. */
@@ -664,14 +709,11 @@ public class Drawable extends XResource {
         }
     }
 
-    private boolean tryFillGpu(int x, int y, int width, int height, int color) {
-        if (width <= 0 || height <= 0) return false;
+    private boolean tryFillGpu(int color, java.util.List<int[]> clips) {
         if (visual == null || visual.depth != 32) return false;
         if (texture == null) return false;
         GLRenderer renderer = xServer != null ? xServer.getRenderer() : null;
         if (renderer == null || !renderer.hasEglContext()) return false;
-        java.util.ArrayList<int[]> clips = new java.util.ArrayList<>();
-        clips.add(new int[] {x, y, width, height});
         return renderer.fillGpu(this, color, clips);
     }
 
@@ -683,16 +725,14 @@ public class Drawable extends XResource {
         return renderer.forceOpaqueGpu(this, x, y, w, h);
     }
 
-    private boolean tryCopyAreaGpu(short srcX, short srcY, short dstX,
-            short dstY, short width, short height, Drawable source) {
-        if (width <= 0 || height <= 0) return false;
+    private boolean tryCopyAreasGpu(Drawable source,
+            java.util.List<int[]> copies) {
         if (visual == null || visual.depth != 32) return false;
         if (source.visual == null || source.visual.depth != 32) return false;
         if (texture == null || source.texture == null) return false;
         GLRenderer renderer = xServer != null ? xServer.getRenderer() : null;
         if (renderer == null || !renderer.hasEglContext()) return false;
-        return renderer.copyAreaGpu(source, srcX, srcY, this, dstX, dstY,
-                width, height);
+        return renderer.copyAreasGpu(source, this, copies);
     }
 
     private void unionGpuDirty(int x, int y, int w, int h) {

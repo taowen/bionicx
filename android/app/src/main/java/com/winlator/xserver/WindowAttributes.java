@@ -251,6 +251,7 @@ public class WindowAttributes {
 
         int tileWidth = backgroundPixmap.width;
         int tileHeight = backgroundPixmap.height;
+        java.util.ArrayList<int[]> copies = new java.util.ArrayList<>();
         for (int tileY = Math.floorDiv(top, tileHeight) * tileHeight;
                 tileY < bottom; tileY += tileHeight) {
             for (int tileX = Math.floorDiv(left, tileWidth) * tileWidth;
@@ -259,12 +260,13 @@ public class WindowAttributes {
                 int copyTop = Math.max(top, tileY);
                 int copyRight = Math.min(right, tileX + tileWidth);
                 int copyBottom = Math.min(bottom, tileY + tileHeight);
-                destination.copyArea((short)(copyLeft - tileX),
-                        (short)(copyTop - tileY), (short)copyLeft,
-                        (short)copyTop, (short)(copyRight - copyLeft),
-                        (short)(copyBottom - copyTop), backgroundPixmap);
+                copies.add(new int[] {
+                        copyLeft - tileX, copyTop - tileY, copyLeft, copyTop,
+                        copyRight - copyLeft, copyBottom - copyTop});
             }
         }
+        destination.copyAreas(backgroundPixmap, GraphicsContext.Function.COPY,
+                copies);
     }
 
     public boolean isTransparent() {

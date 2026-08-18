@@ -197,10 +197,16 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
     public boolean copyAreaGpu(Drawable source, int srcX, int srcY,
             Drawable destination, int dstX, int dstY, int width, int height) {
+        java.util.ArrayList<int[]> copies = new java.util.ArrayList<>(1);
+        copies.add(new int[] {srcX, srcY, dstX, dstY, width, height});
+        return copyAreasGpu(source, destination, copies);
+    }
+
+    public boolean copyAreasGpu(Drawable source, Drawable destination,
+            java.util.List<int[]> copies) {
         AtomicBoolean ok = new AtomicBoolean();
         boolean ran = runSync(() -> {
-            ok.set(renderComposite.copy(source, srcX, srcY, destination,
-                    dstX, dstY, width, height));
+            ok.set(renderComposite.copy(source, destination, copies));
             viewportNeedsUpdate = true;
         }, 5000);
         return ran && ok.get();

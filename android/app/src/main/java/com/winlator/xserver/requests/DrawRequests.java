@@ -139,8 +139,10 @@ public abstract class DrawRequests {
         if (graphicsContext.getClipRectangles() == null) {
             dstDrawable.copyArea(srcX, srcY, dstX, dstY, width, height,
                     srcDrawable, graphicsContext.getFunction());
+            return;
         }
-        else for (GraphicsContext.ClipRectangle clip
+        java.util.ArrayList<int[]> copies = new java.util.ArrayList<>();
+        for (GraphicsContext.ClipRectangle clip
                 : graphicsContext.getClipRectangles()) {
             int clipLeft = graphicsContext.getClipXOrigin() + clip.x;
             int clipTop = graphicsContext.getClipYOrigin() + clip.y;
@@ -149,11 +151,12 @@ public abstract class DrawRequests {
             int right = Math.min(dstX + width, clipLeft + clip.width);
             int bottom = Math.min(dstY + height, clipTop + clip.height);
             if (left >= right || top >= bottom) continue;
-            dstDrawable.copyArea((short)(srcX + left - dstX),
-                    (short)(srcY + top - dstY), (short)left, (short)top,
-                    (short)(right - left), (short)(bottom - top),
-                    srcDrawable, graphicsContext.getFunction());
+            copies.add(new int[] {
+                    srcX + left - dstX, srcY + top - dstY, left, top,
+                    right - left, bottom - top});
         }
+        dstDrawable.copyAreas(srcDrawable, graphicsContext.getFunction(),
+                copies);
     }
 
     public static void polyLine(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {
@@ -240,31 +243,33 @@ public abstract class DrawRequests {
         if (graphicsContext == null) throw new BadGraphicsContext(gcId);
         int length = client.getRemainingRequestLength();
 
+        java.util.ArrayList<int[]> clips = new java.util.ArrayList<>();
+        int color = graphicsContext.getForeground();
+        java.util.List<GraphicsContext.ClipRectangle> gcClips =
+                graphicsContext.getClipRectangles();
         while (length != 0) {
             short x = inputStream.readShort();
             short y = inputStream.readShort();
             short width = inputStream.readShort();
             short height = inputStream.readShort();
-            java.util.List<GraphicsContext.ClipRectangle> clips =
-                    graphicsContext.getClipRectangles();
-            if (clips == null) {
-                drawable.fillRect(x, y, width, height, graphicsContext.getForeground());
+            if (gcClips == null) {
+                clips.add(new int[] {x, y, width, height});
             } else {
-                int color = graphicsContext.getForeground();
-                for (GraphicsContext.ClipRectangle clip : clips) {
+                for (GraphicsContext.ClipRectangle clip : gcClips) {
                     int left = Math.max(x, graphicsContext.getClipXOrigin() + clip.x);
                     int top = Math.max(y, graphicsContext.getClipYOrigin() + clip.y);
                     int right = Math.min(x + width,
                             graphicsContext.getClipXOrigin() + clip.x + clip.width);
                     int bottom = Math.min(y + height,
                             graphicsContext.getClipYOrigin() + clip.y + clip.height);
-                    if (left < right && top < bottom) {
-                        drawable.fillRect(left, top, right - left, bottom - top, color);
-                    }
+                    if (left < right && top < bottom)
+                        clips.add(new int[] {left, top, right - left,
+                                bottom - top});
                 }
             }
             length -= 8;
         }
+        drawable.fillRects(color, clips);
     }
 
     public static void polyText8(XClient client, XInputStream inputStream, XOutputStream outputStream) throws XRequestError {

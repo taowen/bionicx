@@ -476,7 +476,15 @@ public class RenderComposite {
     public boolean copy(Drawable source, int srcX, int srcY,
                         Drawable destination, int dstX, int dstY,
                         int width, int height) {
-        if (source == null || destination == null || width <= 0 || height <= 0)
+        java.util.ArrayList<int[]> copies = new java.util.ArrayList<>(1);
+        copies.add(new int[] {srcX, srcY, dstX, dstY, width, height});
+        return copy(source, destination, copies);
+    }
+
+    public boolean copy(Drawable source, Drawable destination,
+                        List<int[]> copies) {
+        if (source == null || destination == null || copies == null
+                || copies.isEmpty())
             return false;
         Texture destTexture = destination.getTexture();
         Texture srcTexture = source.getTexture();
@@ -486,29 +494,51 @@ public class RenderComposite {
             if (source != destination) srcTexture.updateFromDrawable();
             if (!destTexture.ensureFramebuffer()) return false;
             if (!srcTexture.ensureFramebuffer()) return false;
-            boolean overlap = source == destination
-                    && srcX < dstX + width && dstX < srcX + width
-                    && srcY < dstY + height && dstY < srcY + height;
+            int dirtyLeft = destination.width;
+            int dirtyTop = destination.height;
+            int dirtyRight = 0;
+            int dirtyBottom = 0;
             while (GLES20.glGetError() != GLES20.GL_NO_ERROR) {}
-            if (overlap) {
-                if (!blitDestinationToScratch(destTexture, destination.width,
-                        destination.height, srcX, srcY, width, height))
-                    return false;
-                GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER,
-                        scratch.getFramebuffer());
+            for (int[] copy : copies) {
+                int srcX = copy[0];
+                int srcY = copy[1];
+                int dstX = copy[2];
+                int dstY = copy[3];
+                int width = copy[4];
+                int height = copy[5];
+                if (width <= 0 || height <= 0) continue;
+                boolean overlap = source == destination
+                        && srcX < dstX + width && dstX < srcX + width
+                        && srcY < dstY + height && dstY < srcY + height;
+                if (overlap) {
+                    if (!blitDestinationToScratch(destTexture,
+                            destination.width, destination.height, srcX, srcY,
+                            width, height))
+                        return false;
+                    GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER,
+                            scratch.getFramebuffer());
+                }
+                else {
+                    GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER,
+                            srcTexture.getFramebuffer());
+                }
+                GLES30.glBindFramebuffer(GLES30.GL_DRAW_FRAMEBUFFER,
+                        destTexture.getFramebuffer());
+                GLES30.glBlitFramebuffer(srcX, srcY, srcX + width,
+                        srcY + height, dstX, dstY, dstX + width,
+                        dstY + height, GLES20.GL_COLOR_BUFFER_BIT,
+                        GLES20.GL_NEAREST);
+                dirtyLeft = Math.min(dirtyLeft, dstX);
+                dirtyTop = Math.min(dirtyTop, dstY);
+                dirtyRight = Math.max(dirtyRight, dstX + width);
+                dirtyBottom = Math.max(dirtyBottom, dstY + height);
             }
-            else {
-                GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER,
-                        srcTexture.getFramebuffer());
-            }
-            GLES30.glBindFramebuffer(GLES30.GL_DRAW_FRAMEBUFFER,
-                    destTexture.getFramebuffer());
-            GLES30.glBlitFramebuffer(srcX, srcY, srcX + width, srcY + height,
-                    dstX, dstY, dstX + width, dstY + height,
-                    GLES20.GL_COLOR_BUFFER_BIT, GLES20.GL_NEAREST);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
             if (GLES20.glGetError() != GLES20.GL_NO_ERROR) return false;
-            destination.markGpuPixelsCurrent(dstX, dstY, width, height);
+            if (dirtyRight <= dirtyLeft || dirtyBottom <= dirtyTop)
+                return true;
+            destination.markGpuPixelsCurrent(dirtyLeft, dirtyTop,
+                    dirtyRight - dirtyLeft, dirtyBottom - dirtyTop);
             return true;
         }
     }

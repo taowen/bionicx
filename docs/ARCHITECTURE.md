@@ -142,7 +142,8 @@ Software X11 follows the glamor model. One rule: the GLES texture is the
 separate Over cache. Clear/Src fill with `glClear`, CopyArea with
 `glBlitFramebuffer`, and Porter-Duff (Src/Over/In/OutReverse/Add/Saturate)
 plus A8 glyphs with one shader. The X request waits for that GPU work
-(GLSurfaceView thread). The CPU `ByteBuffer` is a GetImage /
+(GLSurfaceView thread). One request that names many rects
+(PolyFillRectangle, clipped CopyArea, tiled backgrounds) is one hop. The CPU `ByteBuffer` is a GetImage /
 `prepare_access` cache: every CPU read (GetImage, `pictureColor`, clip
 masks) downloads first, and a GPU write does not upload stale heap bytes
 back over the texture. GetImage reads only the requested rectangle;
