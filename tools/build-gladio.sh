@@ -32,6 +32,13 @@ podman run --rm --network host --userns=keep-id \
             -o "$output_dir/libGL.so.1.7.0" -ldl
         ln -sf libGL.so.1.7.0 "$output_dir/libGL.so.1"
         ln -sf libGL.so.1.7.0 "$output_dir/libGL.so"
+        aarch64-linux-gnu-gcc -shared -fPIC -O2 -pthread \
+            -DGL_GLEXT_PROTOTYPES -I"$source_dir/include" \
+            "$source_dir/src/egl.c" \
+            -L"$output_dir" -lGL -Wl,-soname,libEGL.so.1 \
+            -o "$output_dir/libEGL.so.1.0.0"
+        ln -sf libEGL.so.1.0.0 "$output_dir/libEGL.so.1"
+        ln -sf libEGL.so.1.0.0 "$output_dir/libEGL.so"
     '
 
 echo "$output_dir/libGL.so.1.7.0"
