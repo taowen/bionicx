@@ -37,6 +37,11 @@ if [[ -n "$app_root" ]]; then
         echo "profile $profile_id needs Gladio libGL in $app_root/lib" >&2
         exit 1
     fi
+    if grep -Fq VORTEK_SERVER_PATH "$profile" &&
+            [[ ! -e "$app_root/lib/libvulkan_vortek.so" ]]; then
+        echo "profile $profile_id needs Vortek ICD in $app_root/lib" >&2
+        exit 1
+    fi
 fi
 if [[ -n "$runtime_root" ]]; then
     [[ -d "$runtime_root" ]] || { echo "missing runtime root: $runtime_root" >&2; exit 1; }
