@@ -483,6 +483,54 @@ void checkDeviceProperties(VkContext* context, VkPhysicalDeviceProperties* prope
     strcpy(properties->deviceName, deviceName);
     properties->apiVersion = context->vkMaxVersion;
 
+    /* ANGLE drops to GLES 2.0 when these limits miss the ES 3.0 spec.
+     * Chrome CollectGraphicsInfo then fails eglCreateContext ES 3.0. */
+    println("vkProps raw name=%s api=%u.%u samples=%d ubo=%u uboRange=%u setUbo=%u storage=%u vout=%u vin=%u tessPatch=%u colorAtt=%u",
+            properties->deviceName,
+            VK_VERSION_MAJOR(properties->apiVersion),
+            VK_VERSION_MINOR(properties->apiVersion),
+            properties->limits.standardSampleLocations,
+            properties->limits.maxPerStageDescriptorUniformBuffers,
+            properties->limits.maxUniformBufferRange,
+            properties->limits.maxDescriptorSetUniformBuffers,
+            properties->limits.maxPerStageDescriptorStorageBuffers,
+            properties->limits.maxVertexOutputComponents,
+            properties->limits.maxFragmentInputComponents,
+            properties->limits.maxTessellationPatchSize,
+            properties->limits.maxColorAttachments);
+    properties->limits.standardSampleLocations = VK_TRUE;
+    /* Adreno reports 524288 for several descriptor counts. ANGLE NativeCaps
+     * multiplies those by uniform components; int32 overflow drops ES 3.0. */
+    if (properties->limits.maxPerStageDescriptorUniformBuffers < 16
+            || properties->limits.maxPerStageDescriptorUniformBuffers > 64)
+        properties->limits.maxPerStageDescriptorUniformBuffers = 32;
+    if (properties->limits.maxDescriptorSetUniformBuffers < 36
+            || properties->limits.maxDescriptorSetUniformBuffers > 256)
+        properties->limits.maxDescriptorSetUniformBuffers = 72;
+    if (properties->limits.maxPerStageDescriptorStorageBuffers < 8
+            || properties->limits.maxPerStageDescriptorStorageBuffers > 64)
+        properties->limits.maxPerStageDescriptorStorageBuffers = 24;
+    if (properties->limits.maxDescriptorSetStorageBuffers < 24
+            || properties->limits.maxDescriptorSetStorageBuffers > 256)
+        properties->limits.maxDescriptorSetStorageBuffers = 96;
+    if (properties->limits.maxVertexOutputComponents < 128)
+        properties->limits.maxVertexOutputComponents = 128;
+    if (properties->limits.maxFragmentInputComponents < 128)
+        properties->limits.maxFragmentInputComponents = 128;
+    if (properties->limits.maxColorAttachments < 8)
+        properties->limits.maxColorAttachments = 8;
+    if (properties->limits.maxTessellationPatchSize < 32)
+        properties->limits.maxTessellationPatchSize = 32;
+    if (properties->limits.maxVertexInputAttributeOffset < 2047)
+        properties->limits.maxVertexInputAttributeOffset = 2047;
+    println("vkProps out samples=%d ubo=%u setUbo=%u storage=%u vout=%u vin=%u",
+            properties->limits.standardSampleLocations,
+            properties->limits.maxPerStageDescriptorUniformBuffers,
+            properties->limits.maxDescriptorSetUniformBuffers,
+            properties->limits.maxPerStageDescriptorStorageBuffers,
+            properties->limits.maxVertexOutputComponents,
+            properties->limits.maxFragmentInputComponents);
+
     VkPhysicalDeviceVulkan12Properties* vulkan12Properties = findNextVkStructure(pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES);
     if (vulkan12Properties) {
         VK_MAKE_VERSION_STR(vulkan12Properties->driverInfo, properties->driverVersion);
@@ -512,6 +560,10 @@ void checkDeviceProperties(VkContext* context, VkPhysicalDeviceProperties* prope
 }
 
 void checkDeviceFeatures(VkPhysicalDeviceFeatures* features, void* pNext) {
+    println("vkFeats inheritedQueries=%d independentBlend=%d vertexAtomics=%d tess=%d geom=%d",
+            features->inheritedQueries, features->independentBlend,
+            features->vertexPipelineStoresAndAtomics, features->tessellationShader,
+            features->geometryShader);
     features->textureCompressionBC = VK_TRUE;
     features->depthClamp = VK_TRUE;
     features->depthBiasClamp = VK_TRUE;
@@ -533,6 +585,29 @@ void checkDeviceFeatures(VkPhysicalDeviceFeatures* features, void* pNext) {
     features->fragmentStoresAndAtomics = VK_TRUE;
     features->multiDrawIndirect = VK_TRUE;
     features->tessellationShader = VK_TRUE;
+    features->inheritedQueries = VK_TRUE;
+    features->vertexPipelineStoresAndAtomics = VK_TRUE;
+
+    VkPhysicalDeviceTransformFeedbackFeaturesEXT* transformFeedbackFeatures = findNextVkStructure(
+            pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT);
+    VkPhysicalDeviceProvokingVertexFeaturesEXT* provokingVertexFeatures = findNextVkStructure(
+            pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_FEATURES_EXT);
+    println("vkFeats tfNext=%d tf=%d pvNext=%d pvLast=%d inherited=%d blend=%d atomics=%d",
+            transformFeedbackFeatures != NULL,
+            transformFeedbackFeatures ? transformFeedbackFeatures->transformFeedback : -1,
+            provokingVertexFeatures != NULL,
+            provokingVertexFeatures ? provokingVertexFeatures->provokingVertexLast : -1,
+            features->inheritedQueries, features->independentBlend,
+            features->vertexPipelineStoresAndAtomics);
+    if (transformFeedbackFeatures) {
+        transformFeedbackFeatures->transformFeedback = VK_TRUE;
+        transformFeedbackFeatures->geometryStreams = VK_TRUE;
+    }
+    /* Chrome 151 ANGLE drops to GLES 2.0 without provokingVertexLast. */
+    if (provokingVertexFeatures) {
+        provokingVertexFeatures->provokingVertexLast = VK_TRUE;
+        provokingVertexFeatures->transformFeedbackPreservesProvokingVertex = VK_TRUE;
+    }
 
     VkPhysicalDeviceTimelineSemaphoreFeatures* timelineFeatures = findNextVkStructure(
             pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);

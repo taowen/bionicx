@@ -14,11 +14,34 @@ typedef struct EmulatedTimeline {
 
 static pthread_mutex_t emulatedLock = PTHREAD_MUTEX_INITIALIZER;
 static ArrayList emulatedTimelines;
+static EmulatedTimeline* emulatedFind(VkSemaphore semaphore);
 
 #define MAX_PENDING_SUBMIT_SIGNALS 32
 static VkSemaphore pendingSubmitSemaphores[MAX_PENDING_SUBMIT_SIGNALS];
 static uint64_t pendingSubmitValues[MAX_PENDING_SUBMIT_SIGNALS];
 static uint32_t pendingSubmitCount;
+
+#define MAX_RPC_SIGNALED 64
+static VkSemaphore rpcSignaled[MAX_RPC_SIGNALED];
+static uint32_t rpcSignaledCount;
+
+static bool consumeRpcSignaledLocked(VkSemaphore semaphore) {
+    uint32_t i;
+
+    if (!semaphore) return false;
+    for (i = 0; i < rpcSignaledCount; i++) {
+        if (rpcSignaled[i] != semaphore) continue;
+        rpcSignaled[i] = rpcSignaled[--rpcSignaledCount];
+        return true;
+    }
+    return false;
+}
+
+static bool waitSatisfiedLocked(VkSemaphore semaphore) {
+    if (!semaphore) return false;
+    if (emulatedFind(semaphore)) return true;
+    return consumeRpcSignaledLocked(semaphore);
+}
 
 static void stashEmulatedSignal(VkSemaphore semaphore, uint64_t value) {
     if (pendingSubmitCount >= MAX_PENDING_SUBMIT_SIGNALS) return;
@@ -113,6 +136,31 @@ VkResult TimelineSemaphore_counter(VkDevice device, VkSemaphore semaphore, uint6
     return VK_SUCCESS;
 }
 
+void TimelineSemaphore_rpcSignal(VkSemaphore semaphore) {
+    EmulatedTimeline* timeline;
+
+    if (!semaphore) return;
+    pthread_mutex_lock(&emulatedLock);
+    timeline = emulatedFind(semaphore);
+    if (timeline) {
+        pthread_mutex_unlock(&emulatedLock);
+        pthread_mutex_lock(&timeline->mutex);
+        timeline->value++;
+        pthread_cond_broadcast(&timeline->cond);
+        pthread_mutex_unlock(&timeline->mutex);
+        return;
+    }
+    for (uint32_t i = 0; i < rpcSignaledCount; i++) {
+        if (rpcSignaled[i] == semaphore) {
+            pthread_mutex_unlock(&emulatedLock);
+            return;
+        }
+    }
+    if (rpcSignaledCount < MAX_RPC_SIGNALED)
+        rpcSignaled[rpcSignaledCount++] = semaphore;
+    pthread_mutex_unlock(&emulatedLock);
+}
+
 void TimelineSemaphore_flushSubmitSignals(void) {
     VkSemaphore semaphores[MAX_PENDING_SUBMIT_SIGNALS];
     uint64_t values[MAX_PENDING_SUBMIT_SIGNALS];
@@ -135,12 +183,11 @@ void TimelineSemaphore_flushSubmitSignals(void) {
 bool TimelineSemaphore_filterSubmits(VkSubmitInfo* submits, uint32_t submitCount) {
     bool hostWork = false;
     pthread_mutex_lock(&emulatedLock);
-    pendingSubmitCount = 0;
     for (uint32_t s = 0; s < submitCount; s++) {
         VkSubmitInfo* submit = &submits[s];
         uint32_t kept = 0;
         for (uint32_t i = 0; i < submit->waitSemaphoreCount; i++) {
-            if (emulatedFind(submit->pWaitSemaphores[i])) continue;
+            if (waitSatisfiedLocked(submit->pWaitSemaphores[i])) continue;
             if (kept != i) {
                 ((VkSemaphore*)submit->pWaitSemaphores)[kept] = submit->pWaitSemaphores[i];
                 if (submit->pWaitDstStageMask)
@@ -172,6 +219,40 @@ bool TimelineSemaphore_filterSubmits(VkSubmitInfo* submits, uint32_t submitCount
                     VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO);
         if (submit->waitSemaphoreCount || submit->commandBufferCount
                 || submit->signalSemaphoreCount)
+            hostWork = true;
+    }
+    pthread_mutex_unlock(&emulatedLock);
+    return hostWork;
+}
+
+bool TimelineSemaphore_filterSubmits2(VkSubmitInfo2* submits, uint32_t submitCount) {
+    bool hostWork = false;
+    pthread_mutex_lock(&emulatedLock);
+    for (uint32_t s = 0; s < submitCount; s++) {
+        VkSubmitInfo2* submit = &submits[s];
+        uint32_t kept = 0;
+        VkSemaphoreSubmitInfo* waits =
+                (VkSemaphoreSubmitInfo*)submit->pWaitSemaphoreInfos;
+        for (uint32_t i = 0; i < submit->waitSemaphoreInfoCount; i++) {
+            if (!waits || waitSatisfiedLocked(waits[i].semaphore)) continue;
+            if (kept != i) waits[kept] = waits[i];
+            kept++;
+        }
+        submit->waitSemaphoreInfoCount = kept;
+        kept = 0;
+        VkSemaphoreSubmitInfo* signals =
+                (VkSemaphoreSubmitInfo*)submit->pSignalSemaphoreInfos;
+        for (uint32_t i = 0; i < submit->signalSemaphoreInfoCount; i++) {
+            if (signals && emulatedFind(signals[i].semaphore)) {
+                stashEmulatedSignal(signals[i].semaphore, signals[i].value);
+                continue;
+            }
+            if (signals && kept != i) signals[kept] = signals[i];
+            kept++;
+        }
+        submit->signalSemaphoreInfoCount = kept;
+        if (submit->waitSemaphoreInfoCount || submit->commandBufferInfoCount
+                || submit->signalSemaphoreInfoCount)
             hostWork = true;
     }
     pthread_mutex_unlock(&emulatedLock);

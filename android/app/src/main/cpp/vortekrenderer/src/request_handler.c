@@ -3,6 +3,10 @@
 #include "vulkan_helper.h"
 #include "sysvshared_memory.h"
 
+#ifndef VT_REQUIRE_HOST_WINDOW_SIZE
+#define VT_REQUIRE_HOST_WINDOW_SIZE 1
+#endif
+
 #include <sys/eventfd.h>
 #include <time.h>
 
@@ -272,6 +276,7 @@ void vt_handle_vkCreateDevice(VkContext* context) {
     VkDevice device = VK_NULL_HANDLE;
     VkResult result = vulkanWrapper.vkCreateDevice(physicalDevice, &createInfo, NULL, &device);
     if (result != VK_SUCCESS) {
+        println("vkCreateDevice first rc=%d, retry without pNext", result);
         dropTimelineFromCreateInfo(&createInfo);
         createInfo.pNext = NULL;
         createInfo.pEnabledFeatures = NULL;
@@ -282,6 +287,7 @@ void vt_handle_vkCreateDevice(VkContext* context) {
         context->hostTimeline = hostTimeline;
         initVulkanDevice(context, physicalDevice, device);
     }
+    println("vkCreateDevice rc=%d device=%p timeline=%d", result, (void*)device, hostTimeline);
 
     VT_SERIALIZE_CMD(VkDevice, device);
     vt_send(context->clientRing, result, outputBuffer, bufferSize);
@@ -369,9 +375,9 @@ void vt_handle_vkGetDeviceQueue(VkContext* context) {
 }
 
 void vt_handle_vkQueueSubmit(VkContext* context) {
-    uint64_t queueId;
-    uint32_t submitCount;
-    uint64_t fenceId;
+    uint64_t queueId = 0;
+    uint32_t submitCount = 0;
+    uint64_t fenceId = 0;
 
     vt_unserialize_vkQueueSubmit((VkQueue)&queueId, &submitCount, NULL, (VkFence)&fenceId, context->inputBuffer, &context->memoryPool);
     VkQueue queue = VkObject_fromId(queueId);
@@ -2185,13 +2191,17 @@ void vt_handle_vkCreateSwapchainKHR(VkContext* context) {
     getWindowExtent(&context->jmethods, windowId, &windowSize);
 
     XWindowSwapchain* swapchain = NULL;
+#if VT_REQUIRE_HOST_WINDOW_SIZE
     if (createInfo.imageExtent.width == windowSize.width && createInfo.imageExtent.height == windowSize.height) {
+#endif
         swapchain = XWindowSwapchain_create(device, context->graphicsQueue,
                                             &createInfo, &context->jmethods,
                                             windowId);
         if (!swapchain) result = VK_ERROR_INITIALIZATION_FAILED;
+#if VT_REQUIRE_HOST_WINDOW_SIZE
     }
     else result = VK_ERROR_OUT_OF_DATE_KHR;
+#endif
 
     VT_SERIALIZE_CMD(VkSwapchainKHR, (VkSwapchainKHR)swapchain);
     vt_send(context->clientRing, result, outputBuffer, bufferSize);
@@ -2232,11 +2242,11 @@ void vt_handle_vkGetSwapchainImagesKHR(VkContext* context) {
 }
 
 void vt_handle_vkAcquireNextImageKHR(VkContext* context) {
-    uint64_t deviceId;
-    uint64_t swapchainId;
-    uint64_t timeout;
-    uint64_t semaphoreId;
-    uint64_t fenceId;
+    uint64_t deviceId = 0;
+    uint64_t swapchainId = 0;
+    uint64_t timeout = 0;
+    uint64_t semaphoreId = 0;
+    uint64_t fenceId = 0;
 
     vt_unserialize_vkAcquireNextImageKHR((VkDevice)&deviceId, (VkSwapchainKHR)&swapchainId, &timeout, (VkSemaphore)&semaphoreId, (VkFence)&fenceId, NULL, context->inputBuffer, &context->memoryPool);
     VkDevice device = VkObject_fromId(deviceId);
@@ -2258,17 +2268,28 @@ void vt_handle_vkQueuePresentKHR(VkContext* context) {
                                     context->inputBuffer, &context->memoryPool);
     VkQueue queue = VkObject_fromId(queueId);
 
-    /* One graphics queue: the client already submitted its render
-     * before this present, so the blit sits after that work. Waiting
-     * pWaitSemaphores here is unnecessary and hangs if a timeline
-     * that is signaled later is included. Do not WaitIdle. */
+    /* Blit waits on render-complete binary semaphores. Emulated
+     * timelines and WSI acquire RPC-signals are stripped here so the
+     * GPU blit does not hang. Do not WaitIdle. */
     (void)queue;
+    if (presentInfo.waitSemaphoreCount && presentInfo.pWaitSemaphores) {
+        VkSubmitInfo filter = {0};
+        filter.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        filter.waitSemaphoreCount = presentInfo.waitSemaphoreCount;
+        filter.pWaitSemaphores = presentInfo.pWaitSemaphores;
+        TimelineSemaphore_filterSubmits(&filter, 1);
+        presentInfo.waitSemaphoreCount = filter.waitSemaphoreCount;
+    }
     for (int i = 0; i < presentInfo.swapchainCount; i++) {
         uint32_t index = presentInfo.pImageIndices ? presentInfo.pImageIndices[i] : 0;
         XWindowSwapchain_presentImageIndex(
                 (XWindowSwapchain*)presentInfo.pSwapchains[i], index,
-                0, NULL);
+                presentInfo.waitSemaphoreCount,
+                presentInfo.pWaitSemaphores);
     }
+    /* Guest vkQueuePresentKHR does VT_RECV_CHECKED. Present is queued
+     * (blit waiter), not waited here. */
+    vt_send(context->clientRing, VK_SUCCESS, NULL, 0);
 }
 
 void vt_handle_vkGetPhysicalDeviceFeatures2(VkContext* context) {
@@ -3655,9 +3676,9 @@ void vt_handle_vkCmdPipelineBarrier2(VkContext* context) {
 }
 
 void vt_handle_vkQueueSubmit2(VkContext* context) {
-    uint64_t queueId;
-    uint32_t submitCount;
-    uint64_t fenceId;
+    uint64_t queueId = 0;
+    uint32_t submitCount = 0;
+    uint64_t fenceId = 0;
 
     vt_unserialize_vkQueueSubmit2((VkQueue)&queueId, &submitCount, NULL, (VkFence)&fenceId, context->inputBuffer, &context->memoryPool);
     VkQueue queue = VkObject_fromId(queueId);
@@ -3669,7 +3690,12 @@ void vt_handle_vkQueueSubmit2(VkContext* context) {
     VkSubmitInfo2 submits[submitCount];
     vt_unserialize_vkQueueSubmit2(VK_NULL_HANDLE, NULL, submits, VK_NULL_HANDLE, context->inputBuffer, &context->memoryPool);
 
-    VkResult result = vulkanWrapper.vkQueueSubmit2(queue, submitCount, submits, fence);
+    bool hostWork = TimelineSemaphore_filterSubmits2(submits, submitCount);
+    VkResult result = VK_SUCCESS;
+    if (hostWork || fence)
+        result = vulkanWrapper.vkQueueSubmit2(queue, submitCount, submits, fence);
+    if (result == VK_SUCCESS)
+        TimelineSemaphore_flushSubmitSignals();
     if (result == VK_ERROR_DEVICE_LOST) context->status = result;
 
     if (clientWaiting) vt_send(context->clientRing, result, NULL, 0);
