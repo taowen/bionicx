@@ -75,7 +75,7 @@ public class RenderComposite {
                         List<int[]> clips) {
         return composite(3, source, sourceRepeat, sourceX, sourceY, mask,
                 maskX, maskY, maskIsA8, destination, destX, destY, width,
-                height, solidArgb, clips);
+                height, solidArgb, null, clips);
     }
 
     public boolean composite(int operation, Drawable source,
@@ -83,7 +83,7 @@ public class RenderComposite {
                         Drawable mask, int maskX, int maskY,
                         boolean maskIsA8, Drawable destination, int destX,
                         int destY, int width, int height, Integer solidArgb,
-                        List<int[]> clips) {
+                        float[] sourceTransform, List<int[]> clips) {
         if (destination == null || destination.getData() == null
                 || clips == null || clips.isEmpty())
             return false;
@@ -173,6 +173,7 @@ public class RenderComposite {
             }
             shader.setUniformInt(shader.uniforms.srcRepeat,
                     sourceRepeat ? 1 : 0);
+            setSourceTransform(shader, sourceTransform);
             boolean hasMask = mask != null;
             shader.setUniformInt(shader.uniforms.hasMask, hasMask ? 1 : 0);
             if (hasMask) {
@@ -276,6 +277,7 @@ public class RenderComposite {
             shader.setUniformInt(shader.uniforms.srcRepeat, 0);
             shader.setUniformInt(shader.uniforms.maskChannel, 1);
             shader.setUniformInt(shader.uniforms.srcFromDst, 0);
+            setSourceTransform(shader, null);
             setSolidColor(color);
             shader.setUniformVec2(shader.uniforms.srcSize, 1, 1);
             shader.setUniformVec2(shader.uniforms.destSize,
@@ -307,6 +309,22 @@ public class RenderComposite {
                     dirtyRight - dirtyLeft, dirtyBottom - dirtyTop);
             return true;
         }
+    }
+
+    private static void setSourceTransform(CompositeMaterial shader,
+            float[] matrix) {
+        if (matrix != null && matrix.length >= 9) {
+            shader.setUniformVec3(shader.uniforms.srcXform0,
+                    matrix[0], matrix[1], matrix[2]);
+            shader.setUniformVec3(shader.uniforms.srcXform1,
+                    matrix[3], matrix[4], matrix[5]);
+            shader.setUniformVec3(shader.uniforms.srcXform2,
+                    matrix[6], matrix[7], matrix[8]);
+            return;
+        }
+        shader.setUniformVec3(shader.uniforms.srcXform0, 1, 0, 0);
+        shader.setUniformVec3(shader.uniforms.srcXform1, 0, 1, 0);
+        shader.setUniformVec3(shader.uniforms.srcXform2, 0, 0, 1);
     }
 
     private static int opaqueRgb(int argb) {
@@ -351,6 +369,7 @@ public class RenderComposite {
         textureMaterial.setUniformInt(textureMaterial.uniforms.srcUnusedAlpha, 0);
         textureMaterial.setUniformInt(textureMaterial.uniforms.solidSrc, 1);
         textureMaterial.setUniformInt(textureMaterial.uniforms.srcFromDst, 0);
+        setSourceTransform(textureMaterial, null);
         textureMaterial.setUniformVec4(textureMaterial.uniforms.solidColor,
                 0, 0, 0, 0);
         textureMaterial.setUniformVec2(textureMaterial.uniforms.destSize,

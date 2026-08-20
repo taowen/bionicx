@@ -28,6 +28,18 @@ public class CursorManager extends XResourceManager {
         return cursor;
     }
 
+    public Cursor createPictureCursor(int id, short x, short y, Drawable source) {
+        if (cursors.indexOfKey(id) >= 0 || source == null) return null;
+        Drawable image = drawableManager.createDrawable(0, source.width,
+                source.height, source.visual);
+        image.copyArea((short)0, (short)0, (short)0, (short)0, source.width,
+                source.height, source);
+        Cursor cursor = new Cursor(id, x, y, image, source, null, true);
+        cursors.put(id, cursor);
+        triggerOnCreateResourceListener(cursor);
+        return cursor;
+    }
+
     private static void paintGlyphCursor(Drawable drawable, int foreground,
                                          int background) {
         Bitmap bitmap = Bitmap.createBitmap(17, 17, Bitmap.Config.ARGB_8888);

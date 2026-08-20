@@ -141,13 +141,13 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
             boolean sourceRepeat, int sourceX, int sourceY, Drawable mask,
             int maskX, int maskY, boolean maskIsA8, Drawable destination,
             int destX, int destY, int width, int height, Integer solidArgb,
-            java.util.List<int[]> clips) {
+            float[] sourceTransform, java.util.List<int[]> clips) {
         AtomicBoolean ok = new AtomicBoolean();
         boolean ran = runSync(() -> {
             ok.set(renderComposite.composite(operation, source, sourceRepeat,
                     sourceX, sourceY, mask, maskX, maskY, maskIsA8,
                     destination, destX, destY, width, height, solidArgb,
-                    clips));
+                    sourceTransform, clips));
             viewportNeedsUpdate = true;
         }, 5000);
         return ran && ok.get();
@@ -160,7 +160,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
             java.util.List<int[]> clips) {
         return composite(3, source, sourceRepeat, sourceX, sourceY, mask,
                 maskX, maskY, maskIsA8, destination, destX, destY, width,
-                height, solidArgb, clips);
+                height, solidArgb, null, clips);
     }
 
     public boolean compositeGlyphs(Drawable destination, int color,
@@ -377,7 +377,8 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
         scheduleRender();
     }
 
-    private void renderCursorDrawable(Drawable drawable, int x, int y) {
+    private void renderCursorDrawable(Drawable drawable, int x, int y,
+            boolean argb) {
         synchronized (drawable.renderLock) {
             Texture texture = drawable.getTexture();
             texture.updateFromDrawable();
@@ -387,6 +388,8 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
             cursorMaterial.setUniformColor(cursorMaterial.uniforms.backColor, cursorBackColor);
             cursorMaterial.setUniformColor(cursorMaterial.uniforms.foreColor, cursorForeColor);
+            cursorMaterial.setUniformInt(cursorMaterial.uniforms.argbCursor,
+                    argb ? 1 : 0);
 
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture.getTextureId());
@@ -453,9 +456,11 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
         short y = xServer.pointer.getClampedY();
 
         if (cursor != null) {
-            if (cursor.isVisible()) renderCursorDrawable(cursor.cursorImage, x - cursor.hotSpotX, y - cursor.hotSpotY);
+            if (cursor.isVisible())
+                renderCursorDrawable(cursor.cursorImage,
+                        x - cursor.hotSpotX, y - cursor.hotSpotY, cursor.argb);
         }
-        else renderCursorDrawable(rootCursorDrawable, x, y);
+        else renderCursorDrawable(rootCursorDrawable, x, y, false);
 
         quadVertices.disable();
     }

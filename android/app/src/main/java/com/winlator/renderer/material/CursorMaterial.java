@@ -9,6 +9,7 @@ public class CursorMaterial extends ShaderMaterial {
         public final Uniform texture = new Uniform("texture");
         public final Uniform backColor = new Uniform("backColor");
         public final Uniform foreColor = new Uniform("foreColor");
+        public final Uniform argbCursor = new Uniform("argbCursor");
     }
 
     @Override
@@ -35,11 +36,16 @@ public class CursorMaterial extends ShaderMaterial {
             "uniform sampler2D texture;",
             "uniform vec3 backColor;",
             "uniform vec3 foreColor;",
+            "uniform int argbCursor;",
 
             "varying vec2 vUV;",
 
             "void main() {",
                 "vec4 texelColor = texture2D(texture, vUV);",
+                "if (argbCursor != 0) {",
+                    "gl_FragColor = texelColor;",
+                    "return;",
+                "}",
                 "gl_FragColor = vec4(mix(foreColor, backColor, texelColor.r), texelColor.a);",
             "}"
         );

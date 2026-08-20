@@ -24,7 +24,7 @@ for i in $(seq 1 30); do
     sleep 1
 done
 result="$(adb -s "$serial" logcat -d -v brief \
-    | grep -E 'BXTEST|BXSUMMARY|BXERROR')"
+    | grep -E 'BXTEST|BXSUMMARY|BXERROR|BXINFO unimplemented')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY compositor-x11 passed=16 failed=0" <<<"$result"
 echo "Compositor X11 probe: PASS"

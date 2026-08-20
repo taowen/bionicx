@@ -27,7 +27,7 @@ for i in $(seq 1 20); do
     sleep 1
 done
 result="$(adb -s "$serial" logcat -d -v brief \
-    | grep -E 'BXTEST|BXSUMMARY|BXERROR|BXOBS')"
+    | grep -E 'BXTEST|BXSUMMARY|BXERROR|BXOBS|BXINFO unimplemented')"
 printf '%s\n' "$result"
 grep -Eq 'BXSUMMARY passed=[0-9]+ failed=0' <<<"$result"
 echo "core X11 probe: PASS"

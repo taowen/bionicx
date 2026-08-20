@@ -487,6 +487,66 @@ static void probe_rgb24(Display *display) {
     if (pixmap != None) XFreePixmap(display, pixmap);
 }
 
+static void probe_transform(Display *display) {
+    int before = x_errors;
+    int screen = DefaultScreen(display);
+    Window root = RootWindow(display, screen);
+    XRenderPictFormat *argb32 = XRenderFindStandardFormat(
+            display, PictStandardARGB32);
+    Pixmap tile = argb32 ? XCreatePixmap(display, root, 4, 1, 32) : None;
+    Pixmap dest = argb32 ? XCreatePixmap(display, root, 16, 1, 32) : None;
+    Picture tile_pic = None;
+    Picture dest_pic = None;
+    XFilters *filters = dest != None
+            ? XRenderQueryFilters(display, dest) : NULL;
+    bool has_nearest = false;
+    if (filters != NULL) {
+        for (int index = 0; index < filters->nfilter; index++) {
+            if (filters->filter[index] != NULL
+                    && strcmp(filters->filter[index], FilterNearest) == 0)
+                has_nearest = true;
+        }
+        XFree(filters);
+    }
+    if (tile != None && dest != None && argb32 != NULL) {
+        tile_pic = XRenderCreatePicture(display, tile, argb32, 0, NULL);
+        dest_pic = XRenderCreatePicture(display, dest, argb32, 0, NULL);
+    }
+    XRenderColor red = {.red = 0xffff, .alpha = 0xffff};
+    XRenderColor black = {.alpha = 0xffff};
+    if (tile_pic != None)
+        XRenderFillRectangle(display, PictOpSrc, tile_pic, &red, 0, 0, 4, 1);
+    if (dest_pic != None)
+        XRenderFillRectangle(display, PictOpSrc, dest_pic, &black, 0, 0, 16, 1);
+    XTransform scale = {{
+        { XDoubleToFixed(0.25), 0, 0 },
+        { 0, XDoubleToFixed(1.0), 0 },
+        { 0, 0, XDoubleToFixed(1.0) }
+    }};
+    if (tile_pic != None)
+        XRenderSetPictureTransform(display, tile_pic, &scale);
+    if (tile_pic != None && dest_pic != None)
+        XRenderComposite(display, PictOpSrc, tile_pic, None, dest_pic,
+                         0, 0, 0, 0, 0, 0, 16, 1);
+    XSync(display, False);
+    XImage *image = dest != None
+            ? XGetImage(display, dest, 8, 0, 1, 1, AllPlanes, ZPixmap)
+            : NULL;
+    unsigned long pixel = image ? XGetPixel(image, 0, 0) : 0;
+    if (image) XDestroyImage(image);
+    char detail[96];
+    snprintf(detail, sizeof(detail),
+             "pixel=0x%06lx nearest=%d errors=%d",
+             pixel & 0xffffff, has_nearest ? 1 : 0, x_errors - before);
+    result("transform", dest_pic && tile_pic && has_nearest
+           && (pixel & 0xffffff) == 0xff0000
+           && x_errors == before, detail);
+    if (dest_pic != None) XRenderFreePicture(display, dest_pic);
+    if (tile_pic != None) XRenderFreePicture(display, tile_pic);
+    if (dest != None) XFreePixmap(display, dest);
+    if (tile != None) XFreePixmap(display, tile);
+}
+
 int main(int argc, char **argv) {
     int duration = argc > 1 ? atoi(argv[1]) : 2;
     XSetErrorHandler(handle_x_error);
@@ -508,6 +568,7 @@ int main(int argc, char **argv) {
     probe_trapezoids(display);
     probe_glyphs32(display);
     probe_rgb24(display);
+    probe_transform(display);
     printf("BXSUMMARY xrender-x11 passed=%d failed=%d xerrors=%d\n",
            passed, checks - passed, x_errors);
     fflush(stdout);

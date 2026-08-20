@@ -35,7 +35,7 @@ kill "$logcat_pid" 2>/dev/null || true
 wait "$logcat_pid" 2>/dev/null || true
 trap - EXIT
 log="$(cat "$bionicx_log"; adb -s "$serial" logcat -d -v brief)"
-result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO tv-' <<<"$log" | awk '!seen[$0]++')"
+result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO tv-|BXINFO unimplemented' <<<"$log" | awk '!seen[$0]++')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY gtk-textview passed=6 failed=0" <<<"$result"
 echo "gtk-textview probe: PASS"

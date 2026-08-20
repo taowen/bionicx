@@ -20,6 +20,10 @@ public abstract class Extension {
 
     public abstract String getName();
 
+    public String requestName(int minor) {
+        return "opcode-" + (minor & 0xff);
+    }
+
     public byte getMajorOpcode() {
         return majorOpcode;
     }

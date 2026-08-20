@@ -57,7 +57,7 @@ kill "$logcat_pid" 2>/dev/null || true
 wait "$logcat_pid" 2>/dev/null || true
 trap - EXIT
 log="$(cat "$bionicx_log"; adb -s "$serial" logcat -d -v brief)"
-result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO click-|BXINFO grab-|BXINFO pre-click-|BXINFO post-click-|BXINFO bar-child|BXINFO root-stack|BXINFO find-|BXINFO saved-bar|BXINFO thin-root|BXINFO ptr-press|BXINFO grab-trace|BXINFO grab-add|BXINFO grab-add-reject|BXINFO grab-press|BXINFO grab-xi|BXINFO grab-mark|BXINFO grab-core-replay|BXINFO gdk-ev|BXINFO allow-events|BXINFO mp-paint|BXINFO mp-type|BXINFO pre-click-tip|BXINFO post-click-tip|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log" | awk '!seen[$0]++')"
+result="$(grep -E 'BXTEST|BXSUMMARY|BXINFO unimplemented|BXINFO click-|BXINFO grab-|BXINFO pre-click-|BXINFO post-click-|BXINFO bar-child|BXINFO root-stack|BXINFO find-|BXINFO saved-bar|BXINFO thin-root|BXINFO ptr-press|BXINFO grab-trace|BXINFO grab-add|BXINFO grab-add-reject|BXINFO grab-press|BXINFO grab-xi|BXINFO grab-mark|BXINFO grab-core-replay|BXINFO gdk-ev|BXINFO allow-events|BXINFO mp-paint|BXINFO mp-type|BXINFO pre-click-tip|BXINFO post-click-tip|enabled D-Bus|enabled PulseAudio|enabled app-private CUPS|enabled Vulkan' <<<"$log" | awk '!seen[$0]++')"
 printf '%s\n' "$result"
 grep -Fq "BXSUMMARY xfce-session-accept passed=12 failed=0" <<<"$result"
 grep -Fq "enabled D-Bus session service" <<<"$result"
@@ -91,6 +91,11 @@ if grep -F "Unable to acquire bus name 'org.xfce.Thunar'" <<<"$log"; then
 fi
 if grep -F "xfce4-panel" <<<"$log" | grep -Fq "BadImplementation"; then
     echo "xfce4-panel must not die on unimplemented Render" >&2
+    exit 1
+fi
+if grep -E 'BXINFO unimplemented RENDER (SetPictureTransform|QueryFilters|CreateCursor)' \
+        <<<"$log"; then
+    echo "RENDER 0.6 requests must show on BionicX:I and be implemented" >&2
     exit 1
 fi
 if adb -s "$serial" shell run-as io.taowen.bx \

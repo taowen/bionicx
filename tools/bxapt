@@ -119,26 +119,38 @@ prepare_state() {
 }
 
 requested_packages=()
+apt_target_release=()
 case "$command_name" in
     update) arguments=(update) ;;
     install)
         [[ $# -ge 1 ]] || usage
         install_arguments=()
-        for argument in "$@"; do
-            if [[ "$argument" == --reinstall ]]; then
-                install_arguments+=("$argument")
-                continue
-            fi
-            if [[ ! "$argument" =~ ^[a-z0-9][a-z0-9+.-]*(:arm64)?(=[^[:space:]]+)?$ ]]; then
-                echo "invalid install argument: $argument" >&2
-                exit 2
-            fi
-            install_arguments+=("$argument")
-            requested="${argument%%=*}"
-            requested_packages+=("${requested%:arm64}")
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -t)
+                    [[ $# -ge 2 && "$2" =~ ^[a-zA-Z0-9+.-]+$ ]] || usage
+                    apt_target_release=(-t "$2")
+                    shift 2
+                    ;;
+                --reinstall)
+                    install_arguments+=("$1")
+                    shift
+                    ;;
+                *)
+                    if [[ ! "$1" =~ ^[a-z0-9][a-z0-9+.-]*(:arm64)?(=[^[:space:]]+)?$ ]]; then
+                        echo "invalid install argument: $1" >&2
+                        exit 2
+                    fi
+                    install_arguments+=("$1")
+                    requested="${1%%=*}"
+                    requested_packages+=("${requested%:arm64}")
+                    shift
+                    ;;
+            esac
         done
         [[ ${#requested_packages[@]} -gt 0 ]] || usage
-        arguments=(install -y --no-install-recommends "${install_arguments[@]}")
+        arguments=(install -y --no-install-recommends \
+            "${apt_target_release[@]}" "${install_arguments[@]}")
         ;;
     remove)
         [[ $# -ge 1 ]] || usage
@@ -511,7 +523,8 @@ if [[ "$command_name" == install || "$command_name" == set ]]; then
         exit 0
     fi
     binary="$root/usr/bin/apt-get"
-    arguments=(-f install -y --no-install-recommends)
+    arguments=(-f install -y --no-install-recommends \
+        "${apt_target_release[@]}")
 fi
 run_binary
 case "$command_name" in

@@ -36,6 +36,9 @@ public class CompositeMaterial extends ShaderMaterial {
         public final Uniform maskChannel = new Uniform("maskChannel");
         public final Uniform srcFromDst = new Uniform("srcFromDst");
         public final Uniform srcUnusedAlpha = new Uniform("srcUnusedAlpha");
+        public final Uniform srcXform0 = new Uniform("srcXform0");
+        public final Uniform srcXform1 = new Uniform("srcXform1");
+        public final Uniform srcXform2 = new Uniform("srcXform2");
         public final Uniform op = new Uniform("op");
     }
 
@@ -49,6 +52,9 @@ public class CompositeMaterial extends ShaderMaterial {
             "uniform vec2 srcSize;",
             "uniform vec4 maskRect;",
             "uniform vec2 maskSize;",
+            "uniform vec3 srcXform0;",
+            "uniform vec3 srcXform1;",
+            "uniform vec3 srcXform2;",
             "varying vec2 vSrcUV;",
             "varying vec2 vDstUV;",
             "varying vec2 vMaskUV;",
@@ -56,9 +62,13 @@ public class CompositeMaterial extends ShaderMaterial {
             "void main() {",
                 "vec2 destPos = destRect.xy + position * destRect.zw;",
                 "vDstUV = destPos / destSize;",
-                "vSrcUV = srcSize.x > 0.5",
-                    "? (srcRect.xy + position * destRect.zw) / srcSize",
-                    ": vec2(0.0);",
+                "vec2 srcPx = srcRect.xy + position * destRect.zw;",
+                "vec3 srcP = vec3(srcPx, 1.0);",
+                "vec3 mapped = vec3(dot(srcXform0, srcP),",
+                    "dot(srcXform1, srcP), dot(srcXform2, srcP));",
+                "vec2 srcMapped = abs(mapped.z) > 0.000001",
+                    "? mapped.xy / mapped.z : mapped.xy;",
+                "vSrcUV = srcSize.x > 0.5 ? srcMapped / srcSize : vec2(0.0);",
                 "vMaskUV = maskSize.x > 0.5",
                     "? (maskRect.xy + position * destRect.zw) / maskSize",
                     ": vec2(0.0);",

@@ -606,31 +606,35 @@ public class XClientRequestHandler implements RequestHandler {
             }
         }
         catch (XRequestError e) {
-            Log.w(TAG, "request error seq="
-                    + (client.getSequenceNumber() & 0xffff)
-                    + " major=" + (opcode & 0xff)
-                    + " minor=" + (requestData & 0xff)
-                    + " code=" + (e.getCode() & 0xff)
-                    + " data=" + Integer.toUnsignedString(e.getData()));
-            if (e instanceof BadImplementation) {
-                Extension extension = client.xServer.getExtension(opcode);
-                String requestName = extension != null ? extension.getName() : "core";
-                Log.w(TAG, "unimplemented request=" + requestName
+            if (e instanceof BadImplementation)
+                noteUnimplemented(client.xServer, opcode, requestData);
+            else
+                Log.w(TAG, "request error seq="
+                        + (client.getSequenceNumber() & 0xffff)
                         + " major=" + (opcode & 0xff)
                         + " minor=" + (requestData & 0xff)
-                        + " error=" + (e.getCode() & 0xff));
-            }
+                        + " code=" + (e.getCode() & 0xff)
+                        + " data=" + Integer.toUnsignedString(e.getData()));
             client.skipRequest();
             e.sendError(client, opcode);
         }
         catch (UnsupportedOperationException e) {
-            Log.e(TAG, "unsupported opcode=" + (opcode & 0xff)
-                    + " data=" + (requestData & 0xff), e);
+            noteUnimplemented(client.xServer, opcode, requestData);
             client.skipRequest();
             new BadImplementation().sendError(client, opcode);
         }
 
         return true;
+    }
+
+    private static void noteUnimplemented(XServer xServer, byte opcode,
+            int minor) {
+        Extension extension = xServer.getExtension(opcode);
+        String extensionName = extension != null ? extension.getName() : "CORE";
+        String requestName = extension != null
+                ? extension.requestName(minor)
+                : ("opcode-" + (opcode & 0xff));
+        UnimplementedRequest.note(extensionName, requestName, opcode, minor);
     }
 
     @Override

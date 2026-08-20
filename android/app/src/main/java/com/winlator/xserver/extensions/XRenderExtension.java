@@ -11,11 +11,13 @@ import com.winlator.renderer.RenderComposite;
 import com.winlator.xconnector.XInputStream;
 import com.winlator.xconnector.XOutputStream;
 import com.winlator.xconnector.XStreamLock;
+import com.winlator.xserver.Cursor;
 import com.winlator.xserver.Drawable;
 import com.winlator.xserver.IDGenerator;
 import com.winlator.xserver.Visual;
 import com.winlator.xserver.XClient;
 import com.winlator.xserver.XServer;
+import com.winlator.xserver.errors.BadCursor;
 import com.winlator.xserver.errors.BadDrawable;
 import com.winlator.xserver.errors.BadIdChoice;
 import com.winlator.xserver.errors.BadImplementation;
@@ -32,12 +34,13 @@ import java.util.IdentityHashMap;
 /**
  * Minimal stateful implementation of the Render protocol used by
  * software-rendered desktop clients. Advertise only opcodes this
- * server actually rasterizes: cairo skips CompositeTrapezoids unless
- * the version is at least 0.4.
+ * server actually rasterizes. 0.4 is required for CompositeTrapezoids;
+ * 0.6 is required for SetPictureTransform so cairo can tile title
+ * pixmaps.
  */
 public class XRenderExtension extends Extension {
     public static final int MAJOR_VERSION = 0;
-    public static final int MINOR_VERSION = 4;
+    public static final int MINOR_VERSION = 6;
 
     private static final byte PICT_TYPE_DIRECT = 1;
     private static final byte PICT_OP_CLEAR = 0;
@@ -83,7 +86,11 @@ public class XRenderExtension extends Extension {
         private static final byte COMPOSITE_GLYPHS_16 = 24;
         private static final byte COMPOSITE_GLYPHS_32 = 25;
         private static final byte FILL_RECTANGLES = 26;
+        private static final byte CREATE_CURSOR = 27;
+        private static final byte SET_PICTURE_TRANSFORM = 28;
+        private static final byte QUERY_FILTERS = 29;
         private static final byte SET_PICTURE_FILTER = 30;
+        private static final byte CREATE_ANIM_CURSOR = 31;
         private static final byte CREATE_SOLID_FILL = 33;
         private static final byte CREATE_LINEAR_GRADIENT = 34;
         private static final byte CREATE_RADIAL_GRADIENT = 35;
@@ -98,6 +105,7 @@ public class XRenderExtension extends Extension {
         private final LinearGradient gradient;
         private final RadialGradient radialGradient;
         private int repeat;
+        private int[] transform;
         private int clipX;
         private int clipY;
         private boolean componentAlpha;
@@ -212,6 +220,45 @@ public class XRenderExtension extends Extension {
     @Override
     public String getName() {
         return "RENDER";
+    }
+
+    @Override
+    public String requestName(int minor) {
+        switch (minor & 0xff) {
+            case ClientOpcodes.QUERY_VERSION: return "QueryVersion";
+            case ClientOpcodes.QUERY_PICT_FORMATS: return "QueryPictFormats";
+            case ClientOpcodes.CREATE_PICTURE: return "CreatePicture";
+            case ClientOpcodes.CHANGE_PICTURE: return "ChangePicture";
+            case ClientOpcodes.SET_PICTURE_CLIP_RECTANGLES:
+                return "SetPictureClipRectangles";
+            case ClientOpcodes.FREE_PICTURE: return "FreePicture";
+            case ClientOpcodes.COMPOSITE: return "Composite";
+            case ClientOpcodes.COMPOSITE_TRAPEZOIDS: return "CompositeTrapezoids";
+            case ClientOpcodes.COMPOSITE_TRIANGLES: return "CompositeTriangles";
+            case ClientOpcodes.COMPOSITE_TRISTRIP: return "CompositeTriStrip";
+            case ClientOpcodes.COMPOSITE_TRIFAN: return "CompositeTriFan";
+            case ClientOpcodes.CREATE_GLYPH_SET: return "CreateGlyphSet";
+            case ClientOpcodes.REFERENCE_GLYPH_SET: return "ReferenceGlyphSet";
+            case ClientOpcodes.FREE_GLYPH_SET: return "FreeGlyphSet";
+            case ClientOpcodes.ADD_GLYPHS: return "AddGlyphs";
+            case ClientOpcodes.FREE_GLYPHS: return "FreeGlyphs";
+            case ClientOpcodes.COMPOSITE_GLYPHS_8: return "CompositeGlyphs8";
+            case ClientOpcodes.COMPOSITE_GLYPHS_16: return "CompositeGlyphs16";
+            case ClientOpcodes.COMPOSITE_GLYPHS_32: return "CompositeGlyphs32";
+            case ClientOpcodes.FILL_RECTANGLES: return "FillRectangles";
+            case ClientOpcodes.CREATE_CURSOR: return "CreateCursor";
+            case ClientOpcodes.SET_PICTURE_TRANSFORM:
+                return "SetPictureTransform";
+            case ClientOpcodes.QUERY_FILTERS: return "QueryFilters";
+            case ClientOpcodes.SET_PICTURE_FILTER: return "SetPictureFilter";
+            case ClientOpcodes.CREATE_ANIM_CURSOR: return "CreateAnimCursor";
+            case ClientOpcodes.CREATE_SOLID_FILL: return "CreateSolidFill";
+            case ClientOpcodes.CREATE_LINEAR_GRADIENT:
+                return "CreateLinearGradient";
+            case ClientOpcodes.CREATE_RADIAL_GRADIENT:
+                return "CreateRadialGradient";
+            default: return "opcode-" + (minor & 0xff);
+        }
     }
 
     private void queryVersion(XClient client, XInputStream inputStream,
@@ -536,6 +583,106 @@ public class XRenderExtension extends Extension {
                 || filter.equals("best"))) throw new BadValue(0);
     }
 
+    private void createCursor(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int cursorId = inputStream.readInt();
+        Picture picture = requirePicture(inputStream.readInt());
+        short hotX = inputStream.readShort();
+        short hotY = inputStream.readShort();
+        if (!client.isValidResourceId(cursorId))
+            throw new BadIdChoice(cursorId);
+        Drawable source = pictureDrawable(picture);
+        if (source == null) throw new BadMatch();
+        if (hotX < 0 || hotY < 0 || hotX >= source.width
+                || hotY >= source.height)
+            throw new BadMatch();
+        source.ensureCpuPixels();
+        Cursor cursor = xServer.cursorManager.createPictureCursor(
+                cursorId, hotX, hotY, source);
+        if (cursor == null) throw new BadIdChoice(cursorId);
+        client.registerAsOwnerOfResource(cursor);
+    }
+
+    private void createAnimCursor(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        int cursorId = inputStream.readInt();
+        if (!client.isValidResourceId(cursorId))
+            throw new BadIdChoice(cursorId);
+        int firstId = inputStream.readInt();
+        int remaining = client.getRemainingRequestLength();
+        if (remaining > 0) inputStream.skip(remaining);
+        Cursor first = xServer.cursorManager.getCursor(firstId);
+        if (first == null) throw new BadCursor(firstId);
+        Cursor cursor = xServer.cursorManager.createPictureCursor(cursorId,
+                (short)first.hotSpotX, (short)first.hotSpotY,
+                first.cursorImage);
+        if (cursor == null) throw new BadIdChoice(cursorId);
+        client.registerAsOwnerOfResource(cursor);
+    }
+
+    private void setPictureTransform(XClient client, XInputStream inputStream)
+            throws XRequestError {
+        Picture picture = requirePicture(inputStream.readInt());
+        int[] matrix = new int[9];
+        for (int index = 0; index < 9; index++)
+            matrix[index] = inputStream.readInt();
+        picture.transform = identityTransform(matrix) ? null : matrix;
+    }
+
+    private void queryFilters(XClient client, XInputStream inputStream,
+            XOutputStream outputStream) throws IOException, XRequestError {
+        int drawableId = inputStream.readInt();
+        if (xServer.drawableManager.getDrawable(drawableId) == null
+                && xServer.windowManager.getWindow(drawableId) == null)
+            throw new BadDrawable(drawableId);
+        String[] filters = new String[] {
+            "nearest", "bilinear", "fast", "good", "best"
+        };
+        int packed = 0;
+        for (String filter : filters)
+            packed += 1 + filter.length();
+        int nameBytes = (packed + 3) & ~3;
+        try (XStreamLock lock = outputStream.lock()) {
+            outputStream.writeByte(RESPONSE_CODE_SUCCESS);
+            outputStream.writeByte((byte)0);
+            outputStream.writeShort(client.getSequenceNumber());
+            outputStream.writeInt(nameBytes / 4);
+            outputStream.writeInt(0);
+            outputStream.writeInt(filters.length);
+            outputStream.writePad(16);
+            for (String filter : filters) {
+                byte[] name = filter.getBytes(XServer.LATIN1_CHARSET);
+                outputStream.writeByte((byte)name.length);
+                outputStream.write(name);
+            }
+            if (nameBytes > packed)
+                outputStream.writePad(nameBytes - packed);
+        }
+    }
+
+    private static boolean identityTransform(int[] matrix) {
+        return matrix[0] == 0x10000 && matrix[1] == 0 && matrix[2] == 0
+                && matrix[3] == 0 && matrix[4] == 0x10000 && matrix[5] == 0
+                && matrix[6] == 0 && matrix[7] == 0 && matrix[8] == 0x10000;
+    }
+
+    private static int[] transformPixel(int[] matrix, int x, int y) {
+        long mappedX = (long)matrix[0] * x + (long)matrix[1] * y + matrix[2];
+        long mappedY = (long)matrix[3] * x + (long)matrix[4] * y + matrix[5];
+        long weight = (long)matrix[6] * x + (long)matrix[7] * y + matrix[8];
+        if (weight == 0) return new int[] {x, y};
+        return new int[] {(int)(mappedX / weight), (int)(mappedY / weight)};
+    }
+
+    private static float[] transformFloats(int[] matrix) {
+        if (matrix == null) return null;
+        float[] values = new float[9];
+        float inv = 1.0f / 65536.0f;
+        for (int index = 0; index < 9; index++)
+            values[index] = matrix[index] * inv;
+        return values;
+    }
+
     private void freeClientPictures(XClient client) {
         synchronized (pictures) {
             ArrayList<Integer> owned = clientPictures.remove(client);
@@ -707,6 +854,11 @@ public class XRenderExtension extends Extension {
 
     private int pictureColor(Picture picture, int x, int y) {
         if (picture.solidColor != null) return picture.solidColor;
+        if (picture.transform != null) {
+            int[] mapped = transformPixel(picture.transform, x, y);
+            x = mapped[0];
+            y = mapped[1];
+        }
         if (picture.gradient != null) {
             LinearGradient gradient = picture.gradient;
             double px = x * 65536.0 + 32768.0;
@@ -884,7 +1036,8 @@ public class XRenderExtension extends Extension {
         return renderer.composite(operation, solid ? null : sourceDrawable,
                 source.repeat == 1, sourceX, sourceY, maskDrawable, maskX,
                 maskY, maskIsA8, destinationDrawable, destinationX,
-                destinationY, width, height, source.solidColor, clips);
+                destinationY, width, height, source.solidColor,
+                transformFloats(source.transform), clips);
     }
 
     private boolean tryFillGpu(Drawable drawable, int operation, int color,
@@ -900,7 +1053,7 @@ public class XRenderExtension extends Extension {
                     operation == PICT_OP_CLEAR ? 0 : color, clips);
         return renderer.composite(operation, null, false, 0, 0, null, 0, 0,
                 false, drawable, 0, 0, drawable.width, drawable.height,
-                color, clips);
+                color, null, clips);
     }
 
     private boolean tryGlyphsGpu(Picture source, Picture destination,
@@ -1447,6 +1600,18 @@ public class XRenderExtension extends Extension {
             case ClientOpcodes.COMPOSITE_GLYPHS_32:
                 compositeGlyphs(client, inputStream, 4);
                 break;
+            case ClientOpcodes.CREATE_CURSOR:
+                createCursor(client, inputStream);
+                break;
+            case ClientOpcodes.CREATE_ANIM_CURSOR:
+                createAnimCursor(client, inputStream);
+                break;
+            case ClientOpcodes.SET_PICTURE_TRANSFORM:
+                setPictureTransform(client, inputStream);
+                break;
+            case ClientOpcodes.QUERY_FILTERS:
+                queryFilters(client, inputStream, outputStream);
+                break;
             case ClientOpcodes.SET_PICTURE_FILTER:
                 setPictureFilter(client, inputStream);
                 break;
@@ -1460,8 +1625,6 @@ public class XRenderExtension extends Extension {
                 createRadialGradient(client, inputStream);
                 break;
             default:
-                Log.w("BionicXRender", "unsupported opcode="
-                        + (client.getRequestData() & 0xff));
                 throw new BadImplementation();
         }
     }

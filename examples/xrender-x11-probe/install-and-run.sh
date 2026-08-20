@@ -24,7 +24,11 @@ for i in $(seq 1 30); do
     sleep 1
 done
 result="$(adb -s "$serial" logcat -d -v brief \
-    | grep -E 'BXTEST|BXSUMMARY|BXERROR')"
+    | grep -E 'BXTEST|BXSUMMARY|BXERROR|BXINFO unimplemented')"
 printf '%s\n' "$result"
-grep -Fq "BXSUMMARY xrender-x11 passed=5 failed=0" <<<"$result"
+if grep -Fq 'BXINFO unimplemented' <<<"$result"; then
+    echo "xrender-x11 must not send unimplemented requests" >&2
+    exit 1
+fi
+grep -Fq "BXSUMMARY xrender-x11 passed=6 failed=0" <<<"$result"
 echo "Render X11 probe: PASS"

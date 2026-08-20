@@ -11,7 +11,9 @@
 #define BITMASK_UNSET(bits, flag) bits &= ~flag
 #define GETEXP(x) (31 - __builtin_clz(x))
 
+#ifndef APP_CACHE_DIR
 #define APP_CACHE_DIR "/data/data/io.taowen.bx/cache"
+#endif
 #define LIBVULKAN_PATH "/system/lib64/libvulkan.so"
 
 #define CLOSEFD(x) \

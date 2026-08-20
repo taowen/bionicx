@@ -108,6 +108,11 @@ public abstract class ShaderMaterial {
         if (location != -1) GLES20.glUniform2f(location, x, y);
     }
 
+    public void setUniformVec3(Uniform uniform, float x, float y, float z) {
+        int location = getUniformLocation(uniform);
+        if (location != -1) GLES20.glUniform3f(location, x, y, z);
+    }
+
     public void setUniformVec4(Uniform uniform, float x, float y, float z, float w) {
         int location = getUniformLocation(uniform);
         if (location != -1) GLES20.glUniform4f(location, x, y, z, w);
